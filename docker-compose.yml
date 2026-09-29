@@ -12,6 +12,15 @@ services:
       interval: 5s
       retries: 10
 
+  # S3 local para desarrollo mientras no haya cuenta AWS (pendiente del plan).
+  # Consola en http://localhost:9001. En produccion se deja S3_ENDPOINT_URL vacio.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    env_file: .env
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio:/data]
+
   ollama:
     image: ollama/ollama:latest
     ports: ["11434:11434"]
@@ -25,14 +34,19 @@ services:
     ports: ["8000:8000"]
     depends_on:
       db: {condition: service_healthy}
+      minio: {condition: service_started}
       ollama: {condition: service_started}
     volumes:
       - ./backend:/app
       - ./config:/config
       - ./prompts:/prompts
+      - ./docs/conocimiento:/conocimiento
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Perfil opcional hasta que PERSONA_3 cree el proyecto Vite (package.json).
+  # Arranque: docker compose --profile frontend up
   frontend:
+    profiles: [frontend]
     build: ./frontend
     ports: ["5173:5173"]
     volumes: ["./frontend:/app", "/app/node_modules"]
@@ -42,4 +56,5 @@ services:
 
 volumes:
   pgdata:
+  minio:
   ollama:
