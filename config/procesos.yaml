@@ -1,0 +1,9 @@
+procesos:
+  onboarding:
+    prefijo_folio: ONB
+    tipos_requeridos: [credencial_elector, comprobante_domicilio]
+    tipos_opcionales: [pasaporte]
+    permitir_antecedentes: true
+    caducidad_antecedentes_dias: 365
+    webhook_url: ""          # vacio = sin webhook
+    modelos: default         # o nombre de perfil en modelos.yaml

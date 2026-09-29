@@ -1,0 +1,33 @@
+nombre: credencial_elector
+nombre_visible: Credencial de elector
+categoria: identificacion
+descripcion: Credencial para votar vigente, anverso (y reverso opcional).
+caracteristicas_esperadas:
+  - Fotografia del titular
+  - Clave de elector y CURP
+  - Domicilio y vigencia (anio)
+formatos_permitidos: [pdf, jpg, jpeg, png]
+ejemplos_referencia: [fixtures/credencial_ejemplo_foto.jpg]
+campos:
+  nombre_completo:  {tipo: texto, obligatorio: true}
+  curp:             {tipo: texto, obligatorio: true, patron: "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"}
+  clave_elector:    {tipo: texto, obligatorio: false}
+  fecha_nacimiento: {tipo: fecha, obligatorio: true}
+  domicilio:        {tipo: texto, obligatorio: true}
+  vigencia:         {tipo: anio, obligatorio: true}
+confianza_minima_clasificacion: 0.85
+confianza_minima_campo: 0.80
+reglas:
+  - id: vigencia_documento
+    tipo: anio_mayor_o_igual_actual
+    campo: vigencia
+    severidad: bloqueante
+    mensaje: La credencial esta vencida
+  - id: formato_curp_valido
+    tipo: patron
+    campo: curp
+    severidad: critica
+    mensaje: La CURP no tiene un formato valido
+comparaciones:
+  pasaporte: [nombre_completo, fecha_nacimiento]
+  comprobante_domicilio: [domicilio]

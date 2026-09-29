@@ -1,0 +1,35 @@
+# Enrutador de modelos. Cambiar proveedor aqui no toca el flujo.
+# Claves de API SIEMPRE en variables de entorno, nunca aqui.
+proveedores:
+  ollama:
+    tipo: ollama
+    base_url_env: OLLAMA_BASE_URL
+    modelo_vision_env: OLLAMA_MODELO_VISION
+    modelo_texto_env: OLLAMA_MODELO_TEXTO
+    soporta_vision: true
+    privado: true        # los datos no salen de la infraestructura
+  # comercial:           # [A ACORDAR] descomentar al decidir proveedor
+  #   tipo: gemini|bedrock|anthropic|openai
+  #   api_key_env: PROVEEDOR_COMERCIAL_API_KEY
+  #   modelo: ...
+  #   soporta_vision: true
+  #   privado: false
+
+# Asignacion por tarea. `por_tipo` permite excepciones por tipo documental.
+tareas:
+  clasificacion:
+    principal: ollama
+    respaldo: null
+  extraccion:
+    principal: ollama
+    respaldo: null
+    por_tipo:
+      # pasaporte: comercial   # ejemplo: documentos con MRZ al modelo comercial
+  validacion:
+    principal: ollama
+    respaldo: null
+
+# Criterios documentados para elegir modelo (diapositiva 11)
+criterios:
+  privacidad: "documentos de identidad -> preferir proveedor privado si la calidad lo permite"
+  coste: "clasificacion con modelo pequeno; extraccion con modelo de vision"

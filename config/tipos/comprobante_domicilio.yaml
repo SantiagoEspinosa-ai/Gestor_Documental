@@ -1,0 +1,26 @@
+nombre: comprobante_domicilio
+nombre_visible: Comprobante de domicilio
+categoria: domicilio
+descripcion: Recibo de servicio (luz, agua, telefono) o estado de cuenta con domicilio del titular.
+caracteristicas_esperadas:
+  - Nombre del proveedor del servicio
+  - Nombre del titular y domicilio completo
+  - Fecha de emision o periodo
+formatos_permitidos: [pdf, jpg, jpeg, png]
+ejemplos_referencia: [fixtures/comprobante_ejemplo_digital.pdf, fixtures/comprobante_ejemplo_escaneado.pdf]
+campos:
+  nombre_titular: {tipo: texto, obligatorio: true}
+  domicilio:      {tipo: texto, obligatorio: true}
+  proveedor:      {tipo: texto, obligatorio: false}
+  fecha_emision:  {tipo: fecha, obligatorio: true}
+confianza_minima_clasificacion: 0.80
+confianza_minima_campo: 0.75
+reglas:
+  - id: antiguedad_maxima
+    tipo: fecha_no_anterior_a_hoy_menos_dias
+    campo: fecha_emision
+    dias: 90
+    severidad: critica
+    mensaje: El comprobante tiene mas de 3 meses
+comparaciones:
+  credencial_elector: [domicilio]

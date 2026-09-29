@@ -1,0 +1,39 @@
+nombre: pasaporte
+nombre_visible: Pasaporte
+categoria: identificacion
+descripcion: Pasaporte vigente, pagina de datos personales con zona MRZ.
+caracteristicas_esperadas:
+  - Fotografia del titular
+  - Zona de lectura mecanica (MRZ) de dos lineas al pie
+  - Fechas de expedicion y vencimiento
+formatos_permitidos: [pdf, jpg, jpeg, png]
+ejemplos_referencia: [fixtures/pasaporte_ejemplo_digital.pdf, fixtures/pasaporte_ejemplo_foto.jpg]
+campos:
+  nombre_completo:    {tipo: texto, obligatorio: true}
+  numero_pasaporte:   {tipo: texto, obligatorio: true, patron: "^[A-Z0-9]{8,9}$"}
+  fecha_nacimiento:   {tipo: fecha, obligatorio: true}
+  fecha_expedicion:   {tipo: fecha, obligatorio: false}
+  fecha_vencimiento:  {tipo: fecha, obligatorio: true}
+  nacionalidad:       {tipo: texto, obligatorio: false}
+  sexo:               {tipo: texto, obligatorio: false}
+confianza_minima_clasificacion: 0.85
+confianza_minima_campo: 0.80
+reglas:
+  - id: vigencia_documento
+    tipo: fecha_posterior_a_hoy
+    campo: fecha_vencimiento
+    severidad: bloqueante
+    mensaje: El pasaporte esta vencido
+  - id: vigencia_proxima
+    tipo: fecha_posterior_a_hoy_mas_dias
+    campo: fecha_vencimiento
+    dias: 90
+    severidad: preventiva
+    mensaje: El pasaporte vence en menos de 90 dias
+  - id: formato_numero
+    tipo: patron
+    campo: numero_pasaporte
+    severidad: critica
+    mensaje: El numero de pasaporte no tiene un formato valido
+comparaciones:
+  credencial_elector: [nombre_completo, fecha_nacimiento]
