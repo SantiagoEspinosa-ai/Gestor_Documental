@@ -23,3 +23,23 @@ Tesseract via pytesseract, PyMuPDF, Ollama, React 18 + Vite. BackgroundTasks par
 - ingesta, api, expediente, auth: PERSONA_1
 - orquestador, motor_ia: PERSONA_2
 - frontend, fixtures, tests e2e, rag: PERSONA_3
+
+## Prompts de arranque por persona
+Cada persona empieza su sesion de Claude Code pegando su fichero de `docs/equipo/`:
+- PERSONA_1 -> `docs/equipo/PERSONA_1_plataforma.md`
+- PERSONA_2 -> `docs/equipo/PERSONA_2_motor_ia.md`
+- PERSONA_3 -> `docs/equipo/PERSONA_3_interfaz_calidad.md`
+Esos ficheros son la especificacion vigente de cada linea de trabajo; si cambia el plan, se
+actualizan ahi y se avisa al equipo.
+
+## Plan por etapas
+- Etapa 0 (dia 1): repo, docker compose, contratos, ADRs. Los tres juntos.
+- Etapa 1 (dias 2-5): cimientos en paralelo contra mocks/stubs.
+- Etapa 2 (dias 6-8): integracion e2e. Hito: subir 3 documentos y ver resultados en la UI.
+- Etapa 3 (dias 9-12): expediente .md, RAG + memoria de folios, webhooks, extras por prioridad
+  (1 enmascaramiento + correcciones, 2 calidad/recortes/alteraciones, 3 admin de tipos, 4 factura y gasto).
+- Etapa 4 (dias 13-14): congelacion, tests, READMEs, demo desde cero.
+
+## Plan completo
+`docs/PLAN_PROYECTO.md` recoge todas las decisiones, el reparto y las tareas por etapa y persona.
+Leelo al inicio de cada sesion junto con el prompt de la persona.
