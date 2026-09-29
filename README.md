@@ -12,10 +12,7 @@ config/tipos/   Fichas YAML de tipos documentales (sin tocar codigo)
 config/modelos.yaml  Enrutador de modelos por tarea
 prompts/        Prompts versionados (nunca incrustados en codigo)
 docs/adr/       Decisiones de arquitectura
-docs/contratos/ Contrato 2: endpoints + catalogo de codigos de alerta
-docs/conocimiento/ Base de conocimiento del RAG (.md)
-docs/equipo/    Prompt de arranque de cada persona
-docs/PLAN_PROYECTO.md  Plan, decisiones y etapas
+docs/contratos/ Contrato 2: endpoints
 scripts/        generar_fixtures.py y utilidades
 fixtures/       Documentos ficticios de prueba (nunca datos reales)
 ```
@@ -23,9 +20,7 @@ fixtures/       Documentos ficticios de prueba (nunca datos reales)
 ## Arranque
 ```bash
 cp .env.example .env   # rellenar con claves reales, NUNCA commitear .env
-docker compose up --build                      # db, minio, ollama, backend
-docker compose --profile frontend up --build   # + frontend, cuando exista package.json
-cd backend && python -m pytest -q              # tests sin BD, S3 ni modelo
+docker compose up --build
 ```
 
 ## Reglas del equipo

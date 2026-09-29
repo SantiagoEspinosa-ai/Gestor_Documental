@@ -1,58 +1,35 @@
 # Enrutador de modelos. Cambiar proveedor aqui no toca el flujo.
 # Claves de API SIEMPRE en variables de entorno, nunca aqui.
-#
-# Diapositiva 13 (MVP): "al menos 2 modelos de IA configurables". Mientras se cierra ADR-003
-# se cumple con dos modelos locales de Ollama: uno de vision (extraccion desde imagen) y uno de
-# texto (clasificacion y extraccion desde texto). El comercial sera el tercero.
 proveedores:
-  ollama_vision:
+  ollama:
     tipo: ollama
     base_url_env: OLLAMA_BASE_URL
-    modelo_env: OLLAMA_MODELO_VISION
+    modelo_vision_env: OLLAMA_MODELO_VISION
+    modelo_texto_env: OLLAMA_MODELO_TEXTO
     soporta_vision: true
     privado: true        # los datos no salen de la infraestructura
-    parametros:
-      temperatura: 0
-      timeout_segundos: 180
-  ollama_texto:
-    tipo: ollama
-    base_url_env: OLLAMA_BASE_URL
-    modelo_env: OLLAMA_MODELO_TEXTO
-    soporta_vision: false
-    privado: true
-    parametros:
-      temperatura: 0
-      timeout_segundos: 90
-  # comercial:           # [A ACORDAR] ADR-003: descomentar al decidir proveedor
+  # comercial:           # [A ACORDAR] descomentar al decidir proveedor
   #   tipo: gemini|bedrock|anthropic|openai
   #   api_key_env: PROVEEDOR_COMERCIAL_API_KEY
-  #   modelo_env: PROVEEDOR_COMERCIAL_MODELO
+  #   modelo: ...
   #   soporta_vision: true
   #   privado: false
-  #   parametros: {temperatura: 0, timeout_segundos: 60}
 
 # Asignacion por tarea. `por_tipo` permite excepciones por tipo documental.
-# Si el documento no tiene texto (pdf_escaneado, imagen) y el proveedor elegido no soporta
-# vision, el enrutador usa uno que si la soporte (riesgo 2 del plan: fotos de movil).
 tareas:
   clasificacion:
-    principal: ollama_texto
-    respaldo: ollama_vision
+    principal: ollama
+    respaldo: null
   extraccion:
-    principal: ollama_vision
-    respaldo: ollama_texto
-    por_tipo: {}
+    principal: ollama
+    respaldo: null
+    por_tipo:
       # pasaporte: comercial   # ejemplo: documentos con MRZ al modelo comercial
   validacion:
-    principal: ollama_texto
+    principal: ollama
     respaldo: null
 
 # Criterios documentados para elegir modelo (diapositiva 11)
 criterios:
-  tipo_documento: "excepciones en tareas.<tarea>.por_tipo"
-  tarea: "clasificacion con modelo de texto pequeno; extraccion con modelo de vision"
-  calidad: "si la confianza queda bajo el minimo de la ficha, reintentar con el respaldo"
-  coste: "modelos locales por defecto; el comercial solo donde aporte calidad"
-  velocidad: "timeout_segundos por proveedor; el de texto responde antes"
   privacidad: "documentos de identidad -> preferir proveedor privado si la calidad lo permite"
-  vision_u_ocr: "sin texto extraible -> proveedor con soporta_vision: true"
+  coste: "clasificacion con modelo pequeno; extraccion con modelo de vision"

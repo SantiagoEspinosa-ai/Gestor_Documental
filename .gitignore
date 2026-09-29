@@ -6,4 +6,3 @@ node_modules/
 frontend/dist/
 fixtures/generados/
 *.log
-.pytest_cache/

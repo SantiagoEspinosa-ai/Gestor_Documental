@@ -1,14 +1,9 @@
-# Un bloque por proceso de negocio. El prefijo separa los folios por proceso (diapositiva 12:
-# separacion logica por cliente o proceso); la clave S3 tambien empieza por el proceso.
 procesos:
   onboarding:
     prefijo_folio: ONB
-    tipos_requeridos: [credencial_elector, comprobante_domicilio]   # falta uno -> alerta EXP-001
+    tipos_requeridos: [credencial_elector, comprobante_domicilio]
     tipos_opcionales: [pasaporte]
     permitir_antecedentes: true
     caducidad_antecedentes_dias: 365
-    # Politica de conservacion (diapositivas 10 y 12). En el MVP solo se registra; aplicarla
-    # (regla de ciclo de vida del bucket o tarea de purga) queda fuera del MVP.
-    conservacion_originales_dias: 1825
     webhook_url: ""          # vacio = sin webhook
-    modelos: default         # default = asignacion de config/modelos.yaml; reservado para perfiles por proceso
+    modelos: default         # o nombre de perfil en modelos.yaml
