@@ -1,15 +1,17 @@
-"""Tests de los endpoints de consulta (GET /procesos, ...). SQLite temporal, datos ficticios."""
+"""Tests de GET /procesos, GET /tipos-documentales y GET /auditoria. SQLite temporal, datos ficticios."""
 import importlib.util
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core import db
+from app.core import auditoria, db
 from app.core.config import get_settings
 from app.core.db import Base
-from app.core.modelos import Proceso
+from app.core.modelos import Auditoria, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 
@@ -119,3 +121,71 @@ def test_tipos_documentales(cliente):
 def test_tipos_documentales_sin_token(cliente):
     r = cliente.get("/api/v1/tipos-documentales")
     assert (r.status_code, r.json()["codigo"]) == (401, "NO_AUTENTICADO")
+
+
+# --- GET /auditoria ---
+
+def _auditar(sesion, n: int, folio: str, base: datetime):
+    for i in range(n):
+        fila = auditoria.registrar(sesion, "folio_creado", usuario="x", folio=folio, detalle={"i": i})
+        fila.creado_en = base + timedelta(minutes=i)
+    sesion.commit()
+
+
+def test_auditoria_filtra_por_folio(cliente, sesion):
+    base = datetime(2026, 9, 30, 10, tzinfo=timezone.utc)
+    _auditar(sesion, 2, "ONB-2026-000001", base)
+    _auditar(sesion, 1, "ONB-2026-000002", base)
+    r = cliente.get("/api/v1/auditoria", params={"folio": "ONB-2026-000001"}, headers=_cab("admin"))
+    assert r.status_code == 200
+    cuerpo = r.json()
+    assert cuerpo["total"] == 2
+    assert {e["folio"] for e in cuerpo["elementos"]} == {"ONB-2026-000001"}
+    assert set(cuerpo["elementos"][0]) == {"id", "usuario", "accion", "folio", "documento_id", "detalle",
+                                           "modelo", "version_prompt", "creado_en"}
+
+
+def test_auditoria_paginacion_y_orden(cliente, sesion):
+    base = datetime(2026, 9, 30, 10, tzinfo=timezone.utc)
+    _auditar(sesion, 5, "ONB-2026-000001", base)
+    r = cliente.get("/api/v1/auditoria", params={"pagina": 1, "tamano_pagina": 2}, headers=_cab("admin")).json()
+    assert (r["total"], r["pagina"], r["tamano_pagina"]) == (5, 1, 2)
+    assert [e["detalle"]["i"] for e in r["elementos"]] == [4, 3]
+    r = cliente.get("/api/v1/auditoria", params={"pagina": 3, "tamano_pagina": 2}, headers=_cab("admin")).json()
+    assert [e["detalle"]["i"] for e in r["elementos"]] == [0]
+    assert cliente.get("/api/v1/auditoria", headers=_cab("admin")).json()["tamano_pagina"] == 50
+
+
+def test_auditoria_empate_de_fecha_ordena_por_id(cliente, sesion):
+    mismo = datetime(2026, 9, 30, 10, tzinfo=timezone.utc)
+    for i in range(3):
+        auditoria.registrar(sesion, "login", usuario="x", detalle={"i": i}).creado_en = mismo
+    sesion.commit()
+    elementos = cliente.get("/api/v1/auditoria", headers=_cab("admin")).json()["elementos"]
+    assert [e["detalle"]["i"] for e in elementos] == [2, 1, 0]
+
+
+@pytest.mark.parametrize("params", [{"pagina": 0}, {"tamano_pagina": 0}, {"tamano_pagina": 101}])
+def test_auditoria_parametros_invalidos(cliente, params):
+    r = cliente.get("/api/v1/auditoria", params=params, headers=_cab("admin"))
+    assert (r.status_code, r.json()["codigo"]) == (422, "PETICION_INVALIDA")
+
+
+@pytest.mark.parametrize("rol", ["revisor", "integrador"])
+def test_auditoria_solo_admin(cliente, rol):
+    r = cliente.get("/api/v1/auditoria", headers=_cab(rol))
+    assert (r.status_code, r.json()["codigo"]) == (403, "SIN_PERMISO")
+
+
+def test_auditoria_sin_token(cliente):
+    r = cliente.get("/api/v1/auditoria")
+    assert (r.status_code, r.json()["codigo"]) == (401, "NO_AUTENTICADO")
+
+
+def test_auditoria_documento_id_como_texto(cliente, sesion):
+    doc = uuid.uuid4()
+    auditoria.registrar(sesion, "documento_subido", usuario="x", folio="ONB-2026-000001", documento_id=doc)
+    sesion.commit()
+    e = cliente.get("/api/v1/auditoria", headers=_cab("admin")).json()["elementos"][0]
+    assert e["documento_id"] == str(doc)
+    assert sesion.query(Auditoria).count() == 1

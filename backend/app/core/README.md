@@ -8,7 +8,7 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `modelos.py`: tablas de la plataforma. Migraciones en `backend/alembic/` (`alembic upgrade head`).
 - `procesos.py`: valida `config/procesos.yaml` (`leer_procesos`) y lo vuelca a la tabla `procesos` al arrancar (`sincronizar_procesos`, upsert sin borrar).
 - `errores.py`: `ErrorApi(http, codigo, mensaje, headers)` y manejadores globales (`registrar_manejadores`): todo error sale como `{codigo, mensaje}` (ADR-006 1.4); 422 sin valores de campo, 500 sin detalles internos.
-- `auditoria.py`: `registrar(sesion, accion, ...)` valida la accion contra `ACCIONES_AUDITORIA` y hace `add` sin commit.
+- `auditoria.py`: `registrar(sesion, accion, ...)` valida la accion contra `ACCIONES_AUDITORIA` y hace `add` sin commit; `listar(sesion, folio, pagina, tamano_pagina)` para `GET /auditoria`.
 - `seguridad.py`: hash bcrypt, `crear_token` JWT y dependencias `usuario_actual` y `requiere_rol(*roles)`. Usuarios con `scripts/crear_usuario.py`.
 - `almacenamiento.py`: puerto `Almacenamiento` y adaptador `AlmacenamientoS3` (boto3, S3 real, SSE-S3, nunca sobrescribe: `IfNoneMatch="*"`); `clave_original(...)` y dependencia `get_almacenamiento()`. Tests solo con `moto`. El bucket real y el usuario IAM los crea PERSONA_1 a mano en la consola de AWS (tarea previa de `docs/equipo/PERSONA_1_plataforma.md`).
 

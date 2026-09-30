@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
 from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
-from app.modulos.api import auth, documentos, folios, procesos, tipos_documentales
+from app.modulos.api import auditoria, auth, documentos, folios, procesos, tipos_documentales
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.include_router(folios.router)
 app.include_router(documentos.router)
 app.include_router(procesos.router)
 app.include_router(tipos_documentales.router)
+app.include_router(auditoria.router)
 
 
 @app.get("/salud")

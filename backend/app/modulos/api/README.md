@@ -78,3 +78,14 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 - Fuente: `ingesta.servicio.listar_tipos()` sobre `ingesta/tipos.py`, provisional hasta que llegue
   `configuracion.servicio.listar()` de PERSONA_2.
 - Errores: 401.
+
+## auditoria.py
+
+### GET /api/v1/auditoria (admin)
+- Query: `folio?`, `pagina` >= 1, `tamano_pagina` 1-100 (50 por defecto).
+- Salida 200: `{elementos: [EntradaAuditoria], total, pagina, tamano_pagina}`, del mas reciente al
+  mas antiguo (`creado_en` desc, `id` desc). `EntradaAuditoria` = `{id, usuario, accion, folio,
+  documento_id (str o null), detalle, modelo, version_prompt, creado_en}`.
+- Pendiente de reflejar en endpoints.md (PERSONA_3): la respuesta paginada; hoy dice "lista de
+  `EntradaAuditoria`".
+- Errores: 401; 403 `SIN_PERMISO` (revisor, integrador); 422 `PETICION_INVALIDA`.

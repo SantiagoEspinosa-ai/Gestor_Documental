@@ -6,6 +6,7 @@ guarden en la misma transaccion. El detalle nunca lleva contrasenas, tokens ni d
 import uuid
 from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.modelos import ACCIONES_AUDITORIA, Auditoria
@@ -20,3 +21,14 @@ def registrar(sesion: Session, accion: str, usuario: str | None = None, folio: s
                      detalle=detalle or {}, modelo=modelo, version_prompt=version_prompt)
     sesion.add(fila)
     return fila
+
+
+def listar(sesion: Session, folio: str | None = None, pagina: int = 1,
+           tamano_pagina: int = 50) -> tuple[list[Auditoria], int]:
+    """Pagina del registro, del mas reciente al mas antiguo (creado_en desc, id desc), y el total."""
+    filtros = [Auditoria.folio == folio] if folio else []
+    total = sesion.scalar(select(func.count()).select_from(Auditoria).where(*filtros))
+    filas = sesion.scalars(select(Auditoria).where(*filtros)
+                           .order_by(Auditoria.creado_en.desc(), Auditoria.id.desc())
+                           .offset((pagina - 1) * tamano_pagina).limit(tamano_pagina))
+    return list(filas), total
