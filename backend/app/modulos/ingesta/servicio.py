@@ -156,3 +156,8 @@ def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: 
     Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
     """
     return almacenamiento.url_prefirmada(_documento(sesion, documento_id).ruta_s3)
+
+
+def listar_tipos() -> list[dict]:
+    """Fichas de los tipos documentales (GET /tipos-documentales)."""
+    return tipos.listar_fichas()

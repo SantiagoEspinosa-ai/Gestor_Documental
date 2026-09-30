@@ -67,3 +67,14 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
   Para el rol revisor se omiten `webhook_url` y `modelos` (no aparecen, ni como null).
 - Logica en `core/procesos.py` (`listar_procesos`): la tabla `procesos` es de `core`.
 - Errores: 401; 403 `SIN_PERMISO`.
+
+## tipos_documentales.py
+
+### GET /api/v1/tipos-documentales (cualquier rol)
+- Salida 200: lista de `TipoDocumental` ordenada por nombre: `{nombre, nombre_visible, categoria,
+  descripcion, formatos_permitidos, campos: {<campo>: {tipo, obligatorio, patron?}},
+  confianza_minima_clasificacion, confianza_minima_campo, reglas, comparaciones}`.
+  `formatos_permitidos` en minusculas y sin punto; `patron` solo si la ficha lo define.
+- Fuente: `ingesta.servicio.listar_tipos()` sobre `ingesta/tipos.py`, provisional hasta que llegue
+  `configuracion.servicio.listar()` de PERSONA_2.
+- Errores: 401.

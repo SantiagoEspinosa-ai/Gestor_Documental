@@ -90,3 +90,32 @@ def test_procesos_sin_configuracion_para_el_revisor(cliente):
 def test_procesos_sin_token(cliente):
     r = cliente.get("/api/v1/procesos")
     assert (r.status_code, r.json()["codigo"]) == (401, "NO_AUTENTICADO")
+
+
+# --- GET /tipos-documentales ---
+
+CAMPOS_TIPO = {"nombre", "nombre_visible", "categoria", "descripcion", "formatos_permitidos", "campos",
+               "confianza_minima_clasificacion", "confianza_minima_campo", "reglas", "comparaciones"}
+
+
+def test_tipos_documentales(cliente):
+    r = cliente.get("/api/v1/tipos-documentales", headers=_cab("integrador"))
+    assert r.status_code == 200
+    tipos = r.json()
+    assert [t["nombre"] for t in tipos] == ["comprobante_domicilio", "credencial_elector", "pasaporte"]
+    for t in tipos:
+        assert set(t) == CAMPOS_TIPO
+        assert t["formatos_permitidos"] == ["pdf", "jpg", "jpeg", "png"]
+        for campo in t["campos"].values():
+            assert set(campo) in ({"tipo", "obligatorio"}, {"tipo", "obligatorio", "patron"})
+    pasaporte = tipos[2]
+    assert pasaporte["campos"]["numero_pasaporte"]["patron"] == "^[A-Z0-9]{8,9}$"
+    assert "patron" not in pasaporte["campos"]["nombre_completo"]
+    assert pasaporte["comparaciones"] == {"credencial_elector": ["nombre_completo", "fecha_nacimiento"]}
+    assert pasaporte["confianza_minima_clasificacion"] == 0.85
+
+
+
+def test_tipos_documentales_sin_token(cliente):
+    r = cliente.get("/api/v1/tipos-documentales")
+    assert (r.status_code, r.json()["codigo"]) == (401, "NO_AUTENTICADO")
