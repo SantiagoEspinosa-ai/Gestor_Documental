@@ -171,8 +171,10 @@ def test_duplicado_no_bloquea_y_genera_dup_001(sesion, s3, folio):
     assert primero.ruta_s3 != segundo.ruta_s3
     assert s3.descargar(primero.ruta_s3) == s3.descargar(segundo.ruta_s3) == PDF
 
-    alertas = sesion.scalars(select(AlertaBD)).all()
+    # Solo las de documento: el folio nace ademas con sus EXP-001 de expediente
+    alertas = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id.is_not(None))).all()
     assert len(alertas) == 1
+    assert sesion.scalar(select(func.count()).select_from(AlertaBD).where(AlertaBD.codigo == "DUP-001")) == 1
     assert (alertas[0].codigo, alertas[0].severidad, alertas[0].documento_id) == ("DUP-001", "critica", segundo.id)
     assert str(primero.id) in alertas[0].mensaje
     detalles = [a.detalle["duplicado"] for a in sesion.scalars(select(Auditoria).order_by(Auditoria.id))

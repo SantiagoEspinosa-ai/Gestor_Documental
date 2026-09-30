@@ -52,3 +52,11 @@ def listar_fichas() -> list[dict]:
         }
         for nombre, ficha in sorted(_fichas().items())
     ]
+
+
+def nombre_visible(tipo: str) -> str:
+    """Nombre legible del tipo; si no hay ficha o no lo define, el nombre tecnico."""
+    try:
+        return _fichas().get(tipo, {}).get("nombre_visible") or tipo
+    except Exception:  # noqa: BLE001  una ficha ilegible no debe impedir crear el folio
+        return tipo

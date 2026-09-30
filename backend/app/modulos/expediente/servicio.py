@@ -11,6 +11,7 @@ from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
+from app.modulos.ingesta import servicio as ingesta
 from app.schemas.resultado import (DecisionHumana, EstadoGeneral, ResultadoDocumento,
                                    ResultadoExpediente, ResumenFolio, Severidad)
 
@@ -48,6 +49,14 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
     folio = Folio(folio=f"{fila_proceso.prefijo_folio}-{anio}-{secuencia:06d}", proceso=proceso,
                   anio=anio, secuencia=secuencia, referencia_externa=referencia_externa)
     sesion.add(folio)
+    # flush antes de las alertas: sin relationship, SQLAlchemy no ordena los INSERT por la FK
+    sesion.flush()
+    # Un folio nuevo no tiene documentos: una EXP-001 por cada tipo requerido (misma transaccion)
+    # TODO: recalcular EXP-001: cuenta el tipo confirmado > detectado > declarado; conservar si aplica=false
+    for tipo in fila_proceso.tipos_requeridos:
+        sesion.add(AlertaBD(folio=folio.folio, documento_id=None, codigo="EXP-001",
+                            severidad=Severidad.bloqueante.value, confianza=1.0, campo=tipo,
+                            mensaje=f"Falta el documento requerido: {ingesta.nombre_visible_tipo(tipo)}"))
     auditoria.registrar(sesion, "folio_creado", usuario=usuario, folio=folio.folio)
     sesion.commit()
     return folio
@@ -69,6 +78,11 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         .where(Documento.folio == folio)
         .order_by(Documento.creado_en, Documento.id)
     )
+    # Alertas de expediente = las del folio sin documento (ADR-006 2.1)
+    alertas_expediente = sesion.scalars(
+        select(AlertaBD).where(AlertaBD.folio == folio, AlertaBD.documento_id.is_(None))
+        .order_by(AlertaBD.creado_en, AlertaBD.campo)
+    )
     # Los nombres de columna de BD se traducen aqui a los del Contrato 1
     return ResultadoExpediente(
         folio=fila.folio,
@@ -78,7 +92,7 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         estado_general=EstadoGeneral(fila.estado_general),
         documentos=[ResultadoDocumento.model_validate(r.json) for r in resultados],
         comparaciones=[],
-        alertas_expediente=[],
+        alertas_expediente=[ingesta.alerta_desde_bd(a) for a in alertas_expediente],
         recomendacion_global=None,
         decision_humana=DecisionHumana(fila.decision) if fila.decision else None,
         comentario_decision=fila.decision_comentario,  # ADR-006 G

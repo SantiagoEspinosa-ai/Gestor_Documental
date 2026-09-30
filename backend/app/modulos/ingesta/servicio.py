@@ -161,3 +161,8 @@ def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: 
 def listar_tipos() -> list[dict]:
     """Fichas de los tipos documentales (GET /tipos-documentales)."""
     return tipos.listar_fichas()
+
+
+def nombre_visible_tipo(tipo: str) -> str:
+    """Nombre legible de un tipo documental (p. ej. para mensajes de alerta)."""
+    return tipos.nombre_visible(tipo)

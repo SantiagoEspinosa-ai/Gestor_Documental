@@ -59,6 +59,7 @@ def procesar_documento(documento_id: uuid.UUID) -> None:
                                      .where(Resultado.documento_id == doc.id)) or 0) + 1
             sesion.add(Resultado(documento_id=doc.id, version=version, json=resultado.model_dump(mode="json")))
             doc.estado_analisis = EstadoAnalisis.completado.value
+            # TODO: recalcular EXP-001: cuenta el tipo confirmado > detectado > declarado; conservar si aplica=false
             auditoria.registrar(sesion, "documento_procesado", folio=doc.folio, documento_id=doc.id,
                                 modelo=MODELO, version_prompt=VERSION_PROMPT)
             sesion.commit()

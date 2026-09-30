@@ -56,9 +56,12 @@ def sesion(monkeypatch, tmp_path):
     _entorno(monkeypatch, f"sqlite:///{tmp_path / 'test.db'}")
     Base.metadata.create_all(db.get_engine())
     with Session(db.get_engine()) as s:
-        for nombre, prefijo in (("onboarding", "ONB"), ("otro", "OTR")):
-            s.add(Proceso(nombre=nombre, prefijo_folio=prefijo, tipos_requeridos=["credencial_elector"],
-                          tipos_opcionales=[], permitir_antecedentes=True, caducidad_antecedentes_dias=365))
+        # onboarding como en config/procesos.yaml: 2 requeridos y pasaporte opcional
+        s.add(Proceso(nombre="onboarding", prefijo_folio="ONB",
+                      tipos_requeridos=["credencial_elector", "comprobante_domicilio"],
+                      tipos_opcionales=["pasaporte"], permitir_antecedentes=True, caducidad_antecedentes_dias=365))
+        s.add(Proceso(nombre="otro", prefijo_folio="OTR", tipos_requeridos=["credencial_elector"],
+                      tipos_opcionales=[], permitir_antecedentes=True, caducidad_antecedentes_dias=365))
         for rol in ("admin", "revisor", "integrador"):
             script.crear_usuario(s, f"{rol}_ficticio", rol, "contrasena-ficticia")
         s.commit()
@@ -161,6 +164,48 @@ def test_referencia_externa_demasiado_larga(cliente):
     assert (r.status_code, r.json()["codigo"]) == (422, "PETICION_INVALIDA")
 
 
+# --- EXP-001 al crear el folio ---
+
+def test_folio_nuevo_nace_con_una_exp_001_por_tipo_requerido(sesion):
+    folio = servicio.crear_folio(sesion, "onboarding", None, "x").folio
+    alertas = sesion.scalars(select(AlertaBD).where(AlertaBD.folio == folio).order_by(AlertaBD.campo)).all()
+    assert [(a.codigo, a.campo) for a in alertas] == [("EXP-001", "comprobante_domicilio"),
+                                                      ("EXP-001", "credencial_elector")]
+    for a in alertas:
+        assert (a.documento_id, a.severidad, a.confianza, a.aplica) == (None, "bloqueante", 1.0, None)
+    # nombre_visible de las fichas YAML; el opcional (pasaporte) no genera ninguna
+    assert {a.mensaje for a in alertas} == {"Falta el documento requerido: Comprobante de domicilio",
+                                            "Falta el documento requerido: Credencial de elector"}
+
+
+def test_exp_001_con_tipo_sin_ficha_usa_el_nombre_tecnico(sesion):
+    sesion.get(Proceso, "otro").tipos_requeridos = ["tipo_sin_ficha"]
+    sesion.commit()
+    folio = servicio.crear_folio(sesion, "otro", None, "x").folio
+    alerta = sesion.scalar(select(AlertaBD).where(AlertaBD.folio == folio))
+    assert alerta.mensaje == "Falta el documento requerido: tipo_sin_ficha"
+
+
+def test_exp_001_en_alertas_expediente(cliente, sesion):
+    folio = servicio.crear_folio(sesion, "onboarding", None, "x").folio
+    r = cliente.get(f"{URL}/{folio}", headers=_cab("revisor")).json()
+    alertas = r["alertas_expediente"]
+    assert sorted(a["campo"] for a in alertas) == ["comprobante_domicilio", "credencial_elector"]
+    for a in alertas:
+        assert a["codigo"] == "EXP-001" and a["severidad"] == "bloqueante"
+        assert uuid.UUID(a["id"])
+        assert a["aplica"] is None
+    # las alertas de documento no aparecen como alertas de expediente
+    doc = Documento(folio=folio, nombre_archivo="a.pdf", ruta_s3="a", hash_sha256="1" * 64)
+    sesion.add(doc)
+    sesion.flush()
+    sesion.add(AlertaBD(folio=folio, documento_id=doc.id, codigo="DUP-001", severidad="critica",
+                        mensaje="ficticia", confianza=1.0))
+    sesion.commit()
+    r = cliente.get(f"{URL}/{folio}", headers=_cab("revisor")).json()
+    assert {a["codigo"] for a in r["alertas_expediente"]} == {"EXP-001"}
+
+
 # --- GET /folios/{folio} ---
 
 def test_folio_inexistente(cliente):
@@ -255,8 +300,17 @@ def test_lista_parametros_invalidos(cliente, params):
     assert (r.status_code, r.json()["codigo"]) == (422, "PETICION_INVALIDA")
 
 
+def test_folio_nuevo_tiene_2_bloqueantes_sin_resolver(cliente, sesion):
+    servicio.crear_folio(sesion, "onboarding", None, "x")
+    elemento = cliente.get(URL, headers=_cab("revisor")).json()["elementos"][0]
+    assert (elemento["n_documentos"], elemento["n_bloqueantes_sin_resolver"]) == (0, 2)
+
+
 def test_bloqueantes_sin_resolver_cuenta_null_y_true(cliente, sesion):
     folio = servicio.crear_folio(sesion, "onboarding", None, "x").folio
+    # Las 2 EXP-001 del folio nuevo se marcan como falso positivo: aplica=false no cuenta
+    for exp in sesion.scalars(select(AlertaBD).where(AlertaBD.folio == folio)):
+        exp.aplica = False
     doc = Documento(folio=folio, nombre_archivo="a.pdf", ruta_s3="a", hash_sha256="1" * 64)
     sesion.add(doc)
     sesion.flush()
@@ -282,6 +336,7 @@ def test_folios_concurrencia_postgres(monkeypatch):
     def limpiar():
         with Session(engine) as s:
             s.execute(delete(Auditoria).where(Auditoria.folio.like("CCT-%")))
+            s.execute(delete(AlertaBD).where(AlertaBD.folio.like("CCT-%")))
             s.execute(delete(Folio).where(Folio.proceso == "concurrencia_test"))
             s.execute(delete(SecuenciaFolio).where(SecuenciaFolio.proceso == "concurrencia_test"))
             s.execute(delete(Proceso).where(Proceso.nombre == "concurrencia_test"))
