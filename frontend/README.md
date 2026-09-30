@@ -44,8 +44,12 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 - 409 `FOLIO_CERRADO`: `error.esSoloLectura` y aviso `alFolioCerrado`; la UI pasa a solo lectura.
 
 ## Mocks (msw v2)
-Con `VITE_USAR_MOCKS=true` en `.env`, `main.tsx` arranca msw (`src/mocks/navegador.ts`) antes de
-pintar la app y todas las peticiones a `/api/v1` las responde el navegador. Con `false`, ni se descargan.
+Solo en desarrollo (`npm run dev`) y con `VITE_USAR_MOCKS=true` en `.env`, `main.tsx` arranca msw
+(`src/mocks/navegador.ts`) antes de pintar la app y todas las peticiones a `/api/v1` las responde el
+navegador. Un `npm run build` nunca los incluye, aunque `.env` diga `true`: la condicion
+`import.meta.env.DEV` elimina el codigo, el plugin `sin-mocks-en-build` de `vite.config.ts` quita
+`mockServiceWorker.js` y `mock-originales/` de `dist/`, y `scripts/comprobar-build-sin-mocks.mjs`
+hace fallar el build si queda algun rastro.
 - Usuarios ficticios (`src/mocks/usuarios.ts`): `admin.demo` / `demo-admin`, `revisor.demo` /
   `demo-revisor`, `integrador.demo` / `demo-integrador`. Token de 3600 s.
 - `src/mocks/handlers.ts`: un handler por endpoint de `docs/contratos/endpoints.md`, con los roles

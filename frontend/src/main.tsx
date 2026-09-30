@@ -4,11 +4,14 @@ import { BrowserRouter } from 'react-router'
 import { App } from './App'
 import { ProveedorSesion } from './componentes/ProveedorSesion'
 import './index.css'
-import { entorno } from './utilidades/entorno'
 
 async function arrancar() {
-  // Mocks de msw solo con VITE_USAR_MOCKS=true; en otro caso ni se descargan
-  if (entorno.usarMocks) await (await import('./mocks/navegador')).iniciarMocks()
+  // Mocks de msw solo en desarrollo y con VITE_USAR_MOCKS=true. La condicion va escrita con
+  // import.meta.env para que en `npm run build` sea `false` y el bundler elimine el import
+  // (scripts/comprobar-build-sin-mocks.mjs lo verifica en cada build).
+  if (import.meta.env.DEV && import.meta.env.VITE_USAR_MOCKS === 'true') {
+    await (await import('./mocks/navegador')).iniciarMocks()
+  }
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <BrowserRouter>
