@@ -7,16 +7,16 @@ from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
 from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
-from app.modulos.api import auth, documentos, folios
+from app.modulos.api import auth, documentos, folios, procesos
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # TODO: configuracion.cargar() de PERSONA_2 cuando su modulo este en main
-    procesos = leer_procesos(get_settings().config_dir)
+    procesos_yaml = leer_procesos(get_settings().config_dir)
     sesion = SesionLocal(bind=get_engine())
     try:
-        sincronizar_procesos(sesion, procesos)
+        sincronizar_procesos(sesion, procesos_yaml)
     except (OperationalError, ProgrammingError) as e:
         raise RuntimeError("No se pudo cargar procesos.yaml en BD: ejecuta 'alembic upgrade head' "
                            "antes de arrancar") from e
@@ -30,6 +30,7 @@ registrar_manejadores(app)
 app.include_router(auth.router)
 app.include_router(folios.router)
 app.include_router(documentos.router)
+app.include_router(procesos.router)
 
 
 @app.get("/salud")
@@ -37,4 +38,4 @@ def salud() -> dict:
     return {"estado": "ok"}
 
 
-# TODO PERSONA_1: incluir routers de app/modulos/api (procesos, webhooks)
+# TODO PERSONA_1: incluir routers de app/modulos/api (webhooks, revisor)

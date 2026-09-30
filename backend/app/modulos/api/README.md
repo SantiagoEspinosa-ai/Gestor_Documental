@@ -58,3 +58,12 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 ### GET /api/v1/documentos/{id}/original (revisor, admin)
 - Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Sin auditoria hasta la etapa 3.
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`.
+
+## procesos.py
+
+### GET /api/v1/procesos (admin, integrador, revisor)
+- Salida 200: lista de `Proceso` ordenada por nombre: `{nombre, prefijo_folio, tipos_requeridos,
+  tipos_opcionales, permitir_antecedentes, caducidad_antecedentes_dias, webhook_url, modelos}`.
+  Para el rol revisor se omiten `webhook_url` y `modelos` (no aparecen, ni como null).
+- Logica en `core/procesos.py` (`listar_procesos`): la tabla `procesos` es de `core`.
+- Errores: 401; 403 `SIN_PERMISO`.

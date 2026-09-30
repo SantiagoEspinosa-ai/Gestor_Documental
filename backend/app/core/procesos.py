@@ -114,3 +114,8 @@ def sincronizar_procesos(sesion: Session, procesos: list[ProcesoConfig]) -> None
         if nombre not in en_yaml:
             log.warning("El proceso '%s' esta en BD pero ya no en %s; no se borra", nombre, FICHERO)
     sesion.commit()
+
+
+def listar_procesos(sesion: Session) -> list[Proceso]:
+    """Procesos de la tabla, ordenados por nombre (GET /procesos)."""
+    return list(sesion.scalars(select(Proceso).order_by(Proceso.nombre)))
