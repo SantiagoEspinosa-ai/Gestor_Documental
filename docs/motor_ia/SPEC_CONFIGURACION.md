@@ -44,8 +44,8 @@ Valor de `OLLAMA_BASE_URL` segun donde corre el backend (o el CLI) y donde corre
 | Backend / CLI | Ollama | `OLLAMA_BASE_URL` | Uso |
 |---|---|---|---|
 | En local (venv, fuera de Docker) | Instalado en la misma maquina | `http://localhost:11434` | Desarrollo y CLI de la etapa 1. Valor del `.env` local de PERSONA_2 |
-| Dentro de un contenedor | Instalado en el Windows anfitrion (Docker Desktop) | `http://host.docker.internal:11434` | Backend en docker compose sin levantar el servicio `ollama` |
-| Dentro de un contenedor | Servicio `ollama` de docker-compose | `http://ollama:11434` | Solo si se levanta ese servicio. Es el valor actual de `.env.example` |
+| Dentro de un contenedor | Instalado en el Windows anfitrion (Docker Desktop) | `http://host.docker.internal:11434` | Backend en docker compose sin levantar el servicio `ollama`. **Valor por defecto de `.env.example`** (revision de PERSONA_1: desde el PR #3 `ollama` es un perfil opcional y `docker compose up` normal no lo arranca) |
+| Dentro de un contenedor | Servicio `ollama` de docker-compose | `http://ollama:11434` | Solo con `docker compose --profile ollama up`; con `docker compose up` normal no resuelve |
 
 Notas:
 - `localhost` dentro de un contenedor apunta al propio contenedor, no al anfitrion: por eso hace falta
@@ -175,7 +175,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
       scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
-- [ ] **PR de `.env.example`** (rama `chore/env-example`, `dfd9a3b`, subida; pendiente de fusionar): `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
+- [ ] **PR de `.env.example`** (rama `chore/env-example`, `a1b2387`, subida; aprobado por PERSONA_1, pendiente de fusionar; valor por defecto de `OLLAMA_BASE_URL`: `host.docker.internal`): `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
       `CONFIG_DIR`, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` y un comentario con los tres valores de
       `OLLAMA_BASE_URL` (seccion 2). **Avisar al equipo** de la barrera de privacidad: con `false`, OpenRouter
       no se usa nunca, ni como respaldo.
@@ -330,7 +330,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | Ejecucion real del CLI (entregable de la etapa 1): `pasaporte_sano_digital.pdf` 7/7 en 68 s con `gemma4:e2b`; vision pendiente por RAM (faltaron 0,25 GB). Pendientes: CLI con vision y mejorar la evidencia del prompt | este commit |
+| 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | este commit |
+| 2026-09-30 | Ejecucion real del CLI (entregable de la etapa 1): `pasaporte_sano_digital.pdf` 7/7 en 68 s con `gemma4:e2b`; vision pendiente por RAM (faltaron 0,25 GB). Pendientes: CLI con vision y mejorar la evidencia del prompt | `3dfb54a` |
 | 2026-09-30 | `motor_ia/cli.py` (seccion 12): JSON por stdout y resumen por stderr, salidas 0/1/2, `local://` + SHA-256, `.env` con `python-dotenv` (anadido a `requirements.txt`), ruta desde la raiz del repo, `--tipo-confirmado` (11 tests). PR de `.env.example` subido en `chore/env-example` | `e5e8c5a` |
 | 2026-09-30 | Seccion 11: acuerdo con PERSONA_1 para la etapa 2 (`procesar_documento`, `datos_auditoria`, errores, reparto de alertas y recomendaciones) y propuesta para evitar la importacion circular: dependencia `orquestador -> motor_ia`, con la MRZ en `orquestador` | `39bf63f` |
 | 2026-09-30 | Merge del PR #3 de PERSONA_1 (core, API, ingesta, expediente), sin conflictos. Los tests en el contenedor necesitan montar `scripts/` (seccion 8): 369 pasan y 1 se salta (requiere `TEST_POSTGRES_URL`) | `beb1b9f` |
