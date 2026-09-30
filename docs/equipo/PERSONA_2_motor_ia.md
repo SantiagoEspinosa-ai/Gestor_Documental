@@ -74,9 +74,22 @@ evidencia por campo, usando Ollama.
 - Reintentos y manejo de errores del proveedor; registro de tiempos y tokens en auditoria.
 - Ajustar prompts con los fixtures de PERSONA_3 hasta que los 4 casos salgan bien.
 
+## Cambios de contrato aceptados el 2026-09-30 (ADR-006)
+- 1.5: `configuracion.servicio.listar()` devuelve las fichas validadas; se serializan con
+  `model_dump()` para `GET /tipos-documentales` (forma en `endpoints.md`).
+- 2.5: `procesar_documento(documento_id, tipo_confirmado=None)`. Regla de extraccion: ficha del tipo
+  declarado; si no hay `tipo_declarado`, la del detectado; con `tipo_confirmado`, esa y sin
+  clasificar. Si el detectado difiere del declarado -> `CLS-001` y decide el revisor.
+- Alertas: el motor no rellena `Alerta.id` (lo asigna la plataforma). `VAL-001` y `VAL-002` van una
+  por campo, con `campo` relleno. Codigos en `docs/contratos/codigos_alertas.md`.
+- Reprocesar documentos en `error` queda fuera del MVP.
+- Etapa 3: si se propone `sensible: true` en los YAML, se te avisa antes para aceptarlo en el cargador.
+
 ## Etapa 3 (dias 9-12)
 - Base de conocimiento: `docs/conocimiento/*.md` -> chunks -> embeddings (Ollama `nomic-embed-text`)
   en pgvector; `rag.buscar(consulta, k)` -> fragmentos que el servicio inyecta en `contexto_rag`.
+  Reparto de `modulos/rag` (ADR-006, "Coordinacion"): `conocimiento.py` tuyo, `memoria.py` y
+  `embeddings.py` de PERSONA_3 (lo reutilizas), `servicio.py` y `README.md` comunes.
 - Extra: `prompts/extraccion_v2.md` pidiendo `observaciones_visuales` (legibilidad, paginas
   recortadas, alteraciones) y convertirlas en alertas `VIS-xxx`.
 - Probar el respaldo OpenRouter con los fixtures (modelos `:free` solo con datos ficticios).

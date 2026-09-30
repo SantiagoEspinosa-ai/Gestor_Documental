@@ -30,6 +30,7 @@ Para anadirlo al proyecto de Claude: pegar este fichero en las instrucciones del
 | Ramas y commits | Una rama por persona: `feat/plataforma` (PERSONA_1), `feat/motor-ia` (PERSONA_2), `feat/interfaz` (PERSONA_3). Cada uno solo trabaja en la suya; integracion a `main` por Pull Request al final de cada etapa. Conventional commits | Trabajo en paralelo sin pisarse; `main` siempre estable |
 | Herramienta | Todo el codigo se escribe con Claude Code; cada persona arranca con su prompt de `docs/equipo/` | |
 | Arquitectura | Monolito modular con puertos y adaptadores (ADR-005, `docs/arquitectura.md`); reglas de dependencia solo documentadas | Paralelismo por modulos y proveedores intercambiables sin sobrecarga para un MVP |
+| Contratos 1 y 2 ampliados | ADR-004 y ADR-006 aceptados el 2026-09-30: lista de folios, alertas con `id`, estado de revision y regla de bloqueo, correcciones, folio cerrado, enums; catalogos `docs/contratos/codigos_alertas.md` y `codigos_error.md` | La UI y la API usan el mismo contrato sin campos inventados |
 
 Extras de la presentacion, por prioridad (solo en etapa 3 si el hito de la etapa 2 esta verde):
 1. Enmascaramiento de datos sensibles en logs/UI + guardado de correcciones como retroalimentacion.

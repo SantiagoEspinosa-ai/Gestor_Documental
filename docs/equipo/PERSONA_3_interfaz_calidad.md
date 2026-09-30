@@ -52,6 +52,23 @@ el Contrato 1 y el Contrato 2; nunca inventes campos que no esten en los contrat
 6. Tests: Playwright con los mocks recorriendo el flujo completo; Vitest para el componente de
    confianza y el de alertas.
 
+## Cambios de contrato aceptados el 2026-09-30 (ADR-004 y ADR-006)
+Mocks y pantallas siguen los contratos ampliados; `frontend/src/tipos/propuesta_adr006.ts` ya no hace
+falta: los tipos salen directamente de `resultado.py` y `endpoints.md`.
+- Folios: lista paginada con `GET /folios` (`ResumenFolio`); "Nuevo folio" usa `GET /procesos`.
+- Expediente: cabecera con `referencia_externa` y `fecha_solicitud`; alertas identificadas por
+  `Alerta.id`; resolver alertas de documento y de expediente; mostrar `aplica` y `comentario_revisor`;
+  `CMP-001` en las alertas del expediente; correcciones con valor anterior.
+- Decision: boton deshabilitado con el motivo segun la regla 2.2; folio `aprobado` o `rechazado` en
+  solo lectura (409 `FOLIO_CERRADO`).
+- Confirmar clasificacion: si el documento vuelve a `pendiente`, arrancar el polling.
+- Sesion: `expires_in` del login y `GET /auth/yo` al recargar. Errores de los mocks segun
+  `docs/contratos/codigos_error.md`. "Ver resumen" con 404 `RESUMEN_NO_DISPONIBLE`.
+- Documento en `error`: mostrar el error y la alerta `SYS-00x` (reprocesar fuera del MVP).
+- Etapa 3: `rag/memoria.py` y `rag/embeddings.py` tuyos, `rag/conocimiento.py` de PERSONA_2 (reutiliza
+  tus embeddings), `rag/servicio.py` y `rag/README.md` comunes. Avisar a PERSONA_2 antes de proponer
+  `sensible: true` en los YAML.
+
 ## Etapa 2 (dias 6-8)
 - Cambiar msw por la API real de PERSONA_1 (mismo contrato, solo cambia la URL). Reportar cualquier
   desviacion del contrato como issue, no adaptar el frontend en silencio.
