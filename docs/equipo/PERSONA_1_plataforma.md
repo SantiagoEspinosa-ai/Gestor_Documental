@@ -86,6 +86,7 @@ Se usa Amazon S3 real, sin MinIO ni emuladores. En la consola de AWS (a mano, no
 - `GET /auditoria`.
 
 ## Como trabajar
+- Trabaja SOLO en la rama `feat/plataforma` (ver "Ramas y flujo de trabajo" en `CLAUDE.md`).
 - Antes de escribir codigo di en que modulo va. Commits `feat(ingesta): ...`.
 - Reglas de validacion y parsers siempre con test.
 - Si algo del contrato no encaja, propon un ADR en `docs/adr/` en vez de cambiarlo.

@@ -69,6 +69,7 @@ el Contrato 1 y el Contrato 2; nunca inventes campos que no esten en los contrat
 - Pantalla de configuracion de procesos (prefijo, webhook, `permitir_antecedentes`).
 
 ## Como trabajar
+- Trabaja SOLO en la rama `feat/interfaz` (ver "Ramas y flujo de trabajo" en `CLAUDE.md`).
 - Ningun dato real en fixtures, mocks ni capturas. Nombres inventados.
 - Commits `feat(frontend): ...`, `feat(fixtures): ...`, `feat(rag): ...`.
 - Si el contrato no cubre algo que la UI necesita, propon un ADR en vez de anadir campos.

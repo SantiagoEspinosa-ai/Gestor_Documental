@@ -26,11 +26,25 @@ Tesseract via pytesseract, PyMuPDF, Ollama, React 18 + Vite. BackgroundTasks par
 - orquestador, motor_ia: PERSONA_2
 - frontend, fixtures, tests e2e, rag: PERSONA_3
 
+## Ramas y flujo de trabajo
+| Rama | Persona | Modulos |
+|---|---|---|
+| `feat/plataforma` | PERSONA_1 | ingesta, core, api, expediente |
+| `feat/motor-ia` | PERSONA_2 | configuracion, orquestador, motor_ia, validacion |
+| `feat/interfaz` | PERSONA_3 | frontend, fixtures, tests e2e, rag |
+
+1. Cada persona trabaja y hace commit solo en su rama. Nadie hace commit directo en `main`.
+2. Al empezar el dia: `git fetch` y `git merge origin/main` en tu rama para traer lo integrado.
+3. Al terminar cada etapa (dias 5, 8 y 12) cada uno abre un Pull Request de su rama a `main`;
+   lo revisa otra persona y se fusiona. Asi `main` acaba con el proyecto completo.
+4. Cambios en ficheros compartidos (docs, config, contratos) van en un PR pequeno aparte y se avisa.
+
 ## Prompts de arranque por persona
 Cada persona empieza su sesion de Claude Code pegando su fichero de `docs/equipo/`:
 - PERSONA_1 -> `docs/equipo/PERSONA_1_plataforma.md`
 - PERSONA_2 -> `docs/equipo/PERSONA_2_motor_ia.md`
 - PERSONA_3 -> `docs/equipo/PERSONA_3_interfaz_calidad.md`
+Estado y siguientes pasos de PERSONA_1: `docs/equipo/PERSONA_1_estado.md`.
 Esos ficheros son la especificacion vigente de cada linea de trabajo; si cambia el plan, se
 actualizan ahi y se avisa al equipo.
 

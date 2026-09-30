@@ -82,6 +82,7 @@ evidencia por campo, usando Ollama.
 - Probar el respaldo OpenRouter con los fixtures (modelos `:free` solo con datos ficticios).
 
 ## Como trabajar
+- Trabaja SOLO en la rama `feat/motor-ia` (ver "Ramas y flujo de trabajo" en `CLAUDE.md`).
 - Prompts solo en `prompts/`, versionados; el codigo nunca contiene prompts largos.
 - Nunca claves en codigo ni en tests. Nunca datos reales: usa `fixtures/generados`.
 - Commits `feat(motor_ia): ...`. Cada modulo con README de entrada/salida.
