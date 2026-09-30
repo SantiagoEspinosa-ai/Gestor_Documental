@@ -92,9 +92,9 @@ class ResultadoDocumento(BaseModel):
     tipo_documental_declarado: str | None
     tipo_documental_detectado: str | None
     tipo_documental_confirmado: str | None = None  # ADR-006, 2.5: lo fija el revisor
-    confianza_clasificacion: float | None = Field(None, ge=0, le=1)
+    confianza_clasificacion: float | None = Field(None, ge=0, le=1)  # la calcula el codigo, no el modelo (ADR-007)
     datos_extraidos: dict[str, Any] = {}  # con las correcciones ya aplicadas (ADR-006, 2.4)
-    nivel_confianza_por_campo: dict[str, float] = {}  # campo corregido -> 1.0
+    nivel_confianza_por_campo: dict[str, float] = {}  # la calcula el codigo, no el modelo (ADR-007); campo corregido -> 1.0
     evidencia_por_campo: dict[str, str] = {}  # "pagina_1", "pagina_2:seccion_superior", "correccion_revisor"
     reglas_cumplidas_e_incumplidas: Reglas = Reglas()
     alertas_encontradas: list[Alerta] = []

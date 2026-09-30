@@ -1,7 +1,6 @@
 # ADR-007: Confianza calculada por el codigo para VAL-002 y CLS-002
 
-Fecha: 2026-09-30. Estado: PROPUESTO (revisar entre los tres antes del dia 6; no aplicar hasta
-aceptarlo).
+Fecha: 2026-09-30. Estado: ACEPTADO (2026-09-30, aprobado por PERSONA_1, PERSONA_2 y PERSONA_3).
 
 ## Contexto
 - `docs/contratos/codigos_alertas.md` (aceptado en ADR-006) define dos alertas basadas en confianza:
