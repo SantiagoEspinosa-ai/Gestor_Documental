@@ -294,7 +294,8 @@ def test_lista_paginacion_total_filtros_y_orden(cliente, sesion):
     r = cliente.get(URL, params={"estado_general": "aprobado"}, headers=_cab("revisor")).json()
     assert [e["folio"] for e in r["elementos"]] == [f"OTR-{ANIO}-000001"]
     assert set(r["elementos"][0]) == {"folio", "proceso", "estado_general", "recomendacion_global",
-                                      "n_documentos", "n_bloqueantes_sin_resolver", "fecha_solicitud"}
+                                      "n_documentos", "n_bloqueantes_sin_resolver", "fecha_solicitud",
+                                      "referencia_externa"}  # ADR-008
 
 
 @pytest.mark.parametrize("params", [{"estado_general": "cerrado"}, {"pagina": 0},
