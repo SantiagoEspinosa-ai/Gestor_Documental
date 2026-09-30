@@ -17,6 +17,16 @@ algo de ellos, usa la interfaz de `interfaces.py` y crea un stub que devuelva da
 Que se pueda crear un folio, subir un archivo por API con JWT, y que quede en S3 y en BD en estado
 `pendiente` con su hash, ID unico y deteccion de duplicados. Todo con tests.
 
+## Tarea previa (etapa 0): bucket S3 real de Amazon
+Se usa Amazon S3 real, sin MinIO ni emuladores. En la consola de AWS (a mano, no desde el codigo):
+- Bucket `S3_BUCKET` en `AWS_REGION`, con "Bloquear todo el acceso publico" activado.
+- Usuario IAM del proyecto con permisos minimos solo sobre ese bucket: `s3:PutObject`,
+  `s3:GetObject`, `s3:ListBucket`. Sin `s3:DeleteObject` (el original nunca se borra).
+- CORS del bucket: permitir `GET` desde `http://localhost:5173` para que el visor del frontend
+  abra las URL prefirmadas.
+- Las claves van solo en el `.env` de cada persona que las necesite (PERSONA_3 para los e2e);
+  se entregan por canal seguro, nunca en el repo ni en chats con IA.
+
 ## Tareas, en este orden
 1. `app/core/config.py`: settings con pydantic-settings leyendo `.env` (ver `.env.example`).
    Nunca valores por defecto con claves reales.
@@ -38,7 +48,8 @@ Que se pueda crear un folio, subir un archivo por API con JWT, y que quede en S3
 7. Router `api/folios.py`: `POST /folios` genera `{PREFIJO}-{AAAA}-{NNNNNN}` con secuencia por
    (proceso, anio) de forma atomica (SELECT ... FOR UPDATE o secuencia PostgreSQL por proceso).
    `GET /folios/{folio}` devuelve `ResultadoExpediente` (por ahora sin comparaciones).
-8. `app/core/almacenamiento.py`: cliente boto3 con `S3_ENDPOINT_URL` opcional; `subir(bytes, clave)`,
+8. `app/core/almacenamiento.py`: cliente boto3 contra Amazon S3 real (sin endpoint personalizado);
+   `subir(bytes, clave)`,
    `url_prefirmada(clave)`, `descargar(clave)`. Clave: `{proceso}/{anio}/{secuencia}/{uuid}.{ext}`.
    El original nunca se modifica ni se sobrescribe.
 9. `modulos/ingesta/servicio.py`: `ingestar(folio, archivo, tipo_declarado, usuario)`: valida
@@ -51,7 +62,8 @@ Que se pueda crear un folio, subir un archivo por API con JWT, y que quede en S3
 10. Router `api/documentos.py`: `POST /folios/{folio}/documentos` (202), `GET /documentos/{id}`,
     `GET /documentos/{id}/original`.
 11. Tests con pytest: generacion de folios (secuencia y concurrencia basica), hash y duplicados,
-    auth por rol, ingesta e2e con S3 mockeado (moto o stub). Usa solo datos ficticios.
+    auth por rol, ingesta e2e con S3 simulado con `moto` (nunca contra el bucket real).
+    Usa solo datos ficticios.
 12. README de cada modulo tuyo con contrato de entrada/salida.
 
 ## Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`

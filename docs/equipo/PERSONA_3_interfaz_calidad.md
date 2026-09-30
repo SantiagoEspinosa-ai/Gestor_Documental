@@ -55,7 +55,9 @@ el Contrato 1 y el Contrato 2; nunca inventes campos que no esten en los contrat
 ## Etapa 2 (dias 6-8)
 - Cambiar msw por la API real de PERSONA_1 (mismo contrato, solo cambia la URL). Reportar cualquier
   desviacion del contrato como issue, no adaptar el frontend en silencio.
-- Pruebas e2e reales con los 4 casos de fixtures sobre `docker compose`.
+- Pruebas e2e reales con los 4 casos de fixtures sobre `docker compose`. Los originales van al
+  bucket S3 real de Amazon: pide a PERSONA_1 las claves AWS para tu `.env` (nunca al repo).
+  Solo fixtures ficticios en el bucket.
 
 ## Etapa 3 (dias 9-12): memoria de folios (con PERSONA_2, que hace la base de conocimiento)
 - `modulos/rag/memoria.py`: al generarse `resumen.md` de un folio, dividir en chunks, embeddings con

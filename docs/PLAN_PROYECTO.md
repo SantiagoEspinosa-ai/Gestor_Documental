@@ -12,7 +12,7 @@ Para anadirlo al proyecto de Claude: pegar este fichero en las instrucciones del
 | Backend | Python 3.12 + FastAPI | Ecosistema IA/OCR |
 | Frontend | React 18 + Vite (SPA) | Mismo contrato que los integradores externos |
 | BD y RAG | PostgreSQL 16 + pgvector | Una sola BD para datos y vectores |
-| Originales | Amazon S3 (boto3, endpoint configurable para MinIO) | Requisito "S3 o equivalente" |
+| Originales | Amazon S3 real (boto3), bucket privado + usuario IAM con permisos minimos, creado y administrado por PERSONA_1. Sin MinIO. Tests con `moto` | Requisito "S3 o equivalente"; decidido el 2026-09-30 |
 | OCR | Tesseract tras interfaz `OCRProvider` | Gratis; cambiar a Textract = una clase |
 | Modelo local | Ollama (`llama3.2-vision:11b` o `qwen2.5vl:7b`) | Privacidad, sin coste |
 | Modelo comercial | **PENDIENTE [A ACORDAR] - ADR-003**. La suscripcion de empresa a Claude no incluye API key. Opciones: activar Console de Anthropic, Gemini AI Studio (gratis), Amazon Bedrock | Se decide fuera del equipo |
@@ -60,6 +60,8 @@ Regla de paralelismo: nadie toca modulos ajenos. Se usa stub, CLI o mock hasta l
 Repo, docker compose, `.env.example`, los tres contratos, YAML de tipos/modelos/procesos, prompts v1,
 ADR-001/002/003, `CLAUDE.md`, prompts por persona. Queda: `git init`, revisar contratos entre los tres,
 abrir ramas `feat/ingesta`, `feat/motor-ia`, `feat/frontend`, decidir maquina con GPU para Ollama.
+PERSONA_1: crear el bucket S3 real y el usuario IAM del proyecto y entregar las claves a quien las
+necesite por canal seguro (nunca por el repo ni por chats con IA).
 
 ### Etapa 1 - Dias 2-5: cimientos en paralelo
 | PERSONA_1 | PERSONA_2 | PERSONA_3 |
@@ -69,8 +71,8 @@ abrir ramas `feat/ingesta`, `feat/motor-ia`, `feat/frontend`, decidir maquina co
 | `POST /folios` con secuencia atomica por proceso y anio | `OCRProvider` Tesseract + extraccion con PyMuPDF, orden de paginas | Vite + React + router + cliente HTTP con JWT |
 | Cliente S3, ingesta (hash, duplicados, S3, BD, BackgroundTask con stub) | `OllamaProvider`, `prompts.py`, enrutador desde `modelos.yaml` | Mocks msw de TODOS los endpoints del Contrato 2 |
 | `GET /documentos/{id}`, `GET /folios/{folio}` | `servicio.analizar` + CLI con archivo local | Pantallas: login, folios, carga, expediente/revision |
-| Tests: folios, hash, auth, ingesta con S3 mockeado | Tests: modalidad, parseo de respuestas guardadas, enrutador | Playwright con mocks, Vitest |
-| **Entregable**: archivo subido visible en S3 y BD en `pendiente` | **Entregable**: CLI devuelve `ResultadoDocumento` valido con Ollama | **Entregable**: UI navegable con mocks + fixtures en el repo |
+| Tests: folios, hash, auth, ingesta con S3 simulado con `moto` | Tests: modalidad, parseo de respuestas guardadas, enrutador | Playwright con mocks, Vitest |
+| **Entregable**: archivo subido visible en el bucket S3 real y en BD en `pendiente` | **Entregable**: CLI devuelve `ResultadoDocumento` valido con Ollama | **Entregable**: UI navegable con mocks + fixtures en el repo |
 
 ### Etapa 2 - Dias 6-8: integracion de extremo a extremo
 | PERSONA_1 | PERSONA_2 | PERSONA_3 |
@@ -108,4 +110,6 @@ ni datos reales.
 ## 7. Pendientes [A ACORDAR]
 - Proveedor comercial de IA (ADR-003).
 - Maquina para Ollama.
-- Quien administra la cuenta AWS y crea el bucket + usuario IAM con permisos minimos.
+- ~~Quien administra la cuenta AWS y crea el bucket + usuario IAM con permisos minimos.~~
+  Cerrado 2026-09-30: PERSONA_1 (duena de S3 en `core`). Si la cuenta AWS es de la empresa,
+  PERSONA_1 solicita el acceso y configura bucket e IAM.
