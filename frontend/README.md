@@ -95,6 +95,12 @@ Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`)
   `MOCK-001` (informativa) solo existe en los mocks; se sustituira por `VAL-003` o `EXP-002` cuando
   esten en el catalogo de main.
 - `public/mock-originales/`: copias de los fixtures que usan los mocks (mismo SHA-256).
+- Se generan con `python scripts/generar_datos_mock.py` (no editar los JSON a mano). La fecha es
+  fija, `2026-09-30`, y los tests usan la misma, asi que no caducan.
+- Para reproducir `DUP-001` contra los documentos de los mocks subiendo fixtures reales, generalos con
+  esa fecha: `python scripts/generar_fixtures.py --hoy 2026-09-30` y sube, por ejemplo,
+  `credencial_elector_sano_digital.pdf` a `ONB-2026-000003`. Con otra fecha los SHA-256 cambian y
+  solo hay `DUP-001` si subes dos veces el mismo fichero en la sesion.
 - `backend/tests/test_contrato_frontend.py` comprueba todo lo anterior contra los contratos,
   `config/` y el generador de fixtures:
   `cd backend; ..\.venv\Scripts\python.exe -m pytest tests/test_contrato_frontend.py`.
