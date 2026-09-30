@@ -32,9 +32,23 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 |---|---|---|---|---|
 | Texto (clasificacion y extraccion de `pdf_digital`) | `gemma4:e2b` | `OLLAMA_MODELO_TEXTO=gemma4:e2b` | 7/7 campos en 2 de 2 ejecuciones; ~37 s por documento | decidido |
 | Vision (`pdf_escaneado`, `imagen`) | `qwen2.5vl:3b` | `OLLAMA_MODELO_VISION=qwen2.5vl:3b` | 7/7 tras normalizar fechas en 4 de 4; ~110 s por pagina nueva | decidido |
-| URL local (CLI fuera de Docker) | - | `OLLAMA_BASE_URL=http://localhost:11434` | - | decidido |
-| URL dentro de docker compose | - | `OLLAMA_BASE_URL=http://ollama:11434` | - | valor actual de `.env.example` |
+| URL de Ollama | - | `OLLAMA_BASE_URL`: depende de donde corre el backend (ver tabla siguiente) | - | decidido |
 | Embeddings (RAG, etapa 3) | `nomic-embed-text` (plan) | `OLLAMA_MODELO_EMBEDDINGS` (propuesta) | sin probar | pendiente |
+
+Valor de `OLLAMA_BASE_URL` segun donde corre el backend (o el CLI) y donde corre Ollama:
+
+| Backend / CLI | Ollama | `OLLAMA_BASE_URL` | Uso |
+|---|---|---|---|
+| En local (venv, fuera de Docker) | Instalado en la misma maquina | `http://localhost:11434` | Desarrollo y CLI de la etapa 1. Valor del `.env` local de PERSONA_2 |
+| Dentro de un contenedor | Instalado en el Windows anfitrion (Docker Desktop) | `http://host.docker.internal:11434` | Backend en docker compose sin levantar el servicio `ollama` |
+| Dentro de un contenedor | Servicio `ollama` de docker-compose | `http://ollama:11434` | Solo si se levanta ese servicio. Es el valor actual de `.env.example` |
+
+Notas:
+- `localhost` dentro de un contenedor apunta al propio contenedor, no al anfitrion: por eso hace falta
+  `host.docker.internal`.
+- No levantar a la vez el Ollama local y el servicio `ollama` de docker-compose: los dos usan el
+  puerto 11434.
+- `http://ollama:11434` solo se resuelve dentro de la red de docker compose.
 
 Modelos descartados:
 
@@ -98,11 +112,11 @@ se queda solo con `pagina_<n>` (seccion 4).
 | API publica por modulo | Los demas modulos solo importan `configuracion/servicio.py` (`cargar`, `obtener`, `listar`) | ADR-005 | implementado |
 | Validacion estricta de YAML | Claves desconocidas prohibidas; todos los errores de todos los ficheros en un unico `ErrorConfiguracion` | plan del cargador | implementado |
 | `CONFIG_DIR` y `PROMPTS_DIR` | Variables de entorno opcionales; por defecto, rutas relativas a la raiz del repo | plan del cargador | `CONFIG_DIR` implementado; `PROMPTS_DIR` en la tarea 5 |
-| Modalidad: umbral | `UMBRAL_CARACTERES_POR_PAGINA = 30` | plan de `modalidad.py` | decidido (tarea 2) |
-| Modalidad: PDF mixto | Si alguna pagina no supera el umbral, el PDF es `pdf_escaneado` | plan de `modalidad.py` | decidido (tarea 2) |
-| Modalidad: deteccion | Por los primeros bytes (`%PDF`, PNG, JPEG); si no coinciden con la extension, manda el contenido; formato desconocido o PDF corrupto -> `FormatoNoSoportado` | plan de `modalidad.py` | decidido (tarea 2) |
+| Modalidad: umbral | `UMBRAL_CARACTERES_POR_PAGINA = 30` caracteres de texto extraible por pagina, sin contar espacios; el umbral exacto cuenta como texto | plan de `modalidad.py` | implementado (`orquestador/modalidad.py`) |
+| Modalidad: PDF mixto | Si alguna pagina no llega al umbral, el PDF es `pdf_escaneado` (confirmado por PERSONA_2) | plan de `modalidad.py` | implementado |
+| Modalidad: deteccion | Por los primeros bytes (`%PDF-`, PNG, JPEG); si no coinciden con la extension, manda el contenido y se registra un aviso sin el nombre del archivo; formato desconocido, vacio, PDF corrupto, cifrado o sin paginas -> `FormatoNoSoportado` | plan de `modalidad.py` | implementado |
 | CLI sin BD ni S3 | `folio_solicitud = "CLI-2026-000000"`; `referencia_archivo_original.ruta = "local://<nombre_archivo>"` (sin rutas personales); `hash` = SHA-256 real del archivo | objetivo de la etapa 1 | decidido (tarea 10) |
-| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. El catalogo `docs/contratos/codigos_alertas.md` se acepto en ADR-006; llega a `main` con el PR de contratos | prompt de PERSONA_2, ADR-006 | decidido |
+| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. Catalogo: `docs/contratos/codigos_alertas.md` (en `main` desde el PR #2). El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | decidido |
 | `Tarea.validacion` (Contrato 3) | Se ignora: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
 | `/tipos-documentales` | `configuracion/servicio.py` serializa `TipoDocumental` para el router de PERSONA_1 | ADR-006, 1.5 | pendiente (ver seccion 7) |
@@ -121,15 +135,28 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Fixtures de PERSONA_3** (`fixtures/generados/`, en `.gitignore`: cada persona los genera en local).
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
 - [ ] **PR pequeno de `.env.example`**: `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
-      `CONFIG_DIR`, `PROMPTS_DIR` y una nota sobre `OLLAMA_BASE_URL` en local.
+      `CONFIG_DIR`, `PROMPTS_DIR` y un comentario con los tres valores de `OLLAMA_BASE_URL` (seccion 2).
 - [ ] **Aplicar ADR-006**: 1.5 serializar `TipoDocumental` en `configuracion/servicio.py` (para
       `/tipos-documentales`) y 2.5 `tipo_confirmado` en `procesar_documento` (etapa 2).
 - [ ] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2) al abrir el PR de
       etapa: es un fichero compartido.
 - [ ] Aviso a PERSONA_1: `configuracion.cargar()` en el arranque de `main.py` (mensaje preparado).
+- [ ] **Conflicto con el catalogo de alertas**: `VAL-002` (confianza del campo < `confianza_minima_campo`)
+      y `CLS-002` (`confianza_clasificacion` < minimo) usan la confianza del modelo, y la seccion 4 dice
+      que no se usa en las reglas. Cambiar su significado requiere ADR (`codigos_alertas.md`). Decidir.
+- [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
+      (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
+- [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
 - [ ] Riesgo: la confianza que da el modelo no es fiable (0,9-1 incluso en datos inventados).
 - [ ] Riesgo: el modelo no es determinista ni con `temperature: 0`.
-- [ ] Opcional: borrar `qwen2.5:7b` de Ollama local (4,7 GB, descartado).
+- [x] Borrar `qwen2.5:7b` de Ollama local (4,7 GB, descartado). Hecho el 2026-09-30.
+
+## 8. Como pasar los tests
+
+| Entorno | Comando (desde la raiz del repo) | Notas |
+|---|---|---|
+| Contenedor del backend (recomendado) | `docker compose build backend` y despues `docker compose run --rm --no-deps backend python -m pytest -q` | Incluye PyMuPDF y Tesseract. `--no-deps` no levanta `db` ni `ollama` (los tests no los necesitan); `--rm` borra el contenedor al terminar. Requiere `.env` y Docker Desktop en marcha |
+| venv local | `cd backend && .venv/Scripts/python -m pytest -q` | En Windows necesita el Visual C++ Redistributable x64 para PyMuPDF |
 
 ## Registro de cambios
 
@@ -137,7 +164,10 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | Spec creada con las decisiones de configuracion y pruebas del motor IA; informe y material de pruebas en `docs/motor_ia/` | este commit |
+| 2026-09-30 | `OLLAMA_BASE_URL` segun el entorno: `localhost` en local, `host.docker.internal` desde un contenedor con Ollama en Windows, `ollama` solo con el servicio de docker-compose. `.env` local con `localhost` | este commit |
+| 2026-09-30 | `orquestador/modalidad.py`: umbral 30, PDF mixto = escaneado, deteccion por bytes (21 tests). Tests en el contenedor del backend (seccion 8) por el bloqueo de PyMuPDF en Windows. Anotado el conflicto `VAL-002`/`CLS-002` con la regla de confianza. `.env` local con `gemma4:e2b` y `qwen2.5vl:3b`; `qwen2.5:7b` borrado | este commit |
+| 2026-09-30 | Merge de `origin/main`: ADR-004, ADR-006 y contratos 1 y 2 ampliados (PR #1 y #2). Contrato 3 sin cambios | `1149519` |
+| 2026-09-30 | Spec creada con las decisiones de configuracion y pruebas del motor IA; informe y material de pruebas en `docs/motor_ia/` | `cc69521` |
 | 2026-09-30 | Vision cerrada: `qwen2.5vl:3b`, fechas tal como aparecen + `normalizar_fecha`, imagenes a 1000 px, evidencia solo `pagina_<n>`, confianza del modelo fuera de las reglas | pruebas (sin codigo) |
 | 2026-09-30 | Modelo de texto `gemma4:e2b`; enrutador: texto si `pdf_digital`, vision en el resto | pruebas (sin codigo) |
 | 2026-09-30 | Descartados `gemma4` para vision (issue #16532), `gemma4:e4b`, `llama3.2-vision:11b` y `qwen2.5:7b` | pruebas (sin codigo) |
