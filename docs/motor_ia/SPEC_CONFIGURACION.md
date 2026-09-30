@@ -86,7 +86,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Fechas | El prompt pide las fechas **tal como aparecen**; el codigo las normaliza con `normalizar_fecha` (dia/mes/anio -> `AAAA-MM-DD`, separadores `/ . -` y espacio; ISO valido se deja igual; fecha imposible -> `None`) | Al convertirlas, `qwen2.5vl:3b` intercambia dia y mes (`10/05/2024` -> `2024-10-05`). Sin convertir: 3/3 correctas en 4 de 4 | `motor_ia/proveedores/base.py` (tarea 7). Referencia: `pruebas_ollama/prueba_fechas.py` | unitario con los 11 casos del autotest |
 | Tamano de imagen | Ancho maximo 1000 px antes de enviar | Sube los aciertos de 5/7 a 6/7 y ahorra ~20 % de tiempo; 800 px no mejora | `orquestador/preparador.py` o `proveedores/base.py` (tarea 4 o 7) | unitario de redimensionado |
 | Evidencia | Para vision solo `pagina_<n>`; se descarta la seccion | `qwen2.5vl:3b` copia la seccion del ejemplo en todos los campos | `proveedores/ollama.py` (tarea 6) | unitario con respuestas guardadas |
-| Confianza del modelo | Se guarda en `nivel_confianza_por_campo`, pero **no se usa en las reglas** | Siempre 0,9 o 1, tambien en datos mal leidos o inventados | `validacion/reglas.py` (etapa 2) | unitario |
+| Confianza del modelo | **No se usa en las reglas.** Propuesto en ADR-007: `nivel_confianza_por_campo` y `confianza_clasificacion` las calcula el codigo y la del modelo va solo a la auditoria | Siempre 0,9 o 1, tambien en datos mal leidos o inventados | `motor_ia` y `validacion/reglas.py` (etapa 2) | unitario |
 | Formato de salida | `format: "json"` + parseo estricto con Pydantic; si el JSON es invalido, 1 reintento con instruccion de correccion; despues `SYS-002` | JSON valido en todas las pruebas, pero no esta garantizado | `proveedores/ollama.py` | unitario con respuestas guardadas |
 | Razonamiento | `think: false` solo en modelos que lo admiten (`gemma4`) | `gemma4` razona por defecto: mas lento y mezcla texto con el JSON | `proveedores/ollama.py` | unitario del cuerpo de la peticion |
 | Temperatura | `temperature: 0` | Respuestas lo mas estables posible (no garantiza determinismo) | `proveedores/ollama.py` | unitario del cuerpo de la peticion |
@@ -141,9 +141,12 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2) al abrir el PR de
       etapa: es un fichero compartido.
 - [ ] Aviso a PERSONA_1: `configuracion.cargar()` en el arranque de `main.py` (mensaje preparado).
-- [ ] **Conflicto con el catalogo de alertas**: `VAL-002` (confianza del campo < `confianza_minima_campo`)
-      y `CLS-002` (`confianza_clasificacion` < minimo) usan la confianza del modelo, y la seccion 4 dice
-      que no se usa en las reglas. Cambiar su significado requiere ADR (`codigos_alertas.md`). Decidir.
+- [ ] **ADR-007 propuesto** (`docs/adr/ADR-007-confianza-calculada-por-codigo.md`): la confianza de
+      campo y de clasificacion la calcula el codigo; la del modelo va solo a la auditoria. Abrir un PR
+      pequeno, avisar al equipo y decidir antes del dia 6, antes de `validacion/reglas.py`. Si se acepta:
+      `marcadores_clasificacion` en el cargador y, en un PR pequeno aparte con aviso (ficheros
+      compartidos), en `config/tipos/*.yaml`; numero de marcadores y calibracion en la etapa 2 con los
+      fixtures de PERSONA_3, sin cambiar los umbrales.
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
@@ -164,8 +167,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | `OLLAMA_BASE_URL` segun el entorno: `localhost` en local, `host.docker.internal` desde un contenedor con Ollama en Windows, `ollama` solo con el servicio de docker-compose. `.env` local con `localhost` | este commit |
-| 2026-09-30 | `orquestador/modalidad.py`: umbral 30, PDF mixto = escaneado, deteccion por bytes (21 tests). Tests en el contenedor del backend (seccion 8) por el bloqueo de PyMuPDF en Windows. Anotado el conflicto `VAL-002`/`CLS-002` con la regla de confianza. `.env` local con `gemma4:e2b` y `qwen2.5vl:3b`; `qwen2.5:7b` borrado | este commit |
+| 2026-09-30 | ADR-007 propuesto: confianza de campo y de clasificacion calculada por el codigo (clasificacion con `marcadores_clasificacion` del tipo detectado); la del modelo, solo en la auditoria | este commit |
+| 2026-09-30 | `OLLAMA_BASE_URL` segun el entorno: `localhost` en local, `host.docker.internal` desde un contenedor con Ollama en Windows, `ollama` solo con el servicio de docker-compose. `.env` local con `localhost` | `86e5905` |
+| 2026-09-30 | `orquestador/modalidad.py`: umbral 30, PDF mixto = escaneado, deteccion por bytes (21 tests). Tests en el contenedor del backend (seccion 8) por el bloqueo de PyMuPDF en Windows. Anotado el conflicto `VAL-002`/`CLS-002` con la regla de confianza. `.env` local con `gemma4:e2b` y `qwen2.5vl:3b`; `qwen2.5:7b` borrado | `86e5905` |
 | 2026-09-30 | Merge de `origin/main`: ADR-004, ADR-006 y contratos 1 y 2 ampliados (PR #1 y #2). Contrato 3 sin cambios | `1149519` |
 | 2026-09-30 | Spec creada con las decisiones de configuracion y pruebas del motor IA; informe y material de pruebas en `docs/motor_ia/` | `cc69521` |
 | 2026-09-30 | Vision cerrada: `qwen2.5vl:3b`, fechas tal como aparecen + `normalizar_fecha`, imagenes a 1000 px, evidencia solo `pagina_<n>`, confianza del modelo fuera de las reglas | pruebas (sin codigo) |
