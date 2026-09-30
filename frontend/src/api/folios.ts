@@ -38,6 +38,11 @@ export function obtenerDocumento(id: string, signal?: AbortSignal): Promise<Resu
   return peticion<ResultadoDocumento>(`/documentos/${encodeURIComponent(id)}`, { signal })
 }
 
+/** GET /folios/{folio}/resumen.md: Markdown; 404 RESUMEN_NO_DISPONIBLE mientras no exista */
+export function obtenerResumen(folio: string, signal?: AbortSignal): Promise<string> {
+  return peticion<string>(`/folios/${encodeURIComponent(folio)}/resumen.md`, { respuesta: 'texto', signal })
+}
+
 /** URL prefirmada y temporal del original (caduca): pedirla cada vez que se abre, nunca guardarla */
 export function urlOriginal(id: string, signal?: AbortSignal): Promise<RespuestaOriginal> {
   return peticion<RespuestaOriginal>(`/documentos/${encodeURIComponent(id)}/original`, { signal })

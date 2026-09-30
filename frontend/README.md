@@ -140,6 +140,10 @@ hace fallar el build si queda algun rastro.
     Nada se decide solo. Se refresca con la respuesta del endpoint (tras una accion de documento
     tambien el expediente). Un 409 (`DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`, `FOLIO_CERRADO`,
     `DECISION_BLOQUEADA`) muestra el motivo y recarga el expediente.
+  - "Ver resumen" (`componentes/ResumenExpediente.tsx`): `GET /folios/{folio}/resumen.md` renderizado
+    con `react-markdown` con `skipHtml` (nunca HTML crudo). Solo aparece si `ruta_resumen_md` no es
+    `null`; un 404 `RESUMEN_NO_DISPONIBLE` muestra su mensaje. En los mocks solo lo tiene el folio
+    aprobado `ONB-2026-000004` (resumen ficticio generado con sus datos).
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.

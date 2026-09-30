@@ -11,6 +11,7 @@ import { useRol } from '../componentes/contextoSesion'
 import { DetalleDocumento } from '../componentes/DetalleDocumento'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
+import { ResumenExpediente } from '../componentes/ResumenExpediente'
 import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
 import { alertasQueBloquean, enProceso, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
@@ -135,6 +136,7 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
             <Upload className="size-4" aria-hidden /> Carga de documentos
           </Link>
           <Link to="/folios" className="text-sm text-blue-700 underline">Volver a los folios</Link>
+          {expediente.ruta_resumen_md && <ResumenExpediente folio={expediente.folio} />}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
           <div><dt className="text-slate-600">Referencia</dt><dd className="font-mono">{expediente.referencia_externa ?? '—'}</dd></div>
