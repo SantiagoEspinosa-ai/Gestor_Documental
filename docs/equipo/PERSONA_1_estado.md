@@ -1,60 +1,78 @@
 # PERSONA_1 - Estado y siguientes pasos (traspaso)
 
-Actualizado: 2026-09-30. Sirve para retomar el trabajo en otra maquina o en otro chat de Claude Code.
-La especificacion completa de tareas sigue en `docs/equipo/PERSONA_1_plataforma.md`; este fichero
-dice en que punto estamos y que toca ahora.
+Actualizado: 2026-09-30, al cerrar la etapa 1 en `feat/plataforma`. Sirve para retomar el trabajo en
+otra maquina o en otro chat de Claude Code. La especificacion completa sigue en
+`docs/equipo/PERSONA_1_plataforma.md`; este fichero dice en que punto estamos y que toca ahora.
 
-## Como retomar en la maquina nueva
-1. Instalar: Git, Python 3.12 (marcar "Add python.exe to PATH") y Docker Desktop.
-   En el equipo anterior Python no se pudo instalar con winget (error 1603, probable bloqueo de TI).
-2. Clonar y entrar en tu rama:
-   ```bash
-   git clone https://github.com/SantiagoEspinosa-ai/Gestor_Documental.git
-   cd Gestor_Documental
-   git checkout feat/plataforma
-   git config user.name "TU_NOMBRE"
-   git config user.email "TU_CORREO"
-   cp .env.example .env    # rellenar a mano; .env NUNCA se sube
-   ```
-3. Abrir Claude Code dentro del repo y pegar como primer mensaje el contenido de
-   `docs/equipo/PERSONA_1_plataforma.md`, y despues: "Lee tambien `docs/equipo/PERSONA_1_estado.md`".
-4. Pedir a Claude que pida permiso antes de cada cambio y explique los terminos tecnicos.
+## Hecho en la etapa 1 (rama `feat/plataforma`)
+| Tarea | Que | Commit |
+|---|---|---|
+| 1 | `core/config.py`: settings con pydantic-settings (+ fix del `.env` de la raiz y `CONFIG_DIR`) | e3ec810, a3ff7db |
+| 2 | `core/db.py` (SQLAlchemy 2, engine perezoso) e inicializacion de Alembic | 68d9d4e |
+| 3 | `core/modelos.py` y migracion 0001 (8 tablas, CHECK y UNIQUE) | 93d74fe |
+| 4 | `core/procesos.py`: `procesos.yaml` -> tabla `procesos` en el lifespan (+ migrar antes de arrancar en Docker) | 5a70f19, b3f0a9a |
+| 5 | `core/seguridad.py`: bcrypt, JWT, `usuario_actual`, `requiere_rol`; `scripts/crear_usuario.py` | 5c1041b |
+| 6 | `POST /auth/login`, `GET /auth/yo` y manejo global de errores `{codigo, mensaje}` | 94b6194 |
+| 7 | Folios: crear (numeracion atomica, migracion 0002), consultar y listar; alineado con ADR-004/006 | 7368f77, db6e54c |
+| 8 | `core/almacenamiento.py`: S3 real, SSE-S3, nunca sobrescribe (+ fix URL prefirmada regional) | 721d494, 7a6fdb7 |
+| 9 | Ingesta: hash, duplicados (`DUP-001`), subida a S3, stub de `procesar_documento` | f9c3aa6 |
+| 10 | Router de documentos: subir (202), resultado y URL del original; tipo MIME por extension y firma magica | 9a24406 |
+| - | `GET /procesos` (revisor sin `webhook_url` ni `modelos`) | 3cdeb4d |
+| - | `GET /tipos-documentales` | d1326d9 |
+| - | `GET /auditoria` (solo admin, paginado) | 2d5b8eb |
 
-## Decisiones tomadas el 2026-09-30 (ya en `main`)
+Entregable de la etapa 1 probado el 2026-09-30 contra el bucket real (us-east-2) y PostgreSQL local:
+login -> folio de prueba `ONB-2026-000002` -> subida de un PDF ficticio -> `completado` (stub) ->
+descarga por URL prefirmada con bytes identicos -> objeto con `AES256` y `application/pdf` ->
+documento, resultado v1 y auditoria en BD. La prueba destapo el fallo de la URL prefirmada con el
+endpoint global (307 fuera de us-east-1), corregido en 7a6fdb7. En el bucket quedan 2 PDFs ficticios
+de prueba (el IAM no puede borrar). Tests: 155 en verde con SQLite + moto, y la concurrencia de folios
+tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
+
+## Decisiones del dia (2026-09-30)
 | Tema | Decision | Donde |
 |---|---|---|
-| Almacenamiento | Amazon S3 real, sin MinIO. Tests con `moto` (S3 simulado solo en pytest) | ADR-001, plan |
-| Bucket e IAM | Los crea y administra PERSONA_1 | plan, tu prompt (tarea previa) |
-| IA | Ollama principal; OpenRouter solo gratuito (`:free`) como respaldo y solo con fixtures ficticios | ADR-003 |
-| Cuenta OpenRouter | La crea PERSONA_2 en la etapa 1, dia 2 | ADR-003, prompt de PERSONA_2 |
-| Arquitectura | Monolito modular con puertos y adaptadores; reglas solo documentadas | ADR-005, `docs/arquitectura.md` |
-| Ramas | Una por persona; la tuya es `feat/plataforma`; PR a `main` al final de cada etapa | `CLAUDE.md` |
-| Contratos | ADR-004 (referencia y fecha en el expediente) y ADR-006 (huecos para la UI) aceptados y aplicados a los Contratos 1 y 2; catalogos de alertas y de errores | ADR-004, ADR-006, `docs/contratos/` |
+| Contratos | ADR-004 y ADR-006 aceptados y aplicados; catalogos `codigos_error.md` y `codigos_alertas.md` en `main` | PR #1 y #2 |
+| ADR-007 | Aceptado (PR #4 de PERSONA_2): la confianza la calcula el codigo; en la etapa 2 la recomendacion compara esas confianzas, la regla no cambia | ADR-007 |
+| Bucket | S3 real en us-east-2, privado, IAM solo con Put/Get/ListBucket (sin Delete); claves solo en `.env` | tarea previa del prompt |
+| PostgreSQL local | Lo arranca el usuario con `docker compose up -d db` | - |
+| Decidir un folio con documentos `pendiente` o `procesando` | 409 `DOCUMENTO_EN_PROCESO` | pregunta 1 de PERSONA_3 |
+| Corregir datos o confirmar la clasificacion de un documento en `error` | 409 `DOCUMENTO_CON_ERROR` (codigo nuevo: se anade a `codigos_error.md` en el mismo commit que lo use, etapa 2). Resolver sus alertas si se permite | pregunta 2 de PERSONA_3 |
+| `EXP-001` | Al crear el folio, una por cada tipo requerido que falte (bloqueante, en `alertas_expediente`, `campo` = tipo). Se recalcula al procesar un documento o confirmar su clasificacion; cuenta el tipo confirmado, si no el detectado, si no el declarado. Si el revisor la marco `aplica=false`, se conserva | pregunta 3 de PERSONA_3 |
+| `POST /folios` | 201 (ya implementado) | pregunta 4 de PERSONA_3 |
+| Alertas informativas | Propuesta de PERSONA_1, sin acordar: `VAL-004` (falta un campo opcional, la emite PERSONA_2) y `EXP-002` (tipo subido que el proceso no pide, la emite PERSONA_1). `VAL-003` ya es de PERSONA_2 (campo tomado de la MRZ, PR #4) | pendiente del equipo |
+| `SYS-004` | Descartado (opcion A): la ingesta rechaza con 415 `FORMATO_NO_PERMITIDO` si el contenido no coincide con la extension | PR #4 |
 
-Contratos 1 y 2 ampliados por ADR-004 y ADR-006; el Contrato 3 sin cambios. Tus tareas nuevas estan
-en "Cambios de contrato aceptados el 2026-09-30" de tu prompt.
+## Como retomar
+1. En la raiz del repo: `cp .env.example .env` y rellenarlo a mano (claves AWS por canal seguro,
+   nunca en el repo ni en chats). `.env` nunca se sube.
+2. Entorno: `cd backend && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt`.
+3. PostgreSQL: `docker compose up -d db`. Fuera de Docker el host es `localhost`, no `db`: exporta
+   `DATABASE_URL=postgresql+psycopg://gestor:gestor@localhost:5432/gestor` en la terminal (no la
+   escribas en ficheros del repo).
+4. `alembic upgrade head` (desde `backend/`).
+5. Tests: `python -m pytest -q`. Con `TEST_POSTGRES_URL=<la misma URL>` corre tambien la
+   concurrencia de folios contra PostgreSQL.
+6. Usuarios de desarrollo: `PYTHONPATH=. python ../scripts/crear_usuario.py --usuario revisor_demo --rol revisor`
+   (la contrasena se pide por teclado o sale de `NUEVA_CONTRASENA`).
 
-## Que te toca hacer, en orden
-
-### Etapa 0 (pendiente)
-- [ ] Avisar al equipo: hacer `git pull` y usar cada uno su rama (`feat/motor-ia`, `feat/interfaz`).
-- [ ] Decidir con el equipo que hacer con el resto de la rama `propuesta/base-etapa0` (el ADR-004 y
-      `codigos_alertas.md` ya estan en `main`).
-- [ ] Decidir con el equipo la maquina que ejecuta Ollama.
-- [ ] Crear en la consola de AWS el bucket S3 privado, el usuario IAM con permisos minimos
-      (`s3:PutObject`, `s3:GetObject`, `s3:ListBucket`, sin borrar) y el CORS para
-      `http://localhost:5173`. Detalle en la "Tarea previa" de tu prompt.
+## Pendiente
+### Cierre de la etapa 1
+- [ ] PR #3 de `feat/plataforma` a `main` (abierto; se revisa y fusiona el dia 5).
+- [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
+      lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
+- [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
 
-### Etapa 1 (dias 2-5), en `feat/plataforma`
-Siguiente tarea: **1. `backend/app/core/config.py`** (modulo `core`). Luego las tareas 2 a 12 de tu
-prompt: BD y Alembic, modelos, carga de procesos, seguridad JWT, login, folios, almacenamiento S3,
-ingesta, documentos, tests y READMEs.
-Entregable: archivo subido por API que aparece en el bucket S3 real y en BD en estado `pendiente`.
+### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
+- Conectar el pipeline real (sustituye a `ingesta/procesamiento_stub.py`) y guardar `resultados`.
+- `EXP-001`: recalculo al procesar o confirmar la clasificacion (la creacion inicial va al crear el folio).
+- `modulos/validacion/comparaciones.py`: `ComparacionCampo` y `CMP-001` solo en `alertas_expediente`.
+- Recomendacion global.
+- Endpoints del revisor: corregir datos (`correcciones` en el resultado), confirmar clasificacion
+  (versionado y reproceso si cambia el tipo), resolver alertas por `alerta_id` (documento y
+  expediente) y decision del folio (409 `DECISION_BLOQUEADA`, `FOLIO_CERRADO`,
+  `DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`). Todo a auditoria.
 
-### Etapas 2 y 3
-Como en tu prompt. Al final de cada etapa, Pull Request de `feat/plataforma` a `main`.
-
-## Pendientes abiertos del proyecto
-- Resto de la rama `propuesta/base-etapa0`.
-- Maquina para Ollama.
+### Etapa 3
+Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
