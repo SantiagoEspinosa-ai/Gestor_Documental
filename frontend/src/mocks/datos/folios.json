@@ -601,7 +601,7 @@
         "mensaje": "Falta comprobante_domicilio, requerido por el proceso onboarding",
         "severidad": "bloqueante",
         "confianza": 1.0,
-        "campo": null,
+        "campo": "comprobante_domicilio",
         "resuelta_por_revisor": false,
         "aplica": null,
         "comentario_revisor": null,

@@ -1,10 +1,10 @@
 // Respuestas de error de los mocks: el estado HTTP sale del codigo (codigos_error.md), nunca a mano.
 import { HttpResponse } from 'msw'
-import { ESTADO_HTTP_POR_ERROR, type CodigoError } from '../tipos/codigos'
+import { ESTADO_HTTP_CODIGO, type CodigoError } from '../tipos/codigos'
 
 export function error(codigo: CodigoError, mensaje: string): Response {
-  const cabeceras: Record<string, string> = ESTADO_HTTP_POR_ERROR[codigo] === 401 ? { 'WWW-Authenticate': 'Bearer' } : {}
-  return HttpResponse.json({ codigo, mensaje }, { status: ESTADO_HTTP_POR_ERROR[codigo], headers: cabeceras })
+  const cabeceras: Record<string, string> = ESTADO_HTTP_CODIGO[codigo] === 401 ? { 'WWW-Authenticate': 'Bearer' } : {}
+  return HttpResponse.json({ codigo, mensaje }, { status: ESTADO_HTTP_CODIGO[codigo], headers: cabeceras })
 }
 
 /** Se lanza desde la logica de los mocks y el envoltorio de las rutas la convierte en respuesta */

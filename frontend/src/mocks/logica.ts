@@ -1,6 +1,7 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
 import type { Alerta, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental } from '../tipos/contrato'
+import { tipoEfectivo, tiposNoPedidos, tiposRequeridosQueFaltan } from '../utilidades/expediente'
 import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } from './estado'
 
 /** pendiente -> procesando a los 3 s, -> completado a los 9 s */
@@ -19,9 +20,6 @@ const pesa = (a: Alerta) => (a.severidad === 'critica' || a.severidad === 'bloqu
 /** Tipo con el que se extrae (regla 2.5) */
 export const tipoExtraccion = (d: ResultadoDocumento) =>
   d.tipo_documental_confirmado ?? d.tipo_documental_declarado ?? d.tipo_documental_detectado
-/** Tipo que representa el documento en el expediente */
-const tipoDocumento = (d: ResultadoDocumento) =>
-  d.tipo_documental_confirmado ?? d.tipo_documental_detectado ?? d.tipo_documental_declarado
 
 export const enProceso = (d: ResultadoDocumento) => d.estado_analisis === 'pendiente' || d.estado_analisis === 'procesando'
 
@@ -52,7 +50,33 @@ function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void 
   doc.recomendacion = bajas || doc.alertas_encontradas.some(pesa) ? 'revision_manual' : 'aprobar'
 }
 
-/** Recalcula comparaciones, CMP-001, EXP-001 y recomendaciones conservando lo ya resuelto */
+/**
+ * EXP-001 (tipo requerido que falta) y EXP-002 (tipo no pedido), con campo = nombre del tipo y el
+ * tipo efectivo de cada documento. Segun PERSONA_1 solo se recalculan al crear el folio y cuando un
+ * documento se procesa o se confirma. Una alerta marcada como falso positivo (aplica=false) se conserva.
+ */
+export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoExpediente): void {
+  const proceso = estado.procesos.find((p) => p.nombre === folio.proceso)
+  if (!proceso) return
+  const esperadas = [
+    ...tiposRequeridosQueFaltan(folio, proceso).map((tipo) => ({
+      codigo: 'EXP-001', campo: tipo, severidad: 'bloqueante' as const, mensaje: `Falta ${tipo}, requerido por el proceso ${folio.proceso}`,
+    })),
+    ...tiposNoPedidos(folio, proceso).map((tipo) => ({
+      codigo: 'EXP-002', campo: tipo, severidad: 'informativa' as const, mensaje: `${tipo} no lo pide el proceso ${folio.proceso}`,
+    })),
+  ]
+  const clave = (a: { codigo: string; campo: string | null }) => `${a.codigo}|${a.campo}`
+  const vigentes = new Set(esperadas.map(clave))
+  const deTipo = (a: Alerta) => a.codigo === 'EXP-001' || a.codigo === 'EXP-002'
+  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !deTipo(a) || a.aplica === false || vigentes.has(clave(a)))
+  const existentes = new Set(folio.alertas_expediente.filter(deTipo).map(clave))
+  esperadas.filter((e) => !existentes.has(clave(e))).forEach((e) =>
+    folio.alertas_expediente.push(nuevaAlerta(estado, e.codigo, e.mensaje, e.severidad, e.campo)))
+  recalcularExpediente(estado, folio)
+}
+
+/** Tras cada cambio: recomendaciones, comparaciones y CMP-001, conservando lo ya resuelto */
 export function recalcularExpediente(estado: EstadoMock, folio: ResultadoExpediente): void {
   folio.documentos.forEach((d) => recomendarDocumento(estado, d))
 
@@ -60,7 +84,7 @@ export function recalcularExpediente(estado: EstadoMock, folio: ResultadoExpedie
   const completos = folio.documentos.filter((d) => d.estado_analisis === 'completado')
   const porCampo = new Map<string, Record<string, unknown>>()
   completos.forEach((a, i) => completos.slice(i + 1).forEach((b) => {
-    const [ta, tb] = [tipoDocumento(a), tipoDocumento(b)]
+    const [ta, tb] = [tipoEfectivo(a), tipoEfectivo(b)]
     const campos = new Set([...(ficha(estado, ta)?.comparaciones[tb ?? ''] ?? []), ...(ficha(estado, tb)?.comparaciones[ta ?? ''] ?? [])])
     campos.forEach((campo) => {
       if (!(campo in a.datos_extraidos) || !(campo in b.datos_extraidos)) return
@@ -74,21 +98,14 @@ export function recalcularExpediente(estado: EstadoMock, folio: ResultadoExpedie
     campo, valores, coincide: new Set(Object.values(valores).map(normalizar)).size === 1,
   }))
 
-  // CMP-001 (una por campo que no coincide) y EXP-001 (tipos requeridos que faltan)
-  const esperadas = new Map<string, { mensaje: string; campo: string | null; severidad: Severidad }>()
-  folio.comparaciones.filter((c) => !c.coincide).forEach((c) =>
-    esperadas.set(`CMP-001|${c.campo}`, { mensaje: `${c.campo} no coincide entre los documentos del folio`, campo: c.campo, severidad: 'critica' }))
-  const presentes = new Set(folio.documentos.filter((d) => d.estado_analisis !== 'error').map(tipoDocumento))
-  const proceso = estado.procesos.find((p) => p.nombre === folio.proceso)
-  proceso?.tipos_requeridos.filter((t) => !presentes.has(t)).forEach((t) =>
-    esperadas.set(`EXP-001|${t}`, { mensaje: `Falta ${t}, requerido por el proceso ${folio.proceso}`, campo: null, severidad: 'bloqueante' }))
-  // EXP-001 no tiene campo: el tipo que falta va en el mensaje ("Falta <tipo>, requerido...")
-  const clave = (a: Alerta) => a.codigo === 'EXP-001' ? `EXP-001|${/Falta (\w+)/.exec(a.mensaje)?.[1]}` : `${a.codigo}|${a.campo}`
-  const recalculables = (a: Alerta) => a.codigo === 'CMP-001' || a.codigo === 'EXP-001'
-  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !recalculables(a) || esperadas.has(clave(a)))
-  const existentes = new Set(folio.alertas_expediente.filter(recalculables).map(clave))
-  esperadas.forEach((e, k) => {
-    if (!existentes.has(k)) folio.alertas_expediente.push(nuevaAlerta(estado, k.split('|')[0], e.mensaje, e.severidad, e.campo))
+  // CMP-001: una por campo que no coincide (las ya existentes conservan su resolucion)
+  const sinCoincidir = new Set(folio.comparaciones.filter((c) => !c.coincide).map((c) => c.campo))
+  folio.alertas_expediente = folio.alertas_expediente.filter((a) => a.codigo !== 'CMP-001' || sinCoincidir.has(a.campo ?? ''))
+  const conAlerta = new Set(folio.alertas_expediente.filter((a) => a.codigo === 'CMP-001').map((a) => a.campo))
+  sinCoincidir.forEach((campo) => {
+    if (!conAlerta.has(campo)) {
+      folio.alertas_expediente.push(nuevaAlerta(estado, 'CMP-001', `${campo} no coincide entre los documentos del folio`, 'critica', campo))
+    }
   })
 
   const todas = [...folio.alertas_expediente, ...folio.documentos.flatMap((d) => d.alertas_encontradas)]
@@ -128,6 +145,8 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
     doc.evidencia_por_campo[campo] = 'pagina_1'
     if (valor === null && def.obligatorio) {
       alertas.push(nuevaAlerta(estado, 'VAL-001', `Falta el campo obligatorio ${campo}`, 'critica', campo))
+    } else if (valor === null) {
+      alertas.push(nuevaAlerta(estado, 'VAL-003', `Falta el campo opcional ${campo}`, 'informativa', campo))
     } else if (valor !== null && doc.nivel_confianza_por_campo[campo] < fichaExtraccion.confianza_minima_campo) {
       alertas.push(nuevaAlerta(estado, 'VAL-002', `Confianza de ${campo} por debajo del minimo de la ficha`, 'preventiva',
         campo, doc.nivel_confianza_por_campo[campo]))
@@ -173,7 +192,7 @@ export function avanzarProcesamiento(estado: EstadoMock, folio: ResultadoExpedie
       doc.estado_analisis = 'procesando'
     }
   }
-  if (cambios) recalcularExpediente(estado, folio)
+  if (cambios) recalcularTiposDelProceso(estado, folio) // un documento se ha procesado
 }
 
 export function resumenMarkdown(folio: ResultadoExpediente): string {

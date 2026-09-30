@@ -24,8 +24,33 @@ export const ESTADO_HTTP_POR_ERROR = {
   ERROR_INTERNO: 500,
 } as const
 
-export type CodigoError = keyof typeof ESTADO_HTTP_POR_ERROR
-export const CODIGOS_ERROR = Object.keys(ESTADO_HTTP_POR_ERROR) as CodigoError[]
+/**
+ * Codigos ya acordados con PERSONA_1 y PERSONA_2 que aun NO estan en los catalogos de main.
+ * Se permiten en el frontend y en los mocks mientras tanto. Cuando entren en
+ * docs/contratos/codigos_error.md o codigos_alertas.md, se pasan a ESTADO_HTTP_POR_ERROR o a ALERTAS
+ * y se quitan de aqui: backend/tests/test_contrato_frontend.py falla para recordarlo.
+ * La lista debe quedar vacia.
+ */
+export const CODIGOS_PENDIENTES_DE_MAIN = {
+  errores: {
+    DOCUMENTO_CON_ERROR: 409, // corregir datos o confirmar la clasificacion de un documento en error
+    SECUENCIA_AGOTADA: 409, // POST /folios sin numeros libres en el proceso y el anio (PERSONA_1)
+  },
+  alertas: {
+    'VAL-003': { emisor: 'validacion', severidad: 'informativa', cuando: 'Falta un campo opcional (documento)' },
+    'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Tipo no pedido por el proceso (alertas_expediente)' },
+  },
+} as const satisfies {
+  errores: Record<string, number>
+  alertas: Record<string, { emisor: string; severidad: Severidad; cuando: string }>
+}
+
+/** Estado HTTP de todos los codigos que puede usar el frontend: oficiales y pendientes de main */
+export const ESTADO_HTTP_CODIGO = { ...ESTADO_HTTP_POR_ERROR, ...CODIGOS_PENDIENTES_DE_MAIN.errores }
+
+export type CodigoError = keyof typeof ESTADO_HTTP_CODIGO
+/** Solo los oficiales de codigos_error.md */
+export const CODIGOS_ERROR = Object.keys(ESTADO_HTTP_POR_ERROR) as (keyof typeof ESTADO_HTTP_POR_ERROR)[]
 
 /** Codigos que solo genera el frontend (la API nunca los devuelve) */
 export type CodigoLocal = 'SIN_CONEXION' | 'RESPUESTA_NO_VALIDA'
@@ -49,8 +74,14 @@ export const ALERTAS = {
 /** Alertas de reglas de los YAML: REG-{id_regla}; su severidad la fija la ficha */
 export const PREFIJO_REGLA = 'REG-'
 
-export type CodigoAlerta = keyof typeof ALERTAS | `REG-${string}`
+export type CodigoAlerta = keyof typeof ALERTAS | keyof typeof CODIGOS_PENDIENTES_DE_MAIN.alertas | `REG-${string}`
 
-export function esCodigoAlertaOficial(codigo: string): codigo is CodigoAlerta {
+/** Solo el catalogo de main (codigos_alertas.md) */
+export function esCodigoAlertaOficial(codigo: string): boolean {
   return codigo in ALERTAS || (codigo.startsWith(PREFIJO_REGLA) && codigo.length > PREFIJO_REGLA.length)
+}
+
+/** Oficial o acordado y pendiente de entrar en main */
+export function esCodigoAlertaPermitido(codigo: string): codigo is CodigoAlerta {
+  return esCodigoAlertaOficial(codigo) || codigo in CODIGOS_PENDIENTES_DE_MAIN.alertas
 }

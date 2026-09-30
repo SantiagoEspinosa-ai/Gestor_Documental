@@ -1,7 +1,7 @@
 // Comprobacion en TypeScript de los datos de los mocks: valores de los enums y codigos oficiales.
 // La validacion completa contra resultado.py esta en backend/tests/test_contrato_frontend.py.
 import { describe, expect, it } from 'vitest'
-import { esCodigoAlertaOficial } from '../tipos/codigos'
+import { esCodigoAlertaPermitido } from '../tipos/codigos'
 import {
   DECISIONES_HUMANAS, ESTADOS_ANALISIS, ESTADOS_GENERALES, RECOMENDACIONES, SEVERIDADES, type Alerta,
 } from '../tipos/contrato'
@@ -24,8 +24,9 @@ describe('datos de los mocks', () => {
     for (const a of alertas) expect(SEVERIDADES).toContain(a.severidad)
   })
 
-  it('los codigos de alerta son oficiales (MOCK- solo para la informativa de ejemplo)', () => {
-    const noOficiales = alertas.filter((a) => !esCodigoAlertaOficial(a.codigo))
+  it('los codigos de alerta son oficiales o pendientes de main (MOCK-001 solo para la informativa de ejemplo)', () => {
+    // MOCK-001 se sustituye por VAL-003 o EXP-002 cuando entren en el catalogo de main
+    const noOficiales = alertas.filter((a) => !esCodigoAlertaPermitido(a.codigo))
     expect(noOficiales.map((a) => [a.codigo, a.severidad])).toEqual([['MOCK-001', 'informativa']])
   })
 })

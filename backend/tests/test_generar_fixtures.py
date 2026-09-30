@@ -186,8 +186,8 @@ def test_alertas_duplicado_en_el_segundo_documento(fichas):
 
 def test_alertas_falta_requerido(fichas):
     alertas = alertas_de("falta_requerido", fichas)
-    assert [(a["codigo"], a["severidad"], a["donde"]) for a in alertas] == [
-        ("EXP-001", "bloqueante", "alertas_expediente")]
+    assert [(a["codigo"], a["severidad"], a["donde"], a["campo"]) for a in alertas] == [
+        ("EXP-001", "bloqueante", "alertas_expediente", "comprobante_domicilio")]
     assert "comprobante_domicilio" in alertas[0]["motivo"]
 
 

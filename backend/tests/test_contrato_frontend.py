@@ -114,19 +114,48 @@ def test_enums_iguales_que_resultado_py():
 
 
 def test_codigos_de_error_iguales_que_el_catalogo():
-    catalogo = {c: int(h) for h, c in re.findall(r"^\| (\d{3}) \| `(\w+)` \|", _texto(CONTRATOS / "codigos_error.md"), re.M)}
     bloque = _texto(CODIGOS_TS).split("ESTADO_HTTP_POR_ERROR = {")[1].split("} as const")[0]
-    ts = {c: int(h) for c, h in re.findall(r"(\w+): (\d{3}),", bloque)}
-    assert ts == catalogo
+    assert {c: int(h) for c, h in re.findall(r"(\w+): (\d{3}),", bloque)} == catalogo_errores()
+
+
+def _bloque(fuente: str, inicio: str, fin: str = "} as const") -> str:
+    return fuente.split(inicio, 1)[1].split(fin, 1)[0]
+
+
+def alertas_ts(bloque: str) -> dict[str, tuple[str, str]]:
+    return {c: (e, s) for c, e, s in re.findall(r"'([A-Z]{3}-\d{3})': \{ emisor: '([^']+)', severidad: '(\w+)'", bloque)}
+
+
+def catalogo_alertas() -> dict[str, tuple[str, str]]:
+    return {c: (e.split()[0], s) for c, e, s in
+            re.findall(r"^\| `([A-Z]{3}-\d{3})` \| ([^|]+?) \| (\w+) \|", _texto(CONTRATOS / "codigos_alertas.md"), re.M)}
+
+
+def catalogo_errores() -> dict[str, int]:
+    return {c: int(h) for h, c in re.findall(r"^\| (\d{3}) \| `(\w+)` \|", _texto(CONTRATOS / "codigos_error.md"), re.M)}
+
+
+def pendientes_de_main() -> tuple[dict[str, int], dict[str, tuple[str, str]]]:
+    """CODIGOS_PENDIENTES_DE_MAIN de codigos.ts: acordados pero aun no en los catalogos de main."""
+    bloque = _bloque(_texto(CODIGOS_TS), "CODIGOS_PENDIENTES_DE_MAIN = {")
+    errores = {c: int(h) for c, h in re.findall(r"(\w+): (\d{3}),", bloque.split("alertas:")[0])}
+    return errores, alertas_ts(bloque.split("alertas:")[1])
 
 
 def test_codigos_de_alerta_iguales_que_el_catalogo():
-    catalogo = {c: (e.split()[0], s) for c, e, s in
-                re.findall(r"^\| `([A-Z]{3}-\d{3})` \| ([^|]+?) \| (\w+) \|", _texto(CONTRATOS / "codigos_alertas.md"), re.M)}
-    ts = {c: (e, s) for c, e, s in
-          re.findall(r"'([A-Z]{3}-\d{3})': \{ emisor: '([^']+)', severidad: '(\w+)'", _texto(CODIGOS_TS))}
-    assert ts == catalogo
+    assert alertas_ts(_bloque(_texto(CODIGOS_TS), "export const ALERTAS = {")) == catalogo_alertas()
     assert "PREFIJO_REGLA = 'REG-'" in _texto(CODIGOS_TS)
+
+
+def test_codigos_pendientes_de_main_aun_no_estan_en_los_catalogos():
+    """Aviso: cuando un codigo pendiente entre en main, hay que moverlo a ESTADO_HTTP_POR_ERROR o a
+    ALERTAS y quitarlo de CODIGOS_PENDIENTES_DE_MAIN (frontend/src/tipos/codigos.ts)."""
+    errores, alertas = pendientes_de_main()
+    assert errores and alertas, "No se ha podido leer CODIGOS_PENDIENTES_DE_MAIN"
+    ya_en_main = sorted(set(errores) & set(catalogo_errores()) | set(alertas) & set(catalogo_alertas()))
+    if ya_en_main:
+        pytest.fail(f"Ya estan en el catalogo de main: {ya_en_main}. Quitalos de CODIGOS_PENDIENTES_DE_MAIN "
+                    "en frontend/src/tipos/codigos.ts y pasalos a los oficiales (ESTADO_HTTP_POR_ERROR o ALERTAS).")
 
 
 def test_acciones_de_auditoria_iguales_que_endpoints_md():
@@ -151,7 +180,8 @@ def test_los_mocks_cubren_los_casos_pedidos():
         a["severidad"] for d in por_folio["ONB-2026-000001"]["documentos"] for a in d["alertas_encontradas"]}
     assert severidades_f1 == {s.value for s in resultado.Severidad}
     assert any(a["codigo"] == "CMP-001" and a["campo"] == "domicilio" for f in folios for a in f["alertas_expediente"])
-    assert any(a["codigo"] == "EXP-001" for f in folios for a in f["alertas_expediente"])
+    # EXP-001 lleva en campo el tipo requerido que falta (acordado con PERSONA_1)
+    assert [a["campo"] for f in folios for a in f["alertas_expediente"] if a["codigo"] == "EXP-001"] == ["comprobante_domicilio"]
     assert any(d["correcciones"] for d in documentos)
     assert any(d["estado_analisis"] == "error" and any(a["codigo"].startswith("SYS-") for a in d["alertas_encontradas"])
                for d in documentos)
@@ -162,7 +192,8 @@ def test_los_mocks_cubren_los_casos_pedidos():
 
 def test_codigos_y_severidades_de_las_alertas_de_los_mocks():
     fichas = {f["nombre"]: f for f in _json("tipos_documentales")}
-    catalogo = dict(re.findall(r"'([A-Z]{3}-\d{3})': \{ emisor: '[^']+', severidad: '(\w+)'", _texto(CODIGOS_TS)))
+    permitidos = catalogo_alertas() | pendientes_de_main()[1]  # oficiales + pendientes de entrar en main
+    catalogo = {c: s for c, (_, s) in permitidos.items()}
     for folio in _json("folios"):
         alertas = [(None, a) for a in folio["alertas_expediente"]] + [
             (d["tipo_documental_detectado"] or d["tipo_documental_declarado"], a)

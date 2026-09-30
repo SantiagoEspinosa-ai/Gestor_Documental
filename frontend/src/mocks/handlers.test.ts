@@ -172,7 +172,8 @@ describe('subida de documentos', () => {
     const folio = creado.cuerpo.folio
     expect(folio).toBe('ONB-2026-000005')
     let exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
-    expect(codigos(exp.alertas_expediente)).toEqual(['EXP-001', 'EXP-001'])
+    const exp001 = (e: ResultadoExpediente) => e.alertas_expediente.filter((a) => a.codigo === 'EXP-001').map((a) => a.campo)
+    expect(exp001(exp)).toEqual(['credencial_elector', 'comprobante_domicilio']) // campo = tipo que falta
 
     const r = await api<{ identificador_unico_documento: string; estado_analisis: string }>('POST', `/folios/${folio}/documentos`,
       { token, formulario: subida('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf'), 'credencial_elector') })
@@ -180,6 +181,8 @@ describe('subida de documentos', () => {
     const id = r.cuerpo.identificador_unico_documento
     const estadoDoc = async () => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
     expect((await estadoDoc()).estado_analisis).toBe('pendiente')
+    // EXP-001 solo se recalcula cuando el documento se procesa, no al subirlo
+    expect(exp001((await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo)).toHaveLength(2)
     t += MS_HASTA_PROCESANDO
     expect((await estadoDoc()).estado_analisis).toBe('procesando')
     t += MS_HASTA_COMPLETADO - MS_HASTA_PROCESANDO
@@ -188,7 +191,8 @@ describe('subida de documentos', () => {
     expect(hecho.datos_extraidos.curp).toBe('AEPA900101MDFXXX01') // mismo fichero que los datos -> mismos valores
     expect(hecho.recomendacion).toBe('aprobar')
     exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
-    expect(exp.alertas_expediente.map((a) => a.mensaje)).toEqual(['Falta comprobante_domicilio, requerido por el proceso onboarding'])
+    expect(exp001(exp)).toEqual(['comprobante_domicilio'])
+    expect(exp.alertas_expediente[0].mensaje).toBe('Falta comprobante_domicilio, requerido por el proceso onboarding')
   })
 
   it('el mismo archivo en el mismo folio devuelve 202 con DUP-001', async () => {
@@ -251,6 +255,53 @@ describe('acciones del revisor', () => {
     const lista = (await api<PaginaFolios>('GET', '/folios', { token })).cuerpo.elementos
     expect(lista.find((f) => f.folio === 'ONB-2026-000003')?.n_bloqueantes_sin_resolver).toBe(0)
     expect((await api('POST', '/folios/ONB-2026-000003/decision', { token, cuerpo: { decision: 'aprobar' } })).status).toBe(200)
+  })
+
+  it('documento en error: 409 DOCUMENTO_CON_ERROR al corregir o confirmar; sus alertas si se resuelven', async () => {
+    const token = await entrar('revisor.demo')
+    const f3 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000003', { token })).cuerpo
+    const conError = f3.documentos.find((d) => d.estado_analisis === 'error')!
+    const id = conError.identificador_unico_documento
+    for (const [r, cuerpo] of [[`/documentos/${id}/datos`, { sexo: 'F' }], [`/documentos/${id}/confirmar-clasificacion`, { tipo_documental: 'pasaporte' }]] as const) {
+      const res = await api(r.endsWith('datos') ? 'PATCH' : 'POST', r, { token, cuerpo })
+      expect([res.status, res.cuerpo.codigo], r).toEqual([409, 'DOCUMENTO_CON_ERROR'])
+    }
+    const sys = conError.alertas_encontradas.find((a) => a.codigo === 'SYS-001')!
+    const resuelta = await api<ResultadoDocumento>('POST', `/documentos/${id}/alertas/${sys.id}/resolver`, { token, cuerpo: { aplica: true } })
+    expect(resuelta.status).toBe(200)
+    expect(resuelta.cuerpo.alertas_encontradas[0]).toMatchObject({ aplica: true, resuelta_por_revisor: true })
+  })
+
+  it('EXP-001 marcada como falso positivo se conserva al recalcular', async () => {
+    const token = await entrar('revisor.demo')
+    const f3 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000003', { token })).cuerpo
+    const exp001 = f3.alertas_expediente.find((a) => a.codigo === 'EXP-001')!
+    expect(exp001.campo).toBe('comprobante_domicilio')
+    await api('POST', `/folios/ONB-2026-000003/alertas/${exp001.id}/resolver`, { token, cuerpo: { aplica: false } })
+    await api('POST', '/folios/ONB-2026-000003/documentos',
+      { token, formulario: subida('comprobante_domicilio_sano_digital.pdf', original('comprobante_domicilio_sano_digital.pdf'), 'comprobante_domicilio') })
+    t += MS_HASTA_COMPLETADO
+    const despues = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000003', { token })).cuerpo
+    expect(despues.alertas_expediente).toEqual([expect.objectContaining({ id: exp001.id, aplica: false })])
+  })
+
+  it('EXP-001 usa el tipo efectivo (confirmado > detectado > declarado) al procesar y al confirmar', async () => {
+    const token = await entrar('revisor.demo')
+    const { folio } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
+    const faltan = async () => (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo.alertas_expediente
+      .filter((a) => a.codigo === 'EXP-001').map((a) => a.campo)
+    // Una credencial declarada como comprobante: al procesarse cuenta el detectado (credencial)
+    const { identificador_unico_documento: id } = (await api<{ identificador_unico_documento: string }>('POST', `/folios/${folio}/documentos`, {
+      token, formulario: subida('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf'), 'comprobante_domicilio'),
+    })).cuerpo
+    t += MS_HASTA_COMPLETADO
+    expect(await faltan()).toEqual(['comprobante_domicilio'])
+    const doc = (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
+    // Extraida con la ficha del declarado: faltan obligatorios (VAL-001) y el opcional proveedor (VAL-003)
+    expect(doc.alertas_encontradas.filter((a) => a.codigo === 'VAL-003').map((a) => [a.campo, a.severidad])).toEqual([['proveedor', 'informativa']])
+    // El revisor confirma el tipo declarado: ahora cuenta el confirmado
+    await api('POST', `/documentos/${id}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: 'comprobante_domicilio' } })
+    expect(await faltan()).toEqual(['credencial_elector'])
   })
 
   it('documento pendiente: 409 DOCUMENTO_EN_PROCESO en correcciones y decision', async () => {

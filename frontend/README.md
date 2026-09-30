@@ -57,8 +57,23 @@ pintar la app y todas las peticiones a `/api/v1` las responde el navegador. Con 
   - mismo SHA-256 en el folio: `DUP-001`; tipo declarado distinto del detectado: `CLS-001`;
   - regla 2.2 en la decision; folio cerrado tras decidir (409 `FOLIO_CERRADO`);
   - confirmar clasificacion (mismo tipo: resuelve `CLS-001`; otro: vuelve a `pendiente` y reprocesa);
-  - recalculo de comparaciones, `CMP-001`, `EXP-001` y recomendaciones tras cada cambio.
+  - recomendaciones, comparaciones y `CMP-001` se recalculan tras cada cambio.
   Los documentos de los datos iniciales no avanzan: el pendiente de `ONB-2026-000002` sigue pendiente.
+- Comportamientos que el contrato no fijaba, acordados con PERSONA_1:
+  - decidir con documentos `pendiente` o `procesando`: 409 `DOCUMENTO_EN_PROCESO`;
+  - corregir datos o confirmar la clasificacion de un documento en `error`: 409 `DOCUMENTO_CON_ERROR`
+    (sus alertas si se pueden resolver);
+  - `EXP-001`: una por tipo requerido que falta, con `campo` = nombre del tipo. Se crean con el folio
+    y se recalculan solo cuando un documento se procesa o se confirma (no al subirlo). Cuenta el
+    **tipo efectivo** (`src/utilidades/expediente.ts`): confirmado; si no, detectado; si no, declarado.
+    Si el revisor la marco como falso positivo (`aplica=false`), se conserva. La pantalla de carga
+    usara `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta;
+  - `POST /folios`: 201.
+- Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
+  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409), `SECUENCIA_AGOTADA` (409) y las informativas
+  `VAL-003` (falta un campo opcional, documento) y `EXP-002` (tipo no pedido por el proceso,
+  expediente). Los mocks ya los usan. Cuando entren en main se pasan a los oficiales y se quitan de
+  la lista; `backend/tests/test_contrato_frontend.py` falla para recordarlo.
 - `/documentos/{id}/original`: URL a `public/mock-originales/` o, si se subio en la sesion, al propio fichero.
 
 ## Tests
@@ -73,7 +88,8 @@ Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`)
 - `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
   (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
   correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado.
-  `MOCK-001` (informativa) solo existe en los mocks: el catalogo no tiene codigos informativos.
+  `MOCK-001` (informativa) solo existe en los mocks; se sustituira por `VAL-003` o `EXP-002` cuando
+  esten en el catalogo de main.
 - `public/mock-originales/`: copias de los fixtures que usan los mocks (mismo SHA-256).
 - `backend/tests/test_contrato_frontend.py` comprueba todo lo anterior contra los contratos,
   `config/` y el generador de fixtures:

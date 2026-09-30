@@ -320,7 +320,8 @@ def alertas_folio(folio: str, documentos: dict, hashes: dict, fichas: dict, proc
     presentes = {tipo for _, tipo in miembros}
     for tipo in proceso["tipos_requeridos"]:
         if tipo not in presentes:
-            alertas.append({"codigo": "EXP-001", "severidad": SEVERIDAD_CATALOGO["EXP-001"], "campo": None,
+            # campo = nombre del tipo que falta (acordado con PERSONA_1)
+            alertas.append({"codigo": "EXP-001", "severidad": SEVERIDAD_CATALOGO["EXP-001"], "campo": tipo,
                             "donde": "alertas_expediente",
                             "motivo": f"Falta {tipo}, requerido por el proceso {PROCESO}"})
     return alertas

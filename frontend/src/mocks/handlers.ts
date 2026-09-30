@@ -7,7 +7,8 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, resumenFolio,
+  avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, recalcularTiposDelProceso,
+  resumenFolio,
   resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -65,7 +66,7 @@ function exigirAbierto(folio: ResultadoExpediente): void {
 function exigirAnalizado(doc: ResultadoDocumento): void {
   if (enProceso(doc)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'El documento aun se esta analizando')
   if (doc.estado_analisis === 'error') {
-    throw new FalloApi('PETICION_INVALIDA', 'El documento termino en error; reprocesar queda fuera del MVP')
+    throw new FalloApi('DOCUMENTO_CON_ERROR', 'El documento termino en error: no se puede corregir ni reclasificar (reprocesar queda fuera del MVP)')
   }
 }
 
@@ -151,7 +152,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       recomendacion_global: null, decision_humana: null, comentario_decision: null, usuario_decision: null, fecha_decision: null,
       ruta_resumen_md: null,
     }
-    recalcularExpediente(estado, folio) // EXP-001 por cada tipo requerido que aun falta
+    recalcularTiposDelProceso(estado, folio) // EXP-001 por cada tipo requerido que falta
     estado.folios.set(folio.folio, folio)
     auditar(estado, usuario.usuario, 'folio_creado', folio.folio, null, { proceso: proceso.nombre })
     return HttpResponse.json({ folio: folio.folio, estado_general: folio.estado_general }, { status: 201 })
@@ -296,7 +297,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
         inicio: estado.ahora(), tipoExtraccion: tipo, tipoContenido: tipo, confianzaClasificacion: 1, origen,
       })
     }
-    recalcularExpediente(estado, folio)
+    recalcularTiposDelProceso(estado, folio) // el tipo efectivo puede haber cambiado
     return HttpResponse.json(doc)
   })
 
