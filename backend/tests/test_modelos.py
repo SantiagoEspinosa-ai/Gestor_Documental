@@ -53,6 +53,7 @@ def sesion(bd):
     with Session(engine) as s:
         s.add(Proceso(nombre="onboarding", prefijo_folio="ONB", tipos_requeridos=["credencial_elector"],
                       tipos_opcionales=[], permitir_antecedentes=True, caducidad_antecedentes_dias=365))
+        s.flush()  # el proceso antes que su folio: sin relationship, el ORM no ordena por la FK
         s.add(Folio(folio="ONB-2026-000001", proceso="onboarding", anio=2026, secuencia=1))
         s.commit()
         yield s
@@ -120,4 +121,12 @@ def test_resultados_versionados_por_documento(sesion):
 
     sesion.add(Resultado(documento_id=doc.id, version=2, json={"v": "repetida"}))
     with pytest.raises(IntegrityError, match="UNIQUE"):
+        sesion.commit()
+
+
+def test_sqlite_comprueba_las_claves_foraneas(sesion):
+    # PRAGMA foreign_keys=ON (listener de core/db.py): igual que PostgreSQL
+    sesion.add(AlertaBD(folio="FOLIO-QUE-NO-EXISTE", codigo="EXP-001", severidad="bloqueante",
+                        mensaje="ficticia", confianza=1.0))
+    with pytest.raises(IntegrityError, match="FOREIGN KEY"):
         sesion.commit()
