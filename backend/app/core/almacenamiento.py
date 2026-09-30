@@ -10,6 +10,7 @@ from functools import lru_cache
 from typing import Protocol
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.core.config import get_settings
@@ -57,8 +58,11 @@ class AlmacenamientoS3:
     def __init__(self, bucket: str, region: str, access_key: str, secret_key: str, segundos_url: int):
         self.bucket = bucket
         self.segundos_url = segundos_url
+        # s3v4 + virtual: URL firmadas con el endpoint regional (bucket.s3.<region>.amazonaws.com).
+        # Con el endpoint global, un bucket fuera de us-east-1 responde 307 y la firma deja de valer.
         self._s3 = boto3.client("s3", region_name=region, aws_access_key_id=access_key,
-                                aws_secret_access_key=secret_key)
+                                aws_secret_access_key=secret_key,
+                                config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
 
     def _error(self, operacion: str, clave: str, e: Exception) -> ErrorAlmacenamiento:
         # Solo operacion, clave y codigo de error: nunca credenciales ni URL firmadas

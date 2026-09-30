@@ -55,6 +55,15 @@ def test_url_prefirmada(s3):
     assert "X-Amz-Expires=120" in url or "Expires=" in url
 
 
+def test_url_prefirmada_usa_el_endpoint_regional():
+    # Con el endpoint global, un bucket fuera de us-east-1 responde 307 y la URL no sirve
+    s3 = AlmacenamientoS3(bucket=BUCKET, region="us-east-2", access_key="clave-ficticia",
+                          secret_key=SECRETO, segundos_url=60)
+    url = s3.url_prefirmada(CLAVE)  # firmar no llama a AWS
+    assert url.startswith(f"https://{BUCKET}.s3.us-east-2.amazonaws.com/")
+    assert "X-Amz-Signature=" in url
+
+
 def test_existe(s3):
     assert not s3.existe(CLAVE)
     s3.subir(b"x", CLAVE, "application/pdf")
