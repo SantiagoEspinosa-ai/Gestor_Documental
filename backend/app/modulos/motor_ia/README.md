@@ -18,6 +18,27 @@ Proveedores (cada uno en `proveedores/<nombre>.py`, implementan `ProveedorLLM`):
 Tests: `test_proveedores_base.py` y `test_proveedor_ollama.py` (Ollama simulado; respuestas reales en
 `backend/tests/respuestas_modelo/`).
 
+## Enrutador (`enrutador.py`)
+- `crear_enrutador(directorio=None, entorno=None, tipos_documentales=None) -> EnrutadorYaml`
+  (implementa `Enrutador`, Contrato 3). Lee y valida `CONFIG_DIR/modelos.yaml` de forma estricta
+  (claves desconocidas, proveedores y tipos documentales inexistentes, variables de cada tipo) y crea
+  los proveedores con las variables de entorno que indica el YAML. Sin nombres de modelos ni claves en
+  el codigo; los errores nombran la variable, nunca su valor.
+- `obtener(tarea, tipo)`: `por_tipo` si existe; si no, `principal`. `respaldo(tarea, tipo)`: el
+  `respaldo`, o `None` si es el mismo que el principal o no esta disponible (aviso en el log).
+- **Regla de modalidad** (decidida sin ADR): el enrutador devuelve el proveedor y el proveedor elige su
+  modelo segun `DocumentoPreparado.modalidad`: el de texto si es `pdf_digital` y el de vision en el
+  resto (`OllamaProvider.modelo_para`). `Enrutador.obtener` no recibe la modalidad, asi que el Contrato 3
+  no cambia.
+- **Barrera de privacidad** (ADR-003): un proveedor con `privado: false` solo se usa con
+  `PERMITIR_PROVEEDORES_NO_PRIVADOS=true` (desarrollo con fixtures ficticios). Si es un principal y la
+  barrera esta cerrada, error al arrancar; si es un respaldo, `None`.
+- Principal no disponible (falta una variable, valor de ejemplo `TU_CLAVE_AQUI`/`TU_MODELO_AQUI` o tipo
+  sin implementar): `ErrorEnrutador` al arrancar. Respaldo no disponible: `None` y aviso.
+- `Tarea.validacion` se acepta en el YAML, pero no se usa. Los perfiles de `procesos.yaml`
+  (`modelos: default`) no se implementan: siempre se usa `modelos.yaml` tal cual.
+- Tests: `backend/tests/test_enrutador.py` (entorno inyectado, sin red ni claves).
+
 ## Prompts (`prompts.py`)
 - `renderizar(id, version=None, *, tipo_documental=None, **variables) -> (texto, version_prompt)`.
   Lee `PROMPTS_DIR/<id>_<version>.md` (por defecto `prompts/` de la raiz del repo), separa el

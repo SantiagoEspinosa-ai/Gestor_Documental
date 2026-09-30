@@ -11,6 +11,8 @@ Salida (`servicio.py`):
   (`fichero: ruta.del.campo: motivo`) de todos los ficheros a la vez.
 - `obtener(nombre) -> TipoDocumental` (o `TipoNoEncontrado`) y `listar() -> list[TipoDocumental]`.
   Si nadie llamo a `cargar()`, cargan la primera vez y guardan el resultado en memoria.
+- `directorio_config() -> Path`: `CONFIG_DIR` o `config/` de la raiz del repo (lo usa el enrutador de
+  `motor_ia` para encontrar `modelos.yaml`).
 - Modelos Pydantic: `TipoDocumental`, `Campo`, `Regla` y los enums `TipoCampo`, `TipoRegla`
   (`Regla.severidad` usa `Severidad` del Contrato 1).
 
@@ -30,7 +32,7 @@ Que se valida:
 Anadir un tipo documental = anadir un YAML en `config/tipos/`, sin tocar codigo. Anadir un tipo de
 campo o de regla nuevo si requiere codigo (`TipoCampo`, `TipoRegla`).
 
-Fuera de este modulo por ahora: `procesos.yaml` (plataforma, PERSONA_1) y `modelos.yaml` (enrutador de
-`motor_ia`).
+Fuera de este modulo: `procesos.yaml` (plataforma, PERSONA_1) y `modelos.yaml` (lo valida
+`motor_ia/enrutador.py`).
 
 Tests: `backend/tests/test_configuracion.py` (`cd backend && python -m pytest -q`).

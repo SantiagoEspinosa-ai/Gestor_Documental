@@ -14,11 +14,12 @@ from app.modulos.configuracion.cargador import (
     TipoNoEncontrado,
     TipoRegla,
     cargar_tipos,
+    directorio_config,
 )
 
 __all__ = [
     "Campo", "ErrorConfiguracion", "Regla", "TipoCampo", "TipoDocumental", "TipoNoEncontrado", "TipoRegla",
-    "cargar", "listar", "obtener",
+    "cargar", "directorio_config", "listar", "obtener",
 ]
 
 _tipos: dict[str, TipoDocumental] | None = None

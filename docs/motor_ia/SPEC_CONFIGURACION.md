@@ -15,9 +15,10 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 | Fichas de tipos documentales | `config/tipos/*.yaml` (repo) | `configuracion/cargador.py`, expuesto por `configuracion/servicio.py` | implementado |
 | `ejemplos_referencia` de las fichas | `config/tipos/*.yaml`: fixtures del caso sano en `fixtures/generados/`, con las mismas modalidades que ya tenia cada ficha (acordado con PERSONA_3) | referencia; test de nombres en `test_configuracion.py` | implementado |
 | Fixtures de prueba | `fixtures/generados/` (en `.gitignore`): 30 ficheros + `INDICE.md`, generados en local con `scripts/generar_fixtures.py` de `feat/interfaz` (seccion 8) | tests de `ocr.py` y del preparador; valores esperados en `INDICE.md` | generados en local el 2026-09-30 |
-| Asignacion de modelos por tarea | `config/modelos.yaml` (repo) | `motor_ia/enrutador.py` (tarea 8) | decidido |
-| Nombres de los modelos de Ollama | `.env`: `OLLAMA_MODELO_TEXTO`, `OLLAMA_MODELO_VISION` | leidos via `modelos.yaml` (`modelo_texto_env`, `modelo_vision_env`) | decidido; `.env.example` pendiente de PR |
-| URL de Ollama | `.env`: `OLLAMA_BASE_URL` | `OllamaProvider(base_url, ...)`; la lee el enrutador (tarea 8) | implementado en el proveedor |
+| Asignacion de modelos por tarea | `config/modelos.yaml` (repo) | `motor_ia/enrutador.py` (`crear_enrutador`), validacion estricta | implementado |
+| Barrera de privacidad | `.env`: `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`) | `motor_ia/enrutador.py` | implementado; falta en `.env.example` (PR pendiente) y avisar al equipo |
+| Nombres de los modelos de Ollama | `.env`: `OLLAMA_MODELO_TEXTO`, `OLLAMA_MODELO_VISION` | leidos por el enrutador via `modelos.yaml` (`modelo_texto_env`, `modelo_vision_env`) | implementado; `.env.example` pendiente de PR |
+| URL de Ollama | `.env`: `OLLAMA_BASE_URL` | la lee el enrutador y la pasa a `OllamaProvider(base_url, ...)` | implementado |
 | Proveedor comercial (respaldo) | `.env`: `PROVEEDOR_COMERCIAL_*` (ADR-003) | `motor_ia/proveedores/openrouter.py` | pendiente (cuenta sin crear) |
 | Carpeta de configuracion | `.env` opcional: `CONFIG_DIR`; por defecto `config/` de la raiz del repo | `configuracion/cargador.py` | implementado; falta en `.env.example` |
 | Carpeta de prompts | `.env` opcional: `PROMPTS_DIR` (en Docker, `/prompts`); por defecto `prompts/` de la raiz del repo | `motor_ia/prompts.py` | implementado; falta en `.env.example` |
@@ -69,8 +70,19 @@ Modelos descartados:
 Regla: **modelo de texto si `doc.modalidad == pdf_digital`; modelo de vision en el resto.**
 Se aplica a clasificacion y a extraccion. Se decide sin ADR: `Enrutador.obtener(tarea, tipo)`
 (Contrato 3) devuelve el proveedor configurado y el proveedor elige su modelo de texto o de vision
-segun `DocumentoPreparado.modalidad`. Se documenta en `backend/app/modulos/motor_ia/README.md` al
-implementar el enrutador (tarea 8).
+segun `DocumentoPreparado.modalidad`. Documentado en `backend/app/modulos/motor_ia/README.md`.
+
+Enrutador (`motor_ia/enrutador.py`, implementado):
+
+| Regla | Detalle |
+|---|---|
+| `obtener(tarea, tipo)` | `por_tipo` del YAML si existe para ese tipo; si no, `principal`. Una instancia por proveedor, compartida entre tareas |
+| `respaldo(tarea, tipo)` | El `respaldo` del YAML, o `None` si es el mismo que el principal o no esta disponible |
+| Variables de entorno | Solo las que nombra el YAML; ni modelos ni claves en el codigo. Los errores y avisos nombran la variable, nunca su valor. Un valor de ejemplo (`TU_CLAVE_AQUI`, `TU_MODELO_AQUI...`) cuenta como no configurado |
+| Barrera de privacidad (ADR-003) | Un proveedor con `privado: false` solo se usa con `PERMITIR_PROVEEDORES_NO_PRIVADOS=true` (desarrollo con fixtures ficticios). Principal no privado con la barrera cerrada: error al arrancar. Respaldo no privado: `None` y aviso |
+| Proveedor no disponible | Principal (falta una variable, valor de ejemplo o tipo sin implementar): `ErrorEnrutador` al arrancar. Respaldo: `None` y aviso en el log; si falla el principal, el servicio emite `SYS-001` |
+| Validacion de `modelos.yaml` | Estricta: claves desconocidas, tipo de proveedor (`ollama`, `openrouter`), variables de cada tipo, tareas validas, `clasificacion` y `extraccion` obligatorias, proveedores y tipos documentales de `por_tipo` existentes; todos los errores a la vez |
+| Tipos de proveedor | `ollama` implementado; `openrouter` aceptado en el YAML pero sin implementar (queda como respaldo no disponible) |
 
 | Modalidad | Que prepara el orquestador | Modelo | Que se envia al modelo |
 |---|---|---|---|
@@ -144,7 +156,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Preparador: limite de paginas | Ninguno en el MVP (el proveedor trabaja por lotes de 4) | plan de la tarea 4 | decidido |
 | CLI sin BD ni S3 | `folio_solicitud = "CLI-2026-000000"`; `referencia_archivo_original.ruta = "local://<nombre_archivo>"` (sin rutas personales); `hash` = SHA-256 real del archivo | objetivo de la etapa 1 | decidido (tarea 10) |
 | Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. `SYS-003` (preventiva): texto recortado. Informativas: `SYS-005` (motor_ia: se uso el proveedor de respaldo) y `VAL-003` (orquestador/ocr: campo tomado de la MRZ). `SYS-004` se retiro en la revision del PR #4 (la ingesta rechaza con 415) y no se reutiliza; `SYS-005` conserva su numero. Catalogo: `docs/contratos/codigos_alertas.md`; `SYS-003`, `SYS-005` y `VAL-003`, en el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`. El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | decidido; se emiten en `motor_ia/servicio.py` (tarea 9) |
-| `Tarea.validacion` (Contrato 3) | Se ignora: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0 | decidido |
+| `Tarea.validacion` (Contrato 3) | Se acepta en `modelos.yaml`, pero no se usa: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0; tarea 8 | implementado (el enrutador la acepta) |
+| Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
 | `/tipos-documentales` | `configuracion/servicio.py` serializa `TipoDocumental` para el router de PERSONA_1 | ADR-006, 1.5 | pendiente (ver seccion 7) |
 | RAG | PERSONA_2 hace `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`) y usa `rag/embeddings.py` de PERSONA_3 | ADR-006, coordinacion | pendiente (etapa 3) |
@@ -163,7 +176,9 @@ se queda solo con `pagina_<n>` (seccion 4).
       scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
 - [ ] **PR pequeno de `.env.example`**: `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
-      `CONFIG_DIR`, `PROMPTS_DIR` y un comentario con los tres valores de `OLLAMA_BASE_URL` (seccion 2).
+      `CONFIG_DIR`, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` y un comentario con los tres valores de
+      `OLLAMA_BASE_URL` (seccion 2). **Avisar al equipo** de la barrera de privacidad: con `false`, OpenRouter
+      no se usa nunca, ni como respaldo.
 - [ ] **Aplicar ADR-006**: 1.5 serializar `TipoDocumental` en `configuracion/servicio.py` (para
       `/tipos-documentales`) y 2.5 `tipo_confirmado` en `procesar_documento` (etapa 2).
 - [ ] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2) al abrir el PR de
@@ -233,7 +248,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | Pendiente de la etapa 2: `VAL-004` (informativa, campo `obligatorio: false` vacio, con `campo`), que emitira `validacion`; PERSONA_3 la anade al catalogo en un PR aparte y PERSONA_2 lo revisa | este commit |
+| 2026-09-30 | `motor_ia/enrutador.py`: `modelos.yaml` validado de forma estricta, proveedores desde las variables de entorno, `por_tipo`, barrera de privacidad `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`), principal no disponible -> error al arrancar, respaldo no disponible -> `None`. `Tarea.validacion` aceptada sin uso; perfiles de `procesos.yaml` no implementados. `configuracion.servicio.directorio_config()` expuesto (24 tests) | este commit |
+| 2026-09-30 | Pendiente de la etapa 2: `VAL-004` (informativa, campo `obligatorio: false` vacio, con `campo`), que emitira `validacion`; PERSONA_3 la anade al catalogo en un PR aparte y PERSONA_2 lo revisa | `7d2c361` |
 | 2026-09-30 | Revision de PERSONA_1 en el PR #4: se retira `SYS-004` (la ingesta ya rechaza con 415 `FORMATO_NO_PERMITIDO` los archivos cuya extension no coincide con el contenido). `SYS-005` no se renumera. `modalidad.py` mantiene el aviso en el log (util en el CLI) y no emite alerta | `c696a99` |
 | 2026-09-30 | ADR-007 **aceptado** por PERSONA_1, PERSONA_2 y PERSONA_3. PR unico de documentacion `docs/adr-007-y-alertas` (PR #4, `4263190`): ADR-007 aceptado, `SYS-003`, informativas `SYS-004`, `SYS-005` y `VAL-003`, y comentario del origen de la confianza en `resultado.py`. Borradas las ramas `docs/adr-007-confianza` y `docs/alerta-sys-003` | `e879271` |
 | 2026-09-30 | `orquestador/ocr.py` (Tesseract, gris + autocontraste, sin deskew), `mrz.py` (TD3: busqueda, sexo, digitos de control) y `preparador.py` (150/200 dpi, PDF mixto con capa de texto + OCR, EXIF, sin Tesseract -> texto None) + `servicio.py`. Con los fixtures: 151/153 campos. MRZ sin alerta propia: confianza baja con ADR-007 | `ce6befa` |
