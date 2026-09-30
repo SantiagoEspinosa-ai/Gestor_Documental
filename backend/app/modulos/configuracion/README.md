@@ -24,6 +24,8 @@ Que se valida:
 - `nombre` igual al nombre del fichero.
 - `comparaciones` apunta a tipos existentes y a campos presentes en ambas fichas.
 - No se comprueba que existan los ficheros de `ejemplos_referencia` ni la simetria de las comparaciones.
+  `ejemplos_referencia` apunta a los fixtures del caso sano (`fixtures/generados/<tipo>_sano_<modalidad>.<ext>`),
+  que no estan en git: se generan con `scripts/generar_fixtures.py`. Un test comprueba el formato del nombre.
 
 Anadir un tipo documental = anadir un YAML en `config/tipos/`, sin tocar codigo. Anadir un tipo de
 campo o de regla nuevo si requiere codigo (`TipoCampo`, `TipoRegla`).

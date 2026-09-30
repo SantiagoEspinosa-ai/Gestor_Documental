@@ -13,6 +13,8 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 | Configuracion | Donde | Destino en el codigo | Estado |
 |---|---|---|---|
 | Fichas de tipos documentales | `config/tipos/*.yaml` (repo) | `configuracion/cargador.py`, expuesto por `configuracion/servicio.py` | implementado |
+| `ejemplos_referencia` de las fichas | `config/tipos/*.yaml`: fixtures del caso sano en `fixtures/generados/`, con las mismas modalidades que ya tenia cada ficha (acordado con PERSONA_3) | referencia; test de nombres en `test_configuracion.py` | implementado |
+| Fixtures de prueba | `fixtures/generados/` (en `.gitignore`): 30 ficheros + `INDICE.md`, generados en local con `scripts/generar_fixtures.py` de `feat/interfaz` (seccion 8) | tests de `ocr.py` y del preparador; valores esperados en `INDICE.md` | generados en local el 2026-09-30 |
 | Asignacion de modelos por tarea | `config/modelos.yaml` (repo) | `motor_ia/enrutador.py` (tarea 8) | decidido |
 | Nombres de los modelos de Ollama | `.env`: `OLLAMA_MODELO_TEXTO`, `OLLAMA_MODELO_VISION` | leidos via `modelos.yaml` (`modelo_texto_env`, `modelo_vision_env`) | decidido; `.env.example` pendiente de PR |
 | URL de Ollama | `.env`: `OLLAMA_BASE_URL` | `OllamaProvider(base_url, ...)`; la lee el enrutador (tarea 8) | implementado en el proveedor |
@@ -89,7 +91,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Lotes de vision | `MAX_PAGINAS_POR_LLAMADA_VISION = 4`. Con mas paginas no se ignora ninguna: se procesan por lotes de 4 y se combinan (`combinar_lotes`). Por campo, el valor no nulo con evidencia valida; ante empate, el de la pagina mas baja; si ningun lote tiene evidencia valida, el primer valor no nulo. La clasificacion solo usa el primer lote. En un lote, `pagina_1..k` relativa a las imagenes enviadas se traduce a la pagina real | Cada pagina A4 a 1000 px suma ~1 850 tokens y ~130 s en CPU | `proveedores/base.py`, `proveedores/ollama.py` | unitario con Ollama simulado |
 | Contexto | `NUM_CTX = 16384`. Medido (`pruebas_ollama/prueba_num_ctx.py`): 1 pagina A4 + prompt = 2 457 tokens; 4 paginas + prompt + 20 000 caracteres = 13 476; con `NUM_PREDICT` quedan ~2 100 de margen (13 %) | Si no se fija, Ollama usa un contexto menor y recorta la entrada sin avisar | `proveedores/base.py` | unitario del cuerpo de la peticion |
 | Timeouts | Texto: 120 s. Vision: 60 s + 150 s por imagen (4 imagenes -> 660 s). El reintento de correccion, sin imagenes, usa el de texto | Medido: 4 paginas = 499 s solo de lectura del prompt; un timeout fijo de 300 s fallaria siempre | `proveedores/base.py` (`timeout_vision`) | unitario |
-| Texto largo | `MAX_CARACTERES_TEXTO = 20000`: `recortar_texto` respeta el orden de las paginas y marca `[texto recortado]`. Debe saltar una alerta, pero **no hay un codigo adecuado en `codigos_alertas.md`** (ver pendientes) | Mantener el prompt dentro de `NUM_CTX` | `proveedores/base.py`; la alerta, en `motor_ia/servicio.py` (tarea 9) | unitario |
+| Texto largo | `MAX_CARACTERES_TEXTO = 20000`: `recortar_texto` respeta el orden de las paginas y marca `[texto recortado]`. Si se recorta, alerta **`SYS-003`** (preventiva): "El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido". Propuesta en la rama `docs/alerta-sys-003` (`3352151`), pendiente de fusionar en `main` | Mantener el prompt dentro de `NUM_CTX` | `proveedores/base.py`; la alerta, en `motor_ia/servicio.py` (tarea 9) | unitario |
 | Evidencia | Valida: `pagina_<n>[:detalle]` de una pagina del documento. En vision solo `pagina_<n>`; en texto se conserva el detalle (p. ej. `pagina_1:Fecha de caducidad`). Si es invalida, se quita: el Contrato 1 no admite valores nulos | `qwen2.5vl:3b` copia la seccion del ejemplo o devuelve `seccion_superior` sin pagina | `proveedores/base.py` | unitario con respuestas guardadas |
 | Campos y tipos | Solo se conservan los campos de la ficha (`qwen` anadio `tipo` y `pais_emisor`); un campo ausente queda `null` con confianza 0. `anio` de 4 cifras -> entero; si no, texto original con confianza 0. Los valores que no son texto se convierten a texto | La regla `anio_mayor_o_igual_actual` compara numeros | `proveedores/base.py` | unitario |
 | Fecha no normalizable | Se conserva el texto original con confianza 0 (p. ej. `"mayo 2034"`). **Las reglas de fecha de la etapa 2 deben tratarlo como fecha invalida y generar una alerta, sin fallar** | Que el revisor vea el dato y no salte un falso `VAL-001` (obligatorio ausente) | `proveedores/base.py`; reglas en `validacion/reglas.py` (etapa 2) | unitario |
@@ -153,7 +155,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **OCR + texto frente a vision** para `pdf_escaneado` e `imagen`: comparar aciertos y tiempo
       (Tesseract + `gemma4:e2b` frente a `qwen2.5vl:3b`) cuando haya Tesseract.
 - [ ] **Probar credencial de elector y comprobante de domicilio**: solo se ha probado el pasaporte.
-- [ ] **Fixtures de PERSONA_3** (`fixtures/generados/`, en `.gitignore`: cada persona los genera en local).
+- [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
+      scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
 - [ ] **PR pequeno de `.env.example`**: `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
       `CONFIG_DIR`, `PROMPTS_DIR` y un comentario con los tres valores de `OLLAMA_BASE_URL` (seccion 2).
@@ -171,9 +174,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
-- [ ] **Codigo de alerta para el texto recortado** (`MAX_CARACTERES_TEXTO`): ninguno de `codigos_alertas.md`
-      encaja (`VIS-002` es una pagina recortada en la imagen, no un recorte de texto). Decidirlo antes de la
-      tarea 9; anadir un codigo nuevo es libre si se anade al catalogo en el mismo commit.
+- [ ] **`SYS-003` (texto recortado)**: rama `docs/alerta-sys-003` con solo el catalogo; abrir el PR, avisar al
+      equipo y fusionar antes de la tarea 9, donde `motor_ia/servicio.py` la emite.
 - [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
       como fecha invalida y generar una alerta, sin fallar.
 - [ ] `NUM_CTX` con documentos reales: el margen medido es del 13 %; revisarlo si hay paginas mas altas que
@@ -189,13 +191,35 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Contenedor del backend (recomendado) | `docker compose build backend` y despues `docker compose run --rm --no-deps backend python -m pytest -q` | Incluye PyMuPDF y Tesseract. `--no-deps` no levanta `db` ni `ollama` (los tests no los necesitan); `--rm` borra el contenedor al terminar. Requiere `.env` y Docker Desktop en marcha |
 | venv local | `cd backend && .venv/Scripts/python -m pytest -q` | En Windows necesita el Visual C++ Redistributable x64 para PyMuPDF |
 
+Generar los fixtures de PERSONA_3 sin anadir sus scripts a esta rama (desde la raiz del repo, en Git Bash):
+
+```
+mkdir -p <scratchpad>/fixtures_p3 fixtures/generados
+git show origin/feat/interfaz:scripts/generar_fixtures.py > <scratchpad>/fixtures_p3/generar_fixtures.py
+MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures" \
+  -v "<scratchpad>/fixtures_p3:/scripts:ro" backend python /scripts/generar_fixtures.py --hoy AAAA-MM-DD
+```
+
+El script calcula sus rutas desde su ubicacion: montado en `/scripts`, lee `/config` y escribe en
+`/fixtures/generados`. Con el mismo `--hoy`, los ficheros salen identicos byte a byte.
+
+## 9. OCR (`orquestador/ocr.py`, tarea 3)
+
+| Requisito | Detalle | Origen |
+|---|---|---|
+| Linea base | 150/153 campos con Tesseract `spa+eng`, render a 200 dpi, escala de grises + autocontraste. `ocr.py` no debe quedar por debajo con los mismos fixtures | `scripts/verificar_ocr_fixtures.py` de PERSONA_3 (2026-09-30) |
+| Sexo del pasaporte | Si no se lee en la zona visual, se toma de la MRZ: posicion 21 de la linea 2 (TD3) | Fallo conocido: `sexo` "M" suelto no lo lee Tesseract |
+| Digitos de control de la MRZ | Validar los digitos de control (numero, nacimiento, vencimiento, datos personales y compuesto, pesos 7-3-1). Un fallo indica una lectura erronea (p. ej. Z/2) | Fallo conocido de la MRZ de `pasaporte_vencido` |
+| Casos de prueba | `pasaporte_vencido_escaneado.pdf` y `pasaporte_vencido_foto.jpg` (sexo "M" y confusion Z/2 en la MRZ); el resto de fixtures como regresion de la linea base | `INDICE.md` y `resultado_ocr.md` de PERSONA_3 |
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | `proveedores/base.py` y `proveedores/ollama.py`: constantes de llamada en `base.py`, `NUM_CTX=16384` medido, timeouts de vision por imagen, lotes de 4 paginas con combinacion, evidencia y campos normalizados, fecha no normalizable como texto con confianza 0, `think` segun `/api/show`, reintento con `correccion_json_v1`. 7 respuestas reales en `backend/tests/respuestas_modelo/` | este commit |
+| 2026-09-30 | `ejemplos_referencia` de las tres fichas apuntan a los fixtures del caso sano en `fixtures/generados/` (test de nombres). Fixtures de PERSONA_3 generados en local. Requisitos para `ocr.py` (seccion 9). `SYS-003` para el texto recortado, propuesta en la rama `docs/alerta-sys-003` | este commit |
+| 2026-09-30 | `proveedores/base.py` y `proveedores/ollama.py`: constantes de llamada en `base.py`, `NUM_CTX=16384` medido, timeouts de vision por imagen, lotes de 4 paginas con combinacion, evidencia y campos normalizados, fecha no normalizable como texto con confianza 0, `think` segun `/api/show`, reintento con `correccion_json_v1`. 7 respuestas reales en `backend/tests/respuestas_modelo/` | `6397817` |
 | 2026-09-30 | `motor_ia/prompts.py`: carga y renderizado con frontmatter, `StrictUndefined`, `PROMPTS_DIR`, `VERSIONES_VIGENTES` (v2) y `version_prompt` `<id>_<tipo>@<version>` / `clasificacion@v2`. Prompts `clasificacion_v2` y `extraccion_v2` (19 tests) | `c41eaed` |
 | 2026-09-30 | ADR-007 propuesto: confianza de campo y de clasificacion calculada por el codigo (clasificacion con `marcadores_clasificacion` del tipo detectado); la del modelo, solo en la auditoria | `7ece6b4` (PR: rama `docs/adr-007-confianza`, `a05bf3c`) |
 | 2026-09-30 | `OLLAMA_BASE_URL` segun el entorno: `localhost` en local, `host.docker.internal` desde un contenedor con Ollama en Windows, `ollama` solo con el servicio de docker-compose. `.env` local con `localhost` | `86e5905` |

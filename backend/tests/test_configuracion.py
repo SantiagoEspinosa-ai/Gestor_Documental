@@ -65,6 +65,20 @@ def test_carga_las_fichas_reales_del_repo():
     assert len(servicio.listar()) == len(tipos)
 
 
+def test_ejemplos_referencia_apuntan_a_fixtures_generados_del_caso_sano():
+    # Los ficheros no estan en git (fixtures/generados/ se genera con scripts/generar_fixtures.py):
+    # se comprueba el nombre, no que existan.
+    for ficha in cargar().values():
+        assert ficha.ejemplos_referencia, ficha.nombre
+        for ruta in ficha.ejemplos_referencia:
+            carpeta, _, archivo = ruta.rpartition("/")
+            base, _, extension = archivo.rpartition(".")
+            assert carpeta == "fixtures/generados", ruta
+            assert base.startswith(f"{ficha.nombre}_sano_"), ruta
+            assert base.removeprefix(f"{ficha.nombre}_sano_") in {"digital", "escaneado", "foto"}, ruta
+            assert extension in ficha.formatos_permitidos, ruta
+
+
 def test_obtener_tipo_inexistente():
     cargar()
     with pytest.raises(TipoNoEncontrado):
