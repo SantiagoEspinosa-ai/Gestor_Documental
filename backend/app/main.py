@@ -5,6 +5,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
+from app.core.errores import ErrorApi, manejar_error_api
 from app.core.procesos import leer_procesos, sincronizar_procesos
 
 
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Gestor Documental Inteligente", version="0.1.0", lifespan=lifespan)
+app.add_exception_handler(ErrorApi, manejar_error_api)
 
 
 @app.get("/salud")

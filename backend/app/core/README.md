@@ -7,6 +7,8 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `db.py`: `Base` de SQLAlchemy 2, `get_engine()` perezoso y dependencia `get_sesion()` de FastAPI.
 - `modelos.py`: tablas de la plataforma. Migraciones en `backend/alembic/` (`alembic upgrade head`).
 - `procesos.py`: valida `config/procesos.yaml` (`leer_procesos`) y lo vuelca a la tabla `procesos` al arrancar (`sincronizar_procesos`, upsert sin borrar).
+- `errores.py`: `ErrorApi(http, codigo, mensaje)` y su manejador, que responde `{codigo, mensaje}` (ADR-006 1.4).
+- `seguridad.py`: hash bcrypt, `crear_token` JWT y dependencias `usuario_actual` y `requiere_rol(*roles)`. Usuarios con `scripts/crear_usuario.py`.
 
 ## Tablas
 - `usuarios`: usuario unico, hash bcrypt y rol (admin, revisor, integrador).
