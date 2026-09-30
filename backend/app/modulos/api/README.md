@@ -30,10 +30,11 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
 - Query: `proceso?`, `estado_general?` (en_revision | aprobado | rechazado), `pagina` >= 1,
   `tamano_pagina` 1-100 (20 por defecto).
 - Salida 200: `{elementos: [ResumenFolio], total, pagina, tamano_pagina}`, del mas reciente al mas antiguo.
-  `ResumenFolio` = `{folio, proceso, estado_general, recomendacion_global, n_documentos,
-  n_bloqueantes_sin_resolver, fecha_solicitud}` (ADR-006 1.1; aun no esta en el Contrato 1).
+  `ResumenFolio` (Contrato 1, ADR-006 1.1) = `{folio, proceso, estado_general, recomendacion_global,
+  n_documentos, n_bloqueantes_sin_resolver, fecha_solicitud}`. `PaginaFolios` es del Contrato 2.
 - Errores: 422 `PETICION_INVALIDA`.
 
 ### GET /api/v1/folios/{folio} (cualquier rol)
-- Salida 200: `ResultadoExpediente` (Contrato 1).
+- Salida 200: `ResultadoExpediente` (Contrato 1), con `referencia_externa` y `fecha_solicitud`
+  (ADR-004) y los datos de la decision (ADR-006 G).
 - Errores: 404 `FOLIO_NO_ENCONTRADO`.

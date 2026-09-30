@@ -23,7 +23,7 @@ from app.core.modelos import AlertaBD, Auditoria, Documento, Folio, Proceso, Res
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio
-from app.schemas.resultado import ResultadoExpediente
+from app.schemas.resultado import DecisionHumana, EstadoGeneral, ResultadoExpediente
 
 SECRETO = "clave-ficticia-de-test"
 URL = "/api/v1/folios"
@@ -188,6 +188,33 @@ def test_expediente_con_la_version_mayor(cliente, sesion):
     assert len(expediente.documentos) == 1
     assert expediente.documentos[0].confianza_clasificacion == 0.9
     assert expediente.decision_humana is None
+
+
+def test_expediente_con_referencia_y_fecha_de_solicitud(cliente, sesion):
+    folio = servicio.crear_folio(sesion, "onboarding", "CLI-000123", "x")
+    r = cliente.get(f"{URL}/{folio.folio}", headers=_cab("integrador")).json()
+    assert r["referencia_externa"] == "CLI-000123"
+    assert r["fecha_solicitud"] is not None
+    assert datetime.fromisoformat(r["fecha_solicitud"]).replace(tzinfo=None) == \
+        folio.creado_en.replace(tzinfo=None)
+
+
+def test_expediente_con_decision_guardada(cliente, sesion):
+    folio = servicio.crear_folio(sesion, "onboarding", None, "x")
+    folio.estado_general = "rechazado"
+    folio.decision = "rechazar"
+    folio.decision_comentario = "Domicilio distinto en los documentos (ficticio)"
+    folio.decision_usuario = "revisor_ficticio"
+    folio.decision_fecha = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    sesion.commit()
+
+    expediente = ResultadoExpediente.model_validate(
+        cliente.get(f"{URL}/{folio.folio}", headers=_cab("revisor")).json())
+    assert expediente.estado_general == EstadoGeneral.rechazado
+    assert expediente.decision_humana == DecisionHumana.rechazar
+    assert expediente.comentario_decision == "Domicilio distinto en los documentos (ficticio)"
+    assert expediente.usuario_decision == "revisor_ficticio"
+    assert expediente.fecha_decision.replace(tzinfo=None) == datetime(2026, 9, 30, 12)
 
 
 # --- GET /folios ---

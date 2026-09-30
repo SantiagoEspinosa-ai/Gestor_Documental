@@ -21,6 +21,3 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha).
 - `correcciones`: cambios del revisor sobre `datos_extraidos` (valor anterior y nuevo).
 - `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`), sin FK para no bloquear borrados.
-
-## Pendientes
-- Codigos de error `RUTA_NO_ENCONTRADA` (404), `METODO_NO_PERMITIDO` (405) y `SECUENCIA_AGOTADA` (409): pendientes de anadir a `docs/contratos/codigos_error.md` (PERSONA_3).

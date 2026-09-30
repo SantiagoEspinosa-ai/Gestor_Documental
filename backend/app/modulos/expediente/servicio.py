@@ -1,6 +1,5 @@
 """API publica del modulo expediente: crear, consultar y listar folios (ADR-005: solo esto se importa)."""
 from datetime import datetime, timezone
-from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select
@@ -12,7 +11,8 @@ from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
-from app.schemas.resultado import ResultadoDocumento, ResultadoExpediente, Severidad
+from app.schemas.resultado import (DecisionHumana, EstadoGeneral, ResultadoDocumento,
+                                   ResultadoExpediente, ResumenFolio, Severidad)
 
 MAX_SECUENCIA = 999_999  # NNNNNN
 
@@ -69,27 +69,33 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         .where(Documento.folio == folio)
         .order_by(Documento.creado_en, Documento.id)
     )
-    # TODO: referencia_externa y fecha_solicitud (ADR-004) cuando llegue el PR de contratos
+    # Los nombres de columna de BD se traducen aqui a los del Contrato 1
     return ResultadoExpediente(
         folio=fila.folio,
         proceso=fila.proceso,
-        estado_general=fila.estado_general,
+        referencia_externa=fila.referencia_externa,  # ADR-004
+        fecha_solicitud=fila.creado_en,              # ADR-004
+        estado_general=EstadoGeneral(fila.estado_general),
         documentos=[ResultadoDocumento.model_validate(r.json) for r in resultados],
         comparaciones=[],
         alertas_expediente=[],
         recomendacion_global=None,
-        decision_humana=fila.decision,
+        decision_humana=DecisionHumana(fila.decision) if fila.decision else None,
+        comentario_decision=fila.decision_comentario,  # ADR-006 G
+        usuario_decision=fila.decision_usuario,
+        fecha_decision=fila.decision_fecha,
     )
 
 
-def listar_folios(sesion: Session, proceso: str | None = None, estado_general: str | None = None,
-                  pagina: int = 1, tamano_pagina: int = 20) -> tuple[list[dict[str, Any]], int]:
-    """Pagina de folios, del mas reciente al mas antiguo, con la forma de ResumenFolio (ADR-006 1.1)."""
+def listar_folios(sesion: Session, proceso: str | None = None,
+                  estado_general: EstadoGeneral | None = None, pagina: int = 1,
+                  tamano_pagina: int = 20) -> tuple[list[ResumenFolio], int]:
+    """Pagina de folios (ResumenFolio, ADR-006 1.1), del mas reciente al mas antiguo, y el total."""
     filtros = []
     if proceso:
         filtros.append(Folio.proceso == proceso)
     if estado_general:
-        filtros.append(Folio.estado_general == estado_general)
+        filtros.append(Folio.estado_general == EstadoGeneral(estado_general).value)
 
     total = sesion.scalar(select(func.count()).select_from(Folio).where(*filtros))
 
@@ -109,9 +115,9 @@ def listar_folios(sesion: Session, proceso: str | None = None, estado_general: s
         .limit(tamano_pagina)
     )
     elementos = [
-        {"folio": f.folio, "proceso": f.proceso, "estado_general": f.estado_general,
-         "recomendacion_global": None, "n_documentos": docs, "n_bloqueantes_sin_resolver": bloq,
-         "fecha_solicitud": f.creado_en}
+        ResumenFolio(folio=f.folio, proceso=f.proceso, estado_general=EstadoGeneral(f.estado_general),
+                     recomendacion_global=None, n_documentos=docs, n_bloqueantes_sin_resolver=bloq,
+                     fecha_solicitud=f.creado_en)
         for f, docs, bloq in filas
     ]
     return elementos, total

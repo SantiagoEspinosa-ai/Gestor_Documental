@@ -1,7 +1,4 @@
 """Router de folios: POST /api/v1/folios, GET /api/v1/folios y GET /api/v1/folios/{folio}."""
-from datetime import datetime
-from typing import Literal
-
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -10,11 +7,9 @@ from app.core.db import get_sesion
 from app.core.modelos import Usuario
 from app.core.seguridad import requiere_rol, usuario_actual
 from app.modulos.expediente import servicio as expediente
-from app.schemas.resultado import Recomendacion, ResultadoExpediente
+from app.schemas.resultado import EstadoGeneral, ResultadoExpediente, ResumenFolio
 
 router = APIRouter(prefix="/api/v1/folios", tags=["folios"])
-
-EstadoGeneral = Literal["en_revision", "aprobado", "rechazado"]
 
 
 class FolioEntrada(BaseModel):
@@ -26,21 +21,11 @@ class FolioEntrada(BaseModel):
 
 class FolioCreado(BaseModel):
     folio: str
-    estado_general: str
-
-
-# TODO: importar ResumenFolio de app.schemas.resultado cuando llegue el PR de contratos (ADR-006 1.1)
-class ResumenFolio(BaseModel):
-    folio: str
-    proceso: str
-    estado_general: str
-    recomendacion_global: Recomendacion | None = None
-    n_documentos: int = 0
-    n_bloqueantes_sin_resolver: int = 0
-    fecha_solicitud: datetime | None = None
+    estado_general: EstadoGeneral
 
 
 class PaginaFolios(BaseModel):
+    """Respuesta de GET /folios (Contrato 2); no forma parte del Contrato 1."""
     elementos: list[ResumenFolio]
     total: int
     pagina: int

@@ -17,14 +17,14 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
-from app.schemas.resultado import EstadoAnalisis, Severidad
+from app.schemas.resultado import DecisionHumana, EstadoAnalisis, EstadoGeneral, Severidad
 
 # JSONB en PostgreSQL, JSON en el resto (SQLite en los tests)
 Json = JSON().with_variant(JSONB(), "postgresql")
 
 ROLES = ("admin", "revisor", "integrador")
-ESTADOS_FOLIO = ("en_revision", "aprobado", "rechazado")
-DECISIONES = ("aprobar", "rechazar")
+ESTADOS_FOLIO = tuple(e.value for e in EstadoGeneral)
+DECISIONES = tuple(e.value for e in DecisionHumana)
 
 # ADR-006 1.5. Sin CHECK en BD: la lista crece en la etapa 3 (dato_revelado)
 ACCIONES_AUDITORIA = (
