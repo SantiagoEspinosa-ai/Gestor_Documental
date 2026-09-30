@@ -10,7 +10,8 @@ from app.core.db import Base
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Sin desactivar los loggers de la app ya creados (p. ej. al migrar desde los tests)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # La URL sale siempre de los settings (.env), nunca de alembic.ini
 config.set_main_option("sqlalchemy.url", get_settings().database_url.get_secret_value())
