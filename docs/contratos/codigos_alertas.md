@@ -26,6 +26,8 @@ La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
 | `VIS-002` | motor_ia (extra 2) | critica | Pagina incompleta o recortada |
 | `VIS-003` | motor_ia (extra 2) | critica | Alteracion o anomalia visible |
 
+`SYS-004`: retirado, no reutilizar.
+
 Recomendacion por documento y global (ver `docs/equipo/PERSONA_1_plataforma.md`, etapa 2):
 - alguna `bloqueante` que impide aprobar (con `aplica` distinto de `false`, regla 2.2 del ADR-006)
   -> `revision_manual` y la decision `aprobar` queda bloqueada;
