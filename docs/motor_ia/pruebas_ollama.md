@@ -79,6 +79,28 @@ Con los 800 tokens de salida (`num_predict`) quedan ~2 100 de margen: `NUM_CTX =
 El tiempo obliga a que el timeout de vision dependa del numero de imagenes (60 s + 150 s por imagen).
 RAM libre minima: 3,1 GB.
 
+## Ejecucion del CLI (entregable de la etapa 1)
+
+2026-09-30. `python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf --tipo pasaporte`
+en el contenedor del backend, contra el Ollama del equipo (`OLLAMA_BASE_URL=http://host.docker.internal:11434`).
+Fixture de PERSONA_3 del caso `sano`, datos ficticios. Una modalidad cada vez, descargando los modelos entre
+una y otra y con el vigilante de RAM (aborta por debajo de 1 GB).
+
+| Modalidad | RAM libre al empezar | Ejecutado | Tiempo total | Llamadas | Campos correctos (`INDICE.md`) | Estado y alertas |
+|---|---|---|---|---|---|---|
+| `pasaporte_sano_digital.pdf` | 6,30 GB | si | 68 s | clasificacion 27 s + extraccion 38 s (`gemma4:e2b`, sin reintentos) | **7/7** | `completado`, sin alertas |
+| `pasaporte_sano_escaneado.pdf` | 6,25 GB | no: faltaban 0,25 GB para el margen de 6,5 GB | - | - | - | - |
+| `pasaporte_sano_foto.jpg` | 6,26 GB | no: faltaban 0,24 GB para el margen de 6,5 GB | - | - | - | - |
+
+- Resultado del digital: `pruebas_ollama/resultados/cli/pasaporte_sano_digital.json` (`ResultadoDocumento`
+  valido). Detectado `pasaporte` (igual al declarado), `version_prompt` `extraccion_pasaporte@v2`, modelo real
+  `gemma4:e2b`, referencia `local://pasaporte_sano_digital.pdf` con el SHA-256 de `INDICE.md`.
+- RAM libre minima durante el digital: 3,1 GB. El respaldo comercial quedo desactivado por la barrera de privacidad.
+- Confianza del modelo: 1,0 en los 7 campos (otra vez sin informacion; ADR-007).
+- Evidencia: `pagina_1:seccion_central` en los 7 campos; valida, pero no dice donde esta cada dato.
+- Vision: pendiente de ejecutar cuando haya RAM suficiente (`qwen2.5vl:3b` consume ~5 GB) o la maquina con GPU.
+  No se lanzo con el margen reducido.
+
 ## Fallo de gemma4 con imagenes en Windows
 
 `gemma4` anuncia vision, pero en Ollama para Windows no procesa las imagenes: el codificador recibe
