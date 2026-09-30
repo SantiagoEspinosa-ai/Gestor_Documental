@@ -175,7 +175,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
       scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
-- [ ] **PR pequeno de `.env.example`**: `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
+- [ ] **PR de `.env.example`** (rama `chore/env-example`, `dfd9a3b`, subida; pendiente de fusionar): `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
       `CONFIG_DIR`, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` y un comentario con los tres valores de
       `OLLAMA_BASE_URL` (seccion 2). **Avisar al equipo** de la barrera de privacidad: con `false`, OpenRouter
       no se usa nunca, ni como respaldo.
@@ -296,7 +296,28 @@ Propuesta para la etapa 2: **que la dependencia sea en un solo sentido, `orquest
   recomendacion del documento) -> `(ResultadoDocumento, datos_auditoria)`.
 - Descartado: importar dentro de la funcion (funciona, pero esconde el ciclo) e importar `orquestador/mrz.py`
   directamente (incumple la regla 2 de ADR-005).
-- Un test comprobara que `motor_ia` no importa `orquestador`.
+- Un test comprobara que `motor_ia` no importa `orquestador`, salvo `motor_ia/cli.py`: es un punto de entrada
+  que ningun modulo importa, asi que no crea ciclo.
+
+## 12. CLI (`motor_ia/cli.py`, tarea 10, entregable de la etapa 1)
+
+| Regla | Detalle |
+|---|---|
+| Uso | `python -m app.modulos.motor_ia.cli <archivo> [--tipo T] [--tipo-confirmado T] [--folio F] [--salida fichero.json]` desde `backend/` |
+| Salida | stdout: solo el `ResultadoDocumento` (JSON). stderr: resumen (modalidad, modelo, segundos y tokens por llamada, alertas), sin datos del documento |
+| Codigos de salida | 0 completado; 1 `estado_analisis=error` (el JSON se imprime igual); 2 error de entrada o de configuracion (archivo inexistente, `FormatoNoSoportado`, tipo inexistente, `ErrorEnrutador`, fichas o prompts invalidos) |
+| Folio y referencia | `CLI-2026-000000` por defecto; `referencia_archivo_original`: `nombre_archivo`, `ruta = local://<nombre>` (sin rutas personales) y el SHA-256 real |
+| `.env` | Se lee el de la raiz del repo con `python-dotenv` (declarado en `requirements.txt`); el entorno real tiene prioridad. En Docker, `env_file` ya inyecta las variables |
+| Ruta del archivo | Desde la carpeta actual y, si no existe, desde la raiz del repo: el comando del entregable funciona desde `backend/` y en el contenedor (con `/fixtures` montado) |
+| Validacion al arrancar | Fichas, tipos de `--tipo` y `--tipo-confirmado` y enrutador antes de preparar el documento |
+
+Ejecucion real en el contenedor contra el Ollama del equipo (Windows sin Visual C++ Redistributable):
+
+```
+MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures:ro" \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 backend \
+  python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf --tipo pasaporte
+```
 
 ## Registro de cambios
 
@@ -304,7 +325,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | Seccion 11: acuerdo con PERSONA_1 para la etapa 2 (`procesar_documento`, `datos_auditoria`, errores, reparto de alertas y recomendaciones) y propuesta para evitar la importacion circular: dependencia `orquestador -> motor_ia`, con la MRZ en `orquestador` | este commit |
+| 2026-09-30 | `motor_ia/cli.py` (seccion 12): JSON por stdout y resumen por stderr, salidas 0/1/2, `local://` + SHA-256, `.env` con `python-dotenv` (anadido a `requirements.txt`), ruta desde la raiz del repo, `--tipo-confirmado` (11 tests). PR de `.env.example` subido en `chore/env-example` | este commit |
+| 2026-09-30 | Seccion 11: acuerdo con PERSONA_1 para la etapa 2 (`procesar_documento`, `datos_auditoria`, errores, reparto de alertas y recomendaciones) y propuesta para evitar la importacion circular: dependencia `orquestador -> motor_ia`, con la MRZ en `orquestador` | `39bf63f` |
 | 2026-09-30 | Merge del PR #3 de PERSONA_1 (core, API, ingesta, expediente), sin conflictos. Los tests en el contenedor necesitan montar `scripts/` (seccion 8): 369 pasan y 1 se salta (requiere `TEST_POSTGRES_URL`) | `beb1b9f` |
 | 2026-09-30 | `motor_ia/servicio.py`: `analizar(doc, *, folio, referencia, ...)` -> `Analisis` (se aparta de `analizar(doc, ficha)` por ADR-006 y el Contrato 1). Ficha tipo_confirmado > declarado > detectado; `CLS-001`, `SYS-001/002/003/005`, `VAL-003` con confianza 1,0; respaldo tambien ante JSON invalido; sexo desde la MRZ (1,0 / 0,5); desconocido sin declarado no se extrae ni alerta. Confianzas del modelo provisionales, sin `CLS-002` ni `VAL-002` (deuda ADR-007). `orquestador.servicio` expone `buscar_mrz` y `validar_digitos` (17 tests) | `2178f83` |
 | 2026-09-30 | `motor_ia/enrutador.py`: `modelos.yaml` validado de forma estricta, proveedores desde las variables de entorno, `por_tipo`, barrera de privacidad `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`), principal no disponible -> error al arrancar, respaldo no disponible -> `None`. `Tarea.validacion` aceptada sin uso; perfiles de `procesos.yaml` no implementados. `configuracion.servicio.directorio_config()` expuesto (24 tests) | `bbfdc9d` |

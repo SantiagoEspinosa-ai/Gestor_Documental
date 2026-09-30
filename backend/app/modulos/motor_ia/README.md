@@ -27,6 +27,22 @@ Proveedores (cada uno en `proveedores/<nombre>.py`, implementan `ProveedorLLM`):
 Tests: `test_proveedores_base.py` y `test_proveedor_ollama.py` (Ollama simulado; respuestas reales en
 `backend/tests/respuestas_modelo/`).
 
+## CLI (`cli.py`, entregable de la etapa 1)
+```
+python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf --tipo pasaporte
+```
+- Opciones: `--tipo` (declarado), `--tipo-confirmado`, `--folio` (por defecto `CLI-2026-000000`),
+  `--salida <fichero.json>`.
+- stdout: solo el `ResultadoDocumento` en JSON. stderr: resumen (modalidad, modelo, segundos y tokens de
+  cada llamada, alertas), sin datos del documento.
+- Salida: 0 completado; 1 `estado_analisis=error` (el JSON se imprime igual); 2 error de entrada o de
+  configuracion (archivo, formato, tipo, `modelos.yaml`, fichas o prompts).
+- Referencia del archivo: `local://<nombre>` (sin rutas personales) y SHA-256 real.
+- Lee el `.env` de la raiz del repo (`python-dotenv`); el entorno real tiene prioridad. La ruta se busca
+  desde la carpeta actual y, si no existe, desde la raiz del repo.
+- En Windows sin Visual C++ Redistributable, ejecutarlo en el contenedor del backend (spec, seccion 12).
+- Tests: `backend/tests/test_cli.py`.
+
 ## Enrutador (`enrutador.py`)
 - `crear_enrutador(directorio=None, entorno=None, tipos_documentales=None) -> EnrutadorYaml`
   (implementa `Enrutador`, Contrato 3). Lee y valida `CONFIG_DIR/modelos.yaml` de forma estricta
