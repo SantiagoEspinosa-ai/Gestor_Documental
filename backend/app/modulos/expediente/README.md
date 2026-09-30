@@ -11,8 +11,8 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   al llegar los documentos es de la etapa 2 (TODO en el codigo). Todo en la misma transaccion; audita
   `folio_creado`. Errores: 404 `PROCESO_NO_ENCONTRADO`, 409 `SECUENCIA_AGOTADA`.
 - `obtener_expediente(sesion, folio) -> ResultadoExpediente`
-  Un `ResultadoDocumento` por documento: el de version mayor; los documentos sin resultado no
-  aparecen. `alertas_expediente` = alertas del folio sin documento, con `id` y revision (convertidas
+  Todos los documentos del folio (por `creado_en` e `id`), tengan resultado o no, armados con
+  `ingesta.servicio.construir_resultado` (igual que `GET /documentos/{id}`). `alertas_expediente` = alertas del folio sin documento, con `id` y revision (convertidas
   con `ingesta.servicio.alerta_desde_bd`). `comparaciones` vacias y `recomendacion_global` nula por ahora.
   Traduce columnas de BD al Contrato 1: `referencia_externa` y `fecha_solicitud` (= `creado_en`,
   ADR-004); `decision_humana`, `comentario_decision`, `usuario_decision` y `fecha_decision`

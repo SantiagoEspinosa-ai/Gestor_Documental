@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
+from app.core.modelos import AlertaBD, Documento, Folio, Proceso, SecuenciaFolio
 from app.modulos.ingesta import servicio as ingesta
-from app.schemas.resultado import (DecisionHumana, EstadoGeneral, ResultadoDocumento,
-                                   ResultadoExpediente, ResumenFolio, Severidad)
+from app.schemas.resultado import (DecisionHumana, EstadoGeneral, ResultadoExpediente, ResumenFolio,
+                                   Severidad)
 
 MAX_SECUENCIA = 999_999  # NNNNNN
 
@@ -67,17 +67,9 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
     if fila is None:
         raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
 
-    # Version vigente = la mayor de cada documento. Sin resultado todavia: no aparece (tarea 9)
-    ultima = (select(Resultado.documento_id, func.max(Resultado.version).label("version"))
-              .group_by(Resultado.documento_id).subquery())
-    resultados = sesion.scalars(
-        select(Resultado)
-        .join(ultima, (Resultado.documento_id == ultima.c.documento_id)
-              & (Resultado.version == ultima.c.version))
-        .join(Documento, Documento.id == Resultado.documento_id)
-        .where(Documento.folio == folio)
-        .order_by(Documento.creado_en, Documento.id)
-    )
+    # Todos los documentos del folio, tengan resultado o no; el mismo armado que GET /documentos/{id}
+    documentos = sesion.scalars(select(Documento).where(Documento.folio == folio)
+                                .order_by(Documento.creado_en, Documento.id)).all()
     # Alertas de expediente = las del folio sin documento (ADR-006 2.1)
     alertas_expediente = sesion.scalars(
         select(AlertaBD).where(AlertaBD.folio == folio, AlertaBD.documento_id.is_(None))
@@ -90,7 +82,7 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         referencia_externa=fila.referencia_externa,  # ADR-004
         fecha_solicitud=fila.creado_en,              # ADR-004
         estado_general=EstadoGeneral(fila.estado_general),
-        documentos=[ResultadoDocumento.model_validate(r.json) for r in resultados],
+        documentos=[ingesta.construir_resultado(sesion, d) for d in documentos],
         comparaciones=[],
         alertas_expediente=[ingesta.alerta_desde_bd(a) for a in alertas_expediente],
         recomendacion_global=None,

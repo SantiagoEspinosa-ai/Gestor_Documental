@@ -24,8 +24,13 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). El router es `api/
 - Si el commit falla despues de subir, el objeto queda huerfano en S3 (el IAM no puede borrar): se
   registra con `log.error` y la clave para revisarlo a mano.
 
-`obtener_resultado(sesion, documento_id) -> ResultadoDocumento`: version mayor con el estado y el tipo
-confirmado de la BD; sin resultado, uno minimo con el estado de la fila y sus alertas (con `id`).
+`construir_resultado(sesion, documento) -> ResultadoDocumento`: el unico armado del resultado, que
+usan `GET /documentos/{id}` y el expediente. Con resultado: la version mayor, con `estado_analisis`,
+`tipo_documental_confirmado` y `alertas_encontradas` sobrescritos desde la BD. Sin resultado: uno
+minimo con el estado de la fila y sus alertas (con `id`). La tabla `alertas` es la fuente de verdad
+de las alertas; en la etapa 2 las alertas del motor se guardan en ella al guardar el resultado.
+
+`obtener_resultado(sesion, documento_id) -> ResultadoDocumento`: `construir_resultado` del documento;
 404 `DOCUMENTO_NO_ENCONTRADO` si no existe o el id no es un UUID.
 
 `url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.

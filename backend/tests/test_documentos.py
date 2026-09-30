@@ -14,7 +14,7 @@ from app.core import db
 from app.core.almacenamiento import AlmacenamientoS3, get_almacenamiento
 from app.core.config import get_settings
 from app.core.db import Base
-from app.core.modelos import Documento, Proceso
+from app.core.modelos import AlertaBD, Documento, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio as expediente
@@ -178,3 +178,51 @@ def test_original_devuelve_url_firmada(cliente, folio, sesion):
     ruta = sesion.get(Documento, uuid.UUID(doc_id)).ruta_s3
     assert BUCKET in url and ruta in url
     assert "X-Amz-Signature=" in url or "Signature=" in url
+
+
+# --- mismo armado en GET /documentos/{id} y en GET /folios/{folio} (BD como fuente de verdad) ---
+
+def _en_expediente(cliente, folio, doc_id) -> dict:
+    r = cliente.get(f"/api/v1/folios/{folio}", headers=_cab("revisor")).json()
+    return next(d for d in r["documentos"] if d["identificador_unico_documento"] == str(doc_id))
+
+
+def test_expediente_incluye_documentos_sin_procesar(cliente, folio, sesion, entorno):
+    ingestar(sesion, entorno, folio, "a.pdf", PDF, "credencial_elector", "x")
+    duplicado = ingestar(sesion, entorno, folio, "a.pdf", PDF, "credencial_elector", "x")  # sin BackgroundTask
+
+    expediente = cliente.get(f"/api/v1/folios/{folio}", headers=_cab("revisor")).json()
+    lista = cliente.get("/api/v1/folios", headers=_cab("revisor")).json()["elementos"]
+    assert len(expediente["documentos"]) == lista[0]["n_documentos"] == 2
+    doc = _en_expediente(cliente, folio, duplicado.id)
+    assert doc["estado_analisis"] == "pendiente"
+    assert [a["codigo"] for a in doc["alertas_encontradas"]] == ["DUP-001"]
+    assert doc == cliente.get(f"/api/v1/documentos/{duplicado.id}", headers=_cab("revisor")).json()
+
+
+def test_cambio_de_aplica_en_bd_se_ve_en_los_dos(cliente, folio, sesion):
+    _subir(cliente, folio)
+    doc_id = uuid.UUID(_subir(cliente, folio).json()["identificador_unico_documento"])  # procesado, con DUP-001
+    alerta = sesion.scalar(select(AlertaBD).where(AlertaBD.documento_id == doc_id))
+    alerta.aplica = False
+    alerta.comentario = "Falso positivo (ficticio)"
+    sesion.commit()
+
+    directo = cliente.get(f"/api/v1/documentos/{doc_id}", headers=_cab("revisor")).json()
+    for doc in (directo, _en_expediente(cliente, folio, doc_id)):
+        assert doc["estado_analisis"] == "completado"
+        assert [(a["id"], a["aplica"], a["comentario_revisor"]) for a in doc["alertas_encontradas"]] == \
+            [(str(alerta.id), False, "Falso positivo (ficticio)")]
+
+
+def test_cambio_de_estado_y_tipo_confirmado_en_bd_se_ve_en_los_dos(cliente, folio, sesion):
+    doc_id = uuid.UUID(_subir(cliente, folio).json()["identificador_unico_documento"])  # procesado (v1)
+    fila = sesion.get(Documento, doc_id)
+    fila.estado_analisis = "error"
+    fila.tipo_documental_confirmado = "pasaporte"
+    sesion.commit()
+
+    directo = cliente.get(f"/api/v1/documentos/{doc_id}", headers=_cab("revisor")).json()
+    for doc in (directo, _en_expediente(cliente, folio, doc_id)):
+        assert (doc["estado_analisis"], doc["tipo_documental_confirmado"]) == ("error", "pasaporte")
+        assert doc["fecha_y_modelo_utilizado"]["version_prompt"] == "stub@v0"  # el resto sale del resultado

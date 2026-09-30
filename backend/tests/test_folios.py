@@ -230,8 +230,12 @@ def test_expediente_con_la_version_mayor(cliente, sesion):
     expediente = ResultadoExpediente.model_validate(r.json())
     assert (expediente.folio, expediente.proceso, expediente.estado_general) == (folio, "onboarding",
                                                                                  "en_revision")
-    assert len(expediente.documentos) == 1
-    assert expediente.documentos[0].confianza_clasificacion == 0.9
+    # Todos los documentos del folio aparecen; el que tiene resultado, con su version mayor
+    por_id = {d.identificador_unico_documento: d for d in expediente.documentos}
+    assert set(por_id) == {str(con_resultado.id), str(sin_resultado.id)}
+    assert por_id[str(con_resultado.id)].confianza_clasificacion == 0.9
+    assert por_id[str(sin_resultado.id)].estado_analisis.value == "pendiente"
+    assert por_id[str(sin_resultado.id)].confianza_clasificacion is None
     assert expediente.decision_humana is None
 
 

@@ -124,30 +124,43 @@ def _documento(sesion: Session, documento_id: str) -> Documento:
     return doc
 
 
-def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
-    """Resultado de la version mayor; sin resultado todavia, uno minimo con el estado de la fila."""
-    doc = _documento(sesion, documento_id)
-    fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id)
+def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocumento:
+    """ResultadoDocumento de un documento, con la BD como fuente de verdad.
+
+    Con resultado: la version mayor, sobrescribiendo con la BD `estado_analisis`,
+    `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision).
+    Sin resultado todavia: uno minimo con el estado de la fila y sus alertas.
+    Lo usan GET /documentos/{id} y el expediente, para que los dos digan lo mismo.
+    """
+    alertas = [alerta_desde_bd(a) for a in sesion.scalars(
+        select(AlertaBD).where(AlertaBD.documento_id == documento.id)
+        .order_by(AlertaBD.creado_en, AlertaBD.id))]
+    estado = EstadoAnalisis(documento.estado_analisis)
+    fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == documento.id)
                          .order_by(Resultado.version.desc()).limit(1))
     if fila is not None:
-        # El estado y el tipo confirmado los manda la BD, no el JSON guardado
         return ResultadoDocumento.model_validate(fila.json).model_copy(update={
-            "estado_analisis": EstadoAnalisis(doc.estado_analisis),
-            "tipo_documental_confirmado": doc.tipo_documental_confirmado,
+            "estado_analisis": estado,
+            "tipo_documental_confirmado": documento.tipo_documental_confirmado,
+            "alertas_encontradas": alertas,
         })
-    alertas = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)
-                             .order_by(AlertaBD.creado_en))
     return ResultadoDocumento(
-        folio_solicitud=doc.folio,
-        identificador_unico_documento=str(doc.id),
-        tipo_documental_declarado=doc.tipo_declarado,
+        folio_solicitud=documento.folio,
+        identificador_unico_documento=str(documento.id),
+        tipo_documental_declarado=documento.tipo_declarado,
         tipo_documental_detectado=None,
-        tipo_documental_confirmado=doc.tipo_documental_confirmado,
-        alertas_encontradas=[alerta_desde_bd(a) for a in alertas],
-        estado_analisis=EstadoAnalisis(doc.estado_analisis),
-        referencia_archivo_original=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo,
-                                                              ruta=doc.ruta_s3, hash=doc.hash_sha256),
+        tipo_documental_confirmado=documento.tipo_documental_confirmado,
+        alertas_encontradas=alertas,
+        estado_analisis=estado,
+        referencia_archivo_original=ReferenciaArchivoOriginal(nombre_archivo=documento.nombre_archivo,
+                                                              ruta=documento.ruta_s3,
+                                                              hash=documento.hash_sha256),
     )
+
+
+def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
+    """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
+    return construir_resultado(sesion, _documento(sesion, documento_id))
 
 
 def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
