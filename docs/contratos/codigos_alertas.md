@@ -19,6 +19,7 @@ La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
 | `EXP-001` | expediente | bloqueante | Falta un documento de `tipos_requeridos` del proceso (va en `alertas_expediente`) |
 | `SYS-001` | motor_ia | critica | Fallo del proveedor principal y sin respaldo; `estado_analisis=error` |
 | `SYS-002` | motor_ia | critica | JSON del modelo invalido tras el reintento de correccion |
+| `SYS-003` | motor_ia | preventiva | El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido |
 | `VIS-001` | motor_ia (extra 2) | preventiva | Baja legibilidad / resolucion |
 | `VIS-002` | motor_ia (extra 2) | critica | Pagina incompleta o recortada |
 | `VIS-003` | motor_ia (extra 2) | critica | Alteracion o anomalia visible |
