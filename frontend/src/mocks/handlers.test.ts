@@ -1,0 +1,310 @@
+// Tests de los mocks con msw/node. Datos ficticios; usuarios de src/mocks/usuarios.ts.
+import { existsSync, readFileSync } from 'node:fs'
+import { setupServer } from 'msw/node'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { ROLES, type Alerta, type PaginaFolios, type ResultadoDocumento, type ResultadoExpediente } from '../tipos/contrato'
+import { crearEstado, type EstadoMock } from './estado'
+import { crearHandlers } from './handlers'
+import { MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
+
+const API = 'http://localhost:8000/api/v1'
+const CONTRATO = new URL('../../../docs/contratos/endpoints.md', import.meta.url)
+const ORIGINALES = new URL('../../public/mock-originales/', import.meta.url)
+
+let t = Date.UTC(2026, 9, 1, 10, 0, 0)
+let estado: EstadoMock
+const servidor = setupServer()
+
+beforeAll(() => servidor.listen({ onUnhandledRequest: 'error' }))
+afterAll(() => servidor.close())
+beforeEach(() => {
+  t = Date.UTC(2026, 9, 1, 10, 0, 0)
+  estado = crearEstado(() => t)
+  servidor.resetHandlers(...crearHandlers(estado).handlers)
+})
+
+interface Respuesta<T = unknown> { status: number; cuerpo: T; texto: string }
+
+async function api<T = Record<string, unknown>>(metodo: string, ruta: string,
+  opciones: { token?: string; cuerpo?: unknown; formulario?: FormData } = {}): Promise<Respuesta<T>> {
+  const cabeceras: Record<string, string> = opciones.token ? { Authorization: `Bearer ${opciones.token}` } : {}
+  if (opciones.cuerpo !== undefined) cabeceras['Content-Type'] = 'application/json'
+  const r = await fetch(`${API}${ruta}`, {
+    method: metodo, headers: cabeceras,
+    body: opciones.formulario ?? (opciones.cuerpo !== undefined ? JSON.stringify(opciones.cuerpo) : undefined),
+  })
+  const texto = await r.text()
+  let cuerpo: unknown = texto
+  try { cuerpo = JSON.parse(texto) } catch { /* texto plano (resumen.md) */ }
+  return { status: r.status, cuerpo: cuerpo as T, texto }
+}
+
+const CONTRASENAS = { 'admin.demo': 'demo-admin', 'revisor.demo': 'demo-revisor', 'integrador.demo': 'demo-integrador' }
+async function entrar(usuario: keyof typeof CONTRASENAS): Promise<string> {
+  const r = await api<{ access_token: string }>('POST', '/auth/login', { cuerpo: { usuario, contrasena: CONTRASENAS[usuario] } })
+  expect(r.status).toBe(200)
+  return r.cuerpo.access_token
+}
+
+function subida(nombre: string, datos: Uint8Array | Buffer, tipo?: string): FormData {
+  const f = new FormData()
+  f.append('archivo', new File([new Uint8Array(datos)], nombre))
+  if (tipo) f.append('tipo_declarado', tipo)
+  return f
+}
+const original = (nombre: string) => readFileSync(new URL(nombre, ORIGINALES))
+const codigos = (alertas: Alerta[]) => alertas.map((a) => a.codigo)
+
+// ------------------------------------------------------------------ cobertura del contrato
+
+describe.skipIf(!existsSync(CONTRATO))('cobertura de docs/contratos/endpoints.md', () => {
+  const filas = [...readFileSync(CONTRATO, 'utf-8').matchAll(/^\| (GET|POST|PATCH|PUT|DELETE) \| ([^|]+?) \| ([^|]+?) \|/gm)]
+  const contrato = filas.map(([, metodo, ruta, rol]) => ({
+    metodo, ruta: ruta.split('?')[0],
+    roles: rol === '-' ? null : rol === 'todos' ? [...ROLES].sort() : rol.split(',').map((r) => r.trim()).sort(),
+  }))
+
+  it('hay un handler por cada endpoint del contrato, con sus roles, y ninguno de mas', () => {
+    const mocks = crearHandlers(crearEstado()).rutas.map((r) => ({ ...r, roles: r.roles ? [...r.roles].sort() : null }))
+    const clave = (r: { metodo: string; ruta: string }) => `${r.metodo} ${r.ruta}`
+    expect(contrato.length).toBeGreaterThan(15)
+    expect(mocks.map(clave).sort()).toEqual(contrato.map(clave).sort())
+    for (const c of contrato) expect(mocks.find((m) => clave(m) === clave(c))?.roles, clave(c)).toEqual(c.roles)
+  })
+
+  it('cada endpoint del contrato responde con su handler (no con 404 RUTA_NO_ENCONTRADA ni 405)', async () => {
+    const token = await entrar('admin.demo')
+    for (const { metodo, ruta } of contrato) {
+      const concreta = ruta.replace('{folio}', 'ONB-2026-000001').replace(/\{\w+\}/g, 'x')
+      const r = await api<{ codigo?: string }>(metodo, concreta, { token, cuerpo: metodo === 'GET' ? undefined : {} })
+      expect([404, 405].includes(r.status) && ['RUTA_NO_ENCONTRADA', 'METODO_NO_PERMITIDO'].includes(r.cuerpo.codigo ?? ''),
+        `${metodo} ${ruta} -> ${r.status} ${r.cuerpo.codigo}`).toBe(false)
+    }
+  })
+})
+
+// ------------------------------------------------------------------ auth y roles
+
+describe('sesion y roles', () => {
+  it('login de los tres usuarios con expires_in y GET /auth/yo', async () => {
+    for (const usuario of ['admin.demo', 'revisor.demo', 'integrador.demo'] as const) {
+      const r = await api<{ access_token: string; rol: string; expires_in: number }>('POST', '/auth/login',
+        { cuerpo: { usuario, contrasena: CONTRASENAS[usuario] } })
+      expect(r.cuerpo.expires_in).toBe(3600)
+      const yo = await api('GET', '/auth/yo', { token: r.cuerpo.access_token })
+      expect(yo.cuerpo).toEqual({ usuario, rol: r.cuerpo.rol })
+    }
+  })
+
+  it('401 con los codigos del catalogo', async () => {
+    expect((await api('POST', '/auth/login', { cuerpo: { usuario: 'revisor.demo', contrasena: 'mal' } })).cuerpo.codigo).toBe('CREDENCIALES_INVALIDAS')
+    const sinToken = await api('GET', '/auth/yo')
+    expect([sinToken.status, sinToken.cuerpo.codigo]).toEqual([401, 'NO_AUTENTICADO'])
+    const token = await entrar('revisor.demo')
+    t += 3601 * 1000
+    const caducado = await api('GET', '/auth/yo', { token })
+    expect([caducado.status, caducado.cuerpo.codigo]).toEqual([401, 'TOKEN_CADUCADO'])
+  })
+
+  it('403 SIN_PERMISO segun el rol y procesos sin webhook ni modelos para el revisor', async () => {
+    const integrador = await entrar('integrador.demo')
+    expect((await api('GET', '/auditoria', { token: integrador })).status).toBe(403)
+    expect((await api('GET', '/documentos/x/original', { token: integrador })).cuerpo.codigo).toBe('SIN_PERMISO')
+    const revisor = await api<Record<string, unknown>[]>('GET', '/procesos', { token: await entrar('revisor.demo') })
+    expect(revisor.cuerpo[0]).not.toHaveProperty('webhook_url')
+    expect(revisor.cuerpo[0]).not.toHaveProperty('modelos')
+    const admin = await api<Record<string, unknown>[]>('GET', '/procesos', { token: await entrar('admin.demo') })
+    expect(admin.cuerpo[0]).toHaveProperty('webhook_url')
+  })
+})
+
+// ------------------------------------------------------------------ consultas
+
+describe('consultas', () => {
+  it('GET /folios pagina, ordena del mas reciente al mas antiguo y filtra', async () => {
+    const token = await entrar('revisor.demo')
+    const p1 = await api<PaginaFolios>('GET', '/folios?tamano_pagina=2', { token })
+    expect(p1.cuerpo.total).toBe(4)
+    expect(p1.cuerpo.elementos.map((f) => f.folio)).toEqual(['ONB-2026-000003', 'ONB-2026-000002'])
+    const aprobados = await api<PaginaFolios>('GET', '/folios?estado_general=aprobado', { token })
+    expect(aprobados.cuerpo.elementos.map((f) => f.folio)).toEqual(['ONB-2026-000004'])
+    const f1 = (await api<PaginaFolios>('GET', '/folios', { token })).cuerpo.elementos.find((f) => f.folio === 'ONB-2026-000001')
+    expect(f1?.n_bloqueantes_sin_resolver).toBe(1)
+    expect((await api('GET', '/folios?estado_general=cerrado', { token })).cuerpo.codigo).toBe('PETICION_INVALIDA')
+    expect((await api('GET', '/folios?tamano_pagina=101', { token })).status).toBe(422)
+  })
+
+  it('404 del catalogo, ruta desconocida y metodo no permitido', async () => {
+    const token = await entrar('revisor.demo')
+    expect((await api('GET', '/folios/ONB-2026-999999', { token })).cuerpo.codigo).toBe('FOLIO_NO_ENCONTRADO')
+    expect((await api('GET', '/documentos/no-existe', { token })).cuerpo.codigo).toBe('DOCUMENTO_NO_ENCONTRADO')
+    expect((await api('POST', '/folios/ONB-2026-000001/alertas/no-existe/resolver', { token, cuerpo: { aplica: false } })).cuerpo.codigo)
+      .toBe('ALERTA_NO_ENCONTRADA')
+    expect((await api('GET', '/no-existe', { token })).cuerpo.codigo).toBe('RUTA_NO_ENCONTRADA')
+    const metodo = await api('DELETE', '/folios/ONB-2026-000001', { token })
+    expect([metodo.status, metodo.cuerpo.codigo]).toEqual([405, 'METODO_NO_PERMITIDO'])
+  })
+
+  it('resumen.md, antecedentes, tipos, auditoria y original', async () => {
+    const revisor = await entrar('revisor.demo')
+    const resumen = await api('GET', '/folios/ONB-2026-000004/resumen.md', { token: revisor })
+    expect(resumen.status).toBe(200)
+    expect(resumen.texto).toContain('# Expediente ONB-2026-000004')
+    expect((await api('GET', '/folios/ONB-2026-000001/resumen.md', { token: revisor })).cuerpo.codigo).toBe('RESUMEN_NO_DISPONIBLE')
+    expect((await api('GET', '/folios/ONB-2026-000001/antecedentes', { token: revisor })).cuerpo).toEqual([])
+    expect((await api<unknown[]>('GET', '/tipos-documentales', { token: revisor })).cuerpo).toHaveLength(3)
+    const f4 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000004', { token: revisor })).cuerpo
+    const url = (await api<{ url: string }>('GET', `/documentos/${f4.documentos[0].identificador_unico_documento}/original`, { token: revisor })).cuerpo.url
+    expect(url).toBe('http://localhost:5173/mock-originales/pasaporte_sano_digital.pdf')
+    const auditoria = await api<{ folio: string; creado_en: string }[]>('GET', '/auditoria?folio=ONB-2026-000004', { token: await entrar('admin.demo') })
+    expect(auditoria.cuerpo.every((e) => e.folio === 'ONB-2026-000004')).toBe(true)
+    expect(auditoria.cuerpo.map((e) => e.creado_en)).toEqual([...auditoria.cuerpo.map((e) => e.creado_en)].sort().reverse())
+  })
+})
+
+// ------------------------------------------------------------------ subida y procesamiento
+
+describe('subida de documentos', () => {
+  it('202 pendiente -> procesando -> completado en unos 9 s y EXP-001 se recalcula', async () => {
+    const token = await entrar('integrador.demo')
+    const creado = await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding', referencia_externa: 'CLI-000900' } })
+    expect(creado.status).toBe(201)
+    const folio = creado.cuerpo.folio
+    expect(folio).toBe('ONB-2026-000005')
+    let exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
+    expect(codigos(exp.alertas_expediente)).toEqual(['EXP-001', 'EXP-001'])
+
+    const r = await api<{ identificador_unico_documento: string; estado_analisis: string }>('POST', `/folios/${folio}/documentos`,
+      { token, formulario: subida('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf'), 'credencial_elector') })
+    expect([r.status, r.cuerpo.estado_analisis]).toEqual([202, 'pendiente'])
+    const id = r.cuerpo.identificador_unico_documento
+    const estadoDoc = async () => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
+    expect((await estadoDoc()).estado_analisis).toBe('pendiente')
+    t += MS_HASTA_PROCESANDO
+    expect((await estadoDoc()).estado_analisis).toBe('procesando')
+    t += MS_HASTA_COMPLETADO - MS_HASTA_PROCESANDO
+    const hecho = await estadoDoc()
+    expect(hecho.estado_analisis).toBe('completado')
+    expect(hecho.datos_extraidos.curp).toBe('AEPA900101MDFXXX01') // mismo fichero que los datos -> mismos valores
+    expect(hecho.recomendacion).toBe('aprobar')
+    exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
+    expect(exp.alertas_expediente.map((a) => a.mensaje)).toEqual(['Falta comprobante_domicilio, requerido por el proceso onboarding'])
+  })
+
+  it('el mismo archivo en el mismo folio devuelve 202 con DUP-001', async () => {
+    const token = await entrar('revisor.demo')
+    const r = await api<{ identificador_unico_documento: string; estado_analisis: string }>('POST', '/folios/ONB-2026-000003/documentos',
+      { token, formulario: subida('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf')) })
+    expect(r.status).toBe(202)
+    const doc = (await api<ResultadoDocumento>('GET', `/documentos/${r.cuerpo.identificador_unico_documento}`, { token })).cuerpo
+    expect(codigos(doc.alertas_encontradas)).toEqual(['DUP-001'])
+  })
+
+  it('413 y 415 del catalogo', async () => {
+    const token = await entrar('revisor.demo')
+    const grande = await api('POST', '/folios/ONB-2026-000003/documentos', { token, formulario: subida('grande.pdf', new Uint8Array(20 * 1024 * 1024 + 1)) })
+    expect([grande.status, grande.cuerpo.codigo]).toEqual([413, 'ARCHIVO_DEMASIADO_GRANDE'])
+    const texto = await api('POST', '/folios/ONB-2026-000003/documentos', { token, formulario: subida('notas.txt', new Uint8Array([1]), 'pasaporte') })
+    expect([texto.status, texto.cuerpo.codigo]).toEqual([415, 'FORMATO_NO_PERMITIDO'])
+  })
+})
+
+// ------------------------------------------------------------------ acciones del revisor
+
+describe('acciones del revisor', () => {
+  it('regla 2.2: aprobar falla mientras quede una bloqueante con aplica distinto de false', async () => {
+    const token = await entrar('revisor.demo')
+    const f1 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo
+    const pasaporte = f1.documentos[0]
+    const bloqueante = pasaporte.alertas_encontradas.find((a) => a.severidad === 'bloqueante')!
+    const aprobar = () => api('POST', '/folios/ONB-2026-000001/decision', { token, cuerpo: { decision: 'aprobar' } })
+    expect((await aprobar()).cuerpo.codigo).toBe('DECISION_BLOQUEADA')
+    const ruta = `/documentos/${pasaporte.identificador_unico_documento}/alertas/${bloqueante.id}/resolver`
+    await api('POST', ruta, { token, cuerpo: { aplica: true, comentario: 'Confirmado' } })
+    expect((await aprobar()).cuerpo.codigo).toBe('DECISION_BLOQUEADA') // aplica=true confirma el problema
+    const resuelta = await api<ResultadoDocumento>('POST', ruta, { token, cuerpo: { aplica: false, comentario: 'Falso positivo' } })
+    expect(resuelta.cuerpo.alertas_encontradas.find((a) => a.id === bloqueante.id))
+      .toMatchObject({ aplica: false, comentario_revisor: 'Falso positivo', resuelta_por: 'revisor.demo', resuelta_por_revisor: true })
+
+    const decision = await api<ResultadoExpediente>('POST', '/folios/ONB-2026-000001/decision', { token, cuerpo: { decision: 'aprobar', comentario: 'Revisado' } })
+    expect(decision.cuerpo).toMatchObject({ estado_general: 'aprobado', decision_humana: 'aprobar', comentario_decision: 'Revisado', usuario_decision: 'revisor.demo' })
+    expect(decision.cuerpo.fecha_decision).toMatch(/^2026-10-01T10:00:00Z$/)
+    // Folio cerrado: cualquier accion devuelve 409 FOLIO_CERRADO
+    for (const [metodo, r, cuerpo] of [
+      ['POST', '/folios/ONB-2026-000001/decision', { decision: 'rechazar' }],
+      ['PATCH', `/documentos/${pasaporte.identificador_unico_documento}/datos`, { sexo: 'F' }],
+      ['POST', ruta, { aplica: true }],
+    ] as const) {
+      const res = await api(metodo, r, { token, cuerpo })
+      expect([res.status, res.cuerpo.codigo], r).toEqual([409, 'FOLIO_CERRADO'])
+    }
+    expect((await api('POST', '/folios/ONB-2026-000001/documentos', { token, formulario: subida('pasaporte_x.pdf', new Uint8Array([1])) })).cuerpo.codigo)
+      .toBe('FOLIO_CERRADO')
+  })
+
+  it('resolver una alerta de expediente (EXP-001) desbloquea la aprobacion', async () => {
+    const token = await entrar('revisor.demo')
+    const f3 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000003', { token })).cuerpo
+    const exp001 = f3.alertas_expediente[0]
+    const r = await api<ResultadoExpediente>('POST', `/folios/ONB-2026-000003/alertas/${exp001.id}/resolver`, { token, cuerpo: { aplica: false } })
+    expect(r.cuerpo.alertas_expediente[0]).toMatchObject({ id: exp001.id, aplica: false, resuelta_por_revisor: true })
+    const lista = (await api<PaginaFolios>('GET', '/folios', { token })).cuerpo.elementos
+    expect(lista.find((f) => f.folio === 'ONB-2026-000003')?.n_bloqueantes_sin_resolver).toBe(0)
+    expect((await api('POST', '/folios/ONB-2026-000003/decision', { token, cuerpo: { decision: 'aprobar' } })).status).toBe(200)
+  })
+
+  it('documento pendiente: 409 DOCUMENTO_EN_PROCESO en correcciones y decision', async () => {
+    const token = await entrar('revisor.demo')
+    const f2 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000002', { token })).cuerpo
+    const pendiente = f2.documentos.find((d) => d.estado_analisis === 'pendiente')!
+    expect((await api('PATCH', `/documentos/${pendiente.identificador_unico_documento}/datos`, { token, cuerpo: { sexo: 'F' } })).cuerpo.codigo)
+      .toBe('DOCUMENTO_EN_PROCESO')
+    expect((await api('POST', '/folios/ONB-2026-000002/decision', { token, cuerpo: { decision: 'rechazar' } })).cuerpo.codigo)
+      .toBe('DOCUMENTO_EN_PROCESO')
+  })
+
+  it('corregir un dato guarda la correccion y recalcula CMP-001', async () => {
+    const token = await entrar('revisor.demo')
+    const f2 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000002', { token })).cuerpo
+    expect(codigos(f2.alertas_expediente)).toEqual(['CMP-001'])
+    const [credencial, comprobante] = f2.documentos
+    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${comprobante.identificador_unico_documento}/datos`,
+      { token, cuerpo: { domicilio: credencial.datos_extraidos.domicilio } })
+    expect(r.cuerpo.correcciones.at(-1)).toMatchObject({ campo: 'domicilio', valor_anterior: comprobante.datos_extraidos.domicilio, usuario: 'revisor.demo' })
+    expect([r.cuerpo.nivel_confianza_por_campo.domicilio, r.cuerpo.evidencia_por_campo.domicilio]).toEqual([1, 'correccion_revisor'])
+    const despues = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000002', { token })).cuerpo
+    expect(despues.alertas_expediente).toEqual([])
+    expect((await api('PATCH', `/documentos/${credencial.identificador_unico_documento}/datos`, { token, cuerpo: { inventado: 1 } })).status).toBe(422)
+  })
+
+  it('confirmar clasificacion: el mismo tipo resuelve CLS-001; otro tipo reprocesa', async () => {
+    const token = await entrar('revisor.demo')
+    const { folio } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
+    const subir = async () => (await api<{ identificador_unico_documento: string }>('POST', `/folios/${folio}/documentos`, {
+      token, formulario: subida('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf'), 'pasaporte'),
+    })).cuerpo.identificador_unico_documento
+    const doc = async (id: string) => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
+
+    const a = await subir()
+    t += MS_HASTA_COMPLETADO
+    const extraido = await doc(a)
+    expect(extraido.tipo_documental_detectado).toBe('credencial_elector')
+    expect(codigos(extraido.alertas_encontradas)).toContain('CLS-001')
+    const mismo = await api<ResultadoDocumento>('POST', `/documentos/${a}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: 'pasaporte' } })
+    expect(mismo.cuerpo.tipo_documental_confirmado).toBe('pasaporte')
+    expect(mismo.cuerpo.alertas_encontradas.find((x) => x.codigo === 'CLS-001')).toMatchObject({ aplica: false, resuelta_por_revisor: true })
+
+    const b = await subir() // mismo SHA-256: DUP-001, pero sirve para el segundo camino
+    t += MS_HASTA_COMPLETADO
+    await doc(b)
+    const otro = await api<ResultadoDocumento>('POST', `/documentos/${b}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: 'credencial_elector' } })
+    expect([otro.cuerpo.estado_analisis, otro.cuerpo.tipo_documental_confirmado]).toEqual(['pendiente', 'credencial_elector'])
+    expect(estado.versionesPrevias.get(b)).toHaveLength(1)
+    t += MS_HASTA_COMPLETADO
+    const reprocesado = await doc(b)
+    expect(reprocesado.estado_analisis).toBe('completado')
+    expect(reprocesado.datos_extraidos.curp).toBe('AEPA900101MDFXXX01')
+    expect(reprocesado.alertas_encontradas.find((x) => x.codigo === 'CLS-001')).toMatchObject({ aplica: true })
+    expect(codigos(reprocesado.alertas_encontradas)).not.toContain('VAL-001')
+  })
+})

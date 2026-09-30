@@ -43,6 +43,30 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
   login no cuenta: su 401 son credenciales incorrectas.
 - 409 `FOLIO_CERRADO`: `error.esSoloLectura` y aviso `alFolioCerrado`; la UI pasa a solo lectura.
 
+## Mocks (msw v2)
+Con `VITE_USAR_MOCKS=true` en `.env`, `main.tsx` arranca msw (`src/mocks/navegador.ts`) antes de
+pintar la app y todas las peticiones a `/api/v1` las responde el navegador. Con `false`, ni se descargan.
+- Usuarios ficticios (`src/mocks/usuarios.ts`): `admin.demo` / `demo-admin`, `revisor.demo` /
+  `demo-revisor`, `integrador.demo` / `demo-integrador`. Token de 3600 s.
+- `src/mocks/handlers.ts`: un handler por endpoint de `docs/contratos/endpoints.md`, con los roles
+  del contrato y los errores de `codigos_error.md`. Otra ruta bajo `/api/v1`: 404 `RUTA_NO_ENCONTRADA`
+  o 405 `METODO_NO_PERMITIDO`.
+- Estado en memoria (`src/mocks/estado.ts`, se pierde al recargar). Lo que simula `src/mocks/logica.ts`:
+  - subida: 202 `pendiente`, `procesando` a los 3 s y `completado` a los 9 s. Si el fichero es uno de
+    `public/mock-originales` (mismo SHA-256), se usan sus valores; si no, los de un documento sano del tipo;
+  - mismo SHA-256 en el folio: `DUP-001`; tipo declarado distinto del detectado: `CLS-001`;
+  - regla 2.2 en la decision; folio cerrado tras decidir (409 `FOLIO_CERRADO`);
+  - confirmar clasificacion (mismo tipo: resuelve `CLS-001`; otro: vuelve a `pendiente` y reprocesa);
+  - recalculo de comparaciones, `CMP-001`, `EXP-001` y recomendaciones tras cada cambio.
+  Los documentos de los datos iniciales no avanzan: el pendiente de `ONB-2026-000002` sigue pendiente.
+- `/documentos/{id}/original`: URL a `public/mock-originales/` o, si se subio en la sesion, al propio fichero.
+
+## Tests
+```
+npm test        # Vitest: cobertura del contrato (falla si un endpoint no tiene handler) y flujos de los mocks
+```
+Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
+
 ## Tipos y datos de los mocks
 - `src/tipos/contrato.ts` refleja `backend/app/schemas/resultado.py` campo a campo (las claves
   siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
