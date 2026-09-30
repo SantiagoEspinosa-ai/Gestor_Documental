@@ -18,9 +18,10 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 | URL de Ollama | `.env`: `OLLAMA_BASE_URL` | `motor_ia/proveedores/ollama.py` | decidido |
 | Proveedor comercial (respaldo) | `.env`: `PROVEEDOR_COMERCIAL_*` (ADR-003) | `motor_ia/proveedores/openrouter.py` | pendiente (cuenta sin crear) |
 | Carpeta de configuracion | `.env` opcional: `CONFIG_DIR`; por defecto `config/` de la raiz del repo | `configuracion/cargador.py` | implementado; falta en `.env.example` |
-| Carpeta de prompts | `.env` opcional: `PROMPTS_DIR`; por defecto `prompts/` de la raiz del repo | `motor_ia/prompts.py` (tarea 5) | decidido |
-| Prompts versionados | `prompts/<id>_<version>.md` (repo) | `motor_ia/prompts.py` (tarea 5) | v1 en el repo; v2 decidido |
-| Borradores de prompts | `docs/motor_ia/pruebas_ollama/prompts_borrador/` (repo) | pasan a `prompts/` en la tarea 5 | referencia |
+| Carpeta de prompts | `.env` opcional: `PROMPTS_DIR` (en Docker, `/prompts`); por defecto `prompts/` de la raiz del repo | `motor_ia/prompts.py` | implementado; falta en `.env.example` |
+| Prompts versionados | `prompts/<id>_<version>.md` (repo), con frontmatter `id`, `version`, `salida` | `motor_ia/prompts.py` (`renderizar`) | implementado: v1 y v2 |
+| Version vigente de cada prompt | constante `VERSIONES_VIGENTES` en `motor_ia/prompts.py` (`clasificacion: v2`, `extraccion: v2`) | `motor_ia/prompts.py` | implementado |
+| Borradores de prompts | `docs/motor_ia/pruebas_ollama/prompts_borrador/` (repo) | `extraccion_v2b.md` paso a `prompts/extraccion_v2.md` | referencia |
 | Parametros de llamada (`temperature`, `num_predict`, `think`) | se decide en la tarea 6: constantes en `proveedores/base.py` o bloque `parametros` en `modelos.yaml` | `motor_ia/proveedores/*.py` | valores decididos (seccion 4); ubicacion en la tarea 6 |
 | Procesos (`procesos.yaml`) | `config/procesos.yaml` (repo) | modulo de PERSONA_1 | fuera de este ambito |
 | Scripts, imagenes y resumenes de las pruebas | `docs/motor_ia/pruebas_ollama/` (repo) | referencia; no los importa el backend | implementado |
@@ -97,9 +98,19 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 
 | Version | Estado | Contenido | Donde |
 |---|---|---|---|
-| `clasificacion_v1`, `extraccion_v1` | en el repo | Version inicial. Falta una variable para el texto del documento | `prompts/` |
-| `clasificacion_v2`, `extraccion_v2` | decidido (tarea 5) | Anade `{{ contenido }}` (texto por pagina), fechas tal como aparecen, formato de evidencia, instruccion de bajar la confianza si hay dudas y de no inventar valores | borrador: `pruebas_ollama/prompts_borrador/extraccion_v2b.md` |
+| `clasificacion_v1`, `extraccion_v1` | en el repo (historial) | Version inicial. Falta una variable para el texto del documento | `prompts/` |
+| `clasificacion_v2`, `extraccion_v2` | **vigentes** (implementado) | Anaden `{{ contenido }}` (texto por pagina). `extraccion_v2`: fechas tal como aparecen, formato de evidencia, bajar la confianza si hay dudas y no inventar valores (cuerpo identico al borrador v2b validado). `clasificacion_v2`: `desconocido` si no encaja claramente | `prompts/` |
 | `extraccion_v3` | pendiente (etapa 3, extra 2) | Pide `observaciones_visuales` (legibilidad, recortes, alteraciones) para las alertas `VIS-xxx`. El plan lo llamaba `extraccion_v2`; se renumera porque la v2 ya se usa | - |
+
+Reglas de `motor_ia/prompts.py`:
+
+| Regla | Detalle |
+|---|---|
+| `version_prompt` (`FechaYModelo`) | Sigue el ejemplo de `resultado.py`. Extraccion: `<id>_<tipo>@<version>` (p. ej. `extraccion_pasaporte@v2`). Clasificacion, sin tipo: `clasificacion@v2` |
+| Variables | Jinja con `StrictUndefined`: si falta una variable, `ErrorPrompt`. `tipo_documental` se pasa aparte y tambien es variable del prompt |
+| Contenido del documento | Se inserta como valor; nunca se interpreta como plantilla (un `{{ ... }}` del documento queda literal) |
+| Formato comun | `formatear_contenido` (`--- pagina_<n> ---`; `(sin texto extraido)` si no hay texto), `formatear_tipos`, `formatear_esquema`, `formatear_contexto_rag` (`(sin contexto)` si esta vacio) |
+| Errores | `ErrorPrompt`: fichero inexistente, frontmatter ausente o mal formado, `id`/`version` distintos del nombre del fichero, plantilla invalida, prompt sin version vigente |
 
 Nota: el borrador `extraccion_v2.md` (fechas convertidas por el modelo) queda como referencia de lo
 que no funciono. La evidencia del borrador v2b pide seccion; en la v2 definitiva, el parseo de vision
@@ -167,7 +178,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | ADR-007 propuesto: confianza de campo y de clasificacion calculada por el codigo (clasificacion con `marcadores_clasificacion` del tipo detectado); la del modelo, solo en la auditoria | este commit |
+| 2026-09-30 | `motor_ia/prompts.py`: carga y renderizado con frontmatter, `StrictUndefined`, `PROMPTS_DIR`, `VERSIONES_VIGENTES` (v2) y `version_prompt` `<id>_<tipo>@<version>` / `clasificacion@v2`. Prompts `clasificacion_v2` y `extraccion_v2` (19 tests) | este commit |
+| 2026-09-30 | ADR-007 propuesto: confianza de campo y de clasificacion calculada por el codigo (clasificacion con `marcadores_clasificacion` del tipo detectado); la del modelo, solo en la auditoria | `7ece6b4` (PR: rama `docs/adr-007-confianza`, `a05bf3c`) |
 | 2026-09-30 | `OLLAMA_BASE_URL` segun el entorno: `localhost` en local, `host.docker.internal` desde un contenedor con Ollama en Windows, `ollama` solo con el servicio de docker-compose. `.env` local con `localhost` | `86e5905` |
 | 2026-09-30 | `orquestador/modalidad.py`: umbral 30, PDF mixto = escaneado, deteccion por bytes (21 tests). Tests en el contenedor del backend (seccion 8) por el bloqueo de PyMuPDF en Windows. Anotado el conflicto `VAL-002`/`CLS-002` con la regla de confianza. `.env` local con `gemma4:e2b` y `qwen2.5vl:3b`; `qwen2.5:7b` borrado | `86e5905` |
 | 2026-09-30 | Merge de `origin/main`: ADR-004, ADR-006 y contratos 1 y 2 ampliados (PR #1 y #2). Contrato 3 sin cambios | `1149519` |
