@@ -21,7 +21,6 @@ La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
 | `SYS-001` | motor_ia | critica | Fallo del proveedor principal y sin respaldo; `estado_analisis=error` |
 | `SYS-002` | motor_ia | critica | JSON del modelo invalido tras el reintento de correccion |
 | `SYS-003` | motor_ia | preventiva | El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido |
-| `SYS-004` | orquestador | informativa | La extension del archivo no coincide con su contenido; se ha procesado segun el contenido (p. ej. un PDF con extension `.jpg`) |
 | `SYS-005` | motor_ia | informativa | El proveedor principal fallo y el analisis se hizo con el proveedor de respaldo |
 | `VIS-001` | motor_ia (extra 2) | preventiva | Baja legibilidad / resolucion |
 | `VIS-002` | motor_ia (extra 2) | critica | Pagina incompleta o recortada |
