@@ -45,6 +45,7 @@ Cada persona empieza su sesion de Claude Code pegando su fichero de `docs/equipo
 - PERSONA_2 -> `docs/equipo/PERSONA_2_motor_ia.md`
 - PERSONA_3 -> `docs/equipo/PERSONA_3_interfaz_calidad.md`
 Estado y siguientes pasos de PERSONA_1: `docs/equipo/PERSONA_1_estado.md`.
+Spec vigente de PERSONA_2: `docs/motor_ia/SPEC_CONFIGURACION.md`.
 Esos ficheros son la especificacion vigente de cada linea de trabajo; si cambia el plan, se
 actualizan ahi y se avisa al equipo.
 

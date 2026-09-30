@@ -1,0 +1,214 @@
+[
+  {
+    "escenario": "A_1000px",
+    "ejecucion": 1,
+    "segundos_total": 111.8,
+    "json_valido": true,
+    "fechas_ok_tras_normalizar": 3,
+    "fechas_tal_como_aparecen": 3,
+    "aciertos_totales": 7,
+    "fechas": {
+      "fecha_nacimiento": {
+        "crudo": "01/01/1990",
+        "tal_como_aparece": true,
+        "normalizado": "1990-01-01",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "crudo": "10/05/2024",
+        "tal_como_aparece": true,
+        "normalizado": "2024-05-10",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "crudo": "25/07/2031",
+        "tal_como_aparece": true,
+        "normalizado": "2031-07-25",
+        "ok": true
+      }
+    },
+    "otros": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true
+      }
+    },
+    "confianzas": [
+      0.9
+    ],
+    "evidencias": [
+      "pagina_1:seccion_superior"
+    ]
+  },
+  {
+    "escenario": "A_1000px",
+    "ejecucion": 2,
+    "segundos_total": 50.2,
+    "json_valido": true,
+    "fechas_ok_tras_normalizar": 3,
+    "fechas_tal_como_aparecen": 3,
+    "aciertos_totales": 7,
+    "fechas": {
+      "fecha_nacimiento": {
+        "crudo": "01/01/1990",
+        "tal_como_aparece": true,
+        "normalizado": "1990-01-01",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "crudo": "10/05/2024",
+        "tal_como_aparece": true,
+        "normalizado": "2024-05-10",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "crudo": "25/07/2031",
+        "tal_como_aparece": true,
+        "normalizado": "2031-07-25",
+        "ok": true
+      }
+    },
+    "otros": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true
+      }
+    },
+    "confianzas": [
+      0.9
+    ],
+    "evidencias": [
+      "pagina_1:seccion_superior"
+    ]
+  },
+  {
+    "escenario": "B_1000px",
+    "ejecucion": 1,
+    "segundos_total": 108.7,
+    "json_valido": true,
+    "fechas_ok_tras_normalizar": 3,
+    "fechas_tal_como_aparecen": 3,
+    "aciertos_totales": 7,
+    "fechas": {
+      "fecha_nacimiento": {
+        "crudo": "01/01/1990",
+        "tal_como_aparece": true,
+        "normalizado": "1990-01-01",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "crudo": "10/05/2024",
+        "tal_como_aparece": true,
+        "normalizado": "2024-05-10",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "crudo": "25/07/2031",
+        "tal_como_aparece": true,
+        "normalizado": "2031-07-25",
+        "ok": true
+      }
+    },
+    "otros": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true
+      }
+    },
+    "confianzas": [
+      0.9
+    ],
+    "evidencias": [
+      "pagina_1:seccion_superior"
+    ]
+  },
+  {
+    "escenario": "B_1000px",
+    "ejecucion": 2,
+    "segundos_total": 39.6,
+    "json_valido": true,
+    "fechas_ok_tras_normalizar": 3,
+    "fechas_tal_como_aparecen": 3,
+    "aciertos_totales": 7,
+    "fechas": {
+      "fecha_nacimiento": {
+        "crudo": "01/01/1990",
+        "tal_como_aparece": true,
+        "normalizado": "1990-01-01",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "crudo": "10/05/2024",
+        "tal_como_aparece": true,
+        "normalizado": "2024-05-10",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "crudo": "25/07/2031",
+        "tal_como_aparece": true,
+        "normalizado": "2031-07-25",
+        "ok": true
+      }
+    },
+    "otros": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true
+      }
+    },
+    "confianzas": [
+      0.9
+    ],
+    "evidencias": [
+      "pagina_1:seccion_superior"
+    ]
+  }
+]
