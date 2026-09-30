@@ -8,16 +8,13 @@ proveedores:
     modelo_texto_env: OLLAMA_MODELO_TEXTO
     soporta_vision: true
     privado: true        # los datos no salen de la infraestructura
-  comercial:             # OpenRouter (ADR-003), solo como respaldo
+  comercial:             # OpenRouter gratuito (ADR-003), solo como respaldo
     tipo: openrouter     # API compatible con OpenAI
     base_url_env: PROVEEDOR_COMERCIAL_BASE_URL
     api_key_env: PROVEEDOR_COMERCIAL_API_KEY
-    modelo_env: PROVEEDOR_COMERCIAL_MODELO
+    modelo_env: PROVEEDOR_COMERCIAL_MODELO   # siempre un modelo con sufijo :free
     soporta_vision: true
-    privado: false
-    privacidad:          # se envia en cada llamada a OpenRouter
-      data_collection: deny
-      zdr: true
+    privado: false       # los modelos gratuitos pueden registrar: SOLO fixtures ficticios
 
 # Asignacion por tarea. `por_tipo` permite excepciones por tipo documental.
 tareas:

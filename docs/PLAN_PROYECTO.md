@@ -15,7 +15,7 @@ Para anadirlo al proyecto de Claude: pegar este fichero en las instrucciones del
 | Originales | Amazon S3 real (boto3), bucket privado + usuario IAM con permisos minimos, creado y administrado por PERSONA_1. Sin MinIO. Tests con `moto` | Requisito "S3 o equivalente"; decidido el 2026-09-30 |
 | OCR | Tesseract tras interfaz `OCRProvider` | Gratis; cambiar a Textract = una clase |
 | Modelo local | Ollama (`llama3.2-vision:11b` o `qwen2.5vl:7b`) | Privacidad, sin coste |
-| Modelo comercial | **OpenRouter (ADR-003, aceptado 2026-09-30)** como respaldo de Ollama en todas las tareas; `data_collection: deny` + retencion cero; modelos `:free` solo con fixtures ficticios | Sin API key de Anthropic; una clave da acceso a varios modelos; los datos se procesan con Ollama |
+| Modelo comercial | **OpenRouter gratuito (ADR-003, aceptado 2026-09-30)**: solo modelos `:free`, sin saldo; respaldo de Ollama en todas las tareas; solo fixtures ficticios. Cuenta y clave: PERSONA_2, etapa 1 dia 2 | Sin API key de Anthropic y sin presupuesto; los datos se procesan con Ollama |
 | Tipos documentales | Credencial de elector, pasaporte, comprobante de domicilio (caso onboarding) | Permite comparar nombre, fecha de nacimiento y domicilio entre documentos |
 | Configuracion de tipos | Ficheros YAML en `config/tipos/` cargados al arrancar | Mas rapido; pantalla de admin es extra 3 |
 | Procesamiento | `BackgroundTasks` de FastAPI; estados `pendiente -> procesando -> completado | error` | Sin Redis ni workers en MVP |
@@ -102,7 +102,7 @@ exponer por API y webhook + antecedentes), ADRs pendientes, revision de que no h
 2. Tesseract falla con fotos de movil -> el enrutador envia imagenes al modelo de vision, no solo a OCR.
 3. Cambios al Contrato 1 a mitad de proyecto rompen a los tres -> ADR de una linea + aviso.
 4. Auth completa consume 1,5-2 dias de PERSONA_1 -> si se atasca, API key temporal y JWT al final de la etapa 1.
-5. OpenRouter sin saldo o caido -> todo funciona con Ollama; es solo respaldo.
+5. OpenRouter gratuito con limite diario agotado o caido -> todo funciona con Ollama; es solo respaldo.
 
 ## 6. Definicion de hecho
 Funciona de extremo a extremo, tiene test, esta documentado (README del modulo) y no expone secretos
@@ -110,7 +110,7 @@ ni datos reales.
 
 ## 7. Pendientes [A ACORDAR]
 - ~~Proveedor comercial de IA (ADR-003).~~ Cerrado 2026-09-30: OpenRouter como respaldo de Ollama.
-  Pendiente solo: quien abre la cuenta de OpenRouter y carga el saldo.
+  Solo modelos gratuitos, sin saldo. Cuenta y API key: PERSONA_2, etapa 1 dia 2.
 - Maquina para Ollama.
 - ~~Quien administra la cuenta AWS y crea el bucket + usuario IAM con permisos minimos.~~
   Cerrado 2026-09-30: PERSONA_1 (duena de S3 en `core`). Si la cuenta AWS es de la empresa,

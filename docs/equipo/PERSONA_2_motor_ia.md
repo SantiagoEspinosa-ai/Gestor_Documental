@@ -17,6 +17,14 @@ debe poder ejecutarse desde un script CLI con un archivo local, sin BD ni S3, pa
 imprime un `ResultadoDocumento` valido (Contrato 1) con clasificacion, datos extraidos, confianza y
 evidencia por campo, usando Ollama.
 
+## Tarea previa (etapa 1, dia 2): cuenta gratuita de OpenRouter
+- Crear cuenta en openrouter.ai sin cargar saldo ni tarjeta (ADR-003: solo modelos `:free`).
+- Crear la API key y ponerla solo en tu `.env` (`PROVEEDOR_COMERCIAL_API_KEY`). Compartirla por canal
+  seguro con PERSONA_1 y PERSONA_3 cuando la necesiten en la integracion; nunca en el repo ni en chats.
+- Elegir un modelo gratuito con entrada de imagen (filtrar en openrouter.ai/models por precio 0) y
+  ponerlo en `PROVEEDOR_COMERCIAL_MODELO`. Si la cuenta exige activar "modelos gratuitos" en la
+  configuracion de privacidad, activarlo: por eso solo se le envian fixtures ficticios.
+
 ## Tareas, en este orden
 1. `modulos/configuracion/cargador.py`: modelos Pydantic `TipoDocumental`, `Campo`, `Regla`; carga y
    valida todos los YAML de `config/tipos` al arrancar; `obtener(nombre)`, `listar()`. Test que falla
@@ -39,9 +47,9 @@ evidencia por campo, usando Ollama.
    texto largo por paginas, timeout, registro del modelo usado).
    `proveedores/openrouter.py`: `OpenRouterProvider(ProveedorLLM)` con httpx contra
    `{PROVEEDOR_COMERCIAL_BASE_URL}/chat/completions` (API compatible con OpenAI), imagenes en
-   base64, `response_format` JSON, mismo parseo estricto que Ollama. En cada llamada envia
-   `provider: {data_collection: "deny", zdr: true}` (bloque `privacidad` de `modelos.yaml`).
-   Modelo y clave desde las variables de entorno del YAML (ADR-003). Es solo respaldo.
+   base64, `response_format` JSON, mismo parseo estricto que Ollama. Modelo `:free` y clave desde
+   las variables de entorno del YAML (ADR-003). Es solo respaldo: si responde 429 (limite gratuito
+   agotado) se registra y se sigue con el resultado de Ollama o `SYS-001`.
 8. `modulos/motor_ia/enrutador.py`: implementa `Enrutador` leyendo `config/modelos.yaml`
    (principal, respaldo, por_tipo). Sin claves en codigo: lee los nombres de variables de entorno
    indicados en el YAML.
