@@ -19,6 +19,6 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `secuencias_folio`: ultimo numero por (proceso, anio); se incrementa con un solo `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`.
 - `documentos`: original subido: ruta S3, SHA-256, tipo declarado/confirmado y estado de analisis.
 - `resultados`: `ResultadoDocumento` en JSON, una fila por version; la vigente es la de version mayor.
-- `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha).
+- `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha). `version_resultado`: NULL = de plataforma (DUP, EXP, CMP); N = del motor en la version N del resultado (migracion 0003).
 - `correcciones`: cambios del revisor sobre `datos_extraidos` (valor anterior y nuevo).
 - `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`), sin FK para no bloquear borrados.

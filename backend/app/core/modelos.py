@@ -145,6 +145,9 @@ class AlertaBD(Base):
     mensaje: Mapped[str] = mapped_column(Text)
     confianza: Mapped[float] = mapped_column(Float)
     campo: Mapped[str | None] = mapped_column(String(100))
+    # NULL = alerta de plataforma (DUP, EXP, CMP); N = alerta del motor de la version N del resultado.
+    # Al reprocesar solo se muestran las del motor de la version mayor
+    version_resultado: Mapped[int | None] = mapped_column(Integer, index=True)
     resuelta_por_revisor: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     # ADR-006 2.2: aplica NULL = sin revisar
     aplica: Mapped[bool | None] = mapped_column(Boolean)
