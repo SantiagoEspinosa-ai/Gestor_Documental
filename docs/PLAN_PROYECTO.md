@@ -29,6 +29,7 @@ Para anadirlo al proyecto de Claude: pegar este fichero en las instrucciones del
 | Resumen .md | Plantilla Jinja, regenerada en cada cambio, guardada en S3 y reindexada | Determinista y testeable |
 | Ramas y commits | Trunk-based, ramas cortas por modulo, conventional commits | |
 | Herramienta | Todo el codigo se escribe con Claude Code; cada persona arranca con su prompt de `docs/equipo/` | |
+| Arquitectura | Monolito modular con puertos y adaptadores (ADR-005, `docs/arquitectura.md`); reglas de dependencia solo documentadas | Paralelismo por modulos y proveedores intercambiables sin sobrecarga para un MVP |
 
 Extras de la presentacion, por prioridad (solo en etapa 3 si el hito de la etapa 2 esta verde):
 1. Enmascaramiento de datos sensibles en logs/UI + guardado de correcciones como retroalimentacion.
@@ -58,7 +59,7 @@ Regla de paralelismo: nadie toca modulos ajenos. Se usa stub, CLI o mock hasta l
 
 ### Etapa 0 - Dia 1 (los tres juntos) [HECHA: esqueleto en el repo]
 Repo, docker compose, `.env.example`, los tres contratos, YAML de tipos/modelos/procesos, prompts v1,
-ADR-001/002/003, `CLAUDE.md`, prompts por persona. Queda: `git init`, revisar contratos entre los tres,
+ADR-001/002/003/005, `docs/arquitectura.md`, `CLAUDE.md`, prompts por persona. Queda: `git init`, revisar contratos entre los tres,
 abrir ramas `feat/ingesta`, `feat/motor-ia`, `feat/frontend`, decidir maquina con GPU para Ollama.
 PERSONA_1: crear el bucket S3 real y el usuario IAM del proyecto y entregar las claves a quien las
 necesite por canal seguro (nunca por el repo ni por chats con IA).

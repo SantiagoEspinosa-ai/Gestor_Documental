@@ -12,6 +12,7 @@ config/tipos/   Fichas YAML de tipos documentales (sin tocar codigo)
 config/modelos.yaml  Enrutador de modelos por tarea
 prompts/        Prompts versionados (nunca incrustados en codigo)
 docs/adr/       Decisiones de arquitectura
+docs/arquitectura.md  Arquitectura: monolito modular con puertos y adaptadores (ADR-005)
 docs/contratos/ Contrato 2: endpoints
 scripts/        generar_fixtures.py y utilidades
 fixtures/       Documentos ficticios de prueba (nunca datos reales)

@@ -14,6 +14,8 @@ Idioma: espanol. Responde y comenta codigo en espanol.
 8. Nombres de campo JSON: snake_case en espanol (ver `resultado.py`).
 9. La IA recomienda; la decision final del expediente es humana. No automatices aprobaciones.
 10. Alcance MVP primero. Si algo excede el MVP, dilo antes de implementarlo.
+11. Respeta la arquitectura de `docs/arquitectura.md` (ADR-005): otros modulos solo importan tu
+    `servicio.py`; boto3, pytesseract y llamadas a Ollama/OpenRouter solo dentro de su adaptador.
 
 ## Stack
 Python 3.12 + FastAPI, SQLAlchemy 2 + Alembic, PostgreSQL 16 + pgvector, boto3 (S3),

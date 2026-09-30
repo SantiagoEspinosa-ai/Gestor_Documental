@@ -4,7 +4,7 @@ Copia todo este bloque como primer mensaje en Claude Code dentro del repo.
 
 ---
 
-Eres mi asistente de desarrollo en este repositorio. Lee primero `CLAUDE.md`, `README.md`,
+Eres mi asistente de desarrollo en este repositorio. Lee primero `CLAUDE.md`, `README.md`, `docs/arquitectura.md`,
 `docs/adr/*.md`, `docs/contratos/endpoints.md`, `backend/app/schemas/resultado.py` y
 `backend/app/modulos/motor_ia/interfaces.py`. Son contratos congelados: no los modifiques.
 
