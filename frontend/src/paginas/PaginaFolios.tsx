@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus, Upload } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { listarFolios, listarProcesos, obtenerFolio } from '../api/folios'
+import { listarFolios, listarProcesos } from '../api/folios'
 import { useRol } from '../componentes/contextoSesion'
 import { FormularioNuevoFolio } from '../componentes/FormularioNuevoFolio'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
@@ -10,31 +10,7 @@ import { ESTADOS_GENERALES, type EstadoGeneral, type PaginaFolios as Pagina, typ
 import { ETIQUETA_ESTADO_GENERAL, fechaHora } from '../utilidades/etiquetas'
 import { mensajeDeError } from '../utilidades/mensajes'
 
-/**
- * referencia_externa no esta en ResumenFolio (Contrato 1, ADR-006 1.1): se pide GET /folios/{folio}
- * por cada folio visible, con cache. Hay que quitarlo cuando ResumenFolio la incluya (propuesta de ADR).
- */
-function useReferenciasExternas(folios: string[]): Record<string, string | null | undefined> {
-  const [referencias, setReferencias] = useState<Record<string, string | null>>({})
-  const pedidas = useRef(new Set<string>())
-  const clave = folios.join(',')
-  useEffect(() => {
-    const control = new AbortController()
-    for (const folio of clave ? clave.split(',') : []) {
-      if (pedidas.current.has(folio)) continue
-      pedidas.current.add(folio)
-      obtenerFolio(folio, control.signal)
-        .then((e) => setReferencias((r) => ({ ...r, [folio]: e.referencia_externa })))
-        .catch(() => {
-          pedidas.current.delete(folio)
-          if (!control.signal.aborted) setReferencias((r) => ({ ...r, [folio]: null }))
-        })
-    }
-    return () => control.abort()
-  }, [clave])
-  return referencias
-}
-
+// Sin columna referencia_externa: ResumenFolio no la tiene. Vuelve con el ADR-008 (ver README).
 const ROLES_LISTA = ['revisor', 'admin'] as const // GET /folios
 const ROLES_CREAR = ['integrador', 'revisor'] as const // POST /folios
 
@@ -54,7 +30,6 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
   const cargando = puedeListar && resultado?.clave !== clave
   const datos = resultado?.datos ?? null
   const error = resultado?.clave === clave ? resultado.error ?? null : null
-  const referencias = useReferenciasExternas(datos?.elementos.map((f) => f.folio) ?? [])
 
   useEffect(() => {
     const control = new AbortController()
@@ -119,19 +94,17 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
               <caption className="sr-only">Folios, del más reciente al más antiguo</caption>
               <thead className="bg-slate-100 text-left">
                 <tr>
-                  {['Folio', 'Referencia externa', 'Proceso', 'Fecha de solicitud', 'Estado', 'Recomendación', 'Documentos', 'Bloqueantes', 'Acciones']
+                  {['Folio', 'Proceso', 'Fecha de solicitud', 'Estado', 'Recomendación', 'Documentos', 'Bloqueantes', 'Acciones']
                     .map((c) => <th key={c} scope="col" className="px-3 py-2 font-medium">{c}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {datos?.elementos.map((f) => {
-                  const referencia = referencias[f.folio]
                   return (
                     <tr key={f.folio} className="border-t border-slate-200">
                       <th scope="row" className="px-3 py-2 text-left font-mono font-normal">
                         <Link to={`/folios/${f.folio}`} className="text-blue-700 underline">{f.folio}</Link>
                       </th>
-                      <td className="px-3 py-2">{referencia === undefined ? '…' : referencia ?? '—'}</td>
                       <td className="px-3 py-2">{f.proceso}</td>
                       <td className="px-3 py-2">{fechaHora(f.fecha_solicitud)}</td>
                       <td className="px-3 py-2"><InsigniaEstado estado={f.estado_general} /></td>
@@ -148,7 +121,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
                   )
                 })}
                 {datos && datos.elementos.length === 0 && (
-                  <tr><td colSpan={9} className="px-3 py-6 text-center text-slate-500">No hay folios con esos filtros.</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-6 text-center text-slate-500">No hay folios con esos filtros.</td></tr>
                 )}
               </tbody>
             </table>

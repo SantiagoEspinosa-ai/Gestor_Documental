@@ -88,12 +88,14 @@ hace fallar el build si queda algun rastro.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
 - Folios (`paginas/PaginaFolios.tsx`, revisor y admin): `GET /folios` paginado (20), filtros de
-  proceso y estado, columnas folio, referencia externa, proceso, fecha de solicitud, estado,
-  recomendacion, documentos e indicador de bloqueantes sin resolver. "Nuevo folio" (integrador y
-  revisor): proceso de `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene
-  `GET /folios`: ve un campo para abrir un folio por su numero.
-  - `referencia_externa` no esta en `ResumenFolio`: se pide `GET /folios/{folio}` por cada fila
-    (`useReferenciasExternas`, con cache). Se quita cuando el contrato la anada a `ResumenFolio`.
+  proceso y estado, columnas folio, proceso, fecha de solicitud, estado, recomendacion, documentos e
+  indicador de bloqueantes sin resolver. "Nuevo folio" (integrador y revisor): proceso de
+  `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene `GET /folios`: ve un
+  campo para abrir un folio por su numero.
+  - Pendiente del ADR-008: la columna `referencia_externa` no esta porque `ResumenFolio` no la tiene
+    (pedirla con `GET /folios/{folio}` por fila costaba una peticion por folio). Vuelve cuando se
+    acepte el ADR-008, que anadira `referencia_externa` a `ResumenFolio` junto con la paginacion de
+    `/auditoria`. La carga de un folio si la muestra (viene en `ResultadoExpediente`).
 - Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`

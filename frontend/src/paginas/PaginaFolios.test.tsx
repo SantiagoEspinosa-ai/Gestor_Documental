@@ -28,14 +28,15 @@ describe('pantalla de folios', () => {
     await screen.findByRole('rowheader', { name: 'ONB-2026-000003' })
     expect(filas().map((f) => within(f).getByRole('rowheader').textContent))
       .toEqual(['ONB-2026-000003', 'ONB-2026-000002', 'ONB-2026-000001', 'ONB-2026-000004'])
+    const cabeceras = screen.getAllByRole('columnheader').map((c) => c.textContent)
+    expect(cabeceras).not.toContain('Referencia externa') // vuelve con el ADR-008
     const f1 = filas()[2]
-    await waitFor(() => expect(celdas(f1)[0]).toBe('CLI-000101')) // referencia_externa (via GET /folios/{folio})
-    expect(celdas(f1).slice(1, 6)).toEqual(['onboarding', '28/09/2026, 09:15', 'En revisión', 'Revisión manual', '4'])
+    expect(celdas(f1).slice(0, 5)).toEqual(['onboarding', '28/09/2026, 09:15', 'En revisión', 'Revisión manual', '4'])
     expect(within(f1).getByText('1 alerta bloqueante sin resolver')).toBeTruthy()
-    const f3 = filas()[0]
-    await waitFor(() => expect(celdas(f3)[0]).toBe('—')) // ONB-2026-000003 no tiene referencia externa
-    expect(celdas(filas()[3])[3]).toBe('Aprobado')
+    expect(celdas(filas()[3])[2]).toBe('Aprobado')
     expect(screen.getByText('Página 1 de 1 (4 folios)')).toBeTruthy()
+    // Una sola peticion de lista: ya no se pide GET /folios/{folio} por fila
+    expect(mock.peticiones.filter((p) => p.startsWith('GET /folios/'))).toEqual([])
   })
 
   it('filtra por estado_general y por proceso', async () => {
