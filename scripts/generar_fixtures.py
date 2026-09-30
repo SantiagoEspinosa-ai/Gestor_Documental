@@ -5,9 +5,9 @@ Responsable: PERSONA_3. Nunca usar datos reales.
 Uso (desde la raiz del repo):
     python scripts/generar_fixtures.py [--hoy AAAA-MM-DD] [--salida DIR]
 
-Determinista: con el mismo --hoy los ficheros salen identicos byte a byte (semilla fija, metadatos
-fijos y sin identificador aleatorio en el PDF). Las fechas son relativas a --hoy (por defecto
-date.today()) para que los casos no caduquen.
+Determinista: con el mismo --hoy (y las mismas versiones de PyMuPDF y Pillow) los ficheros salen
+identicos byte a byte: semilla fija por fichero, metadatos fijos y sin identificador aleatorio en el
+PDF. Las fechas son relativas a --hoy (por defecto date.today()) para que los casos no caduquen.
 
 Los campos de cada documento se leen de config/tipos/*.yaml. Si una ficha tiene un campo que este
 generador no sabe rellenar (o al reves), o un valor no cumple su `patron`, el script falla.
@@ -15,18 +15,18 @@ generador no sabe rellenar (o al reves), o un valor no cumple su `patron`, el sc
 Los ficheros generados (incluido INDICE.md) NO se suben a git: fixtures/generados/ esta en
 .gitignore. Este script es la fuente de verdad y cada persona los genera en local.
 
-Casos:
-  - sano:     persona 1; los 3 documentos coinciden y estan vigentes
-  - vencido:  persona 2; pasaporte vencido hace 30 dias
-Modalidades: PDF digital con capa de texto real (PyMuPDF).
+Casos (documentos generados):
+  - sano:               persona 1; los 3 documentos coinciden y estan vigentes
+  - vencido:            persona 2; pasaporte vencido hace 30 dias
+  - domicilio_distinto: persona 1; el comprobante lleva otro domicilio que la credencial
+  - duplicado:          copia byte a byte de credencial_elector_sano_* (mismo SHA-256)
+Modalidades por documento:
+  - *_digital.pdf:   capa de texto real (PyMuPDF)
+  - *_escaneado.pdf: render a imagen con ruido y rotacion ligera, SIN capa de texto
+  - *_foto.jpg:      perspectiva y sombra sobre un fondo (Pillow)
+INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio de prueba, calculadas
+a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos).
 
-Pendiente para la segunda parte:
-  - Casos domicilio_distinto y duplicado (copia byte a byte).
-  - Modalidades *_escaneado.pdf (render a imagen con ruido y ligera rotacion, sin capa de texto) y
-    *_foto.jpg (perspectiva y sombra), con Pillow y la misma SEMILLA.
-  - fixtures/generados/INDICE.md con caso, archivo y valores esperados de cada campo. El caso
-    vencido debe listar tanto REG-vigencia_documento (bloqueante) como REG-vigencia_proxima
-    (preventiva): vencer hace 30 dias incumple las dos reglas del pasaporte.
 Pendiente para PERSONA_2 (no tocar los YAML desde aqui):
   - `ejemplos_referencia` de config/tipos/*.yaml apunta a ficheros de fixtures/ que no existen.
 """
@@ -34,18 +34,24 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import random
 import re
+import shutil
+import unicodedata
 from datetime import date, timedelta
 from pathlib import Path
 
 import pymupdf
 import yaml
+from PIL import Image, ImageEnhance, ImageFilter
 
 RAIZ = Path(__file__).resolve().parent.parent
 DIR_TIPOS = RAIZ / "config" / "tipos"
+RUTA_PROCESOS = RAIZ / "config" / "procesos.yaml"
 SALIDA = RAIZ / "fixtures" / "generados"
 SEMILLA = 20260930
+PROCESO = "onboarding"
 
 PERSONAS_FICTICIAS = [
     {"nombre_completo": "Ana Ejemplo Prueba", "fecha_nacimiento": "1990-01-01",
@@ -58,15 +64,42 @@ PERSONAS_FICTICIAS = [
      "sexo": "M", "nacionalidad": "UTOPICA", "numero_pasaporte": "ZX0000002",
      "clave_elector": "DEPRLU85061599H102"},
 ]
+DOMICILIO_ALTERNATIVO = "Calle Distinta 789, Colonia Otra, Ciudad Ejemplo"  # ficticio
 
 # Codigo de pais de la OACI para especimenes ("Utopia"); nunca un pais real
 PAIS_MRZ = "UTO"
 PROVEEDOR_FICTICIO = "SERVICIOS DE EJEMPLO S.A."
 
 CASOS = {
-    "sano": {"persona": 0, "vencimiento_pasaporte": lambda hoy: sumar_anios(hoy, 5)},
-    "vencido": {"persona": 1, "vencimiento_pasaporte": lambda hoy: hoy - timedelta(days=30)},
+    "sano": {"persona": 0, "vencimiento_pasaporte": lambda hoy: sumar_anios(hoy, 5),
+             "descripcion": "Los tres documentos coinciden y estan vigentes"},
+    "vencido": {"persona": 1, "vencimiento_pasaporte": lambda hoy: hoy - timedelta(days=30),
+                "descripcion": "Pasaporte vencido hace 30 dias"},
+    "domicilio_distinto": {"persona": 0, "vencimiento_pasaporte": lambda hoy: sumar_anios(hoy, 5),
+                           "domicilio_comprobante": DOMICILIO_ALTERNATIVO,
+                           "descripcion": "El comprobante lleva un domicilio distinto al de la credencial"},
 }
+# Copias byte a byte: caso -> (caso de origen, tipo copiado)
+DUPLICADOS = {"duplicado": ("sano", "credencial_elector")}
+MODALIDADES = {"digital": ".pdf", "escaneado": ".pdf", "foto": ".jpg"}
+
+# Folios de prueba: documentos (caso, tipo) que se suben juntos, en orden
+FOLIOS = {
+    "sano": {"documentos": [("sano", t) for t in ("pasaporte", "credencial_elector", "comprobante_domicilio")],
+             "descripcion": CASOS["sano"]["descripcion"]},
+    "vencido": {"documentos": [("vencido", t) for t in ("pasaporte", "credencial_elector", "comprobante_domicilio")],
+                "descripcion": CASOS["vencido"]["descripcion"]},
+    "domicilio_distinto": {"documentos": [("domicilio_distinto", t) for t in
+                                          ("pasaporte", "credencial_elector", "comprobante_domicilio")],
+                           "descripcion": CASOS["domicilio_distinto"]["descripcion"]},
+    "duplicado": {"documentos": [("sano", "credencial_elector"), ("duplicado", "credencial_elector"),
+                                 ("sano", "comprobante_domicilio")],
+                  "descripcion": "La credencial se sube dos veces (la segunda es una copia byte a byte)"},
+    "falta_requerido": {"documentos": [("sano", "pasaporte"), ("sano", "credencial_elector")],
+                        "descripcion": "Falta el comprobante de domicilio, requerido por el proceso"},
+}
+# Severidades de docs/contratos/codigos_alertas.md (las de REG- las fija cada ficha YAML)
+SEVERIDAD_CATALOGO = {"CMP-001": "critica", "EXP-001": "bloqueante", "DUP-001": "critica"}
 
 MM = 72 / 25.4  # puntos PDF por milimetro
 # Pasaporte (ID-3, 125 x 88 mm) y credencial (ID-1, 85,6 x 54 mm) a escala para que se lean bien
@@ -75,6 +108,8 @@ PAGINAS = {
     "credencial_elector": (214 * MM, 135 * MM),
     "comprobante_domicilio": pymupdf.paper_size("a4"),
 }
+DPI_ESCANEO = 200
+DPI_FOTO = 150
 GRIS_TEXTO = (0.35, 0.35, 0.35)
 GRIS_MARCA = (0.93, 0.93, 0.93)  # marca de agua muy tenue
 AZUL_CABECERA = (0.12, 0.23, 0.42)
@@ -84,7 +119,7 @@ class ErrorFixture(Exception):
     """Incoherencia entre YAML, persona y generador: mejor fallar que generar un fixture falso."""
 
 
-# ---------------------------------------------------------------- fechas y fichas
+# ---------------------------------------------------------------- fechas, fichas y semillas
 
 def sumar_anios(d: date, anios: int) -> date:
     try:
@@ -99,6 +134,19 @@ def cargar_fichas(directorio: Path = DIR_TIPOS) -> dict[str, dict]:
         ficha = yaml.safe_load(ruta.read_text(encoding="utf-8"))
         fichas[ficha["nombre"]] = ficha
     return fichas
+
+
+def cargar_proceso(nombre: str = PROCESO, ruta: Path = RUTA_PROCESOS) -> dict:
+    return yaml.safe_load(ruta.read_text(encoding="utf-8"))["procesos"][nombre]
+
+
+def rng_para(nombre_archivo: str) -> random.Random:
+    """Semilla propia por fichero: anadir un caso no cambia los ficheros que ya existian."""
+    return random.Random(f"{SEMILLA}:{nombre_archivo}")
+
+
+def nombre_archivo(tipo: str, caso: str, modalidad: str) -> str:
+    return f"{tipo}_{caso}_{modalidad}{MODALIDADES[modalidad]}"
 
 
 # ---------------------------------------------------------------- coherencia con la CURP
@@ -181,6 +229,7 @@ def valores_documento(tipo: str, persona: dict, caso: str, hoy: date) -> dict:
                 "clave_elector": persona["clave_elector"], "fecha_nacimiento": nacimiento,
                 "domicilio": domicilio, "vigencia": hoy.year + 3}
     if tipo == "comprobante_domicilio":
+        domicilio = CASOS[caso].get("domicilio_comprobante", persona["domicilio"]).upper()
         return {"nombre_titular": nombre, "domicilio": domicilio, "proveedor": PROVEEDOR_FICTICIO,
                 "fecha_emision": hoy - timedelta(days=15)}
     raise ErrorFixture(f"El generador no tiene plantilla para el tipo {tipo}")
@@ -202,7 +251,79 @@ def formatear(valor) -> str:
     return valor.strftime("%d/%m/%Y") if isinstance(valor, date) else str(valor)
 
 
-# ---------------------------------------------------------------- dibujo
+# ---------------------------------------------------------------- alertas esperadas
+
+def evaluar_reglas(ficha: dict, valores: dict, hoy: date) -> list[dict]:
+    """Reglas del YAML incumplidas. Evaluador propio, independiente del modulo validacion: sirve
+    de verdad de referencia. Falla si un valor cae en la frontera de una regla (+-1 dia), para que
+    el resultado no dependa de si validacion usa > o >=."""
+    incumplidas = []
+    for regla in ficha.get("reglas", []):
+        tipo, valor = regla["tipo"], valores[regla["campo"]]
+        if tipo == "patron":
+            cumple = bool(re.fullmatch(ficha["campos"][regla["campo"]]["patron"], str(valor)))
+        elif tipo == "anio_mayor_o_igual_actual":
+            if valor == hoy.year:
+                raise ErrorFixture(f"{ficha['nombre']}.{regla['id']}: anio en la frontera de la regla")
+            cumple = valor > hoy.year
+        elif tipo in ("fecha_posterior_a_hoy", "fecha_posterior_a_hoy_mas_dias",
+                      "fecha_no_anterior_a_hoy_menos_dias"):
+            limite = {"fecha_posterior_a_hoy": hoy,
+                      "fecha_posterior_a_hoy_mas_dias": hoy + timedelta(days=regla.get("dias", 0)),
+                      "fecha_no_anterior_a_hoy_menos_dias": hoy - timedelta(days=regla.get("dias", 0))}[tipo]
+            if abs((valor - limite).days) <= 1:
+                raise ErrorFixture(f"{ficha['nombre']}.{regla['id']}: fecha en la frontera de la regla")
+            cumple = valor > limite
+        else:
+            raise ErrorFixture(f"Tipo de regla desconocido '{tipo}' en {ficha['nombre']}: actualiza el generador")
+        if not cumple:
+            incumplidas.append({"codigo": f"REG-{regla['id']}", "severidad": regla["severidad"],
+                                "campo": regla["campo"], "motivo": regla["mensaje"]})
+    return incumplidas
+
+
+def normalizar(valor) -> str:
+    texto_plano = unicodedata.normalize("NFKD", str(valor)).encode("ascii", "ignore").decode()
+    return " ".join(texto_plano.upper().split())
+
+
+def alertas_folio(folio: str, documentos: dict, hashes: dict, fichas: dict, proceso: dict,
+                  hoy: date, modalidad: str = "digital") -> list[dict]:
+    """Alertas deterministas esperadas si se suben juntos los documentos del folio de prueba."""
+    miembros = FOLIOS[folio]["documentos"]
+    alertas = []
+    vistos: dict[str, str] = {}
+    for caso, tipo in miembros:
+        patron_archivo = f"`{tipo}_{caso}_*`"
+        donde = f"documento {patron_archivo}"
+        for alerta in evaluar_reglas(fichas[tipo], documentos[(caso, tipo)]["valores"], hoy):
+            alertas.append({**alerta, "donde": donde})
+        sha = hashes[nombre_archivo(tipo, caso, modalidad)]
+        if sha in vistos:  # misma huella en el mismo folio
+            alertas.append({"codigo": "DUP-001", "severidad": SEVERIDAD_CATALOGO["DUP-001"], "campo": None,
+                            "donde": donde, "motivo": f"Mismo SHA-256 que {vistos[sha]} (misma modalidad)"})
+        else:
+            vistos[sha] = patron_archivo
+    for i, (caso_a, tipo_a) in enumerate(miembros):
+        for caso_b, tipo_b in miembros[i + 1:]:
+            campos = (set(fichas[tipo_a].get("comparaciones", {}).get(tipo_b, []))
+                      | set(fichas[tipo_b].get("comparaciones", {}).get(tipo_a, [])))
+            va, vb = documentos[(caso_a, tipo_a)]["valores"], documentos[(caso_b, tipo_b)]["valores"]
+            for campo in sorted(campos):
+                if normalizar(va[campo]) != normalizar(vb[campo]):
+                    alertas.append({"codigo": "CMP-001", "severidad": SEVERIDAD_CATALOGO["CMP-001"],
+                                    "campo": campo, "donde": "alertas_expediente",
+                                    "motivo": f"{campo} distinto entre {tipo_a} y {tipo_b}"})
+    presentes = {tipo for _, tipo in miembros}
+    for tipo in proceso["tipos_requeridos"]:
+        if tipo not in presentes:
+            alertas.append({"codigo": "EXP-001", "severidad": SEVERIDAD_CATALOGO["EXP-001"], "campo": None,
+                            "donde": "alertas_expediente",
+                            "motivo": f"Falta {tipo}, requerido por el proceso {PROCESO}"})
+    return alertas
+
+
+# ---------------------------------------------------------------- dibujo del documento digital
 
 def texto(pagina, x, y, cadena, tam=10, fuente="helv", color=(0, 0, 0), rotar=0):
     pagina.insert_text((x, y), cadena, fontsize=tam, fontname=fuente, color=color, rotate=rotar)
@@ -239,7 +360,7 @@ def silueta(pagina, rect: pymupdf.Rect) -> None:
     pagina.draw_rect(rect, color=(0.6, 0.6, 0.6), width=0.8)
 
 
-def campos_en_columna(pagina, x, y, campos: dict, valores: dict, paso=30, tam=12, ancho_max=None):
+def campos_en_columna(pagina, x, y, campos: dict, valores: dict, paso=30, tam=12):
     for campo in campos:  # orden del YAML
         texto(pagina, x, y, campo.replace("_", " ").upper(), tam=7, color=GRIS_TEXTO)
         texto(pagina, x, y + 13, formatear(valores[campo]), tam=tam, fuente="hebo")
@@ -259,17 +380,17 @@ def dibujar_pasaporte(pagina, ficha, valores, mrz):
         texto(pagina, 22, pagina.rect.height - 46 + i * 22, linea, tam=15, fuente="cour")
 
 
-def dibujar_credencial(pagina, ficha, valores, mrz=None):
+def dibujar_credencial(pagina, ficha, valores):
     cabecera(pagina, ficha["nombre_visible"])
     marca_de_agua_lateral(pagina)
     silueta(pagina, pymupdf.Rect(20, 52, 150, 216))
     campos_en_columna(pagina, 172, 56, ficha["campos"], valores, paso=31, tam=11)
 
 
-def dibujar_comprobante(pagina, ficha, valores, rng: random.Random, mrz=None):
+def dibujar_comprobante(pagina, ficha, valores, rng: random.Random):
     cabecera(pagina, f"{valores['proveedor']} - {ficha['nombre_visible']}", alto_barra=46)
     y = campos_en_columna(pagina, 50, 90, ficha["campos"], valores, paso=36)
-    # Detalle decorativo con importes ficticios (dependen solo de SEMILLA)
+    # Detalle decorativo con importes ficticios (dependen solo de la semilla del fichero)
     y += 20
     texto(pagina, 50, y, "DETALLE DEL PERIODO (IMPORTES FICTICIOS)", tam=9, fuente="hebo", color=GRIS_TEXTO)
     total = 0.0
@@ -287,11 +408,18 @@ def dibujar_comprobante(pagina, ficha, valores, rng: random.Random, mrz=None):
           tam=11, fuente="hebo", color=GRIS_MARCA)
 
 
-# ---------------------------------------------------------------- generacion
+# ---------------------------------------------------------------- modalidades
 
-def generar_pdf(tipo: str, ficha: dict, valores: dict, hoy: date, rng: random.Random,
-                destino: Path) -> list[str]:
-    """Genera un PDF digital y devuelve las lineas de texto esperadas en su capa de texto."""
+def metadatos(ficha: dict, caso: str, modalidad: str, hoy: date) -> dict:
+    fecha_pdf = f"D:{hoy.strftime('%Y%m%d')}000000Z"
+    return {"title": f"{ficha['nombre_visible']} (ficticio)", "author": "generar_fixtures.py",
+            "subject": f"Documento ficticio para pruebas. Sin validez. Caso {caso}, {modalidad}.",
+            "keywords": "", "creator": "generar_fixtures.py", "producer": "PyMuPDF",
+            "creationDate": fecha_pdf, "modDate": fecha_pdf}
+
+
+def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date, destino: Path) -> list[str]:
+    """PDF con capa de texto real. Devuelve el texto que debe poder extraerse."""
     doc = pymupdf.open()
     pagina = doc.new_page(width=PAGINAS[tipo][0], height=PAGINAS[tipo][1])
     esperado = [formatear(valores[c]) for c in ficha["campos"]]
@@ -303,16 +431,99 @@ def generar_pdf(tipo: str, ficha: dict, valores: dict, hoy: date, rng: random.Ra
     elif tipo == "credencial_elector":
         dibujar_credencial(pagina, ficha, valores)
     else:
-        dibujar_comprobante(pagina, ficha, valores, rng)
-    fecha_pdf = f"D:{hoy.strftime('%Y%m%d')}000000Z"
-    doc.set_metadata({"title": f"{ficha['nombre_visible']} (ficticio)", "author": "generar_fixtures.py",
-                      "subject": "Documento ficticio para pruebas. Sin validez.", "keywords": "",
-                      "creator": "generar_fixtures.py", "producer": "PyMuPDF",
-                      "creationDate": fecha_pdf, "modDate": fecha_pdf})
+        dibujar_comprobante(pagina, ficha, valores, rng_para(destino.name))
+    doc.set_metadata(metadatos(ficha, caso, "digital", hoy))
     doc.save(destino, garbage=4, deflate=True, no_new_id=True)
     doc.close()
     return esperado
 
+
+def renderizar(ruta_pdf: Path, dpi: int, modo: str) -> Image.Image:
+    espacio = pymupdf.csGRAY if modo == "L" else pymupdf.csRGB
+    with pymupdf.open(ruta_pdf) as doc:
+        pix = doc[0].get_pixmap(dpi=dpi, colorspace=espacio, alpha=False)
+        return Image.frombytes(modo, (pix.width, pix.height), pix.samples)
+
+
+def ruido(tamano: tuple[int, int], rng: random.Random) -> Image.Image:
+    """Ruido uniforme reproducible (Image.effect_noise de Pillow no admite semilla)."""
+    return Image.frombytes("L", tamano, rng.randbytes(tamano[0] * tamano[1]))
+
+
+def generar_escaneado(digital: Path, destino: Path, ficha: dict, caso: str, hoy: date) -> None:
+    """Imagen en gris con ruido y rotacion ligera, dentro de un PDF SIN capa de texto."""
+    rng = rng_para(destino.name)
+    img = ImageEnhance.Contrast(renderizar(digital, DPI_ESCANEO, "L")).enhance(0.9)
+    angulo = rng.uniform(0.4, 1.2) * rng.choice((-1, 1))
+    img = img.rotate(angulo, resample=Image.BICUBIC, expand=True, fillcolor=255)
+    img = Image.blend(img, ruido(img.size, rng), 0.06).filter(ImageFilter.GaussianBlur(0.5))
+    jpg = io.BytesIO()
+    img.save(jpg, "JPEG", quality=80)
+    doc = pymupdf.open()
+    pagina = doc.new_page(width=img.width * 72 / DPI_ESCANEO, height=img.height * 72 / DPI_ESCANEO)
+    pagina.insert_image(pagina.rect, stream=jpg.getvalue())
+    doc.set_metadata(metadatos(ficha, caso, "escaneado", hoy))
+    doc.save(destino, garbage=4, deflate=True, no_new_id=True)
+    doc.close()
+    with pymupdf.open(destino) as comprobacion:
+        if comprobacion[0].get_text().strip():
+            raise ErrorFixture(f"{destino.name}: el escaneado no debe tener capa de texto")
+
+
+def coeficientes_perspectiva(destino: list, origen: list) -> list[float]:
+    """Coeficientes de Image.PERSPECTIVE que llevan cada punto de destino a su punto de origen."""
+    filas, b = [], []
+    for (x, y), (u, v) in zip(destino, origen):
+        filas.append([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.append(u)
+        filas.append([0, 0, 0, x, y, 1, -v * x, -v * y]); b.append(v)
+    n = 8  # eliminacion de Gauss con pivote parcial (sin numpy)
+    m = [fila + [bi] for fila, bi in zip(filas, b)]
+    for col in range(n):
+        piv = max(range(col, n), key=lambda r: abs(m[r][col]))
+        m[col], m[piv] = m[piv], m[col]
+        for r in range(n):
+            if r != col:
+                f = m[r][col] / m[col][col]
+                m[r] = [a - f * c for a, c in zip(m[r], m[col])]
+    return [m[i][n] / m[i][i] for i in range(n)]
+
+
+def generar_foto(digital: Path, destino: Path) -> None:
+    """Foto de movil simulada: perspectiva suave, sombra y luz desigual sobre una mesa."""
+    rng = rng_para(destino.name)
+    img = renderizar(digital, DPI_FOTO, "RGB")
+    w, h = img.size
+    margen = int(0.08 * max(w, h))
+    lienzo = (w + 2 * margen, h + 2 * margen)
+    # Mesa con textura ligera
+    textura = ruido((lienzo[0] // 8, lienzo[1] // 8), rng).resize(lienzo, Image.BILINEAR)
+    fondo = Image.blend(Image.new("RGB", lienzo, (118, 104, 88)), Image.merge("RGB", (textura,) * 3), 0.10)
+    # Perspectiva: la parte de arriba se ve mas estrecha (camara algo inclinada)
+    t = rng.uniform(0.03, 0.06) * w
+    j = lambda: rng.uniform(-0.01, 0.01) * h
+    destino_quad = [(margen + t, margen + j()), (margen + w - t, margen + j()),
+                    (margen + w, margen + h + j()), (margen, margen + h + j())]
+    coef = coeficientes_perspectiva(destino_quad, [(0, 0), (w, 0), (w, h), (0, h)])
+    documento = img.transform(lienzo, Image.PERSPECTIVE, coef, Image.BICUBIC)
+    mascara = Image.new("L", (w, h), 255).transform(lienzo, Image.PERSPECTIVE, coef, Image.BICUBIC)
+    # Sombra proyectada bajo el documento
+    sombra = Image.new("L", lienzo, 0)
+    sombra.paste(mascara, (int(margen * 0.15), int(margen * 0.2)))
+    sombra = sombra.filter(ImageFilter.GaussianBlur(margen * 0.12)).point(lambda p: int(p * 0.6))
+    fondo = Image.composite(ImageEnhance.Brightness(fondo).enhance(0.45), fondo, sombra)
+    fondo.paste(documento, (0, 0), mascara)
+    # Luz desigual: un lado algo mas oscuro
+    # (se gira un degradado mas grande y se recorta el centro: asi no quedan esquinas sin luz)
+    lado = int(1.5 * max(lienzo))
+    gradiente = Image.linear_gradient("L").resize((lado, lado), Image.BILINEAR)
+    gradiente = gradiente.rotate(rng.uniform(20, 70), resample=Image.BILINEAR)
+    x0, y0 = (lado - lienzo[0]) // 2, (lado - lienzo[1]) // 2
+    gradiente = gradiente.crop((x0, y0, x0 + lienzo[0], y0 + lienzo[1])).point(lambda p: int(p * 0.7))
+    foto = Image.composite(ImageEnhance.Brightness(fondo).enhance(0.75), fondo, gradiente)
+    foto.filter(ImageFilter.GaussianBlur(0.6)).save(destino, "JPEG", quality=88)
+
+
+# ---------------------------------------------------------------- generacion e INDICE.md
 
 def comprobar_capa_texto(ruta: Path, esperado: list[str]) -> None:
     with pymupdf.open(ruta) as doc:
@@ -322,23 +533,87 @@ def comprobar_capa_texto(ruta: Path, esperado: list[str]) -> None:
         raise ErrorFixture(f"{ruta.name}: la capa de texto no contiene {faltan}")
 
 
+def sha256(ruta: Path) -> str:
+    return hashlib.sha256(ruta.read_bytes()).hexdigest()
+
+
+def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, documentos: dict,
+                    hashes: dict) -> Path:
+    persona = lambda i: f"persona {i + 1} ({PERSONAS_FICTICIAS[i]['nombre_completo'].upper()})"
+    iso = lambda v: v.isoformat() if isinstance(v, date) else str(v)
+    lineas = [
+        "# INDICE de fixtures ficticios", "",
+        f"Generado por `scripts/generar_fixtures.py` con `--hoy {hoy.isoformat()}` (semilla {SEMILLA}).",
+        "No se sube a git: regeneralo en local con el script, que es la fuente de verdad.",
+        "Todos los datos son ficticios. Byte a byte reproducible con el mismo `--hoy` y las mismas",
+        "versiones de PyMuPDF y Pillow.", "",
+        "Fechas de los valores esperados en ISO 8601 (AAAA-MM-DD); en los documentos aparecen como",
+        "DD/MM/AAAA.", "",
+        "## Archivos", "",
+        "| Archivo | Caso | Tipo | Modalidad | Persona | SHA-256 |", "|---|---|---|---|---|---|",
+    ]
+    for (caso, tipo), doc in documentos.items():
+        for modalidad in MODALIDADES:
+            archivo = nombre_archivo(tipo, caso, modalidad)
+            lineas.append(f"| `{archivo}` | {caso} | {tipo} | {modalidad} | {persona(doc['persona'])} "
+                          f"| `{hashes[archivo][:16]}...` |")
+    lineas += ["", "## Valores esperados por documento", "",
+               "Iguales en las tres modalidades del mismo documento."]
+    for (caso, tipo), doc in documentos.items():
+        archivos = ", ".join(f"`{nombre_archivo(tipo, caso, m)}`" for m in MODALIDADES)
+        lineas += ["", f"### {caso} / {tipo}", "", f"{persona(doc['persona'])}. Archivos: {archivos}.", ""]
+        if "copia_de" in doc:
+            lineas += [f"Copia byte a byte de `{tipo}_{doc['copia_de']}_*` (mismo SHA-256 en cada modalidad).", ""]
+        lineas += ["| Campo | Valor esperado |", "|---|---|"]
+        lineas += [f"| `{campo}` | {iso(doc['valores'][campo])} |" for campo in fichas[tipo]["campos"]]
+        if tipo == "pasaporte":
+            lineas += ["", "MRZ:", "", "```", *generar_mrz(doc["valores"]), "```"]
+    lineas += ["", f"## Folios de prueba y alertas esperadas (proceso `{PROCESO}`)", "",
+               "Sube los documentos de cada folio en ese orden y en la misma modalidad (DUP-001 solo",
+               "salta si los dos ficheros son identicos). Solo se listan alertas deterministas:",
+               "VAL-002, CLS-002 y VIS-xxx dependen del modelo. Severidad de REG- segun la ficha YAML;",
+               "la de CMP-001, EXP-001 y DUP-001 segun `docs/contratos/codigos_alertas.md`."]
+    for folio, definicion in FOLIOS.items():
+        miembros = ", ".join(f"`{tipo}_{caso}_*`" for caso, tipo in definicion["documentos"])
+        lineas += ["", f"### Folio `{folio}`", "", f"{definicion['descripcion']}. Documentos: {miembros}.", ""]
+        alertas = alertas_folio(folio, documentos, hashes, fichas, proceso, hoy)
+        if not alertas:
+            lineas.append("Alertas esperadas: ninguna.")
+            continue
+        lineas += ["| Codigo | Severidad | Donde | Campo | Motivo |", "|---|---|---|---|---|"]
+        lineas += [f"| `{a['codigo']}` | {a['severidad']} | {a['donde']} | {a['campo'] or '-'} | {a['motivo']} |"
+                   for a in alertas]
+    ruta = salida / "INDICE.md"
+    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
+    return ruta
+
+
 def generar(hoy: date, salida: Path = SALIDA) -> dict[str, str]:
-    """Genera todos los fixtures y devuelve {nombre_archivo: sha256}."""
-    fichas = cargar_fichas()
+    """Genera todos los fixtures e INDICE.md y devuelve {nombre_archivo: sha256}."""
+    fichas, proceso = cargar_fichas(), cargar_proceso()
     for persona in PERSONAS_FICTICIAS:
         validar_persona(persona, fichas)
-    rng = random.Random(SEMILLA)
     salida.mkdir(parents=True, exist_ok=True)
-    hashes = {}
+    documentos: dict[tuple[str, str], dict] = {}
     for caso, definicion in CASOS.items():
         persona = PERSONAS_FICTICIAS[definicion["persona"]]
         for tipo, ficha in fichas.items():
             valores = valores_documento(tipo, persona, caso, hoy)
             validar_valores(tipo, valores, ficha)
-            destino = salida / f"{tipo}_{caso}_digital.pdf"
-            esperado = generar_pdf(tipo, ficha, valores, hoy, rng, destino)
-            comprobar_capa_texto(destino, esperado)
-            hashes[destino.name] = hashlib.sha256(destino.read_bytes()).hexdigest()
+            evaluar_reglas(ficha, valores, hoy)  # falla pronto si un valor cae en una frontera
+            documentos[(caso, tipo)] = {"valores": valores, "persona": definicion["persona"]}
+            digital = salida / nombre_archivo(tipo, caso, "digital")
+            comprobar_capa_texto(digital, generar_digital(tipo, caso, ficha, valores, hoy, digital))
+            generar_escaneado(digital, salida / nombre_archivo(tipo, caso, "escaneado"), ficha, caso, hoy)
+            generar_foto(digital, salida / nombre_archivo(tipo, caso, "foto"))
+    for caso, (origen, tipo) in DUPLICADOS.items():
+        documentos[(caso, tipo)] = {**documentos[(origen, tipo)], "copia_de": origen}
+        for modalidad in MODALIDADES:
+            shutil.copyfile(salida / nombre_archivo(tipo, origen, modalidad),
+                            salida / nombre_archivo(tipo, caso, modalidad))
+    hashes = {nombre_archivo(t, c, m): sha256(salida / nombre_archivo(t, c, m))
+              for (c, t) in documentos for m in MODALIDADES}
+    escribir_indice(salida, hoy, fichas, proceso, documentos, hashes)
     return hashes
 
 
@@ -352,9 +627,9 @@ def main() -> None:
     parser.add_argument("--salida", type=Path, default=SALIDA)
     args = parser.parse_args()
     hashes = generar(args.hoy, args.salida)
-    print(f"Fixtures generados en {args.salida} (hoy = {args.hoy}):")
+    print(f"{len(hashes)} fixtures e INDICE.md generados en {args.salida} (hoy = {args.hoy}):")
     for nombre, sha in hashes.items():
-        print(f"  {nombre:45s} sha256 {sha[:16]}...")
+        print(f"  {nombre:52s} sha256 {sha[:16]}...")
 
 
 if __name__ == "__main__":

@@ -15,17 +15,45 @@ if not RUTA_SCRIPT.is_file() or not DIR_TIPOS.is_dir():
     pytest.skip(f"Tests del generador de fixtures omitidos: no se encuentra {RUTA_SCRIPT} o {DIR_TIPOS} "
                 "(normal dentro del contenedor del backend; ejecutalos desde el repo completo)",
                 allow_module_level=True)
+
+import pymupdf  # noqa: E402
+from PIL import Image  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location("generar_fixtures", RUTA_SCRIPT)
 gf = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gf)
 
 HOY = date(2026, 9, 30)
+TIPOS = ("pasaporte", "credencial_elector", "comprobante_domicilio")
 
 
 @pytest.fixture(scope="module")
 def fichas():
     return gf.cargar_fichas()
 
+
+@pytest.fixture(scope="module")
+def generado(tmp_path_factory):
+    """Una generacion completa compartida por los tests que solo leen ficheros."""
+    salida = tmp_path_factory.mktemp("fixtures")
+    return salida, gf.generar(HOY, salida)
+
+
+def alertas_de(folio, fichas):
+    documentos = {}
+    for caso, definicion in gf.CASOS.items():
+        for tipo in TIPOS:
+            documentos[(caso, tipo)] = {"valores": gf.valores_documento(
+                tipo, gf.PERSONAS_FICTICIAS[definicion["persona"]], caso, HOY)}
+    for caso, (origen, tipo) in gf.DUPLICADOS.items():
+        documentos[(caso, tipo)] = documentos[(origen, tipo)]
+    # Hashes simulados: iguales solo para el duplicado y su original
+    hashes = {gf.nombre_archivo(t, c, "digital"): f"{c}/{t}" for (c, t) in documentos}
+    hashes[gf.nombre_archivo("credencial_elector", "duplicado", "digital")] = "sano/credencial_elector"
+    return gf.alertas_folio(folio, documentos, hashes, fichas, gf.cargar_proceso(), HOY)
+
+
+# ---------------------------------------------------------------- MRZ, CURP y validaciones
 
 def test_digito_control_con_el_ejemplo_de_la_norma_oaci():
     # Especimen publico de la norma OACI 9303 (Utopia)
@@ -101,24 +129,141 @@ def test_fechas_relativas_a_hoy():
     assert gf.valores_documento("comprobante_domicilio", ana, "sano", HOY)["fecha_emision"] == date(2026, 9, 15)
 
 
+def test_domicilio_distinto_solo_cambia_el_comprobante():
+    ana = gf.PERSONAS_FICTICIAS[0]
+    credencial = gf.valores_documento("credencial_elector", ana, "domicilio_distinto", HOY)
+    comprobante = gf.valores_documento("comprobante_domicilio", ana, "domicilio_distinto", HOY)
+    assert credencial["domicilio"] == ana["domicilio"].upper()
+    assert comprobante["domicilio"] == gf.DOMICILIO_ALTERNATIVO.upper() != credencial["domicilio"]
+
+
 def test_sumar_anios_desde_29_de_febrero():
     assert gf.sumar_anios(date(2028, 2, 29), 5) == date(2033, 2, 28)
     assert gf.sumar_anios(date(2028, 2, 29), 4) == date(2032, 2, 29)
 
 
-def test_generacion_completa_y_determinista(tmp_path):
-    primera = gf.generar(HOY, tmp_path / "a")
-    segunda = gf.generar(HOY, tmp_path / "b")
-    esperados = {f"{t}_{c}_digital.pdf" for c in ("sano", "vencido")
-                 for t in ("pasaporte", "credencial_elector", "comprobante_domicilio")}
-    assert set(primera) == esperados
-    assert primera == segunda  # mismos SHA-256
-    assert gf.generar(HOY + timedelta(days=1), tmp_path / "c") != primera  # las fechas si cambian
+# ---------------------------------------------------------------- reglas y alertas esperadas
+
+def test_regla_de_tipo_desconocido_falla(fichas):
+    ficha = copy.deepcopy(fichas["pasaporte"])
+    ficha["reglas"].append({"id": "x", "tipo": "regla_nueva", "campo": "sexo", "severidad": "critica",
+                            "mensaje": "x"})
+    valores = gf.valores_documento("pasaporte", gf.PERSONAS_FICTICIAS[0], "sano", HOY)
+    with pytest.raises(gf.ErrorFixture, match="desconocido"):
+        gf.evaluar_reglas(ficha, valores, HOY)
 
 
-def test_capa_de_texto_contiene_los_datos(tmp_path):
-    import pymupdf
-    gf.generar(HOY, tmp_path)
-    with pymupdf.open(tmp_path / "pasaporte_vencido_digital.pdf") as doc:
+def test_fecha_en_la_frontera_de_una_regla_falla(fichas):
+    valores = gf.valores_documento("pasaporte", gf.PERSONAS_FICTICIAS[0], "sano", HOY)
+    valores["fecha_vencimiento"] = HOY
+    with pytest.raises(gf.ErrorFixture, match="frontera"):
+        gf.evaluar_reglas(fichas["pasaporte"], valores, HOY)
+
+
+def test_alertas_sano(fichas):
+    assert alertas_de("sano", fichas) == []
+
+
+def test_alertas_vencido_listan_las_dos_reglas_del_pasaporte(fichas):
+    alertas = alertas_de("vencido", fichas)
+    assert [(a["codigo"], a["severidad"], a["donde"]) for a in alertas] == [
+        ("REG-vigencia_documento", "bloqueante", "documento `pasaporte_vencido_*`"),
+        ("REG-vigencia_proxima", "preventiva", "documento `pasaporte_vencido_*`"),
+    ]
+
+
+def test_alertas_domicilio_distinto_un_solo_cmp_en_el_expediente(fichas):
+    alertas = alertas_de("domicilio_distinto", fichas)
+    assert [(a["codigo"], a["severidad"], a["donde"], a["campo"]) for a in alertas] == [
+        ("CMP-001", "critica", "alertas_expediente", "domicilio")]
+
+
+def test_alertas_duplicado_en_el_segundo_documento(fichas):
+    alertas = alertas_de("duplicado", fichas)
+    assert [(a["codigo"], a["severidad"], a["donde"]) for a in alertas] == [
+        ("DUP-001", "critica", "documento `credencial_elector_duplicado_*`")]
+
+
+def test_alertas_falta_requerido(fichas):
+    alertas = alertas_de("falta_requerido", fichas)
+    assert [(a["codigo"], a["severidad"], a["donde"]) for a in alertas] == [
+        ("EXP-001", "bloqueante", "alertas_expediente")]
+    assert "comprobante_domicilio" in alertas[0]["motivo"]
+
+
+def test_codigos_reg_coinciden_con_el_catalogo(fichas):
+    catalogo = (RAIZ_REPO / "docs" / "contratos" / "codigos_alertas.md").read_text(encoding="utf-8")
+    assert "`REG-{id}`" in catalogo and "REG-vigencia_documento" in catalogo
+    for alerta in alertas_de("vencido", fichas):
+        regla = alerta["codigo"].removeprefix("REG-")
+        assert regla in {r["id"] for r in fichas["pasaporte"]["reglas"]}
+
+
+# ---------------------------------------------------------------- ficheros generados
+
+def test_se_generan_todos_los_ficheros(generado):
+    salida, hashes = generado
+    esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
+    esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
+    assert set(hashes) == esperados and len(esperados) == 30
+    assert all((salida / nombre).is_file() for nombre in esperados)
+    assert (salida / "INDICE.md").is_file()
+
+
+def test_capa_de_texto_de_los_digitales(generado):
+    salida, _ = generado
+    with pymupdf.open(salida / "pasaporte_vencido_digital.pdf") as doc:
         contenido = doc[0].get_text()
     assert "LUIS DEMO PRUEBAS" in contenido and "31/08/2026" in contenido and "P<UTODEMO<PRUEBAS<<LUIS" in contenido
+
+
+def test_escaneados_sin_capa_de_texto(generado):
+    salida, _ = generado
+    for caso in gf.CASOS:
+        for tipo in TIPOS:
+            with pymupdf.open(salida / gf.nombre_archivo(tipo, caso, "escaneado")) as doc:
+                assert doc.page_count == 1
+                assert doc[0].get_text() == ""
+                assert len(doc[0].get_images()) == 1
+
+
+def test_fotos_son_jpg_rgb_sin_exif(generado):
+    salida, _ = generado
+    for caso in gf.CASOS:
+        for tipo in TIPOS:
+            with Image.open(salida / gf.nombre_archivo(tipo, caso, "foto")) as foto:
+                assert foto.format == "JPEG" and foto.mode == "RGB"
+                assert min(foto.size) >= 900 and "exif" not in foto.info
+
+
+def test_duplicado_tiene_el_mismo_sha256_que_el_original(generado):
+    _, hashes = generado
+    for modalidad in gf.MODALIDADES:
+        assert (hashes[gf.nombre_archivo("credencial_elector", "duplicado", modalidad)]
+                == hashes[gf.nombre_archivo("credencial_elector", "sano", modalidad)])
+    # Ningun otro par de ficheros coincide: DUP-001 solo aparece donde se busca
+    assert len(set(hashes.values())) == len(hashes) - len(gf.MODALIDADES)
+
+
+def test_indice_contiene_fecha_valores_y_alertas(generado):
+    salida, _ = generado
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    assert "--hoy 2026-09-30" in indice and "No se sube a git" in indice
+    assert "| `fecha_vencimiento` | 2026-08-31 |" in indice
+    for codigo in ("REG-vigencia_documento", "REG-vigencia_proxima", "CMP-001", "DUP-001", "EXP-001"):
+        assert f"`{codigo}`" in indice
+    assert "Alertas esperadas: ninguna." in indice.split("### Folio `sano`")[1].split("### Folio")[0]
+
+
+def test_determinismo_byte_a_byte_con_el_mismo_hoy(generado, tmp_path):
+    salida, hashes = generado
+    otra = gf.generar(HOY, tmp_path)  # incluye PDF escaneados y JPG
+    assert otra == hashes
+    assert (tmp_path / "INDICE.md").read_bytes() == (salida / "INDICE.md").read_bytes()
+
+
+def test_otro_hoy_cambia_los_ficheros(generado, tmp_path):
+    _, hashes = generado
+    otra = gf.generar(HOY + timedelta(days=1), tmp_path)
+    assert set(otra) == set(hashes)
+    assert all(otra[n] != hashes[n] for n in hashes if "_digital" in n)
