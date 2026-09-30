@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     aws_secret_access_key: SecretStr
     aws_region: str = "us-east-1"
     s3_bucket: str
+    url_prefirmada_segundos: int = Field(300, gt=0)  # caducidad de las URL del visor
 
     # Webhooks
     webhook_secret_hmac: SecretStr

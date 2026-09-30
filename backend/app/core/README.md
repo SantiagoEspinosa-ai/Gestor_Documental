@@ -10,6 +10,7 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `errores.py`: `ErrorApi(http, codigo, mensaje, headers)` y manejadores globales (`registrar_manejadores`): todo error sale como `{codigo, mensaje}` (ADR-006 1.4); 422 sin valores de campo, 500 sin detalles internos.
 - `auditoria.py`: `registrar(sesion, accion, ...)` valida la accion contra `ACCIONES_AUDITORIA` y hace `add` sin commit.
 - `seguridad.py`: hash bcrypt, `crear_token` JWT y dependencias `usuario_actual` y `requiere_rol(*roles)`. Usuarios con `scripts/crear_usuario.py`.
+- `almacenamiento.py`: puerto `Almacenamiento` y adaptador `AlmacenamientoS3` (boto3, S3 real, SSE-S3, nunca sobrescribe: `IfNoneMatch="*"`); `clave_original(...)` y dependencia `get_almacenamiento()`. Tests solo con `moto`. El bucket real y el usuario IAM los crea PERSONA_1 a mano en la consola de AWS (tarea previa de `docs/equipo/PERSONA_1_plataforma.md`).
 
 ## Tablas
 - `usuarios`: usuario unico, hash bcrypt y rol (admin, revisor, integrador).
