@@ -43,7 +43,6 @@ async def manejar_validacion(request: Request, exc: RequestValidationError) -> J
 
 
 async def manejar_http(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    # RUTA_NO_ENCONTRADA y METODO_NO_PERMITIDO: pendientes de anadir a codigos_error.md
     codigo, mensaje = {
         404: ("RUTA_NO_ENCONTRADA", "Ruta no encontrada"),
         405: ("METODO_NO_PERMITIDO", "Metodo no permitido en esta ruta"),
