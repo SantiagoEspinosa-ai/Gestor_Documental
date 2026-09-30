@@ -131,6 +131,15 @@ hace fallar el build si queda algun rastro.
   - Derecha: resultado global, `<ListaAlertas>` del documento y del expediente agrupadas por
     severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
     icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
+  - Acciones del revisor (`componentes/AccionesRevisor.tsx`, `api/revision.ts`), solo rol revisor y
+    folio abierto: corregir un dato inline mostrando el valor actual (vaciarlo envia `null`, nunca
+    `""`); confirmar la clasificacion (si cambia el tipo vuelve a `pendiente` y arranca el sondeo);
+    "Aplica" / "Falso positivo" con comentario en alertas de documento y de expediente, por
+    `alerta_id`; decision aprobar/rechazar con comentario y confirmacion. Aprobar esta deshabilitado
+    mientras haya bloqueantes que no sean falso positivo (regla 2.2) y se listan las que bloquean.
+    Nada se decide solo. Se refresca con la respuesta del endpoint (tras una accion de documento
+    tambien el expediente). Un 409 (`DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`, `FOLIO_CERRADO`,
+    `DECISION_BLOQUEADA`) muestra el motivo y recarga el expediente.
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.

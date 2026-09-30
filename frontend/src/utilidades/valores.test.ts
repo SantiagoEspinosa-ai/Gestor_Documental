@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatearValor, nombreCampo, porcentaje, sinValor, TEXTO_NO_DETECTADO } from './valores'
+import { formatearValor, nombreCampo, porcentaje, sinValor, TEXTO_NO_DETECTADO, valorParaEnviar } from './valores'
 
 describe('formato de valores', () => {
   it('null, "" y solo espacios se muestran como "no detectado"', () => {
@@ -15,6 +15,13 @@ describe('formato de valores', () => {
     expect(formatearValor('no es fecha', 'fecha')).toBe('no es fecha')
     expect(formatearValor(2029, 'anio')).toBe('2029')
     expect(formatearValor('1990-01-31', 'texto')).toBe('1990-01-31')
+  })
+
+  it('valor corregido a enviar: vacio -> null, nunca ""; anio como numero', () => {
+    expect(valorParaEnviar('   ', 'texto')).toBeNull()
+    expect(valorParaEnviar('', 'fecha')).toBeNull()
+    expect(valorParaEnviar(' ANA ', 'texto')).toBe('ANA')
+    expect(valorParaEnviar('2029', 'anio')).toBe(2029)
   })
 
   it('nombre del campo y porcentaje', () => {

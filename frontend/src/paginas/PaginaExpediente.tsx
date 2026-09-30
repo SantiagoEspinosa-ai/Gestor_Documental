@@ -1,14 +1,19 @@
 import { CheckCircle2, CircleX, Clock, LoaderCircle, Lock, Upload, XCircle } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { ErrorApi } from '../api/cliente'
 import { listarTiposDocumentales, obtenerFolio } from '../api/folios'
+import {
+  confirmarClasificacion, corregirDatos, decidir, resolverAlertaDocumento, resolverAlertaExpediente,
+} from '../api/revision'
+import { ConfirmarClasificacion, EditorCampo, PanelDecision, RevisarAlerta } from '../componentes/AccionesRevisor'
 import { useRol } from '../componentes/contextoSesion'
 import { DetalleDocumento } from '../componentes/DetalleDocumento'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
-import type { EstadoAnalisis, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
+import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
-import { alertasQueBloquean, enProceso, tipoEfectivo } from '../utilidades/expediente'
+import { alertasQueBloquean, enProceso, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 
@@ -26,6 +31,8 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
   const [fichas, setFichas] = useState<TipoDocumental[]>([])
   const [fallo, setFallo] = useState<{ folio: string; mensaje: string } | null>(null)
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [ocupado, setOcupado] = useState(false)
   // Al cambiar de folio en la ruta no se muestra el anterior mientras llega el nuevo
   const expediente = cargado?.folio === folio ? cargado : null
   const error = fallo?.folio === folio ? fallo.mensaje : null
@@ -48,6 +55,32 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
       if (!signal?.aborted) setFallo({ folio, mensaje: mensajeDeError(causa) })
     }
   }, [folio])
+
+  /**
+   * Ejecuta una accion del revisor y refresca con la respuesta del endpoint. Tras una accion de
+   * documento se vuelve a pedir el expediente (recomendacion global, CMP-001 y EXP-001 pueden cambiar).
+   * Un 409 (DOCUMENTO_EN_PROCESO, DOCUMENTO_CON_ERROR, FOLIO_CERRADO, DECISION_BLOQUEADA) significa que
+   * la vista estaba desfasada: se muestra el motivo y se recarga el expediente.
+   */
+  async function ejecutar<T>(accion: () => Promise<T>, aplicar: (respuesta: T) => void, exito: string, recargar = false) {
+    setOcupado(true)
+    setAviso(null)
+    try {
+      aplicar(await accion())
+      if (recargar) await refrescar()
+      setAviso({ tipo: 'ok', texto: exito })
+      return true
+    } catch (causa) {
+      setAviso({ tipo: 'error', texto: `No se pudo completar la acción: ${mensajeDeError(causa)}` })
+      if (causa instanceof ErrorApi && causa.estado === 409) await refrescar()
+      return false
+    } finally {
+      setOcupado(false)
+    }
+  }
+  const aplicarDocumento = (nuevo: ResultadoDocumento) => setCargado((e) => e && {
+    ...e, documentos: e.documentos.map((d) => (d.identificador_unico_documento === nuevo.identificador_unico_documento ? nuevo : d)),
+  })
 
   // Polling del expediente cada 3 s mientras quede algun documento pendiente o procesando
   const hayEnCurso = expediente?.documentos.some(enProceso) ?? false
@@ -86,6 +119,11 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
   }
   const cerrado = expediente.estado_general !== 'en_revision'
   const bloqueantes = alertasQueBloquean(expediente)
+  // Acciones solo para el revisor y con el folio abierto; la API vuelve a comprobarlo
+  const puedeActuar = rol === 'revisor' && !cerrado
+  const docAnalizado = doc?.estado_analisis === 'completado' // corregir y reclasificar: ni en curso ni en error
+  const fichaDoc = doc ? fichas.find((t) => t.nombre === tipoExtraccion(doc)) : undefined
+  const idDoc = doc?.identificador_unico_documento ?? ''
 
   return (
     <section aria-labelledby="titulo-expediente">
@@ -116,6 +154,13 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
         )}
       </header>
 
+      {aviso && (
+        <p role={aviso.tipo === 'error' ? 'alert' : 'status'} data-testid="aviso"
+          className={`mt-3 rounded px-3 py-2 text-sm ${aviso.tipo === 'error' ? 'border border-red-300 bg-red-50 text-red-900' : 'bg-green-50 text-green-900'}`}>
+          {aviso.texto}
+        </p>
+      )}
+
       <div className="mt-4 grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)_20rem]">
         <nav aria-label="Documentos del folio">
           <h2 className="text-sm font-semibold">Documentos ({expediente.documentos.length})</h2>
@@ -144,7 +189,19 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
         <div>
           {doc
             ? <DetalleDocumento key={doc.identificador_unico_documento} doc={doc} fichas={fichas}
-                puedeVerOriginal={rol !== null && ROLES_ORIGINAL.includes(rol)} />
+                puedeVerOriginal={rol !== null && ROLES_ORIGINAL.includes(rol)}
+                accionesClasificacion={puedeActuar && docAnalizado ? (
+                  <ConfirmarClasificacion fichas={fichas} actual={tipoExtraccion(doc)} deshabilitado={ocupado}
+                    alConfirmar={(tipo) => ejecutar(() => confirmarClasificacion(idDoc, { tipo_documental: tipo }), aplicarDocumento,
+                      'Clasificación confirmada.', true)} />
+                ) : undefined}
+                celdaValor={puedeActuar && docAnalizado ? (campo, contenido) => (
+                  <EditorCampo campo={campo} valor={doc.datos_extraidos[campo]} tipo={fichaDoc?.campos[campo]?.tipo} deshabilitado={ocupado}
+                    alGuardar={(valor) => ejecutar(() => corregirDatos(idDoc, { [campo]: valor }), aplicarDocumento,
+                      `${nombreCampo(campo)} corregido.`, true)}>
+                    {contenido}
+                  </EditorCampo>
+                ) : undefined} />
             : <p className="text-sm text-slate-500">Selecciona un documento cuando se haya subido alguno.</p>}
         </div>
 
@@ -155,8 +212,28 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
             <p className="mt-1 flex items-center gap-2">Bloqueantes sin descartar: <IndicadorBloqueantes n={bloqueantes.length} /></p>
             <p className="mt-1 text-xs text-slate-500">La IA recomienda; la decisión final es del revisor.</p>
           </section>
-          {doc && <ListaAlertas titulo="Alertas del documento seleccionado" alertas={doc.alertas_encontradas} />}
-          <ListaAlertas titulo="Alertas del expediente" alertas={expediente.alertas_expediente} />
+          {puedeActuar && (
+            <PanelDecision bloqueantes={bloqueantes} enCurso={expediente.documentos.some(enProceso)} deshabilitado={ocupado}
+              alDecidir={(decision, comentario) => ejecutar(
+                () => decidir(expediente.folio, { decision, ...(comentario ? { comentario } : {}) }), setCargado,
+                `Folio ${decision === 'aprobar' ? 'aprobado' : 'rechazado'}.`)} />
+          )}
+          {doc && (
+            <ListaAlertas titulo="Alertas del documento seleccionado" alertas={doc.alertas_encontradas}
+              acciones={puedeActuar && !enProceso(doc) ? (a) => (
+                <RevisarAlerta alerta={a} deshabilitado={ocupado}
+                  alResolver={(aplica, comentario) => ejecutar(
+                    () => resolverAlertaDocumento(idDoc, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), aplicarDocumento,
+                    `Alerta ${a.codigo} revisada.`, true)} />
+              ) : undefined} />
+          )}
+          <ListaAlertas titulo="Alertas del expediente" alertas={expediente.alertas_expediente}
+            acciones={puedeActuar ? (a) => (
+              <RevisarAlerta alerta={a} deshabilitado={ocupado}
+                alResolver={(aplica, comentario) => ejecutar(
+                  () => resolverAlertaExpediente(expediente.folio, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), setCargado,
+                  `Alerta ${a.codigo} revisada.`)} />
+            ) : undefined} />
           <section aria-label="Comparaciones entre documentos">
             <h3 className="text-sm font-semibold">Comparaciones</h3>
             {expediente.comparaciones.length === 0 && <p className="mt-1 text-sm text-slate-500">Sin comparaciones.</p>}

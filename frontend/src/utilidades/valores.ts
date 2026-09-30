@@ -18,6 +18,13 @@ export function formatearValor(valor: unknown, tipo?: string | null): string {
   return String(valor)
 }
 
+/** Valor corregido para el PATCH de datos: vacio o solo espacios -> null (nunca ""); anio como numero */
+export function valorParaEnviar(texto: string, tipo?: string | null): unknown {
+  if (sinValor(texto)) return null
+  if (tipo === 'anio' && /^\d{4}$/.test(texto.trim())) return Number(texto.trim())
+  return texto.trim()
+}
+
 /** Nombre legible de un campo tecnico: fecha_nacimiento -> "Fecha nacimiento" */
 export function nombreCampo(campo: string): string {
   const texto = campo.replaceAll('_', ' ')
