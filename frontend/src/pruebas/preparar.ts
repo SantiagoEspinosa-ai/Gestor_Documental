@@ -1,13 +1,14 @@
 // Preparacion comun de Vitest (node y jsdom).
-import { Blob as BlobNode, File as FileNode } from 'node:buffer'
 import { afterEach } from 'vitest'
 
-// En jsdom, FormData/File/Blob son los de jsdom, pero fetch es el de Node: un FormData de jsdom se
-// enviaria como "[object FormData]". Se usan los de Node para que msw reciba el multipart real.
-const FormDataNode = (await new Response(new URLSearchParams('x=1')).formData()).constructor
-Object.assign(globalThis, { FormData: FormDataNode, File: FileNode, Blob: BlobNode })
-
 if (typeof window !== 'undefined') {
+  // Subidas multipart en jsdom: Vitest convierte el FormData de jsdom para el fetch de Node, pero con
+  // jsdom 30 cada fichero llega como un Blob vacio y sin nombre. Con el FormData y el File de Node
+  // (y el Blob de jsdom intacto) Vitest no convierte los ficheros y llegan a msw con bytes y nombre.
+  const { File: FileNode } = await import('node:buffer')
+  const FormDataNode = (await new Response(new URLSearchParams('x=1')).formData()).constructor
+  Object.assign(globalThis, { FormData: FormDataNode, File: FileNode })
+
   const { cleanup } = await import('@testing-library/react')
   afterEach(() => {
     cleanup()

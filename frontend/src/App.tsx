@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { Estructura } from './componentes/Estructura'
 import { RutaProtegida } from './componentes/RutaProtegida'
+import { PaginaCarga } from './paginas/PaginaCarga'
 import { PaginaExpediente } from './paginas/PaginaExpediente'
 import { PaginaFolios } from './paginas/PaginaFolios'
 import { PaginaLogin } from './paginas/PaginaLogin'
@@ -15,6 +16,7 @@ export function App() {
           <Route index element={<Navigate to="/folios" replace />} />
           <Route path="/folios" element={<PaginaFolios />} />
           <Route path="/folios/:folio" element={<PaginaExpediente />} />
+          <Route path="/folios/:folio/carga" element={<PaginaCarga />} />
         </Route>
       </Route>
       <Route path="*" element={<PaginaNoEncontrada />} />

@@ -87,6 +87,18 @@ hace fallar el build si queda algun rastro.
 - Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
+- Folios (`paginas/PaginaFolios.tsx`, revisor y admin): `GET /folios` paginado (20), filtros de
+  proceso y estado, columnas folio, referencia externa, proceso, fecha de solicitud, estado,
+  recomendacion, documentos e indicador de bloqueantes sin resolver. "Nuevo folio" (integrador y
+  revisor): proceso de `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene
+  `GET /folios`: ve un campo para abrir un folio por su numero.
+  - `referencia_externa` no esta en `ResumenFolio`: se pide `GET /folios/{folio}` por cada fila
+    (`useReferenciasExternas`, con cache). Se quita cuando el contrato la anada a `ResumenFolio`.
+- Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): arrastrar o elegir varios archivos;
+  extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
+  tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
+  cada 3 s hasta completado o error, que se para al salir; `DUP-001` y errores de analisis visibles.
+  Solo lectura si el folio esta cerrado o el rol no puede subir (admin).
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.
@@ -97,7 +109,10 @@ npm test        # Vitest
 ```
 - Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler) y flujos.
 - Pantallas (jsdom + Testing Library + msw/node, `src/pruebas/app.tsx`): login con los 3 usuarios del
-  mock, errores, recuperacion de sesion, caducidad y control de roles.
+  mock, errores, recuperacion de sesion, caducidad, control de roles, folios (orden, filtros,
+  paginacion, nuevo folio) y carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del
+  sondeo). `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
+  Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
 ## Tipos y datos de los mocks

@@ -189,9 +189,12 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     } catch {
       throw new FalloApi('PETICION_INVALIDA', 'Se esperaba multipart con `archivo`')
     }
-    const archivo = formulario.get('archivo')
-    if (!(archivo instanceof Blob) || !('name' in archivo)) throw new FalloApi('PETICION_INVALIDA', 'Falta `archivo`')
-    const nombre = String((archivo as File).name)
+    // Sin instanceof: en los tests (jsdom) el File de la peticion no es del mismo "mundo" que el Blob global
+    const archivo = formulario.get('archivo') as File | string | null
+    if (typeof archivo !== 'object' || archivo === null || typeof archivo.arrayBuffer !== 'function' || !archivo.name) {
+      throw new FalloApi('PETICION_INVALIDA', 'Falta `archivo`')
+    }
+    const nombre = String(archivo.name)
     const declarado = (formulario.get('tipo_declarado') as string | null) || null
     if (declarado && !ficha(estado, declarado)) throw new FalloApi('PETICION_INVALIDA', `tipo_declarado desconocido: ${declarado}`)
     if (archivo.size > MAX_BYTES) throw new FalloApi('ARCHIVO_DEMASIADO_GRANDE', 'El archivo supera 20 MB')
