@@ -7,9 +7,13 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   Folio `{PREFIJO}-{AAAA}-{NNNNNN}`; el anio es el de `ZONA_HORARIA` (no UTC) y la secuencia se
   reinicia cada anio. Numeracion atomica con un solo `INSERT ... ON CONFLICT` en `secuencias_folio`.
   Crea una `EXP-001` por cada tipo de `tipos_requeridos` del proceso (bloqueante, alerta de expediente
-  con `documento_id` NULL, `campo` = tipo, mensaje con el `nombre_visible` de la ficha). El recalculo
-  al llegar los documentos es de la etapa 2 (TODO en el codigo). Todo en la misma transaccion; audita
-  `folio_creado`. Errores: 404 `PROCESO_NO_ENCONTRADO`, 409 `SECUENCIA_AGOTADA`.
+  con `documento_id` NULL, `campo` = tipo, mensaje con el `nombre_visible` de la ficha). Todo en la
+  misma transaccion; audita `folio_creado`. Errores: 404 `PROCESO_NO_ENCONTRADO`, 409 `SECUENCIA_AGOTADA`.
+- `recalcular_exp001(sesion, folio)`: ajusta las EXP-001 a los documentos `completado` del folio. Tipo
+  efectivo de cada documento: `tipo_documental_confirmado` > `tipo_documental_detectado` del resultado
+  vigente > `tipo_declarado`. Tipo presente: borra sus EXP-001 sin revisar (`aplica` NULL) y conserva
+  las revisadas. Tipo que falta: crea su EXP-001 si no hay ninguna. Sin commit (lo hace quien llama) e
+  idempotente. La llama `ingesta` al procesar cada documento; en la E2.6 tambien confirmar clasificacion.
 - `obtener_expediente(sesion, folio) -> ResultadoExpediente`
   Todos los documentos del folio (por `creado_en` e `id`), tengan resultado o no, armados con
   `ingesta.servicio.construir_resultado` (igual que `GET /documentos/{id}`). `alertas_expediente` = alertas del folio sin documento, con `id` y revision (convertidas

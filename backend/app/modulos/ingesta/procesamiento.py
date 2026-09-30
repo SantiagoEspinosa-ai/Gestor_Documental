@@ -37,6 +37,15 @@ def _detalle_serializable(datos: dict) -> dict:
     return detalle
 
 
+def _expediente_servicio():
+    """`expediente.servicio`, importado al usarlo y no arriba, para romper el ciclo de imports:
+    expediente.servicio -> ingesta.servicio -> procesamiento -> expediente.servicio.
+    Es su API publica (ADR-005); solo cambia el momento del import.
+    """
+    from app.modulos.expediente import servicio
+    return servicio
+
+
 def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
     with SesionLocal(bind=get_engine()) as sesion:
         doc = sesion.get(Documento, documento_id)
@@ -72,7 +81,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
                                     severidad=a.severidad.value, mensaje=a.mensaje, confianza=a.confianza,
                                     campo=a.campo, version_resultado=version))
             doc.estado_analisis = resultado.estado_analisis.value  # completado o error, lo que diga el motor
-            # TODO: recalcular EXP-001: cuenta el tipo confirmado > detectado > declarado; conservar si aplica=false
+            _expediente_servicio().recalcular_exp001(sesion, doc.folio)
             auditoria.registrar(sesion, "documento_procesado", folio=doc.folio, documento_id=doc.id,
                                 modelo=datos.get("modelo"), version_prompt=datos.get("version_prompt"),
                                 detalle=_detalle_serializable(datos))

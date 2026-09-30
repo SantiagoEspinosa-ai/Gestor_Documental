@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio, Proceso, SecuenciaFolio
+from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
 from app.modulos.ingesta import servicio as ingesta
-from app.schemas.resultado import (DecisionHumana, EstadoGeneral, ResultadoExpediente, ResumenFolio,
-                                   Severidad)
+from app.schemas.resultado import (DecisionHumana, EstadoAnalisis, EstadoGeneral, ResultadoExpediente,
+                                   ResumenFolio, Severidad)
 
 MAX_SECUENCIA = 999_999  # NNNNNN
 
@@ -29,6 +29,52 @@ def _siguiente_secuencia(sesion: Session, proceso: str, anio: int) -> int:
         .returning(SecuenciaFolio.ultimo)
     )
     return sesion.execute(sentencia).scalar_one()
+
+
+def _crear_exp001(sesion: Session, folio: str, tipo: str) -> None:
+    """Alerta de expediente (documento_id NULL) por un tipo requerido que falta en el folio."""
+    sesion.add(AlertaBD(folio=folio, documento_id=None, codigo="EXP-001",
+                        severidad=Severidad.bloqueante.value, confianza=1.0, campo=tipo,
+                        mensaje=f"Falta el documento requerido: {ingesta.nombre_visible_tipo(tipo)}"))
+
+
+def _tipo_efectivo(sesion: Session, documento: Documento) -> str | None:
+    """Confirmado por el revisor > detectado en el resultado vigente > declarado al subir."""
+    if documento.tipo_documental_confirmado:
+        return documento.tipo_documental_confirmado
+    vigente = sesion.scalar(select(Resultado.json).where(Resultado.documento_id == documento.id)
+                            .order_by(Resultado.version.desc()).limit(1))
+    return (vigente or {}).get("tipo_documental_detectado") or documento.tipo_declarado
+
+
+def recalcular_exp001(sesion: Session, folio: str) -> None:
+    """Ajusta las EXP-001 del folio a los documentos `completado` que tiene. Sin commit; idempotente.
+
+    Tipo presente: se borran sus EXP-001 sin revisar (`aplica` NULL); las revisadas se conservan.
+    Tipo que falta: se crea su EXP-001 si no hay ninguna de ese campo.
+    TODO (E2.6): confirmar clasificacion tambien llama a recalcular_exp001.
+    """
+    sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama (estado, resultado)
+    fila = sesion.get(Folio, folio)
+    requeridos = sesion.get(Proceso, fila.proceso).tipos_requeridos or []
+    if not requeridos:
+        return
+
+    completados = sesion.scalars(select(Documento).where(
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value))
+    presentes = {_tipo_efectivo(sesion, d) for d in completados.all()}
+    existentes = sesion.scalars(select(AlertaBD).where(
+        AlertaBD.folio == folio, AlertaBD.documento_id.is_(None), AlertaBD.codigo == "EXP-001")).all()
+
+    for tipo in requeridos:
+        del_tipo = [a for a in existentes if a.campo == tipo]
+        if tipo in presentes:
+            for alerta in del_tipo:
+                if alerta.aplica is None:
+                    sesion.delete(alerta)
+        elif not del_tipo:
+            _crear_exp001(sesion, folio, tipo)
+    sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
 
 
 def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, usuario: str,
@@ -51,12 +97,10 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
     sesion.add(folio)
     # flush antes de las alertas: sin relationship, SQLAlchemy no ordena los INSERT por la FK
     sesion.flush()
-    # Un folio nuevo no tiene documentos: una EXP-001 por cada tipo requerido (misma transaccion)
-    # TODO: recalcular EXP-001: cuenta el tipo confirmado > detectado > declarado; conservar si aplica=false
+    # Un folio nuevo no tiene documentos: una EXP-001 por cada tipo requerido (misma transaccion).
+    # Despues las ajusta recalcular_exp001 al procesar cada documento
     for tipo in fila_proceso.tipos_requeridos:
-        sesion.add(AlertaBD(folio=folio.folio, documento_id=None, codigo="EXP-001",
-                            severidad=Severidad.bloqueante.value, confianza=1.0, campo=tipo,
-                            mensaje=f"Falta el documento requerido: {ingesta.nombre_visible_tipo(tipo)}"))
+        _crear_exp001(sesion, folio.folio, tipo)
     auditoria.registrar(sesion, "folio_creado", usuario=usuario, folio=folio.folio)
     sesion.commit()
     return folio

@@ -35,6 +35,9 @@ de las alertas; en la etapa 2 las alertas del motor se guardan en ella al guarda
 
 `url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.
 
+`procesar_documento(documento_id, tipo_confirmado=None)`: lo que lanza la API como BackgroundTask;
+delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).
+
 ## tipos.py
 Lee `formatos_permitidos` de `config/tipos/*.yaml`. Provisional hasta que `configuracion` de
 PERSONA_2 este en main.
@@ -50,7 +53,9 @@ PERSONA_2 este en main.
 Si falla la descarga, el motor lanza o el resultado es de otro documento/folio: estado `error`, sin
 `Resultado` y sin relanzar. Al reprocesar solo se muestran las alertas del motor de la version nueva;
 las de plataforma (`DUP-001`, `EXP-001`, `CMP-001`, con `version_resultado` NULL) se conservan.
-Pendiente (E2.3): recalcular `EXP-001`.
+Antes del commit llama a `expediente.servicio.recalcular_exp001` (en la misma transaccion). El import
+es diferido (`_expediente_servicio()`) para romper el ciclo expediente -> ingesta.servicio ->
+procesamiento -> expediente.
 
 ## Interfaz acordada con el motor (PERSONA_2)
 `app.modulos.orquestador.servicio.procesar_documento(contenido: bytes, *, identificador: str,
