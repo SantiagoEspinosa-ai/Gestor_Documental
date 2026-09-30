@@ -1,4 +1,4 @@
-"""API publica del modulo ingesta: recibir un original, guardarlo en S3 y registrarlo (ADR-005)."""
+"""API publica del modulo ingesta: recibir un original, guardarlo en S3, registrarlo y consultarlo (ADR-005)."""
 import hashlib
 import logging
 import uuid
@@ -11,19 +11,42 @@ from app.core import auditoria
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio
+from app.core.modelos import AlertaBD, Documento, Folio, Resultado
 from app.modulos.ingesta import tipos
-from app.schemas.resultado import EstadoAnalisis, EstadoGeneral, Severidad
+from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
+                                   ResultadoDocumento, Severidad)
 
 log = logging.getLogger(__name__)
 
+MAX_NOMBRE = 255
 
-def _extension(nombre_archivo: str) -> str:
-    return PurePath(nombre_archivo).suffix.lower().lstrip(".")
+# El tipo de contenido sale de la extension, nunca del cliente: un .pdf enviado como text/html se
+# abriria como pagina web desde la URL firmada
+_TIPO_CONTENIDO = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}
+_FIRMA_MAGICA = {"pdf": b"%PDF-", "jpg": b"\xff\xd8\xff", "jpeg": b"\xff\xd8\xff", "png": b"\x89PNG\r\n\x1a\n"}
+
+
+def _nombre_seguro(nombre_archivo: str) -> str:
+    """Solo el nombre, sin ruta; recortado a 255 caracteres conservando la extension."""
+    nombre = PurePath(nombre_archivo.replace("\\", "/")).name.strip()
+    if not nombre:
+        raise ErrorApi(422, "PETICION_INVALIDA", "El archivo no tiene nombre")
+    if len(nombre) > MAX_NOMBRE:
+        sufijo = PurePath(nombre).suffix[:MAX_NOMBRE // 2]
+        nombre = nombre[:MAX_NOMBRE - len(sufijo)] + sufijo
+    return nombre
+
+
+def alerta_desde_bd(a: AlertaBD) -> Alerta:
+    """AlertaBD -> Alerta del Contrato 1, con `id` (ADR-006 1.3) y revision (ADR-006 2.2)."""
+    return Alerta(id=str(a.id), codigo=a.codigo, mensaje=a.mensaje, severidad=a.severidad,
+                  confianza=a.confianza, campo=a.campo, resuelta_por_revisor=a.resuelta_por_revisor,
+                  aplica=a.aplica, comentario_revisor=a.comentario, resuelta_por=a.resuelta_por,
+                  resuelta_en=a.resuelta_en)
 
 
 def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre_archivo: str,
-             datos: bytes, tipo_contenido: str, tipo_declarado: str | None, usuario: str) -> Documento:
+             datos: bytes, tipo_declarado: str | None, usuario: str) -> Documento:
     """Valida, sube el original a S3 y crea el documento en `pendiente`. Un duplicado no bloquea."""
     # a) folio abierto
     fila_folio = sesion.get(Folio, folio)
@@ -32,19 +55,24 @@ def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre
     if fila_folio.estado_general != EstadoGeneral.en_revision.value:
         raise ErrorApi(409, "FOLIO_CERRADO", "El folio ya tiene decision y no admite cambios")
 
-    # b) tamano
+    # b) tamano y nombre
     maximo_mb = get_settings().tamano_maximo_archivo_mb
     if len(datos) > maximo_mb * 1024 * 1024:
         raise ErrorApi(413, "ARCHIVO_DEMASIADO_GRANDE", f"El archivo supera {maximo_mb} MB")
     if not datos:
         raise ErrorApi(422, "PETICION_INVALIDA", "El archivo esta vacio")
+    nombre_archivo = _nombre_seguro(nombre_archivo)
 
-    # c) tipo y formato
+    # c) tipo, formato y contenido real
     if tipo_declarado and not tipos.existe_tipo(tipo_declarado):
         raise ErrorApi(422, "PETICION_INVALIDA", "tipo_declarado no existe")
-    extension = _extension(nombre_archivo)
+    extension = PurePath(nombre_archivo).suffix.lower().lstrip(".")
     if not extension or extension not in tipos.formatos_permitidos(tipo_declarado):
         raise ErrorApi(415, "FORMATO_NO_PERMITIDO", "Formato de archivo no permitido")
+    firma = _FIRMA_MAGICA.get(extension)
+    if firma and not datos.startswith(firma):
+        raise ErrorApi(415, "FORMATO_NO_PERMITIDO", "El contenido del archivo no corresponde a su extension")
+    tipo_contenido = _TIPO_CONTENIDO.get(extension, "application/octet-stream")
 
     # d) hash y duplicado en el mismo folio
     hash_sha256 = hashlib.sha256(datos).hexdigest()
@@ -84,3 +112,47 @@ def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre
         sesion.rollback()
         raise
     return documento
+
+
+def _documento(sesion: Session, documento_id: str) -> Documento:
+    try:
+        doc = sesion.get(Documento, uuid.UUID(documento_id))
+    except ValueError:
+        doc = None
+    if doc is None:
+        raise ErrorApi(404, "DOCUMENTO_NO_ENCONTRADO", "No existe el documento")
+    return doc
+
+
+def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
+    """Resultado de la version mayor; sin resultado todavia, uno minimo con el estado de la fila."""
+    doc = _documento(sesion, documento_id)
+    fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id)
+                         .order_by(Resultado.version.desc()).limit(1))
+    if fila is not None:
+        # El estado y el tipo confirmado los manda la BD, no el JSON guardado
+        return ResultadoDocumento.model_validate(fila.json).model_copy(update={
+            "estado_analisis": EstadoAnalisis(doc.estado_analisis),
+            "tipo_documental_confirmado": doc.tipo_documental_confirmado,
+        })
+    alertas = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)
+                             .order_by(AlertaBD.creado_en))
+    return ResultadoDocumento(
+        folio_solicitud=doc.folio,
+        identificador_unico_documento=str(doc.id),
+        tipo_documental_declarado=doc.tipo_declarado,
+        tipo_documental_detectado=None,
+        tipo_documental_confirmado=doc.tipo_documental_confirmado,
+        alertas_encontradas=[alerta_desde_bd(a) for a in alertas],
+        estado_analisis=EstadoAnalisis(doc.estado_analisis),
+        referencia_archivo_original=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo,
+                                                              ruta=doc.ruta_s3, hash=doc.hash_sha256),
+    )
+
+
+def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
+    """URL prefirmada y temporal del original.
+
+    Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
+    """
+    return almacenamiento.url_prefirmada(_documento(sesion, documento_id).ruta_s3)

@@ -24,6 +24,8 @@ SECRETO = "clave-ficticia-de-test"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 PDF = b"%PDF-1.4 documento ficticio"
+JPG = b"\xff\xd8\xff\xe0 imagen ficticia"
+PNG = b"\x89PNG\r\n\x1a\n imagen ficticia"
 
 
 @pytest.fixture
@@ -66,7 +68,7 @@ def folio(sesion):
 
 
 def _subir(sesion, s3, folio, nombre="credencial_ficticia.pdf", datos=PDF, tipo="credencial_elector"):
-    return ingestar(sesion, s3, folio.folio, nombre, datos, "application/pdf", tipo, "integrador_ficticio")
+    return ingestar(sesion, s3, folio.folio, nombre, datos, tipo, "integrador_ficticio")
 
 
 def _codigo(e: pytest.ExceptionInfo) -> tuple[int, str]:
@@ -91,7 +93,7 @@ def test_subida_valida(sesion, s3, folio):
 
 def test_folio_inexistente(sesion, s3):
     with pytest.raises(ErrorApi) as e:
-        ingestar(sesion, s3, "ONB-2026-999999", "a.pdf", PDF, "application/pdf", None, "x")
+        ingestar(sesion, s3, "ONB-2026-999999", "a.pdf", PDF, None, "x")
     assert _codigo(e) == (404, "FOLIO_NO_ENCONTRADO")
 
 
@@ -128,10 +130,38 @@ def test_tipo_declarado_desconocido(sesion, s3, folio):
     assert _codigo(e) == (422, "PETICION_INVALIDA")
 
 
-@pytest.mark.parametrize("nombre", ["a.pdf", "b.JPG", "c.png"])
-def test_sin_tipo_declarado_acepta_formatos_de_todos_los_tipos(sesion, s3, folio, nombre):
-    doc = _subir(sesion, s3, folio, nombre=nombre, datos=nombre.encode(), tipo=None)
+@pytest.mark.parametrize("nombre,datos,tipo_contenido", [
+    ("a.pdf", PDF, "application/pdf"),
+    ("b.JPG", JPG, "image/jpeg"),
+    ("c.png", PNG, "image/png"),
+])
+def test_sin_tipo_declarado_acepta_formatos_de_todos_los_tipos(sesion, s3, folio, nombre, datos,
+                                                               tipo_contenido):
+    doc = _subir(sesion, s3, folio, nombre=nombre, datos=datos, tipo=None)
     assert doc.ruta_s3.endswith("." + nombre.rsplit(".", 1)[1].lower())
+    cabecera = boto3.client("s3", region_name=REGION).head_object(Bucket=BUCKET, Key=doc.ruta_s3)
+    assert cabecera["ContentType"] == tipo_contenido
+
+
+@pytest.mark.parametrize("nombre,datos", [("a.pdf", PNG), ("b.png", PDF), ("c.jpg", b"texto plano")])
+def test_contenido_que_no_corresponde_a_la_extension(sesion, s3, folio, nombre, datos):
+    with pytest.raises(ErrorApi) as e:
+        _subir(sesion, s3, folio, nombre=nombre, datos=datos, tipo=None)
+    assert _codigo(e) == (415, "FORMATO_NO_PERMITIDO")
+
+
+def test_nombre_sin_ruta_y_recortado(sesion, s3, folio):
+    doc = _subir(sesion, s3, folio, nombre="C:\\carpeta\\sub/" + "n" * 300 + ".pdf")
+    assert len(doc.nombre_archivo) == 255
+    assert doc.nombre_archivo.endswith(".pdf")
+    assert "/" not in doc.nombre_archivo and "\\" not in doc.nombre_archivo
+
+
+@pytest.mark.parametrize("nombre", ["", "   ", "/"])
+def test_nombre_vacio(sesion, s3, folio, nombre):
+    with pytest.raises(ErrorApi) as e:
+        _subir(sesion, s3, folio, nombre=nombre)
+    assert _codigo(e) == (422, "PETICION_INVALIDA")
 
 
 def test_duplicado_no_bloquea_y_genera_dup_001(sesion, s3, folio):

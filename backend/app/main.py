@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
 from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
-from app.modulos.api import auth, folios
+from app.modulos.api import auth, documentos, folios
 
 
 @asynccontextmanager
@@ -29,6 +29,7 @@ app = FastAPI(title="Gestor Documental Inteligente", version="0.1.0", lifespan=l
 registrar_manejadores(app)
 app.include_router(auth.router)
 app.include_router(folios.router)
+app.include_router(documentos.router)
 
 
 @app.get("/salud")
@@ -36,4 +37,4 @@ def salud() -> dict:
     return {"estado": "ok"}
 
 
-# TODO PERSONA_1: incluir routers de app/modulos/api (documentos, procesos, webhooks)
+# TODO PERSONA_1: incluir routers de app/modulos/api (procesos, webhooks)

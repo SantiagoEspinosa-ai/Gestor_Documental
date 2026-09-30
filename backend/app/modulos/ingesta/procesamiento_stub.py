@@ -13,20 +13,14 @@ from sqlalchemy.orm import Session
 from app.core import auditoria
 from app.core.db import SesionLocal, get_engine
 from app.core.modelos import AlertaBD, Documento, Resultado
-from app.schemas.resultado import (Alerta, EstadoAnalisis, FechaYModelo, Recomendacion,
-                                   ReferenciaArchivoOriginal, ResultadoDocumento)
+from app.modulos.ingesta.servicio import alerta_desde_bd
+from app.schemas.resultado import (EstadoAnalisis, FechaYModelo, Recomendacion, ReferenciaArchivoOriginal,
+                                   ResultadoDocumento)
 
 log = logging.getLogger(__name__)
 
 MODELO = "stub"
 VERSION_PROMPT = "stub@v0"
-
-
-def _alerta(a: AlertaBD) -> Alerta:
-    return Alerta(id=str(a.id), codigo=a.codigo, mensaje=a.mensaje, severidad=a.severidad,
-                  confianza=a.confianza, campo=a.campo, resuelta_por_revisor=a.resuelta_por_revisor,
-                  aplica=a.aplica, comentario_revisor=a.comentario, resuelta_por=a.resuelta_por,
-                  resuelta_en=a.resuelta_en)
 
 
 def _resultado_ficticio(sesion: Session, doc: Documento) -> ResultadoDocumento:
@@ -39,7 +33,7 @@ def _resultado_ficticio(sesion: Session, doc: Documento) -> ResultadoDocumento:
         tipo_documental_detectado=doc.tipo_declarado,
         confianza_clasificacion=1.0,
         datos_extraidos={},
-        alertas_encontradas=[_alerta(a) for a in alertas],
+        alertas_encontradas=[alerta_desde_bd(a) for a in alertas],
         recomendacion=Recomendacion.revision_manual,
         estado_analisis=EstadoAnalisis.completado,
         fecha_y_modelo_utilizado=FechaYModelo(fecha_analisis=datetime.now(timezone.utc), proveedor="stub",

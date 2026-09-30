@@ -38,3 +38,23 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
 - Salida 200: `ResultadoExpediente` (Contrato 1), con `referencia_externa` y `fecha_solicitud`
   (ADR-004) y los datos de la decision (ADR-006 G).
 - Errores: 404 `FOLIO_NO_ENCONTRADO`.
+
+## documentos.py
+Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
+
+### POST /api/v1/folios/{folio}/documentos (integrador, revisor)
+- Entrada: multipart con `archivo` y `tipo_declarado?`. Se leen como mucho 20 MB + 1 byte.
+- Salida 202: `{identificador_unico_documento, estado_analisis: "pendiente"}` y lanza
+  `procesar_documento` en segundo plano (hoy el stub de `ingesta`).
+- Errores: 404 `FOLIO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`; 413 `ARCHIVO_DEMASIADO_GRANDE`;
+  415 `FORMATO_NO_PERMITIDO` (extension o contenido); 422 `PETICION_INVALIDA`.
+- El Content-Type del cliente se ignora: el del objeto en S3 sale de la extension.
+
+### GET /api/v1/documentos/{id} (cualquier rol)
+- Salida 200: `ResultadoDocumento` de la version mayor, con `estado_analisis` y
+  `tipo_documental_confirmado` de la BD; sin resultado todavia, uno minimo en `pendiente` con sus alertas.
+- Errores: 404 `DOCUMENTO_NO_ENCONTRADO` (tambien si el id no es un UUID).
+
+### GET /api/v1/documentos/{id}/original (revisor, admin)
+- Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Sin auditoria hasta la etapa 3.
+- Errores: 404 `DOCUMENTO_NO_ENCONTRADO`.
