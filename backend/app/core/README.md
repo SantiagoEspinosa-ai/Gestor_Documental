@@ -15,6 +15,7 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `usuarios`: usuario unico, hash bcrypt y rol (admin, revisor, integrador).
 - `procesos`: procesos de `config/procesos.yaml`: prefijo de folio, tipos requeridos/opcionales, antecedentes, webhook, perfil de modelos.
 - `folios`: folio `{PREFIJO}-{AAAA}-{NNNNNN}`, unico por (proceso, anio, secuencia); estado, referencia externa (ADR-004) y decision humana (ADR-006 G).
+- `secuencias_folio`: ultimo numero por (proceso, anio); se incrementa con un solo `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`.
 - `documentos`: original subido: ruta S3, SHA-256, tipo declarado/confirmado y estado de analisis.
 - `resultados`: `ResultadoDocumento` en JSON, una fila por version; la vigente es la de version mayor.
 - `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha).
@@ -22,4 +23,4 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`), sin FK para no bloquear borrados.
 
 ## Pendientes
-- Codigos de error `RUTA_NO_ENCONTRADA` (404) y `METODO_NO_PERMITIDO` (405): pendientes de anadir a `docs/contratos/codigos_error.md` (PERSONA_3).
+- Codigos de error `RUTA_NO_ENCONTRADA` (404), `METODO_NO_PERMITIDO` (405) y `SECUENCIA_AGOTADA` (409): pendientes de anadir a `docs/contratos/codigos_error.md` (PERSONA_3).

@@ -69,6 +69,15 @@ class Proceso(Base):
     modelos: Mapped[str] = mapped_column(String(50), default="default", server_default="default")
 
 
+class SecuenciaFolio(Base):
+    """Ultimo numero de folio por (proceso, anio). Se incrementa con un solo INSERT ... ON CONFLICT."""
+    __tablename__ = "secuencias_folio"
+
+    proceso: Mapped[str] = mapped_column(ForeignKey("procesos.nombre"), primary_key=True)
+    anio: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ultimo: Mapped[int] = mapped_column(Integer)
+
+
 class Folio(Base):
     __tablename__ = "folios"
     __table_args__ = (

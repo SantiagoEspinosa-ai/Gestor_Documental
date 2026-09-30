@@ -6,6 +6,7 @@ y Tesseract las leen los adaptadores de PERSONA_2 y aqui se ignoran.
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -45,6 +46,18 @@ class Settings(BaseSettings):
 
     # Ingesta (ADR-006 1.4: ARCHIVO_DEMASIADO_GRANDE)
     tamano_maximo_archivo_mb: int = 20
+
+    # Zona horaria del negocio: decide el anio del folio (no UTC)
+    zona_horaria: str = "America/Mexico_City"
+
+    @field_validator("zona_horaria")
+    @classmethod
+    def _zona_horaria_valida(cls, valor: str) -> str:
+        try:
+            ZoneInfo(valor)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError(f"zona horaria desconocida: {valor}") from None
+        return valor
 
     @field_validator("config_dir", mode="before")
     @classmethod

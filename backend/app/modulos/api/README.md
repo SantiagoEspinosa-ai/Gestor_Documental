@@ -17,3 +17,23 @@ Todos los errores salen como `{codigo, mensaje}` (ADR-006 1.4); los 401 llevan `
 - Entrada: cabecera `Authorization: Bearer <token>`.
 - Salida 200: `{usuario, rol}` (el rol vigente en BD).
 - Errores: 401 `NO_AUTENTICADO` (sin token, token invalido o usuario borrado); 401 `TOKEN_CADUCADO`.
+
+## folios.py
+Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMISO` si el rol no vale.
+
+### POST /api/v1/folios (integrador, revisor)
+- Entrada (JSON, sin campos extra): `{proceso, referencia_externa?}` (`referencia_externa` <= 100).
+- Salida 201: `{folio, estado_general}`.
+- Errores: 404 `PROCESO_NO_ENCONTRADO`; 409 `SECUENCIA_AGOTADA`; 422 `PETICION_INVALIDA`.
+
+### GET /api/v1/folios (revisor, admin)
+- Query: `proceso?`, `estado_general?` (en_revision | aprobado | rechazado), `pagina` >= 1,
+  `tamano_pagina` 1-100 (20 por defecto).
+- Salida 200: `{elementos: [ResumenFolio], total, pagina, tamano_pagina}`, del mas reciente al mas antiguo.
+  `ResumenFolio` = `{folio, proceso, estado_general, recomendacion_global, n_documentos,
+  n_bloqueantes_sin_resolver, fecha_solicitud}` (ADR-006 1.1; aun no esta en el Contrato 1).
+- Errores: 422 `PETICION_INVALIDA`.
+
+### GET /api/v1/folios/{folio} (cualquier rol)
+- Salida 200: `ResultadoExpediente` (Contrato 1).
+- Errores: 404 `FOLIO_NO_ENCONTRADO`.
