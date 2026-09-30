@@ -1,7 +1,10 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
 import type { Alerta, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental } from '../tipos/contrato'
-import { tipoEfectivo, tiposNoPedidos, tiposRequeridosQueFaltan } from '../utilidades/expediente'
+import {
+  alertasQueBloquean, bloquea, enProceso, tipoEfectivo, tipoExtraccion, tiposNoPedidos, tiposRequeridosQueFaltan,
+} from '../utilidades/expediente'
+import { sinValor } from '../utilidades/valores'
 import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } from './estado'
 
 /** pendiente -> procesando a los 3 s, -> completado a los 9 s */
@@ -15,19 +18,11 @@ export function normalizar(valor: unknown): string {
 
 /** Un campo sin valor es null, nunca "" ni solo espacios (VAL-001 y VAL-004: "ausente o null") */
 export function valorOnull(valor: unknown): unknown {
-  if (valor === undefined || valor === null) return null
-  return typeof valor === 'string' && !valor.trim() ? null : valor
+  return sinValor(valor) ? null : valor
 }
 
-/** Regla 2.2: bloquea la aprobacion mientras no se marque como falso positivo */
-export const bloquea = (a: Alerta) => a.severidad === 'bloqueante' && a.aplica !== false
+export { bloquea, enProceso, tipoExtraccion }
 const pesa = (a: Alerta) => (a.severidad === 'critica' || a.severidad === 'bloqueante') && a.aplica !== false
-
-/** Tipo con el que se extrae (regla 2.5) */
-export const tipoExtraccion = (d: ResultadoDocumento) =>
-  d.tipo_documental_confirmado ?? d.tipo_documental_declarado ?? d.tipo_documental_detectado
-
-export const enProceso = (d: ResultadoDocumento) => d.estado_analisis === 'pendiente' || d.estado_analisis === 'procesando'
 
 export function ficha(estado: EstadoMock, tipo: string | null): TipoDocumental | undefined {
   return estado.tipos.find((t) => t.nombre === tipo)
@@ -43,7 +38,7 @@ export function nuevaAlerta(
 }
 
 export function bloqueantesSinResolver(folio: ResultadoExpediente): Alerta[] {
-  return [...folio.alertas_expediente, ...folio.documentos.flatMap((d) => d.alertas_encontradas)].filter(bloquea)
+  return alertasQueBloquean(folio)
 }
 
 function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void {

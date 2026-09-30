@@ -1,5 +1,20 @@
 // Reglas del expediente compartidas por la UI y los mocks (acordadas con PERSONA_1).
-import type { Proceso, ResultadoDocumento, ResultadoExpediente } from '../tipos/contrato'
+import type { Alerta, Proceso, ResultadoDocumento, ResultadoExpediente } from '../tipos/contrato'
+
+/** Regla 2.2 del ADR-006: una bloqueante impide aprobar mientras `aplica` no sea false (falso positivo) */
+export const bloquea = (a: Alerta) => a.severidad === 'bloqueante' && a.aplica !== false
+
+/** Alertas que impiden aprobar el folio, de documento y de expediente (regla 2.2) */
+export function alertasQueBloquean(expediente: Pick<ResultadoExpediente, 'documentos' | 'alertas_expediente'>): Alerta[] {
+  return [...expediente.alertas_expediente, ...expediente.documentos.flatMap((d) => d.alertas_encontradas)].filter(bloquea)
+}
+
+/** Tipo con cuya ficha se extrajo (regla 2.5): confirmado; si no, declarado; si no, detectado */
+export const tipoExtraccion = (d: Pick<ResultadoDocumento, 'tipo_documental_confirmado' | 'tipo_documental_declarado' | 'tipo_documental_detectado'>) =>
+  d.tipo_documental_confirmado ?? d.tipo_documental_declarado ?? d.tipo_documental_detectado
+
+export const enProceso =(d: Pick<ResultadoDocumento, 'estado_analisis'>) =>
+  d.estado_analisis === 'pendiente' || d.estado_analisis === 'procesando'
 
 /** Tipo que cuenta para el expediente: el confirmado; si no hay, el detectado; si no, el declarado */
 export function tipoEfectivo(doc: ResultadoDocumento): string | null {

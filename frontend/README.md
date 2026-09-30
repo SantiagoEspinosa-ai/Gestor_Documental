@@ -117,6 +117,20 @@ hace fallar el build si queda algun rastro.
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
   cada 3 s hasta completado o error, que se para al salir; `DUP-001` y errores de analisis visibles.
   Solo lectura si el folio esta cerrado o el rol no puede subir (admin).
+- Expediente (`paginas/PaginaExpediente.tsx`, `/folios/{folio}`, todos los roles; diapositiva 8):
+  - Cabecera: folio, referencia, fecha de solicitud, proceso, estado, recomendacion global y, si esta
+    cerrado, la decision con comentario, usuario y fecha. Enlace a la carga.
+  - Izquierda: documentos del folio (tambien pendientes y procesando) con su estado. Mientras haya
+    alguno en curso, sondeo de `GET /folios/{folio}` cada 3 s, que se para al terminar o al salir.
+  - Centro (`componentes/DetalleDocumento.tsx`): original (`componentes/VisorOriginal.tsx`: la URL
+    se pide cada vez que se abre porque caduca; `iframe` para PDF, `img` para imagen; solo revisor y
+    admin), clasificacion declarada, detectada y confirmada con su confianza, tabla de datos con
+    `<BarraConfianza>` (umbral de la ficha; texto de ADR-007), formato segun el tipo del campo, `null`
+    como "no detectado", evidencia y "Corregido por revisor (antes: X)"; reglas y modelo usado.
+    Documento en error: mensaje y alerta `SYS-00x`, sin reprocesar (fuera del MVP).
+  - Derecha: resultado global, `<ListaAlertas>` del documento y del expediente agrupadas por
+    severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
+    icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.

@@ -1,5 +1,5 @@
 // Textos visibles de los valores del contrato
-import type { EstadoAnalisis, EstadoGeneral, Recomendacion, Rol } from '../tipos/contrato'
+import type { Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, Recomendacion, Rol, Severidad } from '../tipos/contrato'
 
 export const ETIQUETA_ROL: Record<Rol, string> = { admin: 'Administración', revisor: 'Revisión', integrador: 'Integración' }
 
@@ -13,6 +13,18 @@ export const ETIQUETA_RECOMENDACION: Record<Recomendacion, string> = {
 
 export const ETIQUETA_ESTADO_ANALISIS: Record<EstadoAnalisis, string> = {
   pendiente: 'Pendiente', procesando: 'Procesando', completado: 'Completado', error: 'Error',
+}
+
+export const ETIQUETA_SEVERIDAD: Record<Severidad, string> = {
+  bloqueante: 'Bloqueante', critica: 'Crítica', preventiva: 'Preventiva', informativa: 'Informativa',
+}
+
+export const ETIQUETA_DECISION: Record<DecisionHumana, string> = { aprobar: 'Aprobado', rechazar: 'Rechazado' }
+
+/** Estado de revision de una alerta (ADR-006 2.2): null = sin revisar; false = falso positivo */
+export function etiquetaRevision(alerta: Pick<Alerta, 'aplica'>): string {
+  if (alerta.aplica === null) return 'Sin revisar'
+  return alerta.aplica ? 'Aplica (confirmada por el revisor)' : 'Falso positivo'
 }
 
 /** Barra de confianza por campo (ADR-007): la calcula el codigo comprobando el dato, no el modelo */

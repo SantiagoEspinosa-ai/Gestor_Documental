@@ -1,6 +1,6 @@
 // Folios, procesos, tipos documentales y documentos (Contrato 2)
 import type {
-  FiltrosFolios, PaginaFolios, PeticionCrearFolio, Proceso, RespuestaCrearFolio, RespuestaSubidaDocumento,
+  FiltrosFolios, PaginaFolios, PeticionCrearFolio, Proceso, RespuestaCrearFolio, RespuestaOriginal, RespuestaSubidaDocumento,
   ResultadoDocumento, ResultadoExpediente, TipoDocumental,
 } from '../tipos/contrato'
 import { peticion } from './cliente'
@@ -36,4 +36,9 @@ export function subirDocumento(folio: string, archivo: File, tipoDeclarado?: str
 
 export function obtenerDocumento(id: string, signal?: AbortSignal): Promise<ResultadoDocumento> {
   return peticion<ResultadoDocumento>(`/documentos/${encodeURIComponent(id)}`, { signal })
+}
+
+/** URL prefirmada y temporal del original (caduca): pedirla cada vez que se abre, nunca guardarla */
+export function urlOriginal(id: string, signal?: AbortSignal): Promise<RespuestaOriginal> {
+  return peticion<RespuestaOriginal>(`/documentos/${encodeURIComponent(id)}/original`, { signal })
 }
