@@ -41,7 +41,8 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 | Corregir datos o confirmar la clasificacion de un documento en `error` | 409 `DOCUMENTO_CON_ERROR` (codigo nuevo: se anade a `codigos_error.md` en el mismo commit que lo use, etapa 2). Resolver sus alertas si se permite | pregunta 2 de PERSONA_3 |
 | `EXP-001` | Al crear el folio, una por cada tipo requerido que falte (bloqueante, en `alertas_expediente`, `campo` = tipo). Se recalcula al procesar un documento o confirmar su clasificacion; cuenta el tipo confirmado, si no el detectado, si no el declarado. Si el revisor la marco `aplica=false`, se conserva | pregunta 3 de PERSONA_3 |
 | `POST /folios` | 201 (ya implementado) | pregunta 4 de PERSONA_3 |
-| Alertas informativas | Propuesta de PERSONA_1, sin acordar: `VAL-004` (falta un campo opcional, la emite PERSONA_2) y `EXP-002` (tipo subido que el proceso no pide, la emite PERSONA_1). `VAL-003` ya es de PERSONA_2 (campo tomado de la MRZ, PR #4) | pendiente del equipo |
+| Alertas informativas | `VAL-003` (campo tomado de la MRZ, PR #4) y `VAL-004` (campo opcional vacio, PR #6) ACEPTADAS; las emite PERSONA_2. `EXP-002` (tipo subido que el proceso no pide, la emitiria PERSONA_1): propuesta sin acordar | PR #4, PR #6 |
+| Privacidad de OpenRouter | `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` (PR #5 de PERSONA_2) cierra el riesgo de enviar documentos reales al proveedor gratuito | PR #5 |
 | `SYS-004` | Descartado (opcion A): la ingesta rechaza con 415 `FORMATO_NO_PERMITIDO` si el contenido no coincide con la extension | PR #4 |
 
 ## Como retomar
@@ -64,11 +65,13 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
       lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
 - [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
+- [ ] ADR-008 (PR #7) propuesto: si se acepta, rellenar `referencia_externa` en `listar_folios` y quitar la
+      nota de `api/README.md`.
 
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
-- Conectar el pipeline real (sustituye a `ingesta/procesamiento_stub.py`) y guardar `resultados`.
-- Acordar con PERSONA_2 que todas las alertas del motor se guarden en la tabla `alertas` (fuente
-  unica en las respuestas).
+- [x] E2.1: `ingesta/procesamiento.py` con la interfaz acordada del motor (hoy `motor_stub.py`); cada
+      alerta del motor se guarda en `alertas` con `version_resultado` (migracion 0003). Acordado con PERSONA_2.
+- [ ] Cambiar el import de `motor_stub` por `orquestador.servicio.procesar_documento` cuando llegue a `main`.
 - `EXP-001`: recalculo al procesar o confirmar la clasificacion (la creacion inicial va al crear el folio).
 - `modulos/validacion/comparaciones.py`: `ComparacionCampo` y `CMP-001` solo en `alertas_expediente`.
 - Recomendacion global.
