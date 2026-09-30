@@ -1,5 +1,5 @@
 // POST /auth/login y GET /auth/yo (Contrato 2)
-import type { RespuestaLogin, UsuarioActual } from '../tipos/api'
+import type { RespuestaLogin, UsuarioActual } from '../tipos/contrato'
 import { peticion } from './cliente'
 import { guardarSesion, type SesionGuardada } from './sesion'
 

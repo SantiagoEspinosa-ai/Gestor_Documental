@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { UsuarioActual } from '../tipos/api'
+import type { UsuarioActual } from '../tipos/contrato'
 
 export type EstadoSesion =
   | { tipo: 'cargando' }

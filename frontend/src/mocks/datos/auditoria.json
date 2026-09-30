@@ -1,0 +1,391 @@
+[
+  {
+    "id": 1,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000004",
+    "documento_id": null,
+    "detalle": {
+      "proceso": "onboarding"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000001",
+    "detalle": {
+      "nombre_archivo": "pasaporte_sano_digital.pdf",
+      "tipo_declarado": "pasaporte"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:01:00Z"
+  },
+  {
+    "id": 3,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000001",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:01:40Z"
+  },
+  {
+    "id": 4,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000002",
+    "detalle": {
+      "nombre_archivo": "credencial_elector_sano_digital.pdf",
+      "tipo_declarado": "credencial_elector"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:02:00Z"
+  },
+  {
+    "id": 5,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000002",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:02:40Z"
+  },
+  {
+    "id": 6,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000003",
+    "detalle": {
+      "nombre_archivo": "comprobante_domicilio_sano_digital.pdf",
+      "tipo_declarado": "comprobante_domicilio"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:03:00Z"
+  },
+  {
+    "id": 7,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000003",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:03:40Z"
+  },
+  {
+    "id": 8,
+    "usuario": "revisor.demo",
+    "accion": "decision_tomada",
+    "folio": "ONB-2026-000004",
+    "documento_id": null,
+    "detalle": {
+      "decision": "aprobar"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-26T12:30:00Z"
+  },
+  {
+    "id": 9,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000001",
+    "documento_id": null,
+    "detalle": {
+      "proceso": "onboarding"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:15:00Z"
+  },
+  {
+    "id": 10,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000001",
+    "detalle": {
+      "nombre_archivo": "pasaporte_vencido_escaneado.pdf",
+      "tipo_declarado": "pasaporte"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:16:00Z"
+  },
+  {
+    "id": 11,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000001",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:16:40Z"
+  },
+  {
+    "id": 12,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000002",
+    "detalle": {
+      "nombre_archivo": "credencial_elector_vencido_foto.jpg",
+      "tipo_declarado": "credencial_elector"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:17:00Z"
+  },
+  {
+    "id": 13,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000002",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:17:40Z"
+  },
+  {
+    "id": 14,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000003",
+    "detalle": {
+      "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
+      "tipo_declarado": "comprobante_domicilio"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:18:00Z"
+  },
+  {
+    "id": 15,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000003",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:18:40Z"
+  },
+  {
+    "id": 16,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000004",
+    "detalle": {
+      "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
+      "tipo_declarado": "comprobante_domicilio"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:19:00Z"
+  },
+  {
+    "id": 17,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000004",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:19:40Z"
+  },
+  {
+    "id": 18,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000002",
+    "documento_id": null,
+    "detalle": {
+      "proceso": "onboarding"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:40:00Z"
+  },
+  {
+    "id": 19,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "nombre_archivo": "credencial_elector_domicilio_distinto_escaneado.pdf",
+      "tipo_declarado": "credencial_elector"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:41:00Z"
+  },
+  {
+    "id": 20,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-29T11:41:40Z"
+  },
+  {
+    "id": 21,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000002",
+    "detalle": {
+      "nombre_archivo": "comprobante_domicilio_domicilio_distinto_foto.jpg",
+      "tipo_declarado": "comprobante_domicilio"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:42:00Z"
+  },
+  {
+    "id": 22,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000002",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-29T11:42:40Z"
+  },
+  {
+    "id": 23,
+    "usuario": "revisor.demo",
+    "accion": "dato_corregido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "campo": "nombre_completo"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T12:05:00Z"
+  },
+  {
+    "id": 24,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000003",
+    "detalle": {
+      "nombre_archivo": "pasaporte_domicilio_distinto_digital.pdf",
+      "tipo_declarado": "pasaporte"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T12:10:00Z"
+  },
+  {
+    "id": 25,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000003",
+    "documento_id": null,
+    "detalle": {
+      "proceso": "onboarding"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:05:00Z"
+  },
+  {
+    "id": 26,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000001",
+    "detalle": {
+      "nombre_archivo": "credencial_elector_sano_digital.pdf",
+      "tipo_declarado": "credencial_elector"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:06:00Z"
+  },
+  {
+    "id": 27,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000001",
+    "detalle": {
+      "estado_analisis": "completado"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-30T08:06:40Z"
+  },
+  {
+    "id": 28,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000002",
+    "detalle": {
+      "nombre_archivo": "pasaporte_sano_foto.jpg",
+      "tipo_declarado": "pasaporte"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:07:00Z"
+  },
+  {
+    "id": 29,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000002",
+    "detalle": {
+      "estado_analisis": "error"
+    },
+    "modelo": "llama3.2-vision:11b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-30T08:07:40Z"
+  }
+]

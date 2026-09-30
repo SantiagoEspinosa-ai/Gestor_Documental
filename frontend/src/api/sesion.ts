@@ -1,5 +1,5 @@
 // Sesion en sessionStorage: se pierde al cerrar la pestana. La caducidad sale de expires_in.
-import type { Rol } from '../tipos/api'
+import type { Rol } from '../tipos/contrato'
 
 const CLAVE = 'gestor_documental.sesion'
 

@@ -1,6 +1,6 @@
 // Cliente HTTP de la API (Contrato 2). Anade el token Bearer y convierte los errores
 // {codigo, mensaje} (docs/contratos/codigos_error.md) en ErrorApi.
-import type { CodigoError, CodigoLocal } from '../tipos/api'
+import type { CodigoError, CodigoLocal } from '../tipos/codigos'
 import { entorno } from '../utilidades/entorno'
 import { borrarSesion, leerSesion } from './sesion'
 

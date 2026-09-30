@@ -27,10 +27,10 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 | Carpeta | Contenido |
 |---|---|
 | `api/` | `cliente.ts` (HTTP), `sesion.ts` (token), `auth.ts` (login y `/auth/yo`) |
-| `mocks/` | Handlers de msw (tarea 3) |
+| `mocks/` | Handlers de msw (tarea 3); `mocks/datos/` con los JSON ficticios |
 | `paginas/` | Una pagina por ruta: login, folios, expediente |
 | `componentes/` | Sesion (`ProveedorSesion`, `RutaProtegida`), `Estructura` comun |
-| `tipos/` | Tipos de la API (Contrato 2) y codigos de `docs/contratos/codigos_error.md` |
+| `tipos/` | `contrato.ts` (Contrato 1 exacto y peticiones/respuestas del 2), `codigos.ts` (errores y alertas oficiales) |
 | `utilidades/` | `entorno.ts` (variables `VITE_*`) |
 
 ## Contrato del cliente HTTP (`src/api/cliente.ts`)
@@ -42,6 +42,18 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 - 401: borra la sesion y avisa (`alSesionCaducada`). Lo decide el estado HTTP, no el codigo. El
   login no cuenta: su 401 son credenciales incorrectas.
 - 409 `FOLIO_CERRADO`: `error.esSoloLectura` y aviso `alFolioCerrado`; la UI pasa a solo lectura.
+
+## Tipos y datos de los mocks
+- `src/tipos/contrato.ts` refleja `backend/app/schemas/resultado.py` campo a campo (las claves
+  siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
+- `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
+  (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
+  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado.
+  `MOCK-001` (informativa) solo existe en los mocks: el catalogo no tiene codigos informativos.
+- `public/mock-originales/`: copias de los fixtures que usan los mocks (mismo SHA-256).
+- `backend/tests/test_contrato_frontend.py` comprueba todo lo anterior contra los contratos,
+  `config/` y el generador de fixtures:
+  `cd backend; ..\.venv\Scripts\python.exe -m pytest tests/test_contrato_frontend.py`.
 
 ## Sesion
 Token, rol e instante de caducidad (`Date.now() + expires_in * 1000`) en `sessionStorage`, con
