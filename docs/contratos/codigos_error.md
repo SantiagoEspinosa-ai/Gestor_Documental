@@ -26,7 +26,7 @@ de FastAPI y los de rutas o metodos inexistentes. Nunca el `{"detail": ...}` por
 | 409 | `FOLIO_CERRADO` | Accion sobre un folio `aprobado` o `rechazado` (ADR-006, G) |
 | 409 | `SECUENCIA_AGOTADA` | Un proceso supera 999999 folios en un anio (POST /folios) |
 | 413 | `ARCHIVO_DEMASIADO_GRANDE` | El archivo supera 20 MB |
-| 415 | `FORMATO_NO_PERMITIDO` | Extension fuera de `formatos_permitidos` del tipo |
+| 415 | `FORMATO_NO_PERMITIDO` | Extension fuera de `formatos_permitidos` del tipo, o contenido que no corresponde a la extension (firma del fichero) |
 | 422 | `PETICION_INVALIDA` | Cuerpo o parametros invalidos |
 | 500 | `ERROR_INTERNO` | Error no controlado |
 

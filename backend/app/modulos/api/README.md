@@ -86,6 +86,6 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 - Salida 200: `{elementos: [EntradaAuditoria], total, pagina, tamano_pagina}`, del mas reciente al
   mas antiguo (`creado_en` desc, `id` desc). `EntradaAuditoria` = `{id, usuario, accion, folio,
   documento_id (str o null), detalle, modelo, version_prompt, creado_en}`.
-- Pendiente de reflejar en endpoints.md (PERSONA_3): la respuesta paginada; hoy dice "lista de
-  `EntradaAuditoria`".
+- La respuesta paginada se aparta de ADR-006 1.5 ("lista de `EntradaAuditoria`"); se formalizara con
+  el ADR-008 (lo redacta PERSONA_3), que tambien anade `referencia_externa` a `ResumenFolio`.
 - Errores: 401; 403 `SIN_PERMISO` (revisor, integrador); 422 `PETICION_INVALIDA`.

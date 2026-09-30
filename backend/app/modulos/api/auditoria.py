@@ -27,7 +27,7 @@ class EntradaAuditoria(BaseModel):
 
 
 class PaginaAuditoria(BaseModel):
-    """La paginacion aun no esta en endpoints.md ("lista de EntradaAuditoria"): pendiente de PERSONA_3."""
+    """Se aparta de ADR-006 1.5 ("lista de EntradaAuditoria"); se formalizara con el ADR-008 (PERSONA_3)."""
     elementos: list[EntradaAuditoria]
     total: int
     pagina: int
