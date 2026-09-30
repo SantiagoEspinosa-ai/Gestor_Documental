@@ -33,14 +33,15 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 | Tema | Decision | Donde |
 |---|---|---|
 | Contratos | ADR-004 y ADR-006 aceptados y aplicados; catalogos `codigos_error.md` y `codigos_alertas.md` en `main` | PR #1 y #2 |
-| ADR-007 | Rechazado: la confianza la sigue dando el modelo | - |
+| ADR-007 | Aceptado (PR #4 de PERSONA_2): la confianza la calcula el codigo; en la etapa 2 la recomendacion compara esas confianzas, la regla no cambia | ADR-007 |
 | Bucket | S3 real en us-east-2, privado, IAM solo con Put/Get/ListBucket (sin Delete); claves solo en `.env` | tarea previa del prompt |
 | PostgreSQL local | Lo arranca el usuario con `docker compose up -d db` | - |
 | Decidir un folio con documentos `pendiente` o `procesando` | 409 `DOCUMENTO_EN_PROCESO` | pregunta 1 de PERSONA_3 |
 | Corregir datos o confirmar la clasificacion de un documento en `error` | 409 `DOCUMENTO_CON_ERROR` (codigo nuevo: se anade a `codigos_error.md` en el mismo commit que lo use, etapa 2). Resolver sus alertas si se permite | pregunta 2 de PERSONA_3 |
 | `EXP-001` | Al crear el folio, una por cada tipo requerido que falte (bloqueante, en `alertas_expediente`, `campo` = tipo). Se recalcula al procesar un documento o confirmar su clasificacion; cuenta el tipo confirmado, si no el detectado, si no el declarado. Si el revisor la marco `aplica=false`, se conserva | pregunta 3 de PERSONA_3 |
 | `POST /folios` | 201 (ya implementado) | pregunta 4 de PERSONA_3 |
-| Alertas informativas | Propuesta de PERSONA_1, sin acordar: `VAL-003` (falta un campo opcional, la emite PERSONA_2) y `EXP-002` (tipo subido que el proceso no pide, la emite PERSONA_1) | pendiente del equipo |
+| Alertas informativas | Propuesta de PERSONA_1, sin acordar: `VAL-004` (falta un campo opcional, la emite PERSONA_2) y `EXP-002` (tipo subido que el proceso no pide, la emite PERSONA_1). `VAL-003` ya es de PERSONA_2 (campo tomado de la MRZ, PR #4) | pendiente del equipo |
+| `SYS-004` | Descartado (opcion A): la ingesta rechaza con 415 `FORMATO_NO_PERMITIDO` si el contenido no coincide con la extension | PR #4 |
 
 ## Como retomar
 1. En la raiz del repo: `cp .env.example .env` y rellenarlo a mano (claves AWS por canal seguro,
@@ -57,7 +58,7 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ## Pendiente
 ### Cierre de la etapa 1
-- [ ] Pull Request de `feat/plataforma` a `main` el dia 5 (lo revisa otra persona).
+- [ ] PR #3 de `feat/plataforma` a `main` (abierto; se revisa y fusiona el dia 5).
 - [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
       lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
