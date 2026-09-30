@@ -18,7 +18,9 @@ from app.core.modelos import AlertaBD, Documento, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio as expediente
+from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
+from app.schemas.resultado import Alerta
 
 SECRETO = "clave-ficticia-de-test"
 BUCKET = "bucket-de-test"
@@ -59,6 +61,8 @@ def entorno(monkeypatch, tmp_path):
         s3 = AlmacenamientoS3(bucket=BUCKET, region=REGION, access_key="clave-ficticia",
                               secret_key=SECRETO, segundos_url=60)
         app.dependency_overrides[get_almacenamiento] = lambda: s3
+        # la BackgroundTask no usa la inyeccion de FastAPI: tambien al S3 de moto
+        monkeypatch.setattr(procesamiento, "get_almacenamiento", lambda: s3)
         try:
             yield s3
         finally:
@@ -226,3 +230,18 @@ def test_cambio_de_estado_y_tipo_confirmado_en_bd_se_ve_en_los_dos(cliente, foli
     for doc in (directo, _en_expediente(cliente, folio, doc_id)):
         assert (doc["estado_analisis"], doc["tipo_documental_confirmado"]) == ("error", "pasaporte")
         assert doc["fecha_y_modelo_utilizado"]["version_prompt"] == "stub@v0"  # el resto sale del resultado
+
+
+def test_get_documento_muestra_las_alertas_del_motor(cliente, folio, monkeypatch):
+    def analizar(contenido, **kwargs):
+        resultado, datos = motor_stub.procesar_documento(contenido, **kwargs)
+        alerta = Alerta(codigo="VAL-001", mensaje="Falta un campo obligatorio (ficticio)",
+                        severidad="critica", confianza=1.0, campo="nombre_completo")
+        return resultado.model_copy(update={"alertas_encontradas": [alerta]}), datos
+
+    monkeypatch.setattr(procesamiento, "analizar", analizar)
+    doc_id = _subir(cliente, folio).json()["identificador_unico_documento"]
+    r = cliente.get(f"/api/v1/documentos/{doc_id}", headers=_cab("revisor")).json()
+    assert r["estado_analisis"] == "completado"
+    assert [(a["codigo"], a["campo"]) for a in r["alertas_encontradas"]] == [("VAL-001", "nombre_completo")]
+    assert uuid.UUID(r["alertas_encontradas"][0]["id"])

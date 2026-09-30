@@ -4,7 +4,7 @@ import logging
 import uuid
 from pathlib import PurePath
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core import auditoria
@@ -128,16 +128,22 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
     """ResultadoDocumento de un documento, con la BD como fuente de verdad.
 
     Con resultado: la version mayor, sobrescribiendo con la BD `estado_analisis`,
-    `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision).
+    `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision: las de
+    plataforma y las del motor de esa version).
     Sin resultado todavia: uno minimo con el estado de la fila y sus alertas.
     Lo usan GET /documentos/{id} y el expediente, para que los dos digan lo mismo.
     """
-    alertas = [alerta_desde_bd(a) for a in sesion.scalars(
-        select(AlertaBD).where(AlertaBD.documento_id == documento.id)
-        .order_by(AlertaBD.creado_en, AlertaBD.id))]
-    estado = EstadoAnalisis(documento.estado_analisis)
     fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == documento.id)
                          .order_by(Resultado.version.desc()).limit(1))
+    # De plataforma (version_resultado NULL) + las del motor de la version vigente; las de versiones
+    # anteriores del motor ya no se muestran al reprocesar
+    vigentes = AlertaBD.version_resultado.is_(None)
+    if fila is not None:
+        vigentes = or_(vigentes, AlertaBD.version_resultado == fila.version)
+    alertas = [alerta_desde_bd(a) for a in sesion.scalars(
+        select(AlertaBD).where(AlertaBD.documento_id == documento.id, vigentes)
+        .order_by(AlertaBD.creado_en, AlertaBD.id))]
+    estado = EstadoAnalisis(documento.estado_analisis)
     if fila is not None:
         return ResultadoDocumento.model_validate(fila.json).model_copy(update={
             "estado_analisis": estado,
