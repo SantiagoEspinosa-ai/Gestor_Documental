@@ -196,6 +196,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
+- [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
+      `orquestador` para evitar la importacion circular.
 - [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
       confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
 - [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
@@ -270,13 +272,40 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | Confianzas (**provisional**) | `confianza_clasificacion` y `nivel_confianza_por_campo` guardan la del modelo; **no se emiten `CLS-002` ni `VAL-002`**. Deuda ADR-007 con fecha limite: etapa 2, antes de `validacion/reglas.py` y de la recomendacion |
 | Fuera de esta tarea (etapa 2) | `reglas_cumplidas_e_incumplidas`, `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, `recomendacion` y `procesar_documento` |
 
+## 11. Integracion con la plataforma (etapa 2)
+
+Acuerdo cerrado con PERSONA_1 el 2026-09-30. **Solo documentado: aun no esta programado.**
+
+| Punto | Acuerdo |
+|---|---|
+| Firma | `app.modulos.orquestador.servicio.procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia, tipo_confirmado=None) -> (ResultadoDocumento, datos_auditoria)` |
+| Alcance | No toca la BD ni S3: recibe los bytes del original y devuelve el resultado. PERSONA_1 descarga el original, gestiona los estados (`pendiente -> procesando -> completado/error`), guarda el resultado, inserta cada alerta en la tabla `alertas` y audita |
+| `datos_auditoria` | `{modelo, proveedor, respaldo_usado, version_prompt, confianzas_modelo, tiempos, tokens}`. Sale de `Analisis.llamadas` (`InfoLlamada`) y de las confianzas del modelo, que con ADR-007 solo van a la auditoria |
+| Errores | Proveedor caido o sin respaldo -> `estado_analisis=error` + `SYS-001`. JSON invalido -> `error` + `SYS-002`. Cualquier otra cosa inesperada lanza excepcion (PERSONA_1 la registra y pone el documento en `error`) |
+| Reparto de alertas y recomendaciones | PERSONA_2: `VAL-*`, `REG-*`, `CLS-*` y la recomendacion **por documento**. PERSONA_1: `CMP-001`, `EXP-001` y la recomendacion **global** del expediente |
+
+**Riesgo de importacion circular.** Hoy `motor_ia/servicio.py` importa `orquestador/servicio.py` (para la MRZ).
+Si `orquestador/servicio.py` importa `motor_ia/servicio.py` para `procesar_documento`, se forma un ciclo.
+
+Propuesta para la etapa 2: **que la dependencia sea en un solo sentido, `orquestador -> motor_ia`.**
+- Mover la completacion del sexo desde la MRZ (hoy `_sexo_desde_mrz` en `motor_ia/servicio.py`) a
+  `orquestador`, que la aplica despues de `analizar()` dentro de `procesar_documento`. Encaja con el
+  catalogo, que ya da `VAL-003` como emitida por `orquestador (ocr)`.
+- `motor_ia/servicio.py` deja de importar `orquestador`: solo hace IA (clasificar, extraer, respaldo).
+- `procesar_documento` orquesta: `preparar` -> `motor_ia.analizar` -> MRZ -> `validacion` (reglas y
+  recomendacion del documento) -> `(ResultadoDocumento, datos_auditoria)`.
+- Descartado: importar dentro de la funcion (funciona, pero esconde el ciclo) e importar `orquestador/mrz.py`
+  directamente (incumple la regla 2 de ADR-005).
+- Un test comprobara que `motor_ia` no importa `orquestador`.
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | Merge del PR #3 de PERSONA_1 (core, API, ingesta, expediente), sin conflictos. Los tests en el contenedor necesitan montar `scripts/` (seccion 8): 369 pasan y 1 se salta (requiere `TEST_POSTGRES_URL`) | este commit |
+| 2026-09-30 | Seccion 11: acuerdo con PERSONA_1 para la etapa 2 (`procesar_documento`, `datos_auditoria`, errores, reparto de alertas y recomendaciones) y propuesta para evitar la importacion circular: dependencia `orquestador -> motor_ia`, con la MRZ en `orquestador` | este commit |
+| 2026-09-30 | Merge del PR #3 de PERSONA_1 (core, API, ingesta, expediente), sin conflictos. Los tests en el contenedor necesitan montar `scripts/` (seccion 8): 369 pasan y 1 se salta (requiere `TEST_POSTGRES_URL`) | `beb1b9f` |
 | 2026-09-30 | `motor_ia/servicio.py`: `analizar(doc, *, folio, referencia, ...)` -> `Analisis` (se aparta de `analizar(doc, ficha)` por ADR-006 y el Contrato 1). Ficha tipo_confirmado > declarado > detectado; `CLS-001`, `SYS-001/002/003/005`, `VAL-003` con confianza 1,0; respaldo tambien ante JSON invalido; sexo desde la MRZ (1,0 / 0,5); desconocido sin declarado no se extrae ni alerta. Confianzas del modelo provisionales, sin `CLS-002` ni `VAL-002` (deuda ADR-007). `orquestador.servicio` expone `buscar_mrz` y `validar_digitos` (17 tests) | `2178f83` |
 | 2026-09-30 | `motor_ia/enrutador.py`: `modelos.yaml` validado de forma estricta, proveedores desde las variables de entorno, `por_tipo`, barrera de privacidad `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`), principal no disponible -> error al arrancar, respaldo no disponible -> `None`. `Tarea.validacion` aceptada sin uso; perfiles de `procesos.yaml` no implementados. `configuracion.servicio.directorio_config()` expuesto (24 tests) | `bbfdc9d` |
 | 2026-09-30 | Pendiente de la etapa 2: `VAL-004` (informativa, campo `obligatorio: false` vacio, con `campo`), que emitira `validacion`; PERSONA_3 la anade al catalogo en un PR aparte y PERSONA_2 lo revisa | `7d2c361` |
