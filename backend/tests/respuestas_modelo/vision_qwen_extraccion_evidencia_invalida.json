@@ -1,0 +1,17 @@
+{
+  "model": "qwen2.5vl:3b",
+  "created_at": "2026-09-30T16:20:50.5425073Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\n  \"datos_extraidos\": {\n    \"nombre_completo\": \"ANA EJEMPLO PRUEBA\",\n    \"numero_pasaporte\": \"X1234567P\",\n    \"fecha_nacimiento\": \"01/01/1990\",\n    \"fecha_expedicion\": \"10/05/2024\",\n    \"fecha_vencimiento\": \"09/05/2034\",\n    \"nacionalidad\": \"PAIS FICTICIO\",\n    \"sexo\": \"F\"\n  },\n  \"nivel_confianza_por_campo\": {\n    \"nombre_completo\": 1,\n    \"numero_pasaporte\": 1,\n    \"fecha_nacimiento\": 1,\n    \"fecha_expedicion\": 1,\n    \"fecha_vencimiento\": 1,\n    \"nacionalidad\": 1,\n    \"sexo\": 1\n  },\n  \"evidencia_por_campo\": {\n    \"nombre_completo\": \"sección_2[:sección]\",\n    \"numero_pasaporte\": \"sección_3[:sección]\",\n    \"fecha_nacimiento\": \"sección_4[:sección]\",\n    \"fecha_expedicion\": \"sección_5[:sección]\",\n    \"fecha_vencimiento\": \"sección_6[:sección]\",\n    \"nacionalidad\": \"sección_7[:sección]\",\n    \"sexo\": \"sección_8[:sección]\"\n  },\n  \"observaciones_visuales\": [\n    \"La foto está claramente visible en la parte superior izquierda del documento.\",\n    \"El texto es legible en la mayoría de los campos, excepto para la fecha de vencimiento, que es parcialmente oculta.\"\n  ]\n}"
+  },
+  "done": true,
+  "done_reason": "stop",
+  "total_duration": 51318303500,
+  "load_duration": 25001500,
+  "prompt_eval_count": 1596,
+  "prompt_eval_cached_count": 1309,
+  "prompt_eval_duration": 3296824000,
+  "eval_count": 381,
+  "eval_duration": 47941551000
+}

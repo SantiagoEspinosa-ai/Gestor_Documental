@@ -17,7 +17,7 @@ from app.modulos.configuracion.servicio import TipoDocumental
 from app.modulos.motor_ia.interfaces import Pagina
 
 # Version en uso de cada prompt. Cambiarla es una decision de configuracion: anotarla en la spec.
-VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v2"}
+VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v2", "correccion_json": "v1"}
 
 # backend/app/modulos/motor_ia/prompts.py -> raiz del repo
 _RAIZ_REPO = Path(__file__).resolve().parents[4]

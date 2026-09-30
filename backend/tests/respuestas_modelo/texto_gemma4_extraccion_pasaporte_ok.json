@@ -1,0 +1,17 @@
+{
+  "model": "gemma4:e2b",
+  "created_at": "2026-09-30T16:26:36.1780797Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\n  \"datos_extraidos\": {\n    \"nombre_completo\": \"ANA EJEMPLO PRUEBA\",\n    \"numero_pasaporte\": \"X1234567P\",\n    \"fecha_nacimiento\": \"1990-01-01\",\n    \"fecha_expedicion\": \"2024-05-10\",\n    \"fecha_vencimiento\": \"2034-05-09\",\n    \"nacionalidad\": \"PAIS FICTICIO\",\n    \"sexo\": \"F\"\n  },\n  \"nivel_confianza_por_campo\": {\n    \"nombre_completo\": 0.9,\n    \"numero_pasaporte\": 1.0,\n    \"fecha_nacimiento\": 0.9,\n    \"fecha_expedicion\": 0.9,\n    \"fecha_vencimiento\": 0.9,\n    \"nacionalidad\": 1.0,\n    \"sexo\": 1.0\n  },\n  \"evidencia_por_campo\": {\n    \"nombre_completo\": \"pagina_1:Apellidos y nombre\",\n    \"numero_pasaporte\": \"pagina_1:Numero de pasaporte\",\n    \"fecha_nacimiento\": \"pagina_1:Fecha de nacimiento\",\n    \"fecha_expedicion\": \"pagina_1:Fecha de expedicion\",\n    \"fecha_vencimiento\": \"pagina_1:Fecha de caducidad\",\n    \"nacionalidad\": \"pagina_1:Nacionalidad\",\n    \"sexo\": \"pagina_1:Sexo\"\n  },\n  \"observaciones_visuales\": [\n    \"Texto extraído de una estructura de documento de muestra, la información es ficticia.\"\n  ]\n}"
+  },
+  "done": true,
+  "done_reason": "stop",
+  "total_duration": 34891341000,
+  "load_duration": 3875400,
+  "prompt_eval_count": 506,
+  "prompt_eval_cached_count": 0,
+  "prompt_eval_duration": 3264848000,
+  "eval_count": 410,
+  "eval_duration": 31605248000
+}

@@ -65,6 +65,20 @@ Diagnosticos:
 
 Detalle por escenario en `pruebas_ollama/resultados/<escenario>/resumen.json`.
 
+## Medida del contexto (`num_ctx`)
+
+`prueba_num_ctx.py`, con `qwen2.5vl:3b`, `num_ctx=16384`, el prompt real `extraccion_v2` y paginas A4
+inventadas a 1000 px (1000x1414). `num_predict=1`: solo se mide la lectura del prompt.
+
+| Escenario | Tokens de entrada | Tiempo |
+|---|---|---|
+| 1 pagina, sin texto | 2 457 (~1 850 de la imagen) | 133 s |
+| 4 paginas + 20 000 caracteres de texto de relleno | 13 476 | 499 s |
+
+Con los 800 tokens de salida (`num_predict`) quedan ~2 100 de margen: `NUM_CTX = 16384` es suficiente.
+El tiempo obliga a que el timeout de vision dependa del numero de imagenes (60 s + 150 s por imagen).
+RAM libre minima: 3,1 GB.
+
 ## Fallo de gemma4 con imagenes en Windows
 
 `gemma4` anuncia vision, pero en Ollama para Windows no procesa las imagenes: el codificador recibe
@@ -96,6 +110,7 @@ Con el venv del backend, desde `docs/motor_ia/pruebas_ollama/` (Ollama local en 
 | `prueba_fechas.py --modelo qwen2.5vl:3b --sin-think` | Escenario 7 (borrador v2b + `normalizar_fecha`; juego 2 de fechas) |
 | `diagnostico_hola.py --modelo <m> [--sin-think]` | Imagen con "HOLA" |
 | `diagnostico_transcripcion.py --modelo <m>` | Transcripcion literal con tope de tokens |
+| `prueba_num_ctx.py --modelo qwen2.5vl:3b --num-ctx 16384` | Tokens de 1 y de 4 paginas A4 con el prompt real |
 
 `--sin-think` es para modelos sin razonamiento, como `qwen2.5vl`. Las imagenes versionadas no se
 regeneran; si se borran, los scripts las vuelven a crear. Las salidas crudas (`respuestas/`,
