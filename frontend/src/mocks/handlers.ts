@@ -2,8 +2,8 @@
 // Cada ruta se declara con su rol del contrato; handlers.test.ts compara esta lista con el contrato.
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import {
-  DECISIONES_HUMANAS, ESTADOS_GENERALES, ROLES, type ProcesoRevisor, type ResultadoDocumento, type ResultadoExpediente,
-  type Rol,
+  DECISIONES_HUMANAS, ESTADOS_GENERALES, ROLES, type PaginaAuditoria, type ProcesoRevisor, type ResultadoDocumento,
+  type ResultadoExpediente, type Rol,
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
@@ -33,6 +33,28 @@ interface Contexto {
 const TODOS = ROLES
 const MAX_BYTES = 20 * 1024 * 1024
 const ORIGEN_FRONT = () => globalThis.location?.origin ?? 'http://localhost:5173'
+/** Zona horaria del negocio: decide el anio del folio, como ZONA_HORARIA en la API real */
+const ZONA_NEGOCIO = 'America/Mexico_City'
+/** Primeros bytes de cada formato: la API real rechaza con 415 un contenido que no es de su extension */
+const FIRMAS: Record<string, readonly number[]> = {
+  pdf: [0x25, 0x50, 0x44, 0x46, 0x2d], // %PDF-
+  jpg: [0xff, 0xd8, 0xff],
+  jpeg: [0xff, 0xd8, 0xff],
+  png: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+}
+
+function anioNegocio(ms: number): number {
+  return Number(new Intl.DateTimeFormat('en-US', { timeZone: ZONA_NEGOCIO, year: 'numeric' }).format(ms))
+}
+
+function paginacion(q: URLSearchParams, tamanoPorDefecto: number): { pagina: number; tamano: number } {
+  const pagina = Number(q.get('pagina') ?? 1)
+  const tamano = Number(q.get('tamano_pagina') ?? tamanoPorDefecto)
+  if (!Number.isInteger(pagina) || pagina < 1 || !Number.isInteger(tamano) || tamano < 1 || tamano > 100) {
+    throw new FalloApi('PETICION_INVALIDA', '`pagina` >= 1 y `tamano_pagina` entre 1 y 100')
+  }
+  return { pagina, tamano }
+}
 
 function autenticar(estado: EstadoMock, request: Request): SesionMock {
   const cabecera = request.headers.get('Authorization') ?? ''
@@ -114,7 +136,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   // ---------------------------------------------------------------- auth
   ruta('POST', '/auth/login', null, async ({ request }) => {
-    const cuerpo = await leerJson(request)
+    const cuerpo = await leerJson(request, ['usuario', 'contrasena'])
     if (typeof cuerpo.usuario !== 'string' || typeof cuerpo.contrasena !== 'string') {
       throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {usuario, contrasena}')
     }
@@ -135,7 +157,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       : estado.procesos))
 
   ruta('POST', '/folios', ['integrador', 'revisor'], async ({ request, usuario }) => {
-    const cuerpo = await leerJson(request)
+    const cuerpo = await leerJson(request, ['proceso', 'referencia_externa'])
     const proceso = estado.procesos.find((p) => p.nombre === cuerpo.proceso)
     if (typeof cuerpo.proceso !== 'string') throw new FalloApi('PETICION_INVALIDA', 'Falta `proceso`')
     if (!proceso) throw new FalloApi('PROCESO_NO_ENCONTRADO', `No existe el proceso ${cuerpo.proceso}`)
@@ -143,7 +165,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (referencia !== null && (typeof referencia !== 'string' || referencia.length > 100)) {
       throw new FalloApi('PETICION_INVALIDA', '`referencia_externa` debe ser texto de hasta 100 caracteres')
     }
-    const anio = new Date(estado.ahora()).getUTCFullYear()
+    const anio = anioNegocio(estado.ahora())
     const prefijo = `${proceso.prefijo_folio}-${anio}-`
     const secuencia = Math.max(0, ...[...estado.folios.keys()].filter((f) => f.startsWith(prefijo)).map((f) => Number(f.slice(-6)))) + 1
     const folio: ResultadoExpediente = {
@@ -154,18 +176,14 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     }
     recalcularTiposDelProceso(estado, folio) // EXP-001 por cada tipo requerido que falta
     estado.folios.set(folio.folio, folio)
-    auditar(estado, usuario.usuario, 'folio_creado', folio.folio, null, { proceso: proceso.nombre })
+    auditar(estado, usuario.usuario, 'folio_creado', folio.folio, null, {})
     return HttpResponse.json({ folio: folio.folio, estado_general: folio.estado_general }, { status: 201 })
   })
 
   ruta('GET', '/folios', ['revisor', 'admin'], ({ request }) => {
     const q = new URL(request.url).searchParams
-    const pagina = Number(q.get('pagina') ?? 1)
-    const tamano = Number(q.get('tamano_pagina') ?? 20)
+    const { pagina, tamano } = paginacion(q, 20)
     const estadoGeneral = q.get('estado_general')
-    if (!Number.isInteger(pagina) || pagina < 1 || !Number.isInteger(tamano) || tamano < 1 || tamano > 100) {
-      throw new FalloApi('PETICION_INVALIDA', '`pagina` >= 1 y `tamano_pagina` entre 1 y 100')
-    }
     if (estadoGeneral && !(ESTADOS_GENERALES as readonly string[]).includes(estadoGeneral)) {
       throw new FalloApi('PETICION_INVALIDA', `estado_general no valido: ${estadoGeneral}`)
     }
@@ -198,13 +216,20 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const declarado = (formulario.get('tipo_declarado') as string | null) || null
     if (declarado && !ficha(estado, declarado)) throw new FalloApi('PETICION_INVALIDA', `tipo_declarado desconocido: ${declarado}`)
     if (archivo.size > MAX_BYTES) throw new FalloApi('ARCHIVO_DEMASIADO_GRANDE', 'El archivo supera 20 MB')
+    if (archivo.size === 0) throw new FalloApi('PETICION_INVALIDA', 'El archivo esta vacio')
     const extension = nombre.includes('.') ? nombre.split('.').pop()!.toLowerCase() : ''
     const permitidos = declarado ? ficha(estado, declarado)!.formatos_permitidos : estado.tipos.flatMap((t) => t.formatos_permitidos)
     if (!permitidos.includes(extension)) {
       throw new FalloApi('FORMATO_NO_PERMITIDO', `Formato .${extension} no permitido (${[...new Set(permitidos)].join(', ')})`)
     }
+    const bytes = await archivo.arrayBuffer()
+    const firma = FIRMAS[extension] ?? []
+    const inicio = new Uint8Array(bytes.slice(0, firma.length))
+    if (!firma.every((b, i) => inicio[i] === b)) {
+      throw new FalloApi('FORMATO_NO_PERMITIDO', 'El contenido del archivo no corresponde a su extension')
+    }
 
-    const hash = await sha256Hex(await archivo.arrayBuffer())
+    const hash = await sha256Hex(bytes)
     const id = `00000000-0000-4000-9000-${String(siguiente(estado)).padStart(12, '0')}`
     const repetido = folio.documentos.find((d) => d.referencia_archivo_original.hash === hash)
     // Clasificador simulado: mismo SHA-256 que un documento de los datos, o por el nombre del fichero
@@ -231,7 +256,9 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       inicio: estado.ahora(), tipoExtraccion: declarado ?? tipoContenido, tipoContenido, confianzaClasificacion: confianza, origen,
     })
     recalcularExpediente(estado, folio)
-    auditar(estado, usuario.usuario, 'documento_subido', folio.folio, id, { nombre_archivo: nombre, tipo_declarado: declarado })
+    // Sin nombre_archivo, como la API real: los nombres de fichero suelen llevar el nombre de la persona
+    auditar(estado, usuario.usuario, 'documento_subido', folio.folio, id,
+      { hash_sha256: hash, tamano_bytes: archivo.size, duplicado: Boolean(repetido) })
     return HttpResponse.json({ identificador_unico_documento: id, estado_analisis: 'pendiente' }, { status: 202 })
   })
 
@@ -239,14 +266,16 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params }) => {
     const { doc } = documentoOError(estado, params.id)
-    const archivo = estado.archivos.get(doc.identificador_unico_documento)
-    let url = estado.urls.get(doc.identificador_unico_documento)
-    if (!url) {
-      // Subidos en esta sesion: URL local del propio fichero; datos iniciales: copia en public/mock-originales
-      url = archivo ? URL.createObjectURL(archivo)
-        : `${ORIGEN_FRONT()}/mock-originales/${encodeURIComponent(doc.referencia_archivo_original.nombre_archivo)}`
-      estado.urls.set(doc.identificador_unico_documento, url)
-    }
+    const id = doc.identificador_unico_documento
+    const archivo = estado.archivos.get(id)
+    // Como la URL prefirmada real (caduca a los 300 s): una nueva en cada peticion y la anterior deja de valer,
+    // para que la UI la pida cada vez que abre el visor y no la guarde
+    const anterior = estado.urls.get(id)
+    if (anterior?.startsWith('blob:')) URL.revokeObjectURL(anterior)
+    // Subidos en esta sesion: URL local del propio fichero; datos iniciales: copia en public/mock-originales
+    const url = archivo ? URL.createObjectURL(archivo)
+      : `${ORIGEN_FRONT()}/mock-originales/${encodeURIComponent(doc.referencia_archivo_original.nombre_archivo)}?firma=${siguiente(estado)}`
+    estado.urls.set(id, url)
     return HttpResponse.json({ url })
   })
 
@@ -275,7 +304,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const { folio, doc } = documentoOError(estado, params.id)
     exigirAbierto(folio)
     exigirAnalizado(doc)
-    const { tipo_documental: tipo } = await leerJson(request)
+    const { tipo_documental: tipo } = await leerJson(request, ['tipo_documental'])
     if (typeof tipo !== 'string' || !ficha(estado, tipo)) throw new FalloApi('PETICION_INVALIDA', `tipo_documental no valido: ${String(tipo)}`)
     const cls = doc.alertas_encontradas.filter((a) => a.codigo === 'CLS-001')
     auditar(estado, usuario.usuario, 'clasificacion_confirmada', folio.folio, doc.identificador_unico_documento, { tipo_documental: tipo })
@@ -310,7 +339,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (enProceso(doc)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'El documento aun se esta analizando')
     const alerta = doc.alertas_encontradas.find((a) => a.id === params.alerta_id)
     if (!alerta) throw new FalloApi('ALERTA_NO_ENCONTRADA', `No existe la alerta ${params.alerta_id} en el documento`)
-    resolverAlerta(estado, usuario, alerta, await leerJson(request))
+    resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
     auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, doc.identificador_unico_documento, { codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
     return HttpResponse.json(doc)
@@ -321,7 +350,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     exigirAbierto(folio)
     const alerta = folio.alertas_expediente.find((a) => a.id === params.alerta_id)
     if (!alerta) throw new FalloApi('ALERTA_NO_ENCONTRADA', `No existe la alerta ${params.alerta_id} en el expediente`)
-    resolverAlerta(estado, usuario, alerta, await leerJson(request))
+    resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
     auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, null, { codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
     return HttpResponse.json(folio)
@@ -330,7 +359,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
   ruta('POST', '/folios/{folio}/decision', ['revisor'], async ({ request, params, usuario }) => {
     const folio = folioOError(estado, params.folio)
     exigirAbierto(folio)
-    const cuerpo = await leerJson(request)
+    const cuerpo = await leerJson(request, ['decision', 'comentario'])
     if (!(DECISIONES_HUMANAS as readonly unknown[]).includes(cuerpo.decision)) {
       throw new FalloApi('PETICION_INVALIDA', '`decision` debe ser aprobar o rechazar')
     }
@@ -365,10 +394,17 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/tipos-documentales', TODOS, () => HttpResponse.json(estado.tipos))
 
+  // Desviacion conocida de endpoints.md ("lista"): paginada como la API real, pendiente del ADR-008
   ruta('GET', '/auditoria', ['admin'], ({ request }) => {
-    const folio = new URL(request.url).searchParams.get('folio')
-    return HttpResponse.json(estado.auditoria.filter((e) => !folio || e.folio === folio)
-      .sort((a, b) => b.creado_en.localeCompare(a.creado_en) || b.id - a.id))
+    const q = new URL(request.url).searchParams
+    const { pagina, tamano } = paginacion(q, 50)
+    const folio = q.get('folio')
+    const lista = estado.auditoria.filter((e) => !folio || e.folio === folio)
+      .sort((a, b) => b.creado_en.localeCompare(a.creado_en) || b.id - a.id)
+    const respuesta: PaginaAuditoria = {
+      elementos: lista.slice((pagina - 1) * tamano, pagina * tamano), total: lista.length, pagina, tamano_pagina: tamano,
+    }
+    return HttpResponse.json(respuesta)
   })
 
   // ---------------------------------------------------------------- resto de /api/v1: 404 o 405

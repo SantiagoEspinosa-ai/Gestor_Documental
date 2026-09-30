@@ -34,6 +34,7 @@ export interface EstadoMock {
   sesiones: Map<string, SesionMock>
   procesamientos: Map<string, Procesamiento>
   archivos: Map<string, Blob>
+  /** Ultima URL del original entregada por documento: se revoca al pedir otra */
   urls: Map<string, string>
   /** Resultado anterior al reprocesar por una clasificacion confirmada distinta (ADR-006 2.5) */
   versionesPrevias: Map<string, ResultadoDocumento[]>

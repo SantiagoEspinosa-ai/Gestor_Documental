@@ -2,7 +2,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { ROLES, type Alerta, type PaginaFolios, type ResultadoDocumento, type ResultadoExpediente } from '../tipos/contrato'
+import {
+  ROLES, type Alerta, type PaginaAuditoria, type PaginaFolios, type ResultadoDocumento, type ResultadoExpediente,
+} from '../tipos/contrato'
 import { crearEstado, type EstadoMock } from './estado'
 import { crearHandlers } from './handlers'
 import { MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
@@ -154,11 +156,36 @@ describe('consultas', () => {
     expect((await api('GET', '/folios/ONB-2026-000001/antecedentes', { token: revisor })).cuerpo).toEqual([])
     expect((await api<unknown[]>('GET', '/tipos-documentales', { token: revisor })).cuerpo).toHaveLength(3)
     const f4 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000004', { token: revisor })).cuerpo
-    const url = (await api<{ url: string }>('GET', `/documentos/${f4.documentos[0].identificador_unico_documento}/original`, { token: revisor })).cuerpo.url
-    expect(url).toBe('http://localhost:5173/mock-originales/pasaporte_sano_digital.pdf')
-    const auditoria = await api<{ folio: string; creado_en: string }[]>('GET', '/auditoria?folio=ONB-2026-000004', { token: await entrar('admin.demo') })
-    expect(auditoria.cuerpo.every((e) => e.folio === 'ONB-2026-000004')).toBe(true)
-    expect(auditoria.cuerpo.map((e) => e.creado_en)).toEqual([...auditoria.cuerpo.map((e) => e.creado_en)].sort().reverse())
+    const pedirUrl = async () => (await api<{ url: string }>('GET',
+      `/documentos/${f4.documentos[0].identificador_unico_documento}/original`, { token: revisor })).cuerpo.url
+    const url = await pedirUrl()
+    expect(url).toMatch(/^http:\/\/localhost:5173\/mock-originales\/pasaporte_sano_digital\.pdf\?firma=\d+$/)
+    expect(await pedirUrl()).not.toBe(url) // como la URL prefirmada: una nueva en cada peticion
+    const auditoria = await api<PaginaAuditoria>('GET', '/auditoria?folio=ONB-2026-000004', { token: await entrar('admin.demo') })
+    const entradas = auditoria.cuerpo.elementos
+    expect([auditoria.cuerpo.pagina, auditoria.cuerpo.tamano_pagina, auditoria.cuerpo.total]).toEqual([1, 50, entradas.length])
+    expect(entradas.every((e) => e.folio === 'ONB-2026-000004')).toBe(true)
+    expect(entradas.map((e) => e.creado_en)).toEqual([...entradas.map((e) => e.creado_en)].sort().reverse())
+  })
+
+  it('GET /auditoria paginada (desviacion conocida, pendiente del ADR-008)', async () => {
+    const token = await entrar('admin.demo')
+    const todas = (await api<PaginaAuditoria>('GET', '/auditoria?tamano_pagina=100', { token })).cuerpo
+    const p2 = (await api<PaginaAuditoria>('GET', '/auditoria?pagina=2&tamano_pagina=3', { token })).cuerpo
+    expect(p2.total).toBe(todas.total)
+    expect(p2.elementos.map((e) => e.id)).toEqual(todas.elementos.slice(3, 6).map((e) => e.id))
+    expect((await api('GET', '/auditoria?tamano_pagina=101', { token })).status).toBe(422)
+    expect((await api('GET', '/auditoria?pagina=0', { token })).cuerpo.codigo).toBe('PETICION_INVALIDA')
+  })
+
+  it('los cuerpos JSON con campos que sobran dan 422, como la API real', async () => {
+    const login = await api('POST', '/auth/login', { cuerpo: { usuario: 'revisor.demo', contrasena: 'demo-revisor', recordar: true } })
+    expect([login.status, login.cuerpo.codigo]).toEqual([422, 'PETICION_INVALIDA'])
+    const token = await entrar('revisor.demo')
+    const folio = await api('POST', '/folios', { token, cuerpo: { proceso: 'onboarding', solicitante: 'X' } })
+    expect([folio.status, folio.cuerpo.mensaje]).toEqual([422, 'Peticion no valida en: solicitante (extra_forbidden)'])
+    const decision = await api('POST', '/folios/ONB-2026-000001/decision', { token, cuerpo: { decision: 'rechazar', motivo: 'x' } })
+    expect(decision.status).toBe(422)
   })
 })
 
@@ -210,6 +237,35 @@ describe('subida de documentos', () => {
     expect([grande.status, grande.cuerpo.codigo]).toEqual([413, 'ARCHIVO_DEMASIADO_GRANDE'])
     const texto = await api('POST', '/folios/ONB-2026-000003/documentos', { token, formulario: subida('notas.txt', new Uint8Array([1]), 'pasaporte') })
     expect([texto.status, texto.cuerpo.codigo]).toEqual([415, 'FORMATO_NO_PERMITIDO'])
+  })
+
+  it('415 si el contenido no corresponde a la extension y 422 si el archivo esta vacio', async () => {
+    const token = await entrar('revisor.demo')
+    const subir = (nombre: string, datos: Uint8Array | Buffer) =>
+      api('POST', '/folios/ONB-2026-000003/documentos', { token, formulario: subida(nombre, datos) })
+    const jpgComoPdf = await subir('pasaporte_disfrazado.pdf', original('credencial_elector_vencido_foto.jpg'))
+    expect([jpgComoPdf.status, jpgComoPdf.cuerpo.mensaje]).toEqual([415, 'El contenido del archivo no corresponde a su extension'])
+    expect((await subir('corto.png', new Uint8Array([0x89, 0x50]))).status).toBe(415)
+    const vacio = await subir('vacio.pdf', new Uint8Array())
+    expect([vacio.status, vacio.cuerpo.codigo]).toEqual([422, 'PETICION_INVALIDA'])
+  })
+
+  it('auditoria de la subida sin nombre_archivo, como la API real', async () => {
+    const revisor = await entrar('revisor.demo')
+    const datos = original('credencial_elector_sano_digital.pdf')
+    await api('POST', '/folios/ONB-2026-000003/documentos', { token: revisor, formulario: subida('credencial_elector_sano_digital.pdf', datos) })
+    const [entrada] = (await api<PaginaAuditoria>('GET', '/auditoria?folio=ONB-2026-000003', { token: await entrar('admin.demo') })).cuerpo.elementos
+    expect(entrada.accion).toBe('documento_subido')
+    expect(entrada.detalle).toEqual({ hash_sha256: expect.stringMatching(/^[0-9a-f]{64}$/), tamano_bytes: datos.length, duplicado: true })
+  })
+
+  it('el anio del folio es el de la hora de Mexico, no el de UTC', async () => {
+    t = Date.UTC(2027, 0, 1, 3, 0, 0) // 31/12/2026 21:00 en Ciudad de Mexico
+    const token = await entrar('integrador.demo')
+    const creado = await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })
+    expect(creado.cuerpo.folio).toBe('ONB-2026-000005')
+    const auditoria = (await api<PaginaAuditoria>('GET', `/auditoria?folio=${creado.cuerpo.folio}`, { token: await entrar('admin.demo') })).cuerpo
+    expect(auditoria.elementos.map((e) => [e.accion, e.detalle])).toEqual([['folio_creado', {}]])
   })
 })
 

@@ -17,8 +17,11 @@ export class FalloApi extends Error {
   }
 }
 
-/** Cuerpo JSON de la peticion como objeto, o 422 PETICION_INVALIDA */
-export async function leerJson(request: Request): Promise<Record<string, unknown>> {
+/**
+ * Cuerpo JSON de la peticion como objeto, o 422 PETICION_INVALIDA.
+ * Con `permitidos`, un campo que sobra tambien es 422, como la API real (extra="forbid").
+ */
+export async function leerJson(request: Request, permitidos?: readonly string[]): Promise<Record<string, unknown>> {
   let cuerpo: unknown
   try {
     cuerpo = await request.json()
@@ -27,6 +30,10 @@ export async function leerJson(request: Request): Promise<Record<string, unknown
   }
   if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
     throw new FalloApi('PETICION_INVALIDA', 'El cuerpo debe ser un objeto JSON')
+  }
+  const sobrantes = permitidos ? Object.keys(cuerpo).filter((c) => !permitidos.includes(c)) : []
+  if (sobrantes.length) {
+    throw new FalloApi('PETICION_INVALIDA', `Peticion no valida en: ${sobrantes.map((c) => `${c} (extra_forbidden)`).join(', ')}`)
   }
   return cuerpo as Record<string, unknown>
 }

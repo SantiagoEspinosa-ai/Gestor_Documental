@@ -301,3 +301,15 @@ export interface EntradaAuditoria {
   version_prompt: string | null
   creado_en: FechaIso
 }
+
+/**
+ * GET /auditoria?folio=&pagina=1&tamano_pagina=50 (tamano_pagina 1-100), del mas reciente al mas antiguo.
+ * Desviacion conocida: endpoints.md y ADR-006 1.5 dicen "lista de EntradaAuditoria", pero la API real
+ * (PERSONA_1) ya la devuelve paginada, con la forma de PaginaFolios. Pendiente del ADR-008.
+ */
+export interface PaginaAuditoria {
+  elementos: EntradaAuditoria[]
+  total: number
+  pagina: number
+  tamano_pagina: number
+}

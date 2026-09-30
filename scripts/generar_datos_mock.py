@@ -82,6 +82,7 @@ class DatosMock:
         self.fichas = gf.cargar_fichas()
         self.contador_alertas = 0
         self.auditoria: list[dict] = []
+        self.hashes_por_folio: dict[str, set[str]] = {}  # para `duplicado` en la auditoria de la subida
 
     def alerta(self, codigo, mensaje, severidad, campo=None, confianza=1.0) -> dict:
         self.contador_alertas += 1
@@ -101,6 +102,11 @@ class DatosMock:
         shutil.copyfile(self.fixtures / archivo, self.originales / archivo)
         uid = f"00000000-0000-4000-8000-{secuencia:06d}{n:06d}"
         ext = archivo.rsplit(".", 1)[1]
+        datos = (self.fixtures / archivo).read_bytes()
+        hash_ = hashlib.sha256(datos).hexdigest()
+        vistos = self.hashes_por_folio.setdefault(folio, set())
+        duplicado = hash_ in vistos
+        vistos.add(hash_)
         doc = {"folio_solicitud": folio, "identificador_unico_documento": uid,
                "tipo_documental_declarado": tipo, "tipo_documental_detectado": None,
                "tipo_documental_confirmado": None, "confianza_clasificacion": None,
@@ -110,8 +116,10 @@ class DatosMock:
                "estado_analisis": estado, "fecha_y_modelo_utilizado": None,
                "referencia_archivo_original": {
                    "nombre_archivo": archivo, "ruta": f"onboarding/2026/{secuencia:06d}/{uid}.{ext}",
-                   "hash": hashlib.sha256((self.fixtures / archivo).read_bytes()).hexdigest()}}
-        self.auditar(INTEGRADOR, "documento_subido", folio, uid, {"nombre_archivo": archivo, "tipo_declarado": tipo}, subido)
+                   "hash": hash_}}
+        # Mismo detalle que la API real: sin nombre_archivo (los nombres de fichero suelen llevar el de la persona)
+        self.auditar(INTEGRADOR, "documento_subido", folio, uid,
+                     {"hash_sha256": hash_, "tamano_bytes": len(datos), "duplicado": duplicado}, subido)
         if estado != "completado":
             if estado == "error":
                 self.auditar(None, "documento_procesado", folio, uid, {"estado_analisis": "error"},
@@ -186,7 +194,7 @@ class DatosMock:
         folios = []
         # 1. Luis, pasaporte vencido: alertas de las 4 severidades (bloqueante, critica, preventiva, informativa)
         f, s, t0 = "ONB-2026-000001", 1, momento(28, 9, 15)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {"proceso": "onboarding"}, t0)
+        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1),
                             alertas_extra=[self.alerta("VAL-003", "Valor de nacionalidad tomado de la MRZ: no se leyo "
                                                        "en la zona visual", "informativa", "nacionalidad")])
@@ -202,7 +210,7 @@ class DatosMock:
 
         # 2. Ana, domicilio distinto: CMP-001 en alertas_expediente, una correccion y un documento pendiente
         f, s, t0 = "ONB-2026-000002", 2, momento(29, 11, 40)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {"proceso": "onboarding"}, t0)
+        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "domicilio_distinto", "credencial_elector", "escaneado", t0 + timedelta(minutes=1),
                             correcciones=[("nombre_completo", "ANA EJEMPL0 PRUEBA", t0 + timedelta(minutes=25))])
         d2 = self.documento(f, s, 2, "domicilio_distinto", "comprobante_domicilio", "foto", t0 + timedelta(minutes=2))
@@ -214,7 +222,7 @@ class DatosMock:
 
         # 3. Ana, falta el comprobante: EXP-001 (campo = tipo que falta) y un documento en error (SYS-001)
         f, s, t0 = "ONB-2026-000003", 3, momento(30, 8, 5)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {"proceso": "onboarding"}, t0)
+        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1))
         d2 = self.documento(f, s, 2, "sano", "pasaporte", "foto", t0 + timedelta(minutes=2), estado="error",
                             alertas_extra=[self.alerta("SYS-001", "Fallo del proveedor principal y sin respaldo", "critica")])
@@ -224,7 +232,7 @@ class DatosMock:
 
         # 4. Ana, todo correcto: folio cerrado (aprobado) con resumen
         f, s, t0 = "ONB-2026-000004", 4, momento(25, 10, 0)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {"proceso": "onboarding"}, t0)
+        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         docs = [self.documento(f, s, i + 1, "sano", tipo, "digital", t0 + timedelta(minutes=i + 1))
                 for i, tipo in enumerate(("pasaporte", "credencial_elector", "comprobante_domicilio"))]
         folios.append(self.expediente(f, "CLI-000104", t0, docs,
