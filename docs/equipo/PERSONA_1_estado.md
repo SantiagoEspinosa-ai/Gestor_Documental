@@ -1,6 +1,7 @@
 # PERSONA_1 - Estado y siguientes pasos (traspaso)
 
-Actualizado: 2026-09-30, al cerrar la etapa 1 en `feat/plataforma`. Sirve para retomar el trabajo en
+Actualizado: 2026-09-30. Etapa 1 CERRADA: el PR #3 (`feat/plataforma` -> `main`) se aprobo y fusiono
+el 2026-09-30. Siguiente: la etapa 2. Sirve para retomar el trabajo en
 otra maquina o en otro chat de Claude Code. La especificacion completa sigue en
 `docs/equipo/PERSONA_1_plataforma.md`; este fichero dice en que punto estamos y que toca ahora.
 
@@ -58,7 +59,7 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ## Pendiente
 ### Cierre de la etapa 1
-- [ ] PR #3 de `feat/plataforma` a `main` (abierto; se revisa y fusiona el dia 5).
+- [x] PR #3 de `feat/plataforma` a `main`: aprobado y fusionado el 2026-09-30.
 - [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
       lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
@@ -66,6 +67,8 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
 - Conectar el pipeline real (sustituye a `ingesta/procesamiento_stub.py`) y guardar `resultados`.
+- Acordar con PERSONA_2 que todas las alertas del motor se guarden en la tabla `alertas` (fuente
+  unica en las respuestas).
 - `EXP-001`: recalculo al procesar o confirmar la clasificacion (la creacion inicial va al crear el folio).
 - `modulos/validacion/comparaciones.py`: `ComparacionCampo` y `CMP-001` solo en `alertas_expediente`.
 - Recomendacion global.
