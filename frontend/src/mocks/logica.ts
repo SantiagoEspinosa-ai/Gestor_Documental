@@ -146,7 +146,7 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
     if (valor === null && def.obligatorio) {
       alertas.push(nuevaAlerta(estado, 'VAL-001', `Falta el campo obligatorio ${campo}`, 'critica', campo))
     } else if (valor === null) {
-      alertas.push(nuevaAlerta(estado, 'VAL-003', `Falta el campo opcional ${campo}`, 'informativa', campo))
+      alertas.push(nuevaAlerta(estado, 'VAL-004', `Falta el campo opcional ${campo}`, 'informativa', campo))
     } else if (valor !== null && doc.nivel_confianza_por_campo[campo] < fichaExtraccion.confianza_minima_campo) {
       alertas.push(nuevaAlerta(estado, 'VAL-002', `Confianza de ${campo} por debajo del minimo de la ficha`, 'preventiva',
         campo, doc.nivel_confianza_por_campo[campo]))

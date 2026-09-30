@@ -24,9 +24,8 @@ describe('datos de los mocks', () => {
     for (const a of alertas) expect(SEVERIDADES).toContain(a.severidad)
   })
 
-  it('los codigos de alerta son oficiales o pendientes de main (MOCK-001 solo para la informativa de ejemplo)', () => {
-    // MOCK-001 se sustituye por VAL-003 o EXP-002 cuando entren en el catalogo de main
+  it('los codigos de alerta son oficiales o pendientes de main', () => {
     const noOficiales = alertas.filter((a) => !esCodigoAlertaPermitido(a.codigo))
-    expect(noOficiales.map((a) => [a.codigo, a.severidad])).toEqual([['MOCK-001', 'informativa']])
+    expect(noOficiales.map((a) => [a.codigo, a.severidad])).toEqual([])
   })
 })

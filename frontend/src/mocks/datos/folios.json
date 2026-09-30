@@ -51,7 +51,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000001",
+            "id": "alr-000002",
             "codigo": "REG-vigencia_documento",
             "mensaje": "El pasaporte esta vencido",
             "severidad": "bloqueante",
@@ -64,12 +64,25 @@
             "resuelta_en": null
           },
           {
-            "id": "alr-000002",
+            "id": "alr-000003",
             "codigo": "REG-vigencia_proxima",
             "mensaje": "El pasaporte vence en menos de 90 dias",
             "severidad": "preventiva",
             "confianza": 1.0,
             "campo": "fecha_vencimiento",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          },
+          {
+            "id": "alr-000001",
+            "codigo": "VAL-003",
+            "mensaje": "Valor de nacionalidad tomado de la MRZ: no se leyo en la zona visual",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "nacionalidad",
             "resuelta_por_revisor": false,
             "aplica": null,
             "comentario_revisor": null,
@@ -132,7 +145,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000003",
+            "id": "alr-000004",
             "codigo": "VAL-002",
             "mensaje": "Confianza de clave_elector (0.62) por debajo del minimo de la ficha (0.80)",
             "severidad": "preventiva",
@@ -240,7 +253,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000004",
+            "id": "alr-000005",
             "codigo": "DUP-001",
             "mensaje": "Mismo SHA-256 que el documento 00000000-0000-4000-8000-000001000003 del folio",
             "severidad": "critica",
@@ -296,21 +309,7 @@
         }
       }
     ],
-    "alertas_expediente": [
-      {
-        "id": "alr-000005",
-        "codigo": "MOCK-001",
-        "mensaje": "Alerta informativa de ejemplo solo en los mocks: el catalogo aun no tiene ningun codigo con severidad informativa",
-        "severidad": "informativa",
-        "confianza": 1.0,
-        "campo": null,
-        "resuelta_por_revisor": false,
-        "aplica": null,
-        "comentario_revisor": null,
-        "resuelta_por": null,
-        "resuelta_en": null
-      }
-    ],
+    "alertas_expediente": [],
     "recomendacion_global": "revision_manual",
     "decision_humana": null,
     "comentario_decision": null,

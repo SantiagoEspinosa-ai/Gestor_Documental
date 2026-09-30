@@ -297,8 +297,8 @@ describe('acciones del revisor', () => {
     t += MS_HASTA_COMPLETADO
     expect(await faltan()).toEqual(['comprobante_domicilio'])
     const doc = (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
-    // Extraida con la ficha del declarado: faltan obligatorios (VAL-001) y el opcional proveedor (VAL-003)
-    expect(doc.alertas_encontradas.filter((a) => a.codigo === 'VAL-003').map((a) => [a.campo, a.severidad])).toEqual([['proveedor', 'informativa']])
+    // Extraida con la ficha del declarado: faltan obligatorios (VAL-001) y el opcional proveedor (VAL-004)
+    expect(doc.alertas_encontradas.filter((a) => a.codigo === 'VAL-004').map((a) => [a.campo, a.severidad])).toEqual([['proveedor', 'informativa']])
     // El revisor confirma el tipo declarado: ahora cuenta el confirmado
     await api('POST', `/documentos/${id}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: 'comprobante_domicilio' } })
     expect(await faltan()).toEqual(['credencial_elector'])

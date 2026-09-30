@@ -202,8 +202,6 @@ def test_codigos_y_severidades_de_las_alertas_de_los_mocks():
             if a["codigo"].startswith("REG-"):
                 regla = next(r for r in fichas[tipo]["reglas"] if f"REG-{r['id']}" == a["codigo"])
                 assert a["severidad"] == regla["severidad"]
-            elif a["codigo"].startswith("MOCK-"):  # solo mocks: no hay codigo informativo en el catalogo
-                assert a["severidad"] == "informativa"
             else:
                 assert catalogo[a["codigo"]] == a["severidad"], a["codigo"]
 

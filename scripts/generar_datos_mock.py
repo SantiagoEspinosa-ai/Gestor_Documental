@@ -17,8 +17,8 @@ procesos y tipos_documentales se copian de config/.
 
 Los 4 folios cubren: alertas de las 4 severidades (una bloqueante), CMP-001 de domicilio en
 alertas_expediente, EXP-001 (campo = tipo que falta), una correccion, un documento en error
-(SYS-001), uno pendiente y un folio cerrado (aprobado). MOCK-001 es la informativa de ejemplo hasta
-que VAL-003 o EXP-002 entren en el catalogo de main.
+(SYS-001), uno pendiente y un folio cerrado (aprobado). La informativa es VAL-003 (valor tomado de
+la MRZ) en el pasaporte del folio 1.
 
 Es determinista: sin azar ni fecha actual. backend/tests/test_generar_datos_mock.py comprueba que
 reproduce exactamente los ficheros del repo, y test_contrato_frontend.py que son validos.
@@ -187,7 +187,9 @@ class DatosMock:
         # 1. Luis, pasaporte vencido: alertas de las 4 severidades (bloqueante, critica, preventiva, informativa)
         f, s, t0 = "ONB-2026-000001", 1, momento(28, 9, 15)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {"proceso": "onboarding"}, t0)
-        d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1))
+        d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1),
+                            alertas_extra=[self.alerta("VAL-003", "Valor de nacionalidad tomado de la MRZ: no se leyo "
+                                                       "en la zona visual", "informativa", "nacionalidad")])
         d2 = self.documento(f, s, 2, "vencido", "credencial_elector", "foto", t0 + timedelta(minutes=2),
                             confianzas={"clave_elector": 0.62},
                             alertas_extra=[self.alerta("VAL-002", "Confianza de clave_elector (0.62) por debajo del "
@@ -196,9 +198,7 @@ class DatosMock:
         d4 = self.documento(f, s, 4, "vencido", "comprobante_domicilio", "digital", t0 + timedelta(minutes=4),
                             alertas_extra=[self.alerta("DUP-001", f"Mismo SHA-256 que el documento "
                                                        f"{d3['identificador_unico_documento']} del folio", "critica")])
-        folios.append(self.expediente(f, "CLI-000101", t0, [d1, d2, d3, d4], [
-            self.alerta("MOCK-001", "Alerta informativa de ejemplo solo en los mocks: el catalogo aun no tiene ningun "
-                                    "codigo con severidad informativa", "informativa")]))
+        folios.append(self.expediente(f, "CLI-000101", t0, [d1, d2, d3, d4]))
 
         # 2. Ana, domicilio distinto: CMP-001 en alertas_expediente, una correccion y un documento pendiente
         f, s, t0 = "ONB-2026-000002", 2, momento(29, 11, 40)

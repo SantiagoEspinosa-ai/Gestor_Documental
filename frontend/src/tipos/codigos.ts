@@ -18,6 +18,7 @@ export const ESTADO_HTTP_POR_ERROR = {
   DECISION_BLOQUEADA: 409,
   DOCUMENTO_EN_PROCESO: 409,
   FOLIO_CERRADO: 409,
+  SECUENCIA_AGOTADA: 409,
   ARCHIVO_DEMASIADO_GRANDE: 413,
   FORMATO_NO_PERMITIDO: 415,
   PETICION_INVALIDA: 422,
@@ -34,10 +35,10 @@ export const ESTADO_HTTP_POR_ERROR = {
 export const CODIGOS_PENDIENTES_DE_MAIN = {
   errores: {
     DOCUMENTO_CON_ERROR: 409, // corregir datos o confirmar la clasificacion de un documento en error
-    SECUENCIA_AGOTADA: 409, // POST /folios sin numeros libres en el proceso y el anio (PERSONA_1)
   },
   alertas: {
-    'VAL-003': { emisor: 'validacion', severidad: 'informativa', cuando: 'Falta un campo opcional (documento)' },
+    // Propuesta de PERSONA_1 (antes VAL-003, que main usa para la MRZ); falta que PERSONA_2 confirme que la emite
+    'VAL-004': { emisor: 'validacion', severidad: 'informativa', cuando: 'Falta un campo opcional (documento)' },
     'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Tipo no pedido por el proceso (alertas_expediente)' },
   },
 } as const satisfies {
@@ -61,11 +62,14 @@ export const ALERTAS = {
   'CLS-002': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Confianza de clasificacion bajo el minimo de la ficha' },
   'VAL-001': { emisor: 'validacion', severidad: 'critica', cuando: 'Campo obligatorio ausente o null' },
   'VAL-002': { emisor: 'validacion', severidad: 'preventiva', cuando: 'Confianza del campo bajo el minimo de la ficha' },
+  'VAL-003': { emisor: 'orquestador', severidad: 'informativa', cuando: 'Valor del campo tomado de la MRZ (no se leyo en la zona visual)' },
   'DUP-001': { emisor: 'ingesta', severidad: 'critica', cuando: 'Mismo SHA-256 ya presente en el folio (no bloquea la subida)' },
   'CMP-001': { emisor: 'validacion', severidad: 'critica', cuando: 'Un campo comparado no coincide entre documentos (va en alertas_expediente)' },
   'EXP-001': { emisor: 'expediente', severidad: 'bloqueante', cuando: 'Falta un tipo requerido del proceso (va en alertas_expediente)' },
   'SYS-001': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Fallo del proveedor principal y sin respaldo; estado_analisis=error' },
   'SYS-002': { emisor: 'motor_ia', severidad: 'critica', cuando: 'JSON del modelo invalido tras el reintento de correccion' },
+  'SYS-003': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Texto recortado por MAX_CARACTERES_TEXTO; pueden faltar campos de las paginas finales' },
+  'SYS-005': { emisor: 'motor_ia', severidad: 'informativa', cuando: 'Fallo el proveedor principal y se uso el de respaldo' },
   'VIS-001': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Baja legibilidad o resolucion (extra 2)' },
   'VIS-002': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Pagina incompleta o recortada (extra 2)' },
   'VIS-003': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Alteracion o anomalia visible (extra 2)' },
