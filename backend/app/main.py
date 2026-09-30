@@ -5,8 +5,9 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
-from app.core.errores import ErrorApi, manejar_error_api
+from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
+from app.modulos.api import auth
 
 
 @asynccontextmanager
@@ -25,7 +26,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Gestor Documental Inteligente", version="0.1.0", lifespan=lifespan)
-app.add_exception_handler(ErrorApi, manejar_error_api)
+registrar_manejadores(app)
+app.include_router(auth.router)
 
 
 @app.get("/salud")
@@ -33,4 +35,4 @@ def salud() -> dict:
     return {"estado": "ok"}
 
 
-# TODO PERSONA_1: incluir routers de app/modulos/api (auth, folios, documentos, procesos, webhooks)
+# TODO PERSONA_1: incluir routers de app/modulos/api (folios, documentos, procesos, webhooks)

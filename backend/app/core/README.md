@@ -7,7 +7,8 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `db.py`: `Base` de SQLAlchemy 2, `get_engine()` perezoso y dependencia `get_sesion()` de FastAPI.
 - `modelos.py`: tablas de la plataforma. Migraciones en `backend/alembic/` (`alembic upgrade head`).
 - `procesos.py`: valida `config/procesos.yaml` (`leer_procesos`) y lo vuelca a la tabla `procesos` al arrancar (`sincronizar_procesos`, upsert sin borrar).
-- `errores.py`: `ErrorApi(http, codigo, mensaje)` y su manejador, que responde `{codigo, mensaje}` (ADR-006 1.4).
+- `errores.py`: `ErrorApi(http, codigo, mensaje, headers)` y manejadores globales (`registrar_manejadores`): todo error sale como `{codigo, mensaje}` (ADR-006 1.4); 422 sin valores de campo, 500 sin detalles internos.
+- `auditoria.py`: `registrar(sesion, accion, ...)` valida la accion contra `ACCIONES_AUDITORIA` y hace `add` sin commit.
 - `seguridad.py`: hash bcrypt, `crear_token` JWT y dependencias `usuario_actual` y `requiere_rol(*roles)`. Usuarios con `scripts/crear_usuario.py`.
 
 ## Tablas
@@ -19,3 +20,6 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha).
 - `correcciones`: cambios del revisor sobre `datos_extraidos` (valor anterior y nuevo).
 - `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`), sin FK para no bloquear borrados.
+
+## Pendientes
+- Codigos de error `RUTA_NO_ENCONTRADA` (404) y `METODO_NO_PERMITIDO` (405): pendientes de anadir a `docs/contratos/codigos_error.md` (PERSONA_3).

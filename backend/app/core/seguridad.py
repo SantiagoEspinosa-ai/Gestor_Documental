@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.db import get_sesion
-from app.core.errores import ErrorApi
+from app.core.errores import CABECERA_BEARER, ErrorApi
 from app.core.modelos import ROLES, Usuario
 
 # bcrypt solo usa los primeros 72 bytes: por encima se rechaza en vez de truncar en silencio
@@ -45,7 +45,7 @@ def crear_token(usuario: str, rol: str) -> tuple[str, int]:
 
 
 def _no_autenticado() -> ErrorApi:
-    return ErrorApi(401, "NO_AUTENTICADO", "Falta el token de acceso o no es valido")
+    return ErrorApi(401, "NO_AUTENTICADO", "Falta el token de acceso o no es valido", CABECERA_BEARER)
 
 
 def usuario_actual(
@@ -60,7 +60,8 @@ def usuario_actual(
         claims = jwt.decode(credenciales.credentials, settings.secret_key.get_secret_value(),
                             algorithms=[settings.jwt_algoritmo])
     except ExpiredSignatureError:
-        raise ErrorApi(401, "TOKEN_CADUCADO", "La sesion ha caducado; vuelve a iniciar sesion") from None
+        raise ErrorApi(401, "TOKEN_CADUCADO", "La sesion ha caducado; vuelve a iniciar sesion",
+                       CABECERA_BEARER) from None
     except JWTError:
         raise _no_autenticado() from None
 
