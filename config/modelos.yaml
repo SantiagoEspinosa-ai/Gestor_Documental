@@ -8,26 +8,30 @@ proveedores:
     modelo_texto_env: OLLAMA_MODELO_TEXTO
     soporta_vision: true
     privado: true        # los datos no salen de la infraestructura
-  # comercial:           # [A ACORDAR] descomentar al decidir proveedor
-  #   tipo: gemini|bedrock|anthropic|openai
-  #   api_key_env: PROVEEDOR_COMERCIAL_API_KEY
-  #   modelo: ...
-  #   soporta_vision: true
-  #   privado: false
+  comercial:             # OpenRouter (ADR-003), solo como respaldo
+    tipo: openrouter     # API compatible con OpenAI
+    base_url_env: PROVEEDOR_COMERCIAL_BASE_URL
+    api_key_env: PROVEEDOR_COMERCIAL_API_KEY
+    modelo_env: PROVEEDOR_COMERCIAL_MODELO
+    soporta_vision: true
+    privado: false
+    privacidad:          # se envia en cada llamada a OpenRouter
+      data_collection: deny
+      zdr: true
 
 # Asignacion por tarea. `por_tipo` permite excepciones por tipo documental.
 tareas:
   clasificacion:
     principal: ollama
-    respaldo: null
+    respaldo: comercial
   extraccion:
     principal: ollama
-    respaldo: null
+    respaldo: comercial
     por_tipo:
       # pasaporte: comercial   # ejemplo: documentos con MRZ al modelo comercial
   validacion:
     principal: ollama
-    respaldo: null
+    respaldo: comercial
 
 # Criterios documentados para elegir modelo (diapositiva 11)
 criterios:

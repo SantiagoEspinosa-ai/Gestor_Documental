@@ -15,7 +15,7 @@ Para anadirlo al proyecto de Claude: pegar este fichero en las instrucciones del
 | Originales | Amazon S3 real (boto3), bucket privado + usuario IAM con permisos minimos, creado y administrado por PERSONA_1. Sin MinIO. Tests con `moto` | Requisito "S3 o equivalente"; decidido el 2026-09-30 |
 | OCR | Tesseract tras interfaz `OCRProvider` | Gratis; cambiar a Textract = una clase |
 | Modelo local | Ollama (`llama3.2-vision:11b` o `qwen2.5vl:7b`) | Privacidad, sin coste |
-| Modelo comercial | **PENDIENTE [A ACORDAR] - ADR-003**. La suscripcion de empresa a Claude no incluye API key. Opciones: activar Console de Anthropic, Gemini AI Studio (gratis), Amazon Bedrock | Se decide fuera del equipo |
+| Modelo comercial | **OpenRouter (ADR-003, aceptado 2026-09-30)** como respaldo de Ollama en todas las tareas; `data_collection: deny` + retencion cero; modelos `:free` solo con fixtures ficticios | Sin API key de Anthropic; una clave da acceso a varios modelos; los datos se procesan con Ollama |
 | Tipos documentales | Credencial de elector, pasaporte, comprobante de domicilio (caso onboarding) | Permite comparar nombre, fecha de nacimiento y domicilio entre documentos |
 | Configuracion de tipos | Ficheros YAML en `config/tipos/` cargados al arrancar | Mas rapido; pantalla de admin es extra 3 |
 | Procesamiento | `BackgroundTasks` de FastAPI; estados `pendiente -> procesando -> completado | error` | Sin Redis ni workers en MVP |
@@ -88,7 +88,7 @@ necesite por canal seguro (nunca por el repo ni por chats con IA).
 |---|---|---|
 | Resumen `.md` con Jinja, regeneracion, S3, `GET /resumen.md` | Base de conocimiento: `docs/conocimiento/*.md` -> chunks -> embeddings pgvector -> `contexto_rag` | Memoria de folios: indexar cada `.md`, `buscar_antecedentes` con permisos y caducidad, endpoint y pantalla |
 | Webhooks HMAC, reintentos, eventos del contrato | Extra 2: `extraccion_v2.md` con observaciones visuales -> alertas `VIS-xxx` | Extra 1 (UI): enmascaramiento parcial con "mostrar" auditado |
-| Extra 1 (backend): enmascaramiento en logs y prompts; tabla `correcciones` | Proveedor comercial cuando se cierre ADR-003 | Pantalla de configuracion de procesos |
+| Extra 1 (backend): enmascaramiento en logs y prompts; tabla `correcciones` | Proveedor OpenRouter como respaldo (ADR-003) | Pantalla de configuracion de procesos |
 | Auditoria completa y `GET /auditoria` | | Extra 3 y 4 solo si el dia 11 todo sigue verde |
 
 ### Etapa 4 - Dias 13-14: cierre
@@ -101,14 +101,15 @@ exponer por API y webhook + antecedentes), ADRs pendientes, revision de que no h
 2. Tesseract falla con fotos de movil -> el enrutador envia imagenes al modelo de vision, no solo a OCR.
 3. Cambios al Contrato 1 a mitad de proyecto rompen a los tres -> ADR de una linea + aviso.
 4. Auth completa consume 1,5-2 dias de PERSONA_1 -> si se atasca, API key temporal y JWT al final de la etapa 1.
-5. Proveedor comercial sin decidir -> todo funciona con Ollama; anadirlo es una clase + un bloque YAML.
+5. OpenRouter sin saldo o caido -> todo funciona con Ollama; es solo respaldo.
 
 ## 6. Definicion de hecho
 Funciona de extremo a extremo, tiene test, esta documentado (README del modulo) y no expone secretos
 ni datos reales.
 
 ## 7. Pendientes [A ACORDAR]
-- Proveedor comercial de IA (ADR-003).
+- ~~Proveedor comercial de IA (ADR-003).~~ Cerrado 2026-09-30: OpenRouter como respaldo de Ollama.
+  Pendiente solo: quien abre la cuenta de OpenRouter y carga el saldo.
 - Maquina para Ollama.
 - ~~Quien administra la cuenta AWS y crea el bucket + usuario IAM con permisos minimos.~~
   Cerrado 2026-09-30: PERSONA_1 (duena de S3 en `core`). Si la cuenta AWS es de la empresa,

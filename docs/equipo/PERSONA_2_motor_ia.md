@@ -36,8 +36,12 @@ evidencia por campo, usando Ollama.
    a `ResultadoClasificacion` / `ResultadoExtraccion` con Pydantic; si el JSON es invalido, un reintento
    con instruccion de correccion.
 7. `modulos/motor_ia/proveedores/base.py`: utilidades comunes (limpiar fences ```json, truncar
-   texto largo por paginas, timeout, registro del modelo usado). Deja `proveedores/comercial.py`
-   como esqueleto con `NotImplementedError` y comentario `[A ACORDAR ADR-003]`.
+   texto largo por paginas, timeout, registro del modelo usado).
+   `proveedores/openrouter.py`: `OpenRouterProvider(ProveedorLLM)` con httpx contra
+   `{PROVEEDOR_COMERCIAL_BASE_URL}/chat/completions` (API compatible con OpenAI), imagenes en
+   base64, `response_format` JSON, mismo parseo estricto que Ollama. En cada llamada envia
+   `provider: {data_collection: "deny", zdr: true}` (bloque `privacidad` de `modelos.yaml`).
+   Modelo y clave desde las variables de entorno del YAML (ADR-003). Es solo respaldo.
 8. `modulos/motor_ia/enrutador.py`: implementa `Enrutador` leyendo `config/modelos.yaml`
    (principal, respaldo, por_tipo). Sin claves en codigo: lee los nombres de variables de entorno
    indicados en el YAML.
@@ -67,7 +71,7 @@ evidencia por campo, usando Ollama.
   en pgvector; `rag.buscar(consulta, k)` -> fragmentos que el servicio inyecta en `contexto_rag`.
 - Extra: `prompts/extraccion_v2.md` pidiendo `observaciones_visuales` (legibilidad, paginas
   recortadas, alteraciones) y convertirlas en alertas `VIS-xxx`.
-- Anadir el proveedor comercial cuando se cierre ADR-003.
+- Probar el respaldo OpenRouter con los fixtures (modelos `:free` solo con datos ficticios).
 
 ## Como trabajar
 - Prompts solo en `prompts/`, versionados; el codigo nunca contiene prompts largos.
