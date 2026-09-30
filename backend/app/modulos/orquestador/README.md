@@ -1,7 +1,36 @@
 # orquestador  (responsable: PERSONA_2)
 
-Prepara cada documento para el motor de IA. Configuracion vigente:
+Prepara cada documento para el motor de IA. Los demas modulos solo importan `servicio.py`
+(`preparar`, `detectar`, `FormatoNoSoportado`). Configuracion vigente:
 [docs/motor_ia/SPEC_CONFIGURACION.md](../../../../docs/motor_ia/SPEC_CONFIGURACION.md).
+
+## `preparador.py`
+Entrada: `preparar(contenido: bytes, nombre: str, tipo_declarado=None, *, identificador=None, ocr=None)`.
+Salida: `DocumentoPreparado` (Contrato 3), con las paginas en orden y numeradas desde 1.
+
+| Modalidad | Texto de cada pagina | Imagen de cada pagina |
+|---|---|---|
+| `pdf_digital` | capa de texto (PyMuPDF) | PNG a 150 dpi |
+| `pdf_escaneado` | capa de texto si supera el umbral (PDF mixto); si no, OCR | PNG a 200 dpi |
+| `imagen` | OCR | la propia imagen, orientada segun EXIF, en PNG |
+
+- `identificador`: si no se pasa, un UUID4 (CLI). `ocr`: por defecto `TesseractOCR()`; los tests
+  inyectan uno falso.
+- Sin Tesseract (p. ej. Windows fuera de Docker): las paginas que necesitaban OCR quedan con
+  `texto=None` y se avisa una vez en el log, sin el nombre del archivo. La vision sigue funcionando.
+- Imagen corrupta: `FormatoNoSoportado`. Sin limite de paginas (el proveedor trabaja por lotes).
+
+## `ocr.py`
+`OCRProvider` (Protocol): `extraer_texto(imagen: bytes) -> str`. `TesseractOCR`: idiomas de
+`TESSERACT_LANG` (por defecto `spa+eng`), preprocesado escala de grises + autocontraste, sin
+enderezado. `ErrorOCR` si Tesseract no esta instalado o no puede leer la imagen. Unico sitio con
+`pytesseract` (ADR-005).
+
+## `mrz.py`
+MRZ del pasaporte (TD3, dos lineas de 44 caracteres), funciones puras sobre el texto:
+`buscar_mrz(texto) -> Mrz | None` (tolera espacios), `Mrz.sexo` (posicion 21 de la linea 2),
+`validar_digitos(mrz)` (5 digitos de control, pesos 7-3-1). Se conecta en `motor_ia/servicio.py`
+(tarea 9).
 
 ## `modalidad.py`
 Entrada: `detectar(contenido: bytes, nombre: str)`.
@@ -14,12 +43,9 @@ Salida: `Modalidad` (Contrato 3): `pdf_digital` | `pdf_escaneado` | `imagen`.
   `pdf_escaneado`.
 - PNG y JPEG: `imagen`.
 - Formato desconocido, archivo vacio, PDF corrupto, cifrado o sin paginas: `FormatoNoSoportado`.
-- `caracteres_por_pagina(contenido)` devuelve el recuento por pagina; lo reutilizara el preparador.
+- `caracteres_por_pagina(contenido)` devuelve el recuento por pagina.
 
 Validar la extension contra `formatos_permitidos` de la ficha es tarea de `ingesta` (PERSONA_1).
 
-## Pendiente
-- `ocr.py`: `OCRProvider` + `TesseractOCR` (tarea 3).
-- `preparador.py` y `servicio.py`: `preparar(bytes, nombre, tipo_declarado) -> DocumentoPreparado` (tarea 4).
-
-Tests: `backend/tests/test_modalidad.py`.
+Tests: `test_modalidad.py`, `test_ocr.py`, `test_mrz.py`, `test_preparador.py` y, con los fixtures
+montados, `test_fixtures_ocr.py`.

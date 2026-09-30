@@ -75,8 +75,8 @@ implementar el enrutador (tarea 8).
 | Modalidad | Que prepara el orquestador | Modelo | Que se envia al modelo |
 |---|---|---|---|
 | `pdf_digital` | Texto por pagina (PyMuPDF) + PNG a 150 dpi | texto: `gemma4:e2b` | Solo el texto, en `{{ contenido }}`. Los PNG no se envian |
-| `pdf_escaneado` | PNG a 200 dpi + OCR | vision: `qwen2.5vl:3b` | Imagenes reducidas a 1000 px de ancho + texto OCR en `{{ contenido }}` (ver pendiente OCR frente a vision) |
-| `imagen` | La propia imagen + OCR | vision: `qwen2.5vl:3b` | Igual que `pdf_escaneado` |
+| `pdf_escaneado` | PNG a 200 dpi; por pagina, capa de texto si supera el umbral (PDF mixto) y OCR si no | vision: `qwen2.5vl:3b` | Imagenes reducidas a 1000 px de ancho + texto OCR en `{{ contenido }}` (ver pendiente OCR frente a vision) |
+| `imagen` | La propia imagen, orientada segun EXIF y en PNG, + OCR | vision: `qwen2.5vl:3b` | Igual que `pdf_escaneado` |
 
 Respaldo: si el proveedor principal falla, se usa el `respaldo` de `modelos.yaml` (OpenRouter
 gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estado_analisis=error` +
@@ -138,6 +138,10 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Modalidad: umbral | `UMBRAL_CARACTERES_POR_PAGINA = 30` caracteres de texto extraible por pagina, sin contar espacios; el umbral exacto cuenta como texto | plan de `modalidad.py` | implementado (`orquestador/modalidad.py`) |
 | Modalidad: PDF mixto | Si alguna pagina no llega al umbral, el PDF es `pdf_escaneado` (confirmado por PERSONA_2) | plan de `modalidad.py` | implementado |
 | Modalidad: deteccion | Por los primeros bytes (`%PDF-`, PNG, JPEG); si no coinciden con la extension, manda el contenido y se registra un aviso sin el nombre del archivo; formato desconocido, vacio, PDF corrupto, cifrado o sin paginas -> `FormatoNoSoportado` | plan de `modalidad.py` | implementado |
+| Preparador: DPI | `pdf_digital` a 150 dpi y `pdf_escaneado` a 200 dpi (PNG RGB); la reduccion a 1000 px la hace el proveedor | prompt de PERSONA_2 | implementado |
+| Preparador: PDF mixto | Capa de texto en las paginas que superan el umbral y OCR solo en las demas | plan de la tarea 4 | implementado |
+| Preparador: sin Tesseract | Las paginas que necesitaban OCR quedan con `texto=None`; aviso unico en el log, sin el nombre del archivo; la vision sigue | plan de la tarea 4 | implementado |
+| Preparador: limite de paginas | Ninguno en el MVP (el proveedor trabaja por lotes de 4) | plan de la tarea 4 | decidido |
 | CLI sin BD ni S3 | `folio_solicitud = "CLI-2026-000000"`; `referencia_archivo_original.ruta = "local://<nombre_archivo>"` (sin rutas personales); `hash` = SHA-256 real del archivo | objetivo de la etapa 1 | decidido (tarea 10) |
 | Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. Catalogo: `docs/contratos/codigos_alertas.md` (en `main` desde el PR #2). El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | decidido |
 | `Tarea.validacion` (Contrato 3) | Se ignora: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0 | decidido |
@@ -190,6 +194,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 |---|---|---|
 | Contenedor del backend (recomendado) | `docker compose build backend` y despues `docker compose run --rm --no-deps backend python -m pytest -q` | Incluye PyMuPDF y Tesseract. `--no-deps` no levanta `db` ni `ollama` (los tests no los necesitan); `--rm` borra el contenedor al terminar. Requiere `.env` y Docker Desktop en marcha |
 | venv local | `cd backend && .venv/Scripts/python -m pytest -q` | En Windows necesita el Visual C++ Redistributable x64 para PyMuPDF |
+| Contenedor + fixtures (integracion OCR) | `MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures:ro" backend python -m pytest -q` | `test_fixtures_ocr.py` busca `FIXTURES_DIR`, `/fixtures/generados` o `fixtures/generados` del repo; sin fixtures o sin Tesseract se salta |
 
 Generar los fixtures de PERSONA_3 sin anadir sus scripts a esta rama (desde la raiz del repo, en Git Bash):
 
@@ -205,11 +210,18 @@ El script calcula sus rutas desde su ubicacion: montado en `/scripts`, lee `/con
 
 ## 9. OCR (`orquestador/ocr.py`, tarea 3)
 
+Implementado: `ocr.py` (`OCRProvider`, `TesseractOCR`), `mrz.py` y `preparador.py`. Resultado con los fixtures
+(`test_fixtures_ocr.py`, 2026-09-30): **151/153 campos**, por encima de la linea base (en `pdf_digital` se usa
+la capa de texto). Los 2 que faltan son `sexo` de `pasaporte_vencido_escaneado` y `_foto`; la MRZ da el sexo en
+los 3 pasaportes vencidos. La lectura erronea de la MRZ de `pasaporte_vencido_escaneado` se detecta: fallan los
+digitos de `numero_documento` y `compuesto`. OCR: ~0,8 s por documento en el contenedor.
+
 | Requisito | Detalle | Origen |
 |---|---|---|
 | Linea base | 150/153 campos con Tesseract `spa+eng`, render a 200 dpi, escala de grises + autocontraste. `ocr.py` no debe quedar por debajo con los mismos fixtures | `scripts/verificar_ocr_fixtures.py` de PERSONA_3 (2026-09-30) |
-| Sexo del pasaporte | Si no se lee en la zona visual, se toma de la MRZ: posicion 21 de la linea 2 (TD3) | Fallo conocido: `sexo` "M" suelto no lo lee Tesseract |
-| Digitos de control de la MRZ | Validar los digitos de control (numero, nacimiento, vencimiento, datos personales y compuesto, pesos 7-3-1). Un fallo indica una lectura erronea (p. ej. Z/2) | Fallo conocido de la MRZ de `pasaporte_vencido` |
+| Sexo del pasaporte | Si no se lee en la zona visual, se toma de la MRZ: posicion 21 de la linea 2 (TD3). `Mrz.sexo` implementado; se aplica en `motor_ia/servicio.py` (tarea 9) | Fallo conocido: `sexo` "M" suelto no lo lee Tesseract |
+| Digitos de control de la MRZ | Validar los digitos de control (numero, nacimiento, vencimiento, datos personales y compuesto, pesos 7-3-1). Un fallo indica una lectura erronea (p. ej. Z/2). **Sin codigo de alerta propio**: si fallan, se baja la confianza de esos campos al aplicar ADR-007 (tarea 9 / etapa 2). `validar_digitos` implementado | Fallo conocido de la MRZ de `pasaporte_vencido` |
+| Enderezado (deskew) | No se hace: la linea base se alcanza sin el (rotaciones de 0,4 a 1,2 grados en los fixtures) | Decision de la tarea 3 |
 | Casos de prueba | `pasaporte_vencido_escaneado.pdf` y `pasaporte_vencido_foto.jpg` (sexo "M" y confusion Z/2 en la MRZ); el resto de fixtures como regresion de la linea base | `INDICE.md` y `resultado_ocr.md` de PERSONA_3 |
 
 ## Registro de cambios
@@ -218,7 +230,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | `ejemplos_referencia` de las tres fichas apuntan a los fixtures del caso sano en `fixtures/generados/` (test de nombres). Fixtures de PERSONA_3 generados en local. Requisitos para `ocr.py` (seccion 9). `SYS-003` para el texto recortado, propuesta en la rama `docs/alerta-sys-003` | este commit |
+| 2026-09-30 | `orquestador/ocr.py` (Tesseract, gris + autocontraste, sin deskew), `mrz.py` (TD3: busqueda, sexo, digitos de control) y `preparador.py` (150/200 dpi, PDF mixto con capa de texto + OCR, EXIF, sin Tesseract -> texto None) + `servicio.py`. Con los fixtures: 151/153 campos. MRZ sin alerta propia: confianza baja con ADR-007 | este commit |
+| 2026-09-30 | `ejemplos_referencia` de las tres fichas apuntan a los fixtures del caso sano en `fixtures/generados/` (test de nombres). Fixtures de PERSONA_3 generados en local. Requisitos para `ocr.py` (seccion 9). `SYS-003` para el texto recortado, propuesta en la rama `docs/alerta-sys-003` | `799e60f` |
 | 2026-09-30 | `proveedores/base.py` y `proveedores/ollama.py`: constantes de llamada en `base.py`, `NUM_CTX=16384` medido, timeouts de vision por imagen, lotes de 4 paginas con combinacion, evidencia y campos normalizados, fecha no normalizable como texto con confianza 0, `think` segun `/api/show`, reintento con `correccion_json_v1`. 7 respuestas reales en `backend/tests/respuestas_modelo/` | `6397817` |
 | 2026-09-30 | `motor_ia/prompts.py`: carga y renderizado con frontmatter, `StrictUndefined`, `PROMPTS_DIR`, `VERSIONES_VIGENTES` (v2) y `version_prompt` `<id>_<tipo>@<version>` / `clasificacion@v2`. Prompts `clasificacion_v2` y `extraccion_v2` (19 tests) | `c41eaed` |
 | 2026-09-30 | ADR-007 propuesto: confianza de campo y de clasificacion calculada por el codigo (clasificacion con `marcadores_clasificacion` del tipo detectado); la del modelo, solo en la auditoria | `7ece6b4` (PR: rama `docs/adr-007-confianza`, `a05bf3c`) |
