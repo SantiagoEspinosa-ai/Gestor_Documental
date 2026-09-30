@@ -37,8 +37,6 @@ export const CODIGOS_PENDIENTES_DE_MAIN = {
     DOCUMENTO_CON_ERROR: 409, // corregir datos o confirmar la clasificacion de un documento en error
   },
   alertas: {
-    // Propuesta de PERSONA_1 (antes VAL-003, que main usa para la MRZ); falta que PERSONA_2 confirme que la emite
-    'VAL-004': { emisor: 'validacion', severidad: 'informativa', cuando: 'Falta un campo opcional (documento)' },
     'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Tipo no pedido por el proceso (alertas_expediente)' },
   },
 } as const satisfies {
@@ -63,6 +61,7 @@ export const ALERTAS = {
   'VAL-001': { emisor: 'validacion', severidad: 'critica', cuando: 'Campo obligatorio ausente o null' },
   'VAL-002': { emisor: 'validacion', severidad: 'preventiva', cuando: 'Confianza del campo bajo el minimo de la ficha' },
   'VAL-003': { emisor: 'orquestador', severidad: 'informativa', cuando: 'Valor del campo tomado de la MRZ (no se leyo en la zona visual)' },
+  'VAL-004': { emisor: 'validacion', severidad: 'informativa', cuando: 'Campo opcional ausente o null; una por campo (alertas_encontradas del documento)' },
   'DUP-001': { emisor: 'ingesta', severidad: 'critica', cuando: 'Mismo SHA-256 ya presente en el folio (no bloquea la subida)' },
   'CMP-001': { emisor: 'validacion', severidad: 'critica', cuando: 'Un campo comparado no coincide entre documentos (va en alertas_expediente)' },
   'EXP-001': { emisor: 'expediente', severidad: 'bloqueante', cuando: 'Falta un tipo requerido del proceso (va en alertas_expediente)' },

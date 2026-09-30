@@ -303,9 +303,9 @@ export interface EntradaAuditoria {
 }
 
 /**
- * GET /auditoria?folio=&pagina=1&tamano_pagina=50 (tamano_pagina 1-100), del mas reciente al mas antiguo.
- * Desviacion conocida: endpoints.md y ADR-006 1.5 dicen "lista de EntradaAuditoria", pero la API real
- * (PERSONA_1) ya la devuelve paginada, con la forma de PaginaFolios. Pendiente del ADR-008.
+ * GET /auditoria?folio=&pagina=1&tamano_pagina=50 (ADR-008, punto 1): tamano_pagina de 1 a 100 (50 por
+ * defecto), orden creado_en desc e id desc, filtro por folio; fuera de rango, 422 PETICION_INVALIDA.
+ * Misma forma que PaginaFolios. endpoints.md se actualiza en el PR de contratos del ADR-008.
  */
 export interface PaginaAuditoria {
   elementos: EntradaAuditoria[]

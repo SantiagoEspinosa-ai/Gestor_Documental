@@ -360,7 +360,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "modelo-respaldo-ficticio:free",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-30T08:06:40Z"
   },

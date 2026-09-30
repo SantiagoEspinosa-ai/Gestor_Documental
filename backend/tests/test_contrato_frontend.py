@@ -47,6 +47,10 @@ def _json(nombre: str):
     return json.loads(_texto(DATOS / f"{nombre}.json"))
 
 
+def _json_ficha(tipo: str) -> dict:
+    return next(f for f in _json("tipos_documentales") if f["nombre"] == tipo)
+
+
 # ---------------------------------------------------------------- lectura de los .ts
 
 def interfaces_ts(fuente: str) -> dict[str, dict[str, str]]:
@@ -250,7 +254,16 @@ def test_datos_y_originales_coherentes_con_los_fixtures(generador):
             persona = gf.PERSONAS_FICTICIAS[gf.CASOS[caso]["persona"]]
             esperados = {c: v.isoformat() if isinstance(v, date) else v
                          for c, v in gf.valores_documento(tipo, persona, caso, HOY_MOCKS).items()}
+            # VAL-004: campo opcional que el analisis no leyo -> null (nunca ""), confianza 0 y sin evidencia
+            campos_ficha = _json_ficha(tipo)["campos"]
+            for a in doc["alertas_encontradas"]:
+                if a["codigo"] == "VAL-004":
+                    assert not campos_ficha[a["campo"]]["obligatorio"], (archivo, a["campo"])
+                    esperados[a["campo"]] = None
+                    assert doc["nivel_confianza_por_campo"][a["campo"]] == 0
+                    assert a["campo"] not in doc["evidencia_por_campo"]
             assert doc["datos_extraidos"] == esperados, archivo
+            assert not [v for v in doc["datos_extraidos"].values() if isinstance(v, str) and not v.strip()], archivo
             for correccion in doc["correcciones"]:
                 assert correccion["valor_nuevo"] == esperados[correccion["campo"]]
                 assert doc["evidencia_por_campo"][correccion["campo"]] == "correccion_revisor"

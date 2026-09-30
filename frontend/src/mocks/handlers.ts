@@ -9,7 +9,7 @@ import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type Se
 import {
   avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, recalcularTiposDelProceso,
   resumenFolio,
-  resumenMarkdown, tipoExtraccion,
+  resumenMarkdown, tipoExtraccion, valorOnull,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
 import { USUARIOS_DEMO } from './usuarios'
@@ -289,7 +289,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (!Object.keys(cuerpo).length || desconocidos.length) {
       throw new FalloApi('PETICION_INVALIDA', `Campos no validos para ${tipoExtraccion(doc)}: ${desconocidos.join(', ') || '(ninguno)'}`)
     }
-    for (const [campo, valor] of Object.entries(cuerpo)) {
+    for (const [campo, recibido] of Object.entries(cuerpo)) {
+      const valor = valorOnull(recibido) // "" o solo espacios: el campo queda sin valor (null)
       doc.correcciones.push({ campo, valor_anterior: doc.datos_extraidos[campo] ?? null, valor_nuevo: valor, usuario: usuario.usuario, fecha: fechaIso(estado) })
       doc.datos_extraidos[campo] = valor
       doc.nivel_confianza_por_campo[campo] = 1
@@ -394,7 +395,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/tipos-documentales', TODOS, () => HttpResponse.json(estado.tipos))
 
-  // Desviacion conocida de endpoints.md ("lista"): paginada como la API real, pendiente del ADR-008
+  // ADR-008 (aceptado): paginada; endpoints.md se actualiza en el PR de contratos del ADR-008
   ruta('GET', '/auditoria', ['admin'], ({ request }) => {
     const q = new URL(request.url).searchParams
     const { pagina, tamano } = paginacion(q, 50)

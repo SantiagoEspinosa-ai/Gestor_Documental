@@ -81,15 +81,17 @@ hace fallar el build si queda algun rastro.
   - anio del folio en hora de `America/Mexico_City`;
   - auditoria: `documento_subido` con `{hash_sha256, tamano_bytes, duplicado}` (nunca el nombre del
     fichero) y `folio_creado` con `detalle` vacio;
-  - `GET /auditoria` paginada (`PaginaAuditoria`, 50 por defecto, maximo 100). **Desviacion conocida**:
-    `endpoints.md` y ADR-006 1.5 dicen "lista"; pendiente del ADR-008.
+  - `GET /auditoria` paginada segun el ADR-008 (`PaginaAuditoria`): `tamano_pagina` 50 por defecto y
+    de 1 a 100, orden `creado_en` desc e `id` desc, filtro por `folio`, 422 `PETICION_INVALIDA` fuera
+    de rango. `endpoints.md` se actualiza en el PR de contratos del ADR-008.
+- Campos sin valor: siempre `null`, nunca `""` ni solo espacios (tambien al corregir con PATCH de
+  datos), con confianza 0 (ADR-007) y sin evidencia. La UI muestra `null` como "no detectado".
 - Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
-  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y las informativas `VAL-004` (falta un campo
-  opcional, documento; propuesta de PERSONA_1 pendiente de que PERSONA_2 confirme que la emite) y
-  `EXP-002` (tipo no pedido por el proceso, expediente). Los mocks ya los usan. Cuando entren en main
-  se pasan a los oficiales y se quitan de la lista; `backend/tests/test_contrato_frontend.py` falla
-  para recordarlo. `SECUENCIA_AGOTADA`, `VAL-003` (valor tomado de la MRZ), `SYS-003` y `SYS-005` ya
-  son oficiales.
+  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y la informativa `EXP-002` (tipo no pedido
+  por el proceso, expediente). Los mocks ya los usan. Cuando entren en main se pasan a los oficiales
+  y se quitan de la lista; `backend/tests/test_contrato_frontend.py` falla para recordarlo.
+  `SECUENCIA_AGOTADA`, `VAL-003` (valor tomado de la MRZ), `VAL-004` (campo opcional ausente o null,
+  uno por campo), `SYS-003` y `SYS-005` ya son oficiales.
 - `/documentos/{id}/original`: URL a `public/mock-originales/` o, si se subio en la sesion, al propio
   fichero. Como la URL prefirmada real (caduca a los 300 s), cada peticion devuelve una nueva y la
   anterior deja de valer: la UI la pide cada vez que abre el visor.
@@ -106,10 +108,10 @@ hace fallar el build si queda algun rastro.
   indicador de bloqueantes sin resolver. "Nuevo folio" (integrador y revisor): proceso de
   `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene `GET /folios`: ve un
   campo para abrir un folio por su numero.
-  - Pendiente del ADR-008: la columna `referencia_externa` no esta porque `ResumenFolio` no la tiene
-    (pedirla con `GET /folios/{folio}` por fila costaba una peticion por folio). Vuelve cuando se
-    acepte el ADR-008, que anadira `referencia_externa` a `ResumenFolio` junto con la paginacion de
-    `/auditoria`. La carga de un folio si la muestra (viene en `ResultadoExpediente`).
+  - Pendiente del PR de contratos del ADR-008 (aceptado): la columna `referencia_externa` no esta
+    porque `ResumenFolio` aun no la tiene en `resultado.py` (pedirla con `GET /folios/{folio}` por fila
+    costaba una peticion por folio). Vuelve cuando ese PR este en main. La carga de un folio si la
+    muestra (viene en `ResultadoExpediente`).
 - Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
@@ -136,8 +138,11 @@ Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`)
   siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
 - `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
   (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
-  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado. La informativa
-  es `VAL-003` (valor de `nacionalidad` tomado de la MRZ) en el pasaporte de `ONB-2026-000001`.
+  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado. Las tres
+  informativas: `VAL-003` (valor de `nacionalidad` tomado de la MRZ) en el pasaporte de
+  `ONB-2026-000001`, `VAL-004` (`proveedor` sin leer, `null`) en el comprobante de `ONB-2026-000002` y
+  `SYS-005` (analizado con el proveedor de respaldo, `openrouter` con un modelo ficticio) en la
+  credencial de `ONB-2026-000003`.
 - Confianza (ADR-007): la calcula el codigo comprobando el dato, no el modelo. La barra de la tabla
   de datos usara `ETIQUETA_CONFIANZA` ("Confianza verificada") y `AYUDA_CONFIANZA`
   (`src/utilidades/etiquetas.ts`).

@@ -13,6 +13,12 @@ export function normalizar(valor: unknown): string {
   return String(valor).normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase().split(/\s+/).filter(Boolean).join(' ')
 }
 
+/** Un campo sin valor es null, nunca "" ni solo espacios (VAL-001 y VAL-004: "ausente o null") */
+export function valorOnull(valor: unknown): unknown {
+  if (valor === undefined || valor === null) return null
+  return typeof valor === 'string' && !valor.trim() ? null : valor
+}
+
 /** Regla 2.2: bloquea la aprobacion mientras no se marque como falso positivo */
 export const bloquea = (a: Alerta) => a.severidad === 'bloqueante' && a.aplica !== false
 const pesa = (a: Alerta) => (a.severidad === 'critica' || a.severidad === 'bloqueante') && a.aplica !== false
@@ -138,11 +144,11 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   doc.nivel_confianza_por_campo = {}
   doc.evidencia_por_campo = {}
   for (const [campo, def] of Object.entries(fichaExtraccion.campos)) {
-    const valor = fuente?.datos_extraidos[campo] ?? null
-    // Con la ficha de otro tipo solo coinciden los campos comunes, y con poca confianza
+    const valor = valorOnull(fuente?.datos_extraidos[campo])
+    // Con la ficha de otro tipo solo coinciden los campos comunes, y con poca confianza. Sin valor: 0 (ADR-007)
     doc.datos_extraidos[campo] = valor
-    doc.nivel_confianza_por_campo[campo] = valor === null ? 0.2 : mismaFicha ? fuente?.nivel_confianza_por_campo[campo] ?? 0.9 : 0.45
-    doc.evidencia_por_campo[campo] = 'pagina_1'
+    doc.nivel_confianza_por_campo[campo] = valor === null ? 0 : mismaFicha ? fuente?.nivel_confianza_por_campo[campo] ?? 0.9 : 0.45
+    if (valor !== null) doc.evidencia_por_campo[campo] = 'pagina_1' // un campo sin valor no tiene evidencia
     if (valor === null && def.obligatorio) {
       alertas.push(nuevaAlerta(estado, 'VAL-001', `Falta el campo obligatorio ${campo}`, 'critica', campo))
     } else if (valor === null) {

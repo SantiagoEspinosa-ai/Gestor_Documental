@@ -168,14 +168,22 @@ describe('consultas', () => {
     expect(entradas.map((e) => e.creado_en)).toEqual([...entradas.map((e) => e.creado_en)].sort().reverse())
   })
 
-  it('GET /auditoria paginada (desviacion conocida, pendiente del ADR-008)', async () => {
+  it('GET /auditoria segun ADR-008: 50 por defecto, 1 a 100, creado_en desc e id desc, 422 fuera de rango', async () => {
     const token = await entrar('admin.demo')
+    await entrar('revisor.demo') // dos logins en el mismo instante: el empate se ordena por id desc
     const todas = (await api<PaginaAuditoria>('GET', '/auditoria?tamano_pagina=100', { token })).cuerpo
+    const [primera, segunda] = todas.elementos
+    expect([primera.accion, segunda.accion, primera.creado_en === segunda.creado_en, primera.id > segunda.id])
+      .toEqual(['login', 'login', true, true])
+    const porDefecto = (await api<PaginaAuditoria>('GET', '/auditoria', { token })).cuerpo
+    expect([porDefecto.pagina, porDefecto.tamano_pagina, porDefecto.elementos.length]).toEqual([1, 50, Math.min(50, todas.total)])
     const p2 = (await api<PaginaAuditoria>('GET', '/auditoria?pagina=2&tamano_pagina=3', { token })).cuerpo
     expect(p2.total).toBe(todas.total)
     expect(p2.elementos.map((e) => e.id)).toEqual(todas.elementos.slice(3, 6).map((e) => e.id))
-    expect((await api('GET', '/auditoria?tamano_pagina=101', { token })).status).toBe(422)
-    expect((await api('GET', '/auditoria?pagina=0', { token })).cuerpo.codigo).toBe('PETICION_INVALIDA')
+    for (const q of ['tamano_pagina=101', 'tamano_pagina=0', 'pagina=0', 'pagina=1.5']) {
+      const r = await api('GET', `/auditoria?${q}`, { token })
+      expect([r.status, r.cuerpo.codigo], q).toEqual([422, 'PETICION_INVALIDA'])
+    }
   })
 
   it('los cuerpos JSON con campos que sobran dan 422, como la API real', async () => {
@@ -413,5 +421,34 @@ describe('acciones del revisor', () => {
     expect(reprocesado.datos_extraidos.curp).toBe('AEPA900101MDFXXX01')
     expect(reprocesado.alertas_encontradas.find((x) => x.codigo === 'CLS-001')).toMatchObject({ aplica: true })
     expect(codigos(reprocesado.alertas_encontradas)).not.toContain('VAL-001')
+  })
+})
+
+// ------------------------------------------------------------------ campos sin valor
+
+describe('campos sin valor', () => {
+  it('PATCH de datos con "" o solo espacios deja el campo en null, nunca en ""', async () => {
+    const token = await entrar('revisor.demo')
+    const f1 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo
+    const pasaporte = f1.documentos[0]
+    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${pasaporte.identificador_unico_documento}/datos`,
+      { token, cuerpo: { sexo: '   ', nacionalidad: '' } })
+    expect(r.status).toBe(200)
+    expect([r.cuerpo.datos_extraidos.sexo, r.cuerpo.datos_extraidos.nacionalidad]).toEqual([null, null])
+    expect(r.cuerpo.correcciones.slice(-2).map((c) => [c.campo, c.valor_nuevo])).toEqual([['sexo', null], ['nacionalidad', null]])
+  })
+
+  it('los datos iniciales no tienen "" ni solo espacios, y VAL-004 va en un campo opcional null', async () => {
+    const token = await entrar('revisor.demo')
+    const folios = await Promise.all(['ONB-2026-000001', 'ONB-2026-000002', 'ONB-2026-000003', 'ONB-2026-000004']
+      .map(async (f) => (await api<ResultadoExpediente>('GET', `/folios/${f}`, { token })).cuerpo))
+    const documentos = folios.flatMap((f) => f.documentos)
+    const valores = documentos.flatMap((d) => Object.values(d.datos_extraidos))
+    expect(valores.filter((v) => typeof v === 'string' && !v.trim())).toEqual([])
+    const val004 = documentos.flatMap((d) => d.alertas_encontradas.filter((a) => a.codigo === 'VAL-004').map((a) => [d, a] as const))
+    expect(val004.length).toBeGreaterThan(0)
+    for (const [d, a] of val004) expect([a.severidad, d.datos_extraidos[a.campo!]]).toEqual(['informativa', null])
+    const informativas = new Set(documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa').map((a) => a.codigo))
+    expect([...informativas].sort()).toEqual(['SYS-005', 'VAL-003', 'VAL-004'])
   })
 })

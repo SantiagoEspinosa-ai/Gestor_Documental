@@ -396,19 +396,18 @@
         "datos_extraidos": {
           "nombre_titular": "ANA EJEMPLO PRUEBA",
           "domicilio": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
-          "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+          "proveedor": null,
           "fecha_emision": "2026-09-15"
         },
         "nivel_confianza_por_campo": {
           "nombre_titular": 0.87,
           "domicilio": 0.91,
-          "proveedor": 0.97,
+          "proveedor": 0.0,
           "fecha_emision": 0.9
         },
         "evidencia_por_campo": {
           "nombre_titular": "pagina_1",
           "domicilio": "pagina_1",
-          "proveedor": "pagina_1",
           "fecha_emision": "pagina_1"
         },
         "reglas_cumplidas_e_incumplidas": {
@@ -417,9 +416,23 @@
           ],
           "incumplidas": []
         },
-        "alertas_encontradas": [],
+        "alertas_encontradas": [
+          {
+            "id": "alr-000006",
+            "codigo": "VAL-004",
+            "mensaje": "Falta el campo opcional proveedor",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "proveedor",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
         "correcciones": [],
-        "recomendacion": "aprobar",
+        "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-29T11:42:40Z",
@@ -471,7 +484,7 @@
     ],
     "alertas_expediente": [
       {
-        "id": "alr-000006",
+        "id": "alr-000007",
         "codigo": "CMP-001",
         "mensaje": "domicilio distinto entre credencial_elector y comprobante_domicilio",
         "severidad": "critica",
@@ -536,14 +549,28 @@
           ],
           "incumplidas": []
         },
-        "alertas_encontradas": [],
+        "alertas_encontradas": [
+          {
+            "id": "alr-000008",
+            "codigo": "SYS-005",
+            "mensaje": "Fallo el proveedor principal; analizado con el proveedor de respaldo",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": null,
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
         "correcciones": [],
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-30T08:06:40Z",
-          "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "proveedor": "openrouter",
+          "modelo": "modelo-respaldo-ficticio:free",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -568,7 +595,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000007",
+            "id": "alr-000009",
             "codigo": "SYS-001",
             "mensaje": "Fallo del proveedor principal y sin respaldo",
             "severidad": "critica",
@@ -595,7 +622,7 @@
     "comparaciones": [],
     "alertas_expediente": [
       {
-        "id": "alr-000008",
+        "id": "alr-000010",
         "codigo": "EXP-001",
         "mensaje": "Falta comprobante_domicilio, requerido por el proceso onboarding",
         "severidad": "bloqueante",
