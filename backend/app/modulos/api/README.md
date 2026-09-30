@@ -45,7 +45,7 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 ### POST /api/v1/folios/{folio}/documentos (integrador, revisor)
 - Entrada: multipart con `archivo` y `tipo_declarado?`. Se leen como mucho 20 MB + 1 byte.
 - Salida 202: `{identificador_unico_documento, estado_analisis: "pendiente"}` y lanza
-  `ingesta.procesamiento.procesar` en segundo plano (motor stub hasta que llegue el de PERSONA_2).
+  `ingesta.servicio.procesar_documento` en segundo plano (motor stub hasta que llegue el de PERSONA_2).
 - Errores: 404 `FOLIO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`; 413 `ARCHIVO_DEMASIADO_GRANDE`;
   415 `FORMATO_NO_PERMITIDO` (extension o contenido); 422 `PETICION_INVALIDA`.
 - El Content-Type del cliente se ignora: el del objeto en S3 sale de la extension.

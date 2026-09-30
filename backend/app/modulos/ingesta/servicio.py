@@ -12,7 +12,7 @@ from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Documento, Folio, Resultado
-from app.modulos.ingesta import tipos
+from app.modulos.ingesta import procesamiento, tipos
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
                                    ResultadoDocumento, Severidad)
 
@@ -185,3 +185,8 @@ def listar_tipos() -> list[dict]:
 def nombre_visible_tipo(tipo: str) -> str:
     """Nombre legible de un tipo documental (p. ej. para mensajes de alerta)."""
     return tipos.nombre_visible(tipo)
+
+
+def procesar_documento(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
+    """Procesa el documento en segundo plano (BackgroundTask): ver `procesamiento.procesar`."""
+    procesamiento.procesar(documento_id, tipo_confirmado)
