@@ -1,7 +1,8 @@
-import { FileText, Lock, LogOut, X } from 'lucide-react'
+import { FileText, FolderOpen, Lock, LogOut, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
 import { alFolioCerrado } from '../api/cliente'
+import { ETIQUETA_ROL } from '../utilidades/etiquetas'
 import { useSesion } from './contextoSesion'
 
 /** Cabecera comun de las paginas con sesion y aviso de folio en solo lectura */
@@ -13,17 +14,30 @@ export function Estructura() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
-        <Link to="/folios" className="flex items-center gap-2 font-semibold">
-          <FileText className="size-5" aria-hidden /> Gestor Documental
-        </Link>
+      <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-10 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-slate-900">
+        Saltar al contenido
+      </a>
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-slate-800 px-6 py-3 text-white">
+        <div className="flex items-center gap-6">
+          <Link to="/folios" className="flex items-center gap-2 font-semibold">
+            <FileText className="size-5" aria-hidden /> Gestor Documental
+          </Link>
+          <nav aria-label="Principal">
+            <NavLink to="/folios" end className={({ isActive }) =>
+              `flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-slate-700 ${isActive ? 'bg-slate-700' : ''}`}>
+              <FolderOpen className="size-4" aria-hidden /> Folios
+            </NavLink>
+          </nav>
+        </div>
         {estado.tipo === 'autenticado' && (
           <div className="flex items-center gap-4 text-sm">
-            <span>
-              {estado.usuario.usuario} <span className="text-slate-300">({estado.usuario.rol})</span>
+            <span className="flex items-center gap-1" data-testid="usuario-actual">
+              <UserRound className="size-4" aria-hidden />
+              <span>{estado.usuario.usuario}</span>
+              <span className="rounded bg-slate-700 px-1.5 py-0.5 text-xs">{ETIQUETA_ROL[estado.usuario.rol]}</span>
             </span>
-            <button onClick={salir} className="flex items-center gap-1 rounded px-2 py-1 hover:bg-slate-700">
-              <LogOut className="size-4" aria-hidden /> Salir
+            <button type="button" onClick={salir} className="flex items-center gap-1 rounded px-2 py-1 hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+              <LogOut className="size-4" aria-hidden /> Cerrar sesión
             </button>
           </div>
         )}
@@ -32,12 +46,12 @@ export function Estructura() {
         <div role="status" className="flex items-center gap-2 border-b border-amber-300 bg-amber-50 px-6 py-2 text-amber-900">
           <Lock className="size-4" aria-hidden />
           <span>Folio cerrado: solo lectura. {avisoSoloLectura}</span>
-          <button className="ml-auto" onClick={() => setAvisoSoloLectura(null)} aria-label="Cerrar aviso">
+          <button type="button" className="ml-auto" onClick={() => setAvisoSoloLectura(null)} aria-label="Cerrar aviso">
             <X className="size-4" aria-hidden />
           </button>
         </div>
       )}
-      <main className="p-6">
+      <main id="contenido" tabIndex={-1} className="p-6 focus:outline-none">
         <Outlet />
       </main>
     </div>

@@ -80,10 +80,24 @@ hace fallar el build si queda algun rastro.
   la lista; `backend/tests/test_contrato_frontend.py` falla para recordarlo.
 - `/documentos/{id}/original`: URL a `public/mock-originales/` o, si se subio en la sesion, al propio fichero.
 
+## Pantallas
+- Login (`paginas/PaginaLogin.tsx`): usuario y contrasena -> token, rol y `expires_in`; mensajes
+  segun el codigo (`utilidades/mensajes.ts`); foco inicial en usuario y, si las credenciales fallan,
+  en la contrasena; aviso si la sesion caduco. Vuelve a la pagina que se pidio.
+- Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
+- Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
+  "Cerrar sesion".
+- Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
+  `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
+  vuelve a comprobar el rol.
+
 ## Tests
 ```
-npm test        # Vitest: cobertura del contrato (falla si un endpoint no tiene handler) y flujos de los mocks
+npm test        # Vitest
 ```
+- Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler) y flujos.
+- Pantallas (jsdom + Testing Library + msw/node, `src/pruebas/app.tsx`): login con los 3 usuarios del
+  mock, errores, recuperacion de sesion, caducidad y control de roles.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
 ## Tipos y datos de los mocks

@@ -27,6 +27,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), sinMocksEnBuild()],
   // Mismo puerto que el servicio frontend de docker-compose.yml
   server: { port: 5173, strictPort: true },
-  // Tests de los mocks en Node (msw/node)
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: {
+    include: ['src/**/*.test.{ts,tsx}'],
+    environment: 'node', // los tests de pantallas declaran `// @vitest-environment jsdom`
+    setupFiles: ['src/pruebas/preparar.ts'],
+    env: { VITE_API_URL: 'http://localhost:8000', TZ: 'UTC' },
+  },
 })
