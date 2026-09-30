@@ -1,6 +1,7 @@
 # ADR-008: Auditoria paginada y referencia externa en la lista de folios
 
-Fecha: 2026-09-30. Estado: PROPUESTO.
+Fecha: 2026-09-30. Estado: ACEPTADO el 2026-09-30 (revision del PR #7: aprobado por PERSONA_1, que
+implementa los dos puntos, y por PERSONA_2).
 Propone: PERSONA_3. Afecta a: Contrato 1 (`backend/app/schemas/resultado.py`, `ResumenFolio`) y
 Contrato 2 (`docs/contratos/endpoints.md`, `GET /auditoria`). Modifica el punto 1.5 del ADR-006 en
 lo que se refiere a `/auditoria`. Este ADR no cambia ninguno de los dos contratos: los cambios se
@@ -10,8 +11,8 @@ aplican en un PR de contratos aparte cuando se acepte (ver "Aplicacion").
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| 1 | `GET /auditoria` paginado con `{elementos, total, pagina, tamano_pagina}` | PERSONA_1 (ya en `main`, PR #3) | Pendiente |
-| 2 | `referencia_externa: str \| None = None` en `ResumenFolio` | PERSONA_1 | Pendiente |
+| 1 | `GET /auditoria` paginado con `{elementos, total, pagina, tamano_pagina}` | PERSONA_1 (ya en `main`, PR #3) | Aceptada la propuesta: formaliza lo implementado, sin cambios de codigo |
+| 2 | `referencia_externa: str \| None = None` en `ResumenFolio` | PERSONA_1 | Aceptada la propuesta: se implementa cuando el PR de contratos este en `main` |
 
 ## Contexto
 - El ADR-006 (1.5) acepto `/auditoria` como lista: `[{id, usuario, accion, folio, documento_id,
@@ -49,6 +50,10 @@ Propuesta: se formaliza lo que ya hace la API.
 - En "Formas de respuesta" de `endpoints.md` se anade `PaginaAuditoria` junto a `PaginaFolios`.
   Es una forma del Contrato 2 (como `PaginaFolios`): no se anade a `resultado.py`.
 
+Confirmado por PERSONA_1 en la revision del PR #7: coincide con lo implementado en el PR #3
+(`tamano_pagina` 50 por defecto y de 1 a 100, orden `creado_en` desc e `id` desc, filtro por `folio`,
+422 `PETICION_INVALIDA` fuera de rango).
+
 Implementa: PERSONA_1, ya implementado (`api/auditoria.py`, `core/auditoria.py`); al aceptarse,
 quita la nota de pendiente de `api/README.md`. PERSONA_3: `PaginaAuditoria` en los tipos y en el
 mock (ya hecho, marcado como desviacion conocida) y la pantalla de auditoria.
@@ -72,9 +77,10 @@ Propuesta: anadir un campo opcional a `ResumenFolio` en el Contrato 1:
 - Solo se anade el campo. Filtrar o buscar por `referencia_externa` en `GET /folios` queda fuera
   de este ADR (fuera del MVP).
 
-Implementa: PERSONA_1 (`expediente.listar_folios` y su test). PERSONA_3: `ResumenFolio` en
-`contrato.ts`, mocks (`resumenFolio` en `mocks/logica.ts`) y columna "Referencia" en
-`PaginaFolios.tsx`.
+Implementa: PERSONA_1 (`expediente.listar_folios` y su test), cuando el PR de contratos que anade
+el campo a `resultado.py` este en `main` (confirmado en la revision del PR #7). PERSONA_3:
+`ResumenFolio` en `contrato.ts`, mocks (`resumenFolio` en `mocks/logica.ts`) y columna "Referencia"
+en `PaginaFolios.tsx`.
 
 Alternativa (si se rechaza): la lista muestra solo el folio. La referencia se ve al abrir el
 expediente o la carga (viene en `ResultadoExpediente`). No se piden expedientes por fila.
