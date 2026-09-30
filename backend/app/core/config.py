@@ -18,7 +18,8 @@ _MARCADORES_EJEMPLO = ("CAMBIA_ESTO", "TU_CLAVE_AQUI")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    # .env de la raiz del repo, sea cual sea el directorio de trabajo
+    model_config = SettingsConfigDict(env_file=RAIZ_REPO / ".env", extra="ignore", case_sensitive=False)
 
     app_env: Literal["dev", "prod"] = "dev"
 

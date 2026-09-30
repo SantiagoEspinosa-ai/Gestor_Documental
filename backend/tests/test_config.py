@@ -68,6 +68,10 @@ def test_dev_acepta_valores_de_ejemplo(entorno):
     assert Settings(_env_file=None).app_env == "dev"
 
 
+def test_env_file_es_el_de_la_raiz_del_repo():
+    assert Settings.model_config["env_file"] == RAIZ_REPO / ".env"
+
+
 def test_get_settings_usa_cache(entorno):
     get_settings.cache_clear()
     try:
