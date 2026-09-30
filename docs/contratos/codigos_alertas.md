@@ -14,6 +14,7 @@ La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
 | `VAL-001` | validacion | critica | Campo `obligatorio: true` ausente o `null` |
 | `VAL-002` | validacion | preventiva | Confianza del campo < `confianza_minima_campo` de la ficha |
 | `VAL-003` | orquestador (ocr) | informativa | El valor del campo se ha tomado de la MRZ porque no se leyo en la zona visual (lleva `campo`) |
+| `VAL-004` | validacion | informativa | Campo `obligatorio: false` ausente o `null`; una por campo (lleva `campo`; va en `alertas_encontradas` del documento) |
 | `REG-{id}` | validacion | la de la ficha | Regla del YAML incumplida (p. ej. `REG-vigencia_documento`) |
 | `DUP-001` | ingesta | critica | Mismo SHA-256 ya presente en el folio (no bloquea la subida) |
 | `CMP-001` | validacion (comparaciones) | critica | Un campo de `comparaciones` no coincide entre documentos del folio (va en `alertas_expediente`, una por campo; ADR-006, 2.3) |
