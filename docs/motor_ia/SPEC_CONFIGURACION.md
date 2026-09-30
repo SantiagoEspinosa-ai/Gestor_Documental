@@ -155,7 +155,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Preparador: sin Tesseract | Las paginas que necesitaban OCR quedan con `texto=None`; aviso unico en el log, sin el nombre del archivo; la vision sigue | plan de la tarea 4 | implementado |
 | Preparador: limite de paginas | Ninguno en el MVP (el proveedor trabaja por lotes de 4) | plan de la tarea 4 | decidido |
 | CLI sin BD ni S3 | `folio_solicitud = "CLI-2026-000000"`; `referencia_archivo_original.ruta = "local://<nombre_archivo>"` (sin rutas personales); `hash` = SHA-256 real del archivo | objetivo de la etapa 1 | decidido (tarea 10) |
-| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. `SYS-003` (preventiva): texto recortado. Informativas: `SYS-005` (motor_ia: se uso el proveedor de respaldo) y `VAL-003` (orquestador/ocr: campo tomado de la MRZ). `SYS-004` se retiro en la revision del PR #4 (la ingesta rechaza con 415) y no se reutiliza; `SYS-005` conserva su numero. Catalogo: `docs/contratos/codigos_alertas.md`; `SYS-003`, `SYS-005` y `VAL-003`, en el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`. El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | decidido; se emiten en `motor_ia/servicio.py` (tarea 9) |
+| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. `SYS-003` (preventiva): texto recortado. Informativas: `SYS-005` (motor_ia: se uso el proveedor de respaldo) y `VAL-003` (orquestador/ocr: campo tomado de la MRZ). `SYS-004` se retiro en la revision del PR #4 (la ingesta rechaza con 415) y no se reutiliza; `SYS-005` conserva su numero. Catalogo: `docs/contratos/codigos_alertas.md`; `SYS-003`, `SYS-005` y `VAL-003`, en el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`. El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | `CLS-001`, `SYS-001`, `SYS-002`, `SYS-003`, `SYS-005` y `VAL-003` implementados en `motor_ia/servicio.py` (seccion 10); `CLS-002` y `VAL-002`, en la etapa 2 (deuda ADR-007) |
 | `Tarea.validacion` (Contrato 3) | Se acepta en `modelos.yaml`, pero no se usa: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0; tarea 8 | implementado (el enrutador la acepta) |
 | Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
@@ -187,14 +187,17 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Fusionar el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`**: ADR-007 aceptado, `SYS-003`,
       `SYS-005`, `VAL-003` y el comentario de `resultado.py` (sin `SYS-004`, retirado en la revision). Sustituye a las ramas `docs/adr-007-confianza`
       y `docs/alerta-sys-003` (borradas del remoto y en local). Abrir el PR y avisar al equipo.
-- [ ] **Aplicar ADR-007 (aceptado) en la etapa 2**, antes de `validacion/reglas.py`: confianza calculada por
-      el codigo (la del modelo, a la auditoria); `marcadores_clasificacion` en el cargador y, en un PR pequeno
+- [ ] **DEUDA ADR-007 (aceptado) - fecha limite: etapa 2, antes de `validacion/reglas.py` y de la
+      recomendacion.** Hoy `nivel_confianza_por_campo` y `confianza_clasificacion` guardan la confianza del
+      modelo como valor **provisional** y no se emiten `CLS-002` ni `VAL-002` (seccion 10). Hay que: calcular
+      la confianza en el codigo (la del modelo, a la auditoria con `Analisis.llamadas`); `marcadores_clasificacion` en el cargador y, en un PR pequeno
       aparte con aviso (ficheros compartidos), en `config/tipos/*.yaml`; numero de marcadores y calibracion con
       los fixtures de PERSONA_3, sin cambiar los umbrales; confianza baja si fallan los digitos de la MRZ.
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
-- [ ] Emitir en `motor_ia/servicio.py` (tarea 9) `SYS-003`, `SYS-005` y `VAL-003`.
+- [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
+      confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
 - [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
       como fecha invalida y generar una alerta, sin fallar.
 - [ ] `VAL-004` (etapa 2): `validacion` la emitira, informativa y con `campo`, cuando un campo `obligatorio: false`
@@ -242,13 +245,39 @@ digitos de `numero_documento` y `compuesto`. OCR: ~0,8 s por documento en el con
 | Enderezado (deskew) | No se hace: la linea base se alcanza sin el (rotaciones de 0,4 a 1,2 grados en los fixtures) | Decision de la tarea 3 |
 | Casos de prueba | `pasaporte_vencido_escaneado.pdf` y `pasaporte_vencido_foto.jpg` (sexo "M" y confusion Z/2 en la MRZ); el resto de fixtures como regresion de la linea base | `INDICE.md` y `resultado_ocr.md` de PERSONA_3 |
 
+## 10. Servicio de analisis (`motor_ia/servicio.py`, tarea 9)
+
+Firma: `analizar(doc, *, folio, referencia, tipo_confirmado=None, enrutador=None, ahora=None) -> Analisis`
+(`Analisis.resultado`: `ResultadoDocumento`; `Analisis.llamadas`: `InfoLlamada` de cada llamada, para la
+auditoria). **Se aparta de la firma original `analizar(doc, ficha)`** del prompt de PERSONA_2 por dos motivos:
+la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_solicitud` y
+`referencia_archivo_original`. Sin `enrutador`, se crea uno con `crear_enrutador()` la primera vez.
+
+| Paso o regla | Detalle |
+|---|---|
+| Texto | `recortar_texto` (`MAX_CARACTERES_TEXTO`); si recorta, `SYS-003` (preventiva) |
+| Clasificacion | Prompt `clasificacion_v2` con todas las fichas como tipos posibles. Con `tipo_confirmado` no se clasifica: `tipo_documental_detectado` y `confianza_clasificacion` quedan `None` (la plataforma conserva el detectado de la version anterior) |
+| `CLS-001` (critica) | Hay tipo declarado y el detectado es distinto, incluido `desconocido` |
+| Ficha para extraer | `tipo_confirmado` > declarado > detectado (ADR-006, 2.5). Un tipo declarado o confirmado que no existe lanza `TipoNoEncontrado` (la ingesta lo valida antes) |
+| Tipo desconocido sin declarado ni confirmado | **No se extrae y no se emite alerta**: `completado` con datos vacios. Si en la etapa 2 hace falta, se pedira un `CLS-003` |
+| Extraccion | Prompt `extraccion_v2` con el esquema de la ficha; `version_prompt` `extraccion_<tipo>@v2` |
+| Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza **1,0** si todos los digitos de control son correctos y **0,5** si alguno falla (provisional hasta ADR-007) |
+| Respaldo | Si el principal lanza `ErrorProveedor` (incluido JSON invalido tras el reintento), se prueba el respaldo; si funciona, `SYS-005` (informativa), una sola vez por documento |
+| Sin respaldo o falla tambien | `estado_analisis=error` + `SYS-002` si el ultimo fallo fue JSON invalido, `SYS-001` si no (criticas). Si la clasificacion salio bien, se conserva |
+| `fecha_y_modelo_utilizado` | Proveedor, **modelo real** (`ultima_llamada.modelo`) y `version_prompt` de la extraccion; si no hubo extraccion, los de la clasificacion; `None` si no hubo ninguna llamada correcta |
+| `Alerta.confianza` | **1,0** en las alertas deterministas (`CLS-001`, `SYS-00x`, `VAL-003`) |
+| Alertas repetidas | Nunca dos con el mismo (`codigo`, `campo`) en un documento (ADR-006, 1.3) |
+| Confianzas (**provisional**) | `confianza_clasificacion` y `nivel_confianza_por_campo` guardan la del modelo; **no se emiten `CLS-002` ni `VAL-002`**. Deuda ADR-007 con fecha limite: etapa 2, antes de `validacion/reglas.py` y de la recomendacion |
+| Fuera de esta tarea (etapa 2) | `reglas_cumplidas_e_incumplidas`, `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, `recomendacion` y `procesar_documento` |
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | `motor_ia/enrutador.py`: `modelos.yaml` validado de forma estricta, proveedores desde las variables de entorno, `por_tipo`, barrera de privacidad `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`), principal no disponible -> error al arrancar, respaldo no disponible -> `None`. `Tarea.validacion` aceptada sin uso; perfiles de `procesos.yaml` no implementados. `configuracion.servicio.directorio_config()` expuesto (24 tests) | este commit |
+| 2026-09-30 | `motor_ia/servicio.py`: `analizar(doc, *, folio, referencia, ...)` -> `Analisis` (se aparta de `analizar(doc, ficha)` por ADR-006 y el Contrato 1). Ficha tipo_confirmado > declarado > detectado; `CLS-001`, `SYS-001/002/003/005`, `VAL-003` con confianza 1,0; respaldo tambien ante JSON invalido; sexo desde la MRZ (1,0 / 0,5); desconocido sin declarado no se extrae ni alerta. Confianzas del modelo provisionales, sin `CLS-002` ni `VAL-002` (deuda ADR-007). `orquestador.servicio` expone `buscar_mrz` y `validar_digitos` (17 tests) | este commit |
+| 2026-09-30 | `motor_ia/enrutador.py`: `modelos.yaml` validado de forma estricta, proveedores desde las variables de entorno, `por_tipo`, barrera de privacidad `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`), principal no disponible -> error al arrancar, respaldo no disponible -> `None`. `Tarea.validacion` aceptada sin uso; perfiles de `procesos.yaml` no implementados. `configuracion.servicio.directorio_config()` expuesto (24 tests) | `bbfdc9d` |
 | 2026-09-30 | Pendiente de la etapa 2: `VAL-004` (informativa, campo `obligatorio: false` vacio, con `campo`), que emitira `validacion`; PERSONA_3 la anade al catalogo en un PR aparte y PERSONA_2 lo revisa | `7d2c361` |
 | 2026-09-30 | Revision de PERSONA_1 en el PR #4: se retira `SYS-004` (la ingesta ya rechaza con 415 `FORMATO_NO_PERMITIDO` los archivos cuya extension no coincide con el contenido). `SYS-005` no se renumera. `modalidad.py` mantiene el aviso en el log (util en el CLI) y no emite alerta | `c696a99` |
 | 2026-09-30 | ADR-007 **aceptado** por PERSONA_1, PERSONA_2 y PERSONA_3. PR unico de documentacion `docs/adr-007-y-alertas` (PR #4, `4263190`): ADR-007 aceptado, `SYS-003`, informativas `SYS-004`, `SYS-005` y `VAL-003`, y comentario del origen de la confianza en `resultado.py`. Borradas las ramas `docs/adr-007-confianza` y `docs/alerta-sys-003` | `e879271` |

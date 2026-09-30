@@ -1,7 +1,7 @@
 # orquestador  (responsable: PERSONA_2)
 
 Prepara cada documento para el motor de IA. Los demas modulos solo importan `servicio.py`
-(`preparar`, `detectar`, `FormatoNoSoportado`). Configuracion vigente:
+(`preparar`, `detectar`, `FormatoNoSoportado`, `buscar_mrz`, `validar_digitos`, `Mrz`). Configuracion vigente:
 [docs/motor_ia/SPEC_CONFIGURACION.md](../../../../docs/motor_ia/SPEC_CONFIGURACION.md).
 
 ## `preparador.py`
