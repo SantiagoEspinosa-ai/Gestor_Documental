@@ -27,6 +27,9 @@ Modalidades por documento:
 INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio de prueba, calculadas
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos).
 
+Tras cambiar este generador, comprueba la legibilidad OCR con scripts/verificar_ocr_fixtures.py
+(Tesseract en el contenedor del backend; el comando esta en su docstring).
+
 Pendiente para PERSONA_2 (no tocar los YAML desde aqui):
   - `ejemplos_referencia` de config/tipos/*.yaml apunta a ficheros de fixtures/ que no existen.
 """
