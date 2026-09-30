@@ -76,6 +76,30 @@ Se usa Amazon S3 real, sin MinIO ni emuladores. En la consola de AWS (a mano, no
 - Endpoints del revisor: PATCH datos (guarda en correcciones), confirmar clasificacion, resolver
   alerta, decision del folio (rechazar si hay bloqueante no resuelta). Todo a auditoria.
 
+## Cambios de contrato aceptados el 2026-09-30 (ADR-004 y ADR-006)
+Ya aplicados en `resultado.py`, `endpoints.md`, `codigos_error.md` y `codigos_alertas.md`. Si algo de
+lo anterior de este prompt los contradice, prevalecen ellos.
+- Etapa 1: `GET /folios` paginado (`PaginaFolios` de `ResumenFolio`); `GET /procesos` tambien para
+  el revisor, sin `webhook_url` ni `modelos`; `GET /folios/{folio}` rellena `referencia_externa` y
+  `fecha_solicitud` (= `folios.creado_en`); login con `expires_in` y `GET /auth/yo`.
+- Etapa 1: manejador global de errores con `{codigo, mensaje}` para todo, incluidos los 404/405 de
+  rutas y metodos y los 422 de validacion de FastAPI (catalogo en `codigos_error.md`); limite de
+  subida de 20 MB (413).
+- Etapa 1: `GET /tipos-documentales` con la ficha que serializa PERSONA_2 y forma de `GET /auditoria`
+  con la lista cerrada de `accion` (`endpoints.md`).
+- Etapa 2: `Alerta.id` asignado al guardar; rutas de resolver por `alerta_id`, de documento y de
+  expediente; guardar `aplica`, `comentario_revisor`, `resuelta_por`, `resuelta_en`.
+- Etapa 2: regla de bloqueo en `/decision` (bloqueante con `aplica` distinto de `false` -> 409
+  `DECISION_BLOQUEADA`); guardar `comentario_decision`, `usuario_decision`, `fecha_decision` y cerrar
+  el folio (409 `FOLIO_CERRADO` despues).
+- Etapa 2: `CMP-001` solo en `alertas_expediente`; `EXP-001` bloqueante; `correcciones` en
+  `ResultadoDocumento` (confianza 1.0 y evidencia `correccion_revisor` en el campo corregido).
+- Etapa 2: confirmar clasificacion rellena `tipo_documental_confirmado`; si difiere del tipo usado
+  para extraer, guarda el resultado actual como version previa en `resultados`, pone el documento en
+  `pendiente` y relanza `procesar_documento(documento_id, tipo_confirmado=...)` de PERSONA_2.
+- Etapa 3: `GET /folios/{folio}/resumen.md` devuelve 404 `RESUMEN_NO_DISPONIBLE` mientras no exista.
+- Fuera del MVP: reprocesar documentos en `error`.
+
 ## Etapa 3 (dias 9-12)
 - `modulos/expediente/resumen.py`: plantilla Jinja `expediente/plantillas/resumen.md.j2` con
   referencia de la persona, tipos presentados, datos validados, alertas, resultado, decisiones y

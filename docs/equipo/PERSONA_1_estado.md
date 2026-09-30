@@ -29,15 +29,17 @@ dice en que punto estamos y que toca ahora.
 | Cuenta OpenRouter | La crea PERSONA_2 en la etapa 1, dia 2 | ADR-003, prompt de PERSONA_2 |
 | Arquitectura | Monolito modular con puertos y adaptadores; reglas solo documentadas | ADR-005, `docs/arquitectura.md` |
 | Ramas | Una por persona; la tuya es `feat/plataforma`; PR a `main` al final de cada etapa | `CLAUDE.md` |
+| Contratos | ADR-004 (referencia y fecha en el expediente) y ADR-006 (huecos para la UI) aceptados y aplicados a los Contratos 1 y 2; catalogos de alertas y de errores | ADR-004, ADR-006, `docs/contratos/` |
 
-Sin cambios: los 3 contratos congelados. ADR-004 (referencia y fecha en el expediente) solo existe
-en la rama `propuesta/base-etapa0`, no en `main`: esta sin decidir.
+Contratos 1 y 2 ampliados por ADR-004 y ADR-006; el Contrato 3 sin cambios. Tus tareas nuevas estan
+en "Cambios de contrato aceptados el 2026-09-30" de tu prompt.
 
 ## Que te toca hacer, en orden
 
 ### Etapa 0 (pendiente)
 - [ ] Avisar al equipo: hacer `git pull` y usar cada uno su rama (`feat/motor-ia`, `feat/interfaz`).
-- [ ] Decidir con el equipo que hacer con la rama `propuesta/base-etapa0` (ADR-004 incluido).
+- [ ] Decidir con el equipo que hacer con el resto de la rama `propuesta/base-etapa0` (el ADR-004 y
+      `codigos_alertas.md` ya estan en `main`).
 - [ ] Decidir con el equipo la maquina que ejecuta Ollama.
 - [ ] Crear en la consola de AWS el bucket S3 privado, el usuario IAM con permisos minimos
       (`s3:PutObject`, `s3:GetObject`, `s3:ListBucket`, sin borrar) y el CORS para
@@ -54,5 +56,5 @@ Entregable: archivo subido por API que aparece en el bucket S3 real y en BD en e
 Como en tu prompt. Al final de cada etapa, Pull Request de `feat/plataforma` a `main`.
 
 ## Pendientes abiertos del proyecto
-- ADR-004 y la rama `propuesta/base-etapa0`.
+- Resto de la rama `propuesta/base-etapa0`.
 - Maquina para Ollama.
