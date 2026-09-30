@@ -21,8 +21,11 @@ fixtures/       Documentos ficticios de prueba (nunca datos reales)
 ## Arranque
 ```bash
 cp .env.example .env   # rellenar con claves reales, NUNCA commitear .env
-docker compose up --build
+docker compose up --build                   # Ollama instalado en el equipo
+docker compose --profile ollama up --build  # o Ollama en un contenedor
 ```
+Con el perfil `ollama`, `OLLAMA_BASE_URL=http://ollama:11434`; con Ollama en el equipo,
+`http://host.docker.internal:11434` (ver `.env.example`).
 
 ## Reglas del equipo
 - Contratos (schemas, endpoints, interfaz del motor) solo cambian con un ADR y aviso al equipo.
