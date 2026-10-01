@@ -335,18 +335,33 @@ def _exigir_documento_revisable(sesion: Session, doc: Documento) -> None:
         raise ErrorApi(409, "DOCUMENTO_CON_ERROR", "El documento no se pudo procesar; vuelve a subirlo")
 
 
-def _valor_valido(definicion: dict, valor) -> bool:
+_INVALIDO = object()
+
+
+def _valor_corregido(definicion: dict, valor):
+    """Valor a guardar, o _INVALIDO. Reglas (decision del usuario en la revision del PR #9):
+    - null: solo en campos con `obligatorio: false`; vacia el campo;
+    - tipo `anio`: entero de 4 cifras o texto "AAAA"; se guarda como entero (como lo da el motor);
+    - el resto: texto no vacio; `fecha` en AAAA-MM-DD; si hay `patron`, tiene que cumplirlo."""
+    if valor is None:
+        return None if not definicion.get("obligatorio", False) else _INVALIDO
+    if definicion.get("tipo") == "anio":
+        if isinstance(valor, int) and not isinstance(valor, bool) and 1000 <= valor <= 9999:
+            return valor
+        if isinstance(valor, str) and re.fullmatch(r"\d{4}", valor):
+            return int(valor)
+        return _INVALIDO
     if not isinstance(valor, str) or not valor.strip():
-        return False
+        return _INVALIDO
     if definicion.get("tipo") == "fecha":
         try:
             datetime.strptime(valor, "%Y-%m-%d")
         except ValueError:
-            return False
-    if definicion.get("tipo") == "anio" and not re.fullmatch(r"\d{4}", valor):
-        return False
+            return _INVALIDO
     patron = definicion.get("patron")
-    return not (patron and not re.fullmatch(patron, valor))
+    if patron and not re.fullmatch(patron, valor):
+        return _INVALIDO
+    return valor
 
 
 def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: str) -> ResultadoDocumento:
@@ -364,13 +379,15 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
     actual = ingesta.construir_resultado(sesion, doc)  # con las correcciones previas ya aplicadas
     # Se valida con la ficha con la que se EXTRAJERON los datos, no con el tipo efectivo
     campos = (_fichas().get(_tipo_extraccion(sesion, doc)) or {}).get("campos") or {}
+    a_guardar = {}
     for campo, valor in cambios.items():
         if campo not in campos:
             raise ErrorApi(422, "PETICION_INVALIDA", f"campo desconocido: {campo}")
-        if not _valor_valido(campos[campo] or {}, valor):
+        a_guardar[campo] = _valor_corregido(campos[campo] or {}, valor)
+        if a_guardar[campo] is _INVALIDO:
             raise ErrorApi(422, "PETICION_INVALIDA", f"valor no valido para el campo {campo}")
 
-    for campo, valor in cambios.items():
+    for campo, valor in a_guardar.items():
         sesion.add(Correccion(documento_id=doc.id, campo=campo, valor_anterior=actual.datos_extraidos.get(campo),
                               valor_nuevo=valor, usuario=usuario, version_resultado=vigente))
     recalcular_cmp001(sesion, doc.folio)

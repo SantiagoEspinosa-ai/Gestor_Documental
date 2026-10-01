@@ -251,3 +251,35 @@ def test_cmp001_al_corregir_solo_sobrevive_el_falso_positivo(cliente, sesion, s3
     _patch(cliente, comprobante.id, {"domicilio": "Calle Ficticia 123"})
     sesion.expire_all()
     assert (sesion.get(AlertaBD, cmp_id) is not None) is sigue
+
+
+@pytest.mark.parametrize("valor,guardado", [(2030, 2030), ("2031", 2031)])
+def test_anio_como_numero_o_texto_se_guarda_entero(cliente, sesion, s3, folio, motor, valor, guardado):
+    doc = _subir(sesion, s3, folio)
+    cuerpo = _patch(cliente, doc.id, {"vigencia": valor}).json()
+    assert cuerpo["datos_extraidos"]["vigencia"] == guardado
+    assert isinstance(cuerpo["datos_extraidos"]["vigencia"], int)
+    assert cuerpo["nivel_confianza_por_campo"]["vigencia"] == 1.0
+
+
+@pytest.mark.parametrize("valor", [99999, 123, "20301", True, 2030.0])
+def test_anio_invalido(cliente, sesion, s3, folio, motor, valor):
+    doc = _subir(sesion, s3, folio)
+    r = _patch(cliente, doc.id, {"vigencia": valor})
+    assert (r.status_code, r.json()["mensaje"]) == (422, "valor no valido para el campo vigencia")
+
+
+def test_null_vacia_un_campo_opcional(cliente, sesion, s3, folio, motor):
+    motor["credencial_elector"][0]["clave_elector"] = "CLAVEFICTICIA0001"
+    doc = _subir(sesion, s3, folio)
+    cuerpo = _patch(cliente, doc.id, {"clave_elector": None}).json()  # obligatorio: false
+    assert cuerpo["datos_extraidos"]["clave_elector"] is None
+    assert cuerpo["nivel_confianza_por_campo"]["clave_elector"] == 1.0
+    assert cuerpo["evidencia_por_campo"]["clave_elector"] == "correccion_revisor"
+    assert cuerpo["correcciones"][0]["valor_nuevo"] is None
+
+
+def test_null_en_un_obligatorio_da_422(cliente, sesion, s3, folio, motor):
+    doc = _subir(sesion, s3, folio)
+    r = _patch(cliente, doc.id, {"nombre_completo": None})
+    assert (r.status_code, r.json()["mensaje"]) == (422, "valor no valido para el campo nombre_completo")
