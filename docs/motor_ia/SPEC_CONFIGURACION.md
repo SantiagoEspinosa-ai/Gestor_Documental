@@ -193,10 +193,6 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
       scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
-- [ ] **PR de `.env.example`** (rama `chore/env-example`, `a1b2387`, subida; aprobado por PERSONA_1, pendiente de fusionar; valor por defecto de `OLLAMA_BASE_URL`: `host.docker.internal`): `OLLAMA_MODELO_TEXTO=gemma4:e2b`, `OLLAMA_MODELO_VISION=qwen2.5vl:3b`,
-      `CONFIG_DIR`, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` y un comentario con los tres valores de
-      `OLLAMA_BASE_URL` (seccion 2). **Avisar al equipo** de la barrera de privacidad: con `false`, OpenRouter
-      no se usa nunca, ni como respaldo.
 - [ ] **Aplicar ADR-006**: 1.5 serializar `TipoDocumental` en `configuracion/servicio.py` (para
       `/tipos-documentales`) y 2.5 `tipo_confirmado` en `procesar_documento` (etapa 2).
 - [ ] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2) al abrir el PR de
@@ -214,15 +210,19 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
+- [ ] **Regla para `validacion/servicio.py` (etapa 2), compartido con PERSONA_1**: solo reexporta funciones; la
+      logica va en `validacion/comparaciones.py` (PERSONA_1) y `validacion/reglas.py` (PERSONA_2). Antes de crear o
+      tocar `validacion/servicio.py` o `reglas.py`: `git fetch` y `git merge origin/main`. Si PERSONA_1 ya lo creo,
+      anadir solo la linea de import de PERSONA_2 en su bloque, sin reescribir el fichero. Si hay conflicto, parar
+      y ensenarlo antes de resolver.
 - [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
       `orquestador` para evitar la importacion circular.
 - [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
       confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
 - [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
       como fecha invalida y generar una alerta, sin fallar.
-- [ ] `VAL-004` (etapa 2): `validacion` la emitira, informativa y con `campo`, cuando un campo `obligatorio: false`
-      venga vacio. Aun no esta en el catalogo: PERSONA_3 la anade a `codigos_alertas.md` en un PR aparte y
-      PERSONA_2 lo revisa.
+- [ ] `VAL-004` (etapa 2): ya esta en el catalogo (PR #6). `validacion/reglas.py` la emitira, informativa y con
+      `campo`, cuando un campo `obligatorio: false` venga vacio (`""` y solo espacios ya llegan como `null`).
 - [ ] `NUM_CTX` con documentos reales: el margen medido es del 13 %; revisarlo si hay paginas mas altas que
       A4 (p. ej. oficio) o texto que tokenice peor que el de relleno usado en la medida.
 - [x] **Vision con los fixtures escaneado y foto**: ejecutada el 2026-10-01 con `analizar()` (alternativa B,
@@ -348,7 +348,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | este commit |
+| 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | este commit |
+| 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | `1a6b9f4` |
 | 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | `5f6292d` |
 | 2026-09-30 | Ejecucion real del CLI (entregable de la etapa 1): `pasaporte_sano_digital.pdf` 7/7 en 68 s con `gemma4:e2b`; vision pendiente por RAM (faltaron 0,25 GB). Pendientes: CLI con vision y mejorar la evidencia del prompt | `3dfb54a` |
 | 2026-09-30 | `motor_ia/cli.py` (seccion 12): JSON por stdout y resumen por stderr, salidas 0/1/2, `local://` + SHA-256, `.env` con `python-dotenv` (anadido a `requirements.txt`), ruta desde la raiz del repo, `--tipo-confirmado` (11 tests). PR de `.env.example` subido en `chore/env-example` | `e5e8c5a` |
