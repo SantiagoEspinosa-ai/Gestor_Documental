@@ -1,4 +1,5 @@
 """API publica del modulo expediente: crear, consultar y listar folios (ADR-005: solo esto se importa)."""
+import re
 import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
+from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Proceso, Resultado, SecuenciaFolio
 from app.modulos.ingesta import servicio as ingesta
 from app.modulos.expediente.recomendacion import DocumentoParaRecomendar, calcular_recomendacion_global
 from app.modulos.validacion import servicio as validacion
@@ -89,9 +90,12 @@ def comparaciones_actuales(sesion: Session, folio: str) -> list[ComparacionCampo
     completados = sesion.scalars(select(Documento).where(
         Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value)
         .order_by(Documento.creado_en, Documento.id)).all()
+    # Con los datos ya corregidos por el revisor (construir_resultado aplica las correcciones)
+    armados = [ingesta.construir_resultado(sesion, d) for d in completados]
     documentos = [validacion.DocumentoComparable(
-        id=str(d.id), tipo=_tipo_efectivo(sesion, d),
-        datos=_resultado_vigente(sesion, d).get("datos_extraidos") or {}) for d in completados]
+        id=r.identificador_unico_documento,
+        tipo=r.tipo_documental_confirmado or r.tipo_documental_detectado or r.tipo_documental_declarado,
+        datos=r.datos_extraidos) for r in armados]
     return validacion.comparar(documentos, _fichas())
 
 
@@ -302,3 +306,58 @@ def resolver_alerta_expediente(sesion: Session, folio: str, alerta_id: str, apli
     _exigir_folio_abierto(fila)
     _guardar_resolucion(sesion, alerta, aplica, comentario, usuario)
     return obtener_expediente(sesion, folio)
+
+
+def _exigir_documento_revisable(sesion: Session, doc: Documento) -> None:
+    """Orden comun de las acciones del revisor sobre un documento: folio abierto y documento completado."""
+    _exigir_folio_abierto(sesion.get(Folio, doc.folio))
+    if doc.estado_analisis in (EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value):
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
+    if doc.estado_analisis == EstadoAnalisis.error.value:
+        raise ErrorApi(409, "DOCUMENTO_CON_ERROR", "El documento no se pudo procesar; vuelve a subirlo")
+
+
+def _valor_valido(definicion: dict, valor) -> bool:
+    if not isinstance(valor, str) or not valor.strip():
+        return False
+    if definicion.get("tipo") == "fecha":
+        try:
+            datetime.strptime(valor, "%Y-%m-%d")
+        except ValueError:
+            return False
+    if definicion.get("tipo") == "anio" and not re.fullmatch(r"\d{4}", valor):
+        return False
+    patron = definicion.get("patron")
+    return not (patron and not re.fullmatch(patron, valor))
+
+
+def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: str) -> ResultadoDocumento:
+    """PATCH /documentos/{id}/datos (ADR-006 2.4). Una Correccion por campo sobre la version vigente del
+    Resultado (sin version nueva); construir_resultado las aplica. Los mensajes de error nombran el
+    campo, nunca el valor (son datos personales)."""
+    doc = ingesta.obtener_documento(sesion, documento_id)
+    _exigir_documento_revisable(sesion, doc)
+    vigente = sesion.scalar(select(func.max(Resultado.version)).where(Resultado.documento_id == doc.id))
+    if vigente is None:
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia no tiene resultado")
+    if not cambios:
+        raise ErrorApi(422, "PETICION_INVALIDA", "No hay campos que corregir")
+
+    actual = ingesta.construir_resultado(sesion, doc)  # con las correcciones previas ya aplicadas
+    tipo = actual.tipo_documental_confirmado or actual.tipo_documental_detectado or actual.tipo_documental_declarado
+    campos = (_fichas().get(tipo) or {}).get("campos") or {}
+    for campo, valor in cambios.items():
+        if campo not in campos:
+            raise ErrorApi(422, "PETICION_INVALIDA", f"campo desconocido: {campo}")
+        if not _valor_valido(campos[campo] or {}, valor):
+            raise ErrorApi(422, "PETICION_INVALIDA", f"valor no valido para el campo {campo}")
+
+    for campo, valor in cambios.items():
+        sesion.add(Correccion(documento_id=doc.id, campo=campo, valor_anterior=actual.datos_extraidos.get(campo),
+                              valor_nuevo=valor, usuario=usuario, version_resultado=vigente))
+    recalcular_cmp001(sesion, doc.folio)
+    # Solo los nombres de los campos: los valores son datos personales
+    auditoria.registrar(sesion, "dato_corregido", usuario=usuario, folio=doc.folio, documento_id=doc.id,
+                        detalle={"campos": sorted(cambios)})
+    sesion.commit()
+    return ingesta.construir_resultado(sesion, doc)

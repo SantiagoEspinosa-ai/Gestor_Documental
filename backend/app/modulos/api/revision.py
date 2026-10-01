@@ -1,7 +1,9 @@
 """Router de las acciones del revisor (E2.6): resolver alertas; despues, corregir datos, confirmar
 clasificacion y decidir el folio. Solo rol revisor. La logica esta en `expediente.servicio`.
 """
-from fastapi import APIRouter, Depends
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy.orm import Session
 
@@ -35,3 +37,11 @@ def resolver_alerta_expediente(folio: str, alerta_id: str, entrada: ResolverAler
                                usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoExpediente:
     return expediente.resolver_alerta_expediente(sesion, folio, alerta_id, entrada.aplica,
                                                  entrada.comentario, usuario.usuario)
+
+
+@router.patch("/documentos/{documento_id}/datos", response_model=ResultadoDocumento)
+def corregir_datos(documento_id: str, cambios: dict[str, Any] = Body(...),
+                   sesion: Session = Depends(get_sesion),
+                   usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
+    """Cuerpo `{campo: valor}`; los campos y valores los valida el servicio contra la ficha."""
+    return expediente.corregir_datos(sesion, documento_id, cambios, usuario.usuario)

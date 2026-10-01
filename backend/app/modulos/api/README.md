@@ -103,3 +103,12 @@ Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token)
   existe, no es UUID, es de otro documento o folio, de expediente por la ruta de documento o al reves,
   o del motor de una version anterior); 409 `FOLIO_CERRADO`; 409 `DOCUMENTO_EN_PROCESO` (documento
   `pendiente` o `procesando`; en `error` si se puede); 422 `PETICION_INVALIDA`.
+
+### PATCH /api/v1/documentos/{id}/datos (ADR-006 2.4)
+- Entrada: `{campo: valor}` no vacio. Cada campo tiene que estar en la ficha del tipo efectivo; el
+  valor, texto no vacio (fecha `AAAA-MM-DD`, anio de 4 cifras, `patron` si lo hay).
+- Salida 200: `ResultadoDocumento` con el valor corregido, confianza 1.0, evidencia
+  `correccion_revisor` y la correccion en `correcciones`. Audita `dato_corregido` solo con los
+  nombres de los campos.
+- Errores: 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`, `DOCUMENTO_EN_PROCESO`,
+  `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA` (nombra el campo, nunca el valor).

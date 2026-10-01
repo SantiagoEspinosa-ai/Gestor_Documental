@@ -11,8 +11,9 @@ from app.core import auditoria
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio, Resultado
+from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado
 from app.modulos.ingesta import procesamiento, tipos
+from app.schemas.resultado import Correccion as CorreccionContrato
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
                                    ResultadoDocumento, Severidad)
 
@@ -125,12 +126,36 @@ def obtener_documento(sesion: Session, documento_id: str) -> Documento:
     return doc
 
 
+def _aplicar_correcciones(sesion: Session, resultado: ResultadoDocumento, documento_id: uuid.UUID,
+                          version: int) -> ResultadoDocumento:
+    """Correcciones de esa version, en orden: gana el ultimo valor; confianza 1.0 y evidencia
+    "correccion_revisor" (ADR-006 2.4). Las de otras versiones no se aplican."""
+    filas = sesion.scalars(select(Correccion).where(
+        Correccion.documento_id == documento_id, Correccion.version_resultado == version)
+        .order_by(Correccion.creado_en, Correccion.id)).all()
+    if not filas:
+        return resultado
+    datos = dict(resultado.datos_extraidos)
+    confianzas = dict(resultado.nivel_confianza_por_campo)
+    evidencias = dict(resultado.evidencia_por_campo)
+    for c in filas:
+        datos[c.campo] = c.valor_nuevo
+        confianzas[c.campo] = 1.0
+        evidencias[c.campo] = "correccion_revisor"
+    return resultado.model_copy(update={
+        "datos_extraidos": datos, "nivel_confianza_por_campo": confianzas, "evidencia_por_campo": evidencias,
+        "correcciones": [CorreccionContrato(campo=c.campo, valor_anterior=c.valor_anterior,
+                                            valor_nuevo=c.valor_nuevo, usuario=c.usuario, fecha=c.creado_en)
+                         for c in filas]})
+
+
 def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocumento:
     """ResultadoDocumento de un documento, con la BD como fuente de verdad.
 
     Con resultado: la version mayor, sobrescribiendo con la BD `estado_analisis`,
     `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision: las de
-    plataforma y las del motor de esa version).
+    plataforma y las del motor de esa version), y con las correcciones del revisor de ESA version
+    aplicadas encima (ADR-006 2.4).
     Sin resultado todavia: uno minimo con el estado de la fila y sus alertas.
     Lo usan GET /documentos/{id} y el expediente, para que los dos digan lo mismo.
     """
@@ -146,11 +171,12 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
         .order_by(AlertaBD.creado_en, AlertaBD.id))]
     estado = EstadoAnalisis(documento.estado_analisis)
     if fila is not None:
-        return ResultadoDocumento.model_validate(fila.json).model_copy(update={
+        resultado = ResultadoDocumento.model_validate(fila.json).model_copy(update={
             "estado_analisis": estado,
             "tipo_documental_confirmado": documento.tipo_documental_confirmado,
             "alertas_encontradas": alertas,
         })
+        return _aplicar_correcciones(sesion, resultado, documento.id, fila.version)
     return ResultadoDocumento(
         folio_solicitud=documento.folio,
         identificador_unico_documento=str(documento.id),
@@ -191,3 +217,8 @@ def nombre_visible_tipo(tipo: str) -> str:
 def procesar_documento(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
     """Procesa el documento en segundo plano (BackgroundTask): ver `procesamiento.procesar`."""
     procesamiento.procesar(documento_id, tipo_confirmado)
+
+
+def existe_tipo(tipo: str) -> bool:
+    """True si hay ficha para ese tipo documental."""
+    return tipos.existe_tipo(tipo)

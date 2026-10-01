@@ -29,9 +29,15 @@ usan `GET /documentos/{id}` y el expediente. Con resultado: la version mayor, co
 `tipo_documental_confirmado` y `alertas_encontradas` sobrescritos desde la BD. Sin resultado: uno
 minimo con el estado de la fila y sus alertas (con `id`). La tabla `alertas` es la fuente de verdad
 de las alertas; en la etapa 2 las alertas del motor se guardan en ella al guardar el resultado.
+Encima del resultado vigente aplica las correcciones del revisor de ESA version, en orden: gana el
+ultimo valor, confianza 1.0, evidencia `correccion_revisor` y la lista en `correcciones` (ADR-006 2.4).
+Las correcciones de versiones anteriores no se aplican.
 
 `obtener_resultado(sesion, documento_id) -> ResultadoDocumento`: `construir_resultado` del documento;
 404 `DOCUMENTO_NO_ENCONTRADO` si no existe o el id no es un UUID.
+
+`obtener_documento(sesion, documento_id) -> Documento`: 404 si no existe o el id no es un UUID.
+`existe_tipo(tipo) -> bool`: si hay ficha para ese tipo.
 
 `url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.
 
