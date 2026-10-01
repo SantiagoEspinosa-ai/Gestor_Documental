@@ -1,10 +1,12 @@
 // Estado en memoria de los mocks. Se crea a partir de mocks/datos y se pierde al recargar la pagina.
+// Las sesiones no: el token lleva el usuario y la caducidad (mocks/token.ts) y sobrevive a la recarga.
 import type {
   AccionAuditoria, EntradaAuditoria, ProcesoCompleto, ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental,
 } from '../tipos/contrato'
 import { AUDITORIA, FOLIOS, PROCESOS, TIPOS_DOCUMENTALES } from './datos'
 import { DURACION_SESION_S } from './usuarios'
 
+/** Usuario autenticado de una peticion, sacado del token */
 export interface SesionMock {
   usuario: string
   rol: Rol
@@ -31,7 +33,6 @@ export interface EstadoMock {
   procesos: ProcesoCompleto[]
   tipos: TipoDocumental[]
   auditoria: EntradaAuditoria[]
-  sesiones: Map<string, SesionMock>
   procesamientos: Map<string, Procesamiento>
   archivos: Map<string, Blob>
   /** Ultima URL del original entregada por documento: se revoca al pedir otra */
@@ -49,7 +50,6 @@ export function crearEstado(ahora: () => number = () => Date.now()): EstadoMock 
     procesos: structuredClone(PROCESOS),
     tipos: structuredClone(TIPOS_DOCUMENTALES),
     auditoria: structuredClone(AUDITORIA),
-    sesiones: new Map(),
     procesamientos: new Map(),
     archivos: new Map(),
     urls: new Map(),

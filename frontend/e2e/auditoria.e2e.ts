@@ -40,8 +40,7 @@ test('admin: abre la auditoria, filtra por ONB-2026-000001 y ve la decision del 
 })
 
 test('revisor: entra en /auditoria por URL y ve "Sin permiso"', async ({ page }) => {
-  // Sin sesion, la URL lleva al login y, tras entrar, vuelve a /auditoria (recargar con sesion no sirve con
-  // los mocks: su estado, y con el los tokens, se reinicia en cada carga)
+  // Sin sesion, la URL lleva al login y, tras entrar, vuelve a /auditoria
   await page.goto('/auditoria')
   await expect(page).toHaveURL(/\/login$/)
   await page.getByLabel('Usuario').fill('revisor.demo')
@@ -50,4 +49,30 @@ test('revisor: entra en /auditoria por URL y ve "Sin permiso"', async ({ page })
   await expect(page).toHaveURL(/\/auditoria$/)
   await expect(page.getByRole('heading', { name: 'Sin permiso' })).toBeVisible()
   await expect(page.getByRole('table')).toHaveCount(0)
+})
+
+test('sin sesion en /auditoria?tamano_pagina=500: tras el login como admin vuelve con los parametros y ve el 422', async ({ page }) => {
+  await page.goto('/auditoria?tamano_pagina=500')
+  await expect(page).toHaveURL(/\/login$/)
+  await page.getByLabel('Usuario').fill('admin.demo')
+  await page.getByLabel('Contraseña', { exact: true }).fill('demo-admin')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/auditoria\?tamano_pagina=500$/)
+  const alerta = page.getByRole('alert')
+  await expect(alerta).toContainText('Los datos enviados no son válidos.')
+  await expect(page.getByRole('table')).toHaveCount(0)
+  await alerta.getByRole('link', { name: 'Volver a la auditoría sin filtros' }).click()
+  await expect(page.getByText(/^Página 1 de 1 \(\d+ entradas\)$/)).toBeVisible()
+})
+
+test('con mocks, recargar o escribir una URL mantiene la sesion (como con la API real)', async ({ page }) => {
+  await entrar(page, 'admin.demo')
+  await page.goto('/auditoria?folio=ONB-2026-000004&tamano_pagina=20#tabla') // carga nueva de la pagina
+  await expect(page.getByTestId('usuario-actual')).toContainText('admin.demo')
+  await expect(page.getByText('Página 1 de 1 (8 entradas)')).toBeVisible()
+  await page.reload()
+  await expect(page).toHaveURL(/\/auditoria\?folio=ONB-2026-000004&tamano_pagina=20#tabla$/)
+  await expect(page.getByTestId('usuario-actual')).toContainText('admin.demo')
+  await expect(page.getByLabel('Entradas por página')).toHaveValue('20')
+  await expect(page.getByText('Página 1 de 1 (8 entradas)')).toBeVisible()
 })

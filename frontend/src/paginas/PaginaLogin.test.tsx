@@ -5,7 +5,9 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { AVISO_SESION_CADUCADA } from '../componentes/ProveedorSesion'
 import { USUARIOS_DEMO } from '../mocks/usuarios'
-import { entrarComo, montar, usarServidorMock } from '../pruebas/app'
+import { App } from '../App'
+import { entrarComo, montar, reiniciarMocks, usarServidorMock } from '../pruebas/app'
+import { Ubicacion } from '../pruebas/Ubicacion'
 import { ETIQUETA_ROL } from '../utilidades/etiquetas'
 
 const mock = usarServidorMock()
@@ -51,7 +53,6 @@ describe('login', () => {
   it('sin servidor: mensaje de SIN_CONEXION', async () => {
     montar('/login')
     const u = await escribirCredenciales('revisor.demo', 'demo-revisor')
-    mock.estado.sesiones.clear()
     const original = globalThis.fetch
     globalThis.fetch = () => Promise.reject(new TypeError('Failed to fetch'))
     try {
@@ -97,5 +98,41 @@ describe('sesión', () => {
     const u = await escribirCredenciales('revisor.demo', 'demo-revisor')
     await u.keyboard('{Enter}')
     await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('ONB-2026-000001'))
+  })
+
+  it('tras entrar vuelve a la ruta completa: parámetros y hash', async () => {
+    const pedida = '/auditoria?folio=ONB-2026-000004&tamano_pagina=20#tabla'
+    montar(pedida, <><App /><Ubicacion /></>)
+    await screen.findByLabelText('Usuario')
+    expect(screen.getByTestId('ubicacion').textContent).toBe('/login')
+    const u = await escribirCredenciales('admin.demo', 'demo-admin')
+    await u.keyboard('{Enter}')
+    await waitFor(() => expect(screen.getByTestId('ubicacion').textContent).toBe(pedida))
+    expect(await screen.findByText('Página 1 de 1 (8 entradas)')).toBeTruthy() // el filtro y el tamano se aplican
+    expect((screen.getByLabelText('Entradas por página') as HTMLSelectElement).value).toBe('20')
+  })
+
+  it.each([
+    'https://otro.example/folios',
+    '//otro.example/folios',
+    '/\\otro.example',
+    '/\t/otro.example',
+    'javascript:alert(1)',
+  ])('rechaza volver a %s: va a /folios', async (desde) => {
+    montar({ pathname: '/login', state: { desde } }, <><App /><Ubicacion /></>)
+    const u = await escribirCredenciales('revisor.demo', 'demo-revisor')
+    await u.keyboard('{Enter}')
+    await waitFor(() => expect(screen.getByTestId('ubicacion').textContent).toBe('/folios'))
+    expect(await screen.findByRole('heading', { name: 'Folios' })).toBeTruthy()
+  })
+
+  it('con mocks, la sesión sobrevive a una recarga: el token no depende de la memoria de msw', async () => {
+    await entrarComo('admin.demo')
+    reiniciarMocks(mock) // como recargar la pagina: msw arranca de cero con los datos iniciales
+    montar('/auditoria')
+    const cabecera = await screen.findByTestId('usuario-actual')
+    expect(within(cabecera).getByText('admin.demo')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Auditoría' })).toBeTruthy()
+    expect(screen.queryByLabelText('Usuario')).toBeNull() // no se ha ido al login
   })
 })

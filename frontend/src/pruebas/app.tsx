@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import type { ReactNode } from 'react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, type InitialEntry } from 'react-router'
 import { afterAll, beforeAll, beforeEach } from 'vitest'
 import { iniciarSesion } from '../api/auth'
 import { borrarSesion } from '../api/sesion'
@@ -43,10 +43,17 @@ export async function entrarComo(usuario: 'admin.demo' | 'revisor.demo' | 'integ
   await iniciarSesion(demo.usuario, demo.contrasena)
 }
 
-export function montar(ruta: string, contenido: ReactNode = <App />) {
+/** `ruta` puede ser una entrada con estado, p. ej. {pathname: '/login', state: {desde: '...'}} */
+export function montar(ruta: InitialEntry, contenido: ReactNode = <App />) {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
       <ProveedorSesion>{contenido}</ProveedorSesion>
     </MemoryRouter>,
   )
+}
+
+/** Simula recargar la pagina con mocks: msw vuelve a arrancar con un estado nuevo (sin memoria de tokens) */
+export function reiniciarMocks(contexto: ReturnType<typeof usarServidorMock>): void {
+  contexto.estado = crearEstado(() => contexto.t)
+  contexto.servidor.resetHandlers(...crearHandlers(contexto.estado).handlers)
 }

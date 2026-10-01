@@ -4,11 +4,13 @@ import { Navigate, useLocation, useNavigate } from 'react-router'
 import { ErrorApi } from '../api/cliente'
 import { useSesion } from '../componentes/contextoSesion'
 import { mensajeDeError } from '../utilidades/mensajes'
+import { rutaInternaSegura } from '../utilidades/navegacion'
 
 export function PaginaLogin() {
   const { estado, aviso, entrar } = useSesion()
   const navegar = useNavigate()
-  const destino = (useLocation().state as { desde?: string } | null)?.desde ?? '/folios'
+  // Ruta completa que se pidio sin sesion; solo si es interna (nunca otro sitio)
+  const destino = rutaInternaSegura((useLocation().state as { desde?: unknown } | null)?.desde)
   const [usuario, setUsuario] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [verContrasena, setVerContrasena] = useState(false)

@@ -12,6 +12,7 @@ import {
   resumenMarkdown, tipoExtraccion, valorOnull,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
+import { emitirToken, validarToken } from './token'
 import { USUARIOS_DEMO } from './usuarios'
 
 export type Metodo = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
@@ -59,10 +60,11 @@ function paginacion(q: URLSearchParams, tamanoPorDefecto: number): { pagina: num
 function autenticar(estado: EstadoMock, request: Request): SesionMock {
   const cabecera = request.headers.get('Authorization') ?? ''
   const token = cabecera.startsWith('Bearer ') ? cabecera.slice(7) : ''
-  const sesion = estado.sesiones.get(token)
-  if (!sesion) throw new FalloApi('NO_AUTENTICADO', 'Falta el token de acceso o no es valido')
-  if (sesion.expiraEn <= estado.ahora()) throw new FalloApi('TOKEN_CADUCADO', 'El token ha caducado')
-  return sesion
+  // Sin memoria de sesiones (como un JWT): el token lleva el usuario y la caducidad (mocks/token.ts)
+  const resultado = validarToken(token, estado.ahora())
+  if (!resultado.valido && resultado.motivo === 'caducado') throw new FalloApi('TOKEN_CADUCADO', 'El token ha caducado')
+  if (!resultado.valido) throw new FalloApi('NO_AUTENTICADO', 'Falta el token de acceso o no es valido')
+  return { usuario: resultado.usuario.usuario, rol: resultado.usuario.rol, expiraEn: resultado.expiraEn }
 }
 
 function folioOError(estado: EstadoMock, id: string): ResultadoExpediente {
@@ -143,8 +145,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const usuario = USUARIOS_DEMO.find((u) => u.usuario === cuerpo.usuario && u.contrasena === cuerpo.contrasena)
     auditar(estado, String(cuerpo.usuario), 'login', null, null, { resultado: usuario ? 'ok' : 'fallido' })
     if (!usuario) return error('CREDENCIALES_INVALIDAS', 'Usuario o contrasena incorrectos')
-    const token = `mock.${usuario.usuario}.${siguiente(estado)}`
-    estado.sesiones.set(token, { usuario: usuario.usuario, rol: usuario.rol, expiraEn: estado.ahora() + estado.duracionSesionS * 1000 })
+    const token = emitirToken(usuario.usuario, estado.ahora() + estado.duracionSesionS * 1000, estado.ahora())
     return HttpResponse.json({ access_token: token, rol: usuario.rol, expires_in: estado.duracionSesionS })
   })
 

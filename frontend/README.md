@@ -52,10 +52,16 @@ navegador. Un `npm run build` nunca los incluye, aunque `.env` diga `true`: la c
 hace fallar el build si queda algun rastro.
 - Usuarios ficticios (`src/mocks/usuarios.ts`): `admin.demo` / `demo-admin`, `revisor.demo` /
   `demo-revisor`, `integrador.demo` / `demo-integrador`. Token de 3600 s.
+- Token ficticio (`src/mocks/token.ts`): como un JWT, lleva dentro el usuario y la caducidad
+  (`mock.<carga base64url>.<firma>`) y el mock lo valida sin memoria de lo que emitio. Por eso, igual
+  que con la API real, la sesion sobrevive a una recarga o a escribir una URL en la barra. La "firma"
+  (hash FNV-1a con una constante publica) solo detecta un token retocado a mano; no es seguridad. Un
+  token retocado, inventado o del formato anterior da 401 `NO_AUTENTICADO`; uno caducado, `TOKEN_CADUCADO`.
 - `src/mocks/handlers.ts`: un handler por endpoint de `docs/contratos/endpoints.md`, con los roles
   del contrato y los errores de `codigos_error.md`. Otra ruta bajo `/api/v1`: 404 `RUTA_NO_ENCONTRADA`
   o 405 `METODO_NO_PERMITIDO`.
-- Estado en memoria (`src/mocks/estado.ts`, se pierde al recargar). Lo que simula `src/mocks/logica.ts`:
+- Estado en memoria (`src/mocks/estado.ts`): los datos (folios, subidas, decisiones, auditoria) vuelven
+  a los iniciales al recargar; la sesion no se pierde (ver "Token ficticio"). Lo que simula `src/mocks/logica.ts`:
   - subida: 202 `pendiente`, `procesando` a los 3 s y `completado` a los 9 s. Si el fichero es uno de
     `public/mock-originales` (mismo SHA-256), se usan sus valores; si no, los de un documento sano del tipo;
   - mismo SHA-256 en el folio: `DUP-001`; tipo declarado distinto del detectado: `CLS-001`;
@@ -99,7 +105,10 @@ hace fallar el build si queda algun rastro.
 ## Pantallas
 - Login (`paginas/PaginaLogin.tsx`): usuario y contrasena -> token, rol y `expires_in`; mensajes
   segun el codigo (`utilidades/mensajes.ts`); foco inicial en usuario y, si las credenciales fallan,
-  en la contrasena; aviso si la sesion caduco. Vuelve a la pagina que se pidio.
+  en la contrasena; aviso si la sesion caduco. Vuelve a la ruta completa que se pidio sin sesion
+  (pathname, search y hash: `RutaProtegida` la guarda, en todas las rutas protegidas), pero solo si es
+  interna (`utilidades/navegacion.ts`, `rutaInternaSegura`): empieza por una sola `/`, sin `//`, URL
+  absoluta, barras invertidas ni caracteres de control, y no es `/login`. Si no, va a `/folios`.
 - Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
@@ -176,7 +185,8 @@ npm test        # Vitest
   paginacion, nuevo folio), carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del
   sondeo) y auditoria (paginacion, tamano, filtro, detalle por accion sin valores completos, vacio,
   403, 422 y roles). `usarServidorMock()` da tambien `consultas` (con la query) y `servidor` (para
-  sobrescribir un handler en un test con `servidor.use`). `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
+  sobrescribir un handler en un test con `servidor.use`); `reiniciarMocks` simula recargar la pagina
+  (msw con estado nuevo) y `<Ubicacion>` muestra la ruta completa del router. `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
   Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
@@ -188,15 +198,19 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
 - `npm test` (Vitest) no los ejecuta: Vitest solo mira `src/**/*.test.*` y Playwright solo `e2e/**/*.e2e.ts`.
 - `playwright.config.ts` fija `VITE_USAR_MOCKS=true` en el proceso del servidor, que manda sobre
   `frontend/.env`. Usa el puerto 5174 para no chocar con un `npm run dev` abierto.
-- El estado de los mocks vive en la memoria de la pagina: cada test empieza con los datos iniciales y
-  navega dentro de la app, sin recargar.
+- Los datos de los mocks viven en la memoria de la pagina: cada test empieza con los datos iniciales.
+  Un test que necesita lo que hizo antes (una decision, una subida) navega dentro de la app sin
+  recargar, porque recargar o `page.goto` reinician los datos. La sesion si sobrevive a la recarga
+  (token ficticio).
 - Casos: flujo del revisor (login, nuevo folio onboarding, subir credencial y comprobante del caso
   sano, esperar completado, expediente, revisar alertas, aprobar con comentario y folio en solo
   lectura); bloqueante de `ONB-2026-000001` ("Aplica" en `REG-vigencia_documento`, Aprobar
   deshabilitado con el motivo, Rechazar con confirmacion); roles (admin sin acciones, integrador sin
   lista de folios ni original); duplicado (`DUP-001` al subir dos veces y revisarlo como falso positivo);
   auditoria (el revisor rechaza `ONB-2026-000001`, cambia a admin sin recargar con `cambiarDeUsuario`,
-  abre "Auditoría", filtra por ese folio, ve "Decisión: Rechazado" y abre el expediente; el revisor
+  abre "Auditoría", filtra por ese folio, ve "Decisión: Rechazado" y abre el expediente; sin sesion en
+  `/auditoria?tamano_pagina=500`, tras el login como admin vuelve con los parametros y ve el 422;
+  recargar mantiene la sesion y la URL completa; el revisor
   que entra por URL ve "Sin permiso").
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.

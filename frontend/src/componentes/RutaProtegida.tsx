@@ -2,6 +2,7 @@ import { LoaderCircle } from 'lucide-react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import type { Rol } from '../tipos/contrato'
 import { PaginaSinPermiso } from '../paginas/PaginaSinPermiso'
+import { rutaCompleta } from '../utilidades/navegacion'
 import { useSesion } from './contextoSesion'
 
 /** Solo deja pasar con sesion (y, si se indican, con uno de los roles); si no, al login */
@@ -27,7 +28,8 @@ export function RutaProtegida({ roles }: { roles?: readonly Rol[] }) {
     )
   }
   if (estado.tipo === 'anonimo') {
-    return <Navigate to="/login" replace state={{ desde: ubicacion.pathname }} />
+    // Ruta completa (con search y hash): el login vuelve a ella si es interna (utilidades/navegacion.ts)
+    return <Navigate to="/login" replace state={{ desde: rutaCompleta(ubicacion) }} />
   }
   if (roles && !roles.includes(estado.usuario.rol)) return <PaginaSinPermiso />
   return <Outlet />

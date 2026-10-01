@@ -108,6 +108,39 @@ describe('sesion y roles', () => {
     expect([caducado.status, caducado.cuerpo.codigo]).toEqual([401, 'TOKEN_CADUCADO'])
   })
 
+  it('el token sigue valido tras reiniciar msw (recargar la pagina), como un JWT', async () => {
+    const token = await entrar('admin.demo')
+    // Reinicio: estado nuevo y handlers nuevos, sin memoria de lo emitido
+    estado = crearEstado(() => t)
+    servidor.resetHandlers(...crearHandlers(estado).handlers)
+    const yo = await api('GET', '/auth/yo', { token })
+    expect([yo.status, yo.cuerpo]).toEqual([200, { usuario: 'admin.demo', rol: 'admin' }])
+    expect((await api('GET', '/auditoria', { token })).status).toBe(200)
+    // La caducidad viaja en el token: tambien tras el reinicio
+    t += 3601 * 1000
+    expect((await api('GET', '/auth/yo', { token })).cuerpo.codigo).toBe('TOKEN_CADUCADO')
+  })
+
+  it('un token retocado o inventado no vale (NO_AUTENTICADO)', async () => {
+    const token = await entrar('revisor.demo')
+    const [prefijo, carga, firma] = token.split('.')
+    const otraCarga = btoa(JSON.stringify({ u: 'admin.demo', exp: t + 3600 * 1000, iat: t }))
+      .replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+    const falsos = [
+      `${prefijo}.${otraCarga}.${firma}`, // otro usuario con la firma del revisor
+      `${prefijo}.${carga}.00000000`, // firma cambiada
+      `${prefijo}.${carga}`, // sin firma
+      `otro.${carga}.${firma}`, // otro prefijo
+      'mock.revisor.demo.1', // formato antiguo, basado en la memoria del mock
+      'TU_TOKEN_AQUI',
+    ]
+    for (const falso of falsos) {
+      const r = await api('GET', '/auth/yo', { token: falso })
+      expect([falso, r.status, r.cuerpo.codigo]).toEqual([falso, 401, 'NO_AUTENTICADO'])
+    }
+    expect((await api('GET', '/auth/yo', { token })).status).toBe(200)
+  })
+
   it('403 SIN_PERMISO segun el rol y procesos sin webhook ni modelos para el revisor', async () => {
     const integrador = await entrar('integrador.demo')
     expect((await api('GET', '/auditoria', { token: integrador })).status).toBe(403)
