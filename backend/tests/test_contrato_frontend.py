@@ -140,11 +140,25 @@ def catalogo_errores() -> dict[str, int]:
     return {c: int(h) for h, c in re.findall(r"^\| (\d{3}) \| `(\w+)` \|", _texto(CONTRATOS / "codigos_error.md"), re.M)}
 
 
-def pendientes_de_main() -> tuple[dict[str, int], dict[str, tuple[str, str]]]:
-    """CODIGOS_PENDIENTES_DE_MAIN de codigos.ts: acordados pero aun no en los catalogos de main."""
-    bloque = _bloque(_texto(CODIGOS_TS), "CODIGOS_PENDIENTES_DE_MAIN = {")
-    errores = {c: int(h) for c, h in re.findall(r"(\w+): (\d{3}),", bloque.split("alertas:")[0])}
-    return errores, alertas_ts(bloque.split("alertas:")[1])
+def _entradas(seccion: str) -> list[str]:
+    """Lineas con contenido de una seccion (sin las de comentario)."""
+    return [l.strip() for l in seccion.splitlines() if l.strip() and not l.strip().startswith("//")]
+
+
+def pendientes_de_main(fuente: str | None = None) -> tuple[dict[str, int], dict[str, tuple[str, str]]]:
+    """CODIGOS_PENDIENTES_DE_MAIN de codigos.ts: acordados pero aun no en los catalogos de main.
+    Las dos listas pueden estar vacias (es el objetivo). Lo que se exige es la forma
+    {errores: {...}, alertas: {...}} y que cada entrada se pueda leer: asi un cambio de formato no
+    pasa por "lista vacia" sin avisar."""
+    bloque = _bloque(_texto(CODIGOS_TS) if fuente is None else fuente, "CODIGOS_PENDIENTES_DE_MAIN = {")
+    forma = re.fullmatch(r"\s*errores: \{(.*?)\},\s*alertas: \{(.*?)\},?\s*", bloque, re.DOTALL)
+    assert forma, "No se ha podido leer CODIGOS_PENDIENTES_DE_MAIN: se esperaba {errores: {...}, alertas: {...}}"
+    errores = {c: int(h) for c, h in re.findall(r"(\w+): (\d{3}),", forma[1])}
+    alertas = alertas_ts(forma[2])
+    for nombre, seccion, leidas in (("errores", forma[1], errores), ("alertas", forma[2], alertas)):
+        assert len(_entradas(seccion)) == len(leidas), (
+            f"No se ha podido leer alguna entrada de CODIGOS_PENDIENTES_DE_MAIN.{nombre}: {_entradas(seccion)}")
+    return errores, alertas
 
 
 def test_codigos_de_alerta_iguales_que_el_catalogo():
@@ -155,12 +169,52 @@ def test_codigos_de_alerta_iguales_que_el_catalogo():
 def test_codigos_pendientes_de_main_aun_no_estan_en_los_catalogos():
     """Aviso: cuando un codigo pendiente entre en main, hay que moverlo a ESTADO_HTTP_POR_ERROR o a
     ALERTAS y quitarlo de CODIGOS_PENDIENTES_DE_MAIN (frontend/src/tipos/codigos.ts)."""
-    errores, alertas = pendientes_de_main()
-    assert errores and alertas, "No se ha podido leer CODIGOS_PENDIENTES_DE_MAIN"
+    errores, alertas = pendientes_de_main()  # puede devolver listas vacias: entonces no hay nada que avisar
     ya_en_main = sorted(set(errores) & set(catalogo_errores()) | set(alertas) & set(catalogo_alertas()))
     if ya_en_main:
         pytest.fail(f"Ya estan en el catalogo de main: {ya_en_main}. Quitalos de CODIGOS_PENDIENTES_DE_MAIN "
                     "en frontend/src/tipos/codigos.ts y pasalos a los oficiales (ESTADO_HTTP_POR_ERROR o ALERTAS).")
+
+
+_PENDIENTES_TS = """export const CODIGOS_PENDIENTES_DE_MAIN = {{
+  errores: {{{errores}
+  }},
+  alertas: {{{alertas}
+  }},
+}} as const satisfies {{
+  errores: Record<string, number>
+}}"""
+_ERROR_TS = "\n    DOCUMENTO_CON_ERROR: 409, // comentario"
+_ALERTA_TS = "\n    'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'x' },"
+
+
+@pytest.mark.parametrize("errores, alertas, esperado", [
+    ("", "", ({}, {})),  # objetivo: las dos vacias
+    ("\n    // sin pendientes", "", ({}, {})),  # vacia con un comentario
+    (_ERROR_TS, "", ({"DOCUMENTO_CON_ERROR": 409}, {})),  # solo errores (p. ej. EXP-002 ya en main)
+    ("", _ALERTA_TS, ({}, {"EXP-002": ("expediente", "informativa")})),  # solo alertas
+    (_ERROR_TS, _ALERTA_TS, ({"DOCUMENTO_CON_ERROR": 409}, {"EXP-002": ("expediente", "informativa")})),
+], ids=["vacias", "vacia-con-comentario", "solo-errores", "solo-alertas", "las-dos"])
+def test_pendientes_de_main_admite_listas_vacias(errores, alertas, esperado):
+    assert pendientes_de_main(_PENDIENTES_TS.format(errores=errores, alertas=alertas)) == esperado
+
+
+@pytest.mark.parametrize("fuente, mensaje", [
+    # una entrada que no se puede leer no pasa por "lista vacia"
+    (_PENDIENTES_TS.format(errores="\n    DOCUMENTO_CON_ERROR: '409',", alertas=""), r"entrada de .*\.errores"),
+    (_PENDIENTES_TS.format(errores="", alertas="\n    'EXP-002': {},"), r"entrada de .*\.alertas"),
+    # otra forma del objeto
+    ("export const CODIGOS_PENDIENTES_DE_MAIN = {\n  codigos: {},\n} as const", r"se esperaba \{errores"),
+], ids=["error-ilegible", "alerta-ilegible", "otra-forma"])
+def test_pendientes_de_main_avisa_si_no_puede_leer(fuente, mensaje):
+    with pytest.raises(AssertionError, match=rf"No se ha podido leer.*{mensaje}"):
+        pendientes_de_main(fuente)
+
+
+def test_pendientes_de_main_lee_el_codigos_ts_actual():
+    # Hoy siguen pendientes DOCUMENTO_CON_ERROR (se mueve cuando el PR #9 este en main) y EXP-002
+    errores, alertas = pendientes_de_main()
+    assert set(errores) <= {"DOCUMENTO_CON_ERROR"} and set(alertas) <= {"EXP-002"}
 
 
 def test_acciones_de_auditoria_iguales_que_endpoints_md():
