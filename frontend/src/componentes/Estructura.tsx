@@ -1,9 +1,14 @@
-import { FileText, FolderOpen, Lock, LogOut, UserRound, X } from 'lucide-react'
+import { FileText, FolderOpen, Lock, LogOut, ScrollText, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { alFolioCerrado } from '../api/cliente'
 import { ETIQUETA_ROL } from '../utilidades/etiquetas'
 import { useSesion } from './contextoSesion'
+import { SoloRol } from './SoloRol'
+
+const ROLES_AUDITORIA = ['admin'] as const // GET /auditoria
+const claseEnlace = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-slate-700 ${isActive ? 'bg-slate-700' : ''}`
 
 /** Cabecera comun de las paginas con sesion y aviso de folio en solo lectura */
 export function Estructura() {
@@ -22,11 +27,15 @@ export function Estructura() {
           <Link to="/folios" className="flex items-center gap-2 font-semibold">
             <FileText className="size-5" aria-hidden /> Gestor Documental
           </Link>
-          <nav aria-label="Principal">
-            <NavLink to="/folios" end className={({ isActive }) =>
-              `flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-slate-700 ${isActive ? 'bg-slate-700' : ''}`}>
+          <nav aria-label="Principal" className="flex items-center gap-1">
+            <NavLink to="/folios" end className={claseEnlace}>
               <FolderOpen className="size-4" aria-hidden /> Folios
             </NavLink>
+            <SoloRol roles={ROLES_AUDITORIA}>
+              <NavLink to="/auditoria" className={claseEnlace}>
+                <ScrollText className="size-4" aria-hidden /> Auditoría
+              </NavLink>
+            </SoloRol>
           </nav>
         </div>
         {estado.tipo === 'autenticado' && (

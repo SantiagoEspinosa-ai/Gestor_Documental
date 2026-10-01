@@ -26,9 +26,9 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 ## Estructura de `src/`
 | Carpeta | Contenido |
 |---|---|
-| `api/` | `cliente.ts` (HTTP), `sesion.ts` (token), `auth.ts` (login y `/auth/yo`) |
+| `api/` | `cliente.ts` (HTTP), `sesion.ts` (token), `auth.ts` (login y `/auth/yo`), `folios.ts`, `revision.ts`, `auditoria.ts` |
 | `mocks/` | Handlers de msw (tarea 3); `mocks/datos/` con los JSON ficticios |
-| `paginas/` | Una pagina por ruta: login, folios, expediente |
+| `paginas/` | Una pagina por ruta: login, folios, carga, expediente, auditoria |
 | `componentes/` | Sesion (`ProveedorSesion`, `RutaProtegida`), `Estructura` comun |
 | `tipos/` | `contrato.ts` (Contrato 1 exacto y peticiones/respuestas del 2), `codigos.ts` (errores y alertas oficiales) |
 | `utilidades/` | `entorno.ts` (variables `VITE_*`) |
@@ -146,6 +146,22 @@ hace fallar el build si queda algun rastro.
   cambio de estado vuelve a los 3 s. Tras 10 minutos sin cambios (Ollama lento o caido) se detiene y
   muestra "Sigue en proceso" con "Comprobar de nuevo", que consulta en el momento y lo reanuda. Nunca
   solapa consultas y se para al salir de la pantalla.
+- Auditoria (`paginas/PaginaAuditoria.tsx`, `/auditoria`, solo admin; enlace "Auditoría" en la
+  cabecera solo para ese rol, los demas que entran por URL ven "Sin permiso"): `GET /auditoria`
+  segun el ADR-008 (`api/auditoria.ts`), 50 por pagina por defecto (selector 20, 50 o 100), del mas
+  reciente al mas antiguo, filtro por folio (texto, en mayusculas y sin espacios) y paginacion con el
+  total. Filtro, pagina y tamano van en la URL (`?folio=&pagina=&tamano_pagina=`): se puede compartir
+  el enlace y un valor fuera de rango puesto a mano muestra el 422 con un enlace a la auditoria sin
+  filtros. Columnas: fecha con segundos, usuario ("Sistema" si es `null`: procesamiento en segundo
+  plano), accion con texto legible (`ETIQUETA_ACCION`, lista cerrada del ADR-006 1.5), folio con
+  enlace al expediente, documento (id abreviado), detalle y modelo · `version_prompt`.
+  - Detalle (`utilidades/auditoria.ts`, `describirDetalle`): nunca JSON en bruto. Frases por accion con
+    las claves conocidas (resultado del login; SHA-256 abreviado, tamano y duplicado de la subida;
+    resultado del analisis; campo corregido o mostrado; tipo confirmado con su `nombre_visible`;
+    alerta y su revision; decision). Cualquier otra clave, o una conocida con un tipo inesperado, sale
+    enmascarada (`****` y los 4 ultimos caracteres; objetos y listas ocultos): si la API anade valores
+    o comentarios, no se ven completos.
+  - Estados: cargando, vacio (con o sin filtro) y error (403 `SIN_PERMISO`, 422 `PETICION_INVALIDA`).
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.
@@ -157,8 +173,10 @@ npm test        # Vitest
 - Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler) y flujos.
 - Pantallas (jsdom + Testing Library + msw/node, `src/pruebas/app.tsx`): login con los 3 usuarios del
   mock, errores, recuperacion de sesion, caducidad, control de roles, folios (orden, filtros,
-  paginacion, nuevo folio) y carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del
-  sondeo). `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
+  paginacion, nuevo folio), carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del
+  sondeo) y auditoria (paginacion, tamano, filtro, detalle por accion sin valores completos, vacio,
+  403, 422 y roles). `usarServidorMock()` da tambien `consultas` (con la query) y `servidor` (para
+  sobrescribir un handler en un test con `servidor.use`). `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
   Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
@@ -176,7 +194,10 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   sano, esperar completado, expediente, revisar alertas, aprobar con comentario y folio en solo
   lectura); bloqueante de `ONB-2026-000001` ("Aplica" en `REG-vigencia_documento`, Aprobar
   deshabilitado con el motivo, Rechazar con confirmacion); roles (admin sin acciones, integrador sin
-  lista de folios ni original); duplicado (`DUP-001` al subir dos veces y revisarlo como falso positivo).
+  lista de folios ni original); duplicado (`DUP-001` al subir dos veces y revisarlo como falso positivo);
+  auditoria (el revisor rechaza `ONB-2026-000001`, cambia a admin sin recargar con `cambiarDeUsuario`,
+  abre "Auditoría", filtra por ese folio, ve "Decisión: Rechazado" y abre el expediente; el revisor
+  que entra por URL ve "Sin permiso").
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.
 

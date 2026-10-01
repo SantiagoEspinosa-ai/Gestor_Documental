@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { Estructura } from './componentes/Estructura'
 import { RutaProtegida } from './componentes/RutaProtegida'
+import { PaginaAuditoria } from './paginas/PaginaAuditoria'
 import { PaginaCarga } from './paginas/PaginaCarga'
 import { PaginaExpediente } from './paginas/PaginaExpediente'
 import { PaginaFolios } from './paginas/PaginaFolios'
@@ -17,6 +18,9 @@ export function App() {
           <Route path="/folios" element={<PaginaFolios />} />
           <Route path="/folios/:folio" element={<PaginaExpediente />} />
           <Route path="/folios/:folio/carga" element={<PaginaCarga />} />
+          <Route element={<RutaProtegida roles={['admin']} />}>
+            <Route path="/auditoria" element={<PaginaAuditoria />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<PaginaNoEncontrada />} />

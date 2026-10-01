@@ -1,5 +1,7 @@
 // Textos visibles de los valores del contrato
-import type { Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, Recomendacion, Rol, Severidad } from '../tipos/contrato'
+import type {
+  AccionAuditoria, Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, Recomendacion, Rol, Severidad,
+} from '../tipos/contrato'
 
 export const ETIQUETA_ROL: Record<Rol, string> = { admin: 'Administración', revisor: 'Revisión', integrador: 'Integración' }
 
@@ -21,6 +23,19 @@ export const ETIQUETA_SEVERIDAD: Record<Severidad, string> = {
 
 export const ETIQUETA_DECISION: Record<DecisionHumana, string> = { aprobar: 'Aprobado', rechazar: 'Rechazado' }
 
+/** Lista cerrada de acciones de la auditoria (ADR-006 1.5; dato_revelado en la etapa 3) */
+export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
+  login: 'Inicio de sesión',
+  folio_creado: 'Folio creado',
+  documento_subido: 'Documento subido',
+  documento_procesado: 'Documento analizado',
+  dato_corregido: 'Dato corregido',
+  clasificacion_confirmada: 'Clasificación confirmada',
+  alerta_resuelta: 'Alerta revisada',
+  decision_tomada: 'Decisión del folio',
+  dato_revelado: 'Dato sensible mostrado',
+}
+
 /** Estado de revision de una alerta (ADR-006 2.2): null = sin revisar; false = falso positivo */
 export function etiquetaRevision(alerta: Pick<Alerta, 'aplica'>): string {
   if (alerta.aplica === null) return 'Sin revisar'
@@ -37,4 +52,12 @@ export const AYUDA_CONFIANZA =
 export function fechaHora(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+/** Como fechaHora, con segundos (auditoria: varias acciones en el mismo minuto) */
+export function fechaHoraCompleta(iso: string | null): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  })
 }

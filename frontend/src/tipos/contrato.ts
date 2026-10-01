@@ -206,6 +206,15 @@ export interface FiltrosFolios {
   tamano_pagina?: number
 }
 
+/** GET /auditoria (ADR-008, punto 1) */
+export interface FiltrosAuditoria {
+  folio?: string
+  /** >= 1 */
+  pagina?: number
+  /** 1..100, 50 por defecto */
+  tamano_pagina?: number
+}
+
 /** GET /folios */
 export interface PaginaFolios {
   elementos: ResumenFolio[]

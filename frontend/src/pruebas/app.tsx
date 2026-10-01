@@ -17,16 +17,20 @@ export const INICIO_RELOJ = Date.UTC(2026, 9, 1, 10, 0, 0)
 
 /** Registra el servidor msw del fichero de test; cada test empieza con un estado nuevo */
 export function usarServidorMock() {
-  const contexto = { estado: null as unknown as EstadoMock, t: INICIO_RELOJ, peticiones: [] as string[] }
   const servidor = setupServer()
+  // servidor: para sobrescribir un handler en un test (servidor.use); se restablece en cada test
+  const contexto = { estado: null as unknown as EstadoMock, t: INICIO_RELOJ, peticiones: [] as string[], consultas: [] as string[], servidor }
   servidor.events.on('request:start', ({ request }) => {
-    contexto.peticiones.push(`${request.method} ${new URL(request.url).pathname.replace(/^\/api\/v1/, '')}`)
+    const url = new URL(request.url)
+    contexto.peticiones.push(`${request.method} ${url.pathname.replace(/^\/api\/v1/, '')}`)
+    contexto.consultas.push(`${request.method} ${url.pathname.replace(/^\/api\/v1/, '')}${url.search}`)
   })
   beforeAll(() => servidor.listen({ onUnhandledRequest: 'error' }))
   afterAll(() => servidor.close())
   beforeEach(() => {
     contexto.t = INICIO_RELOJ
     contexto.peticiones = []
+    contexto.consultas = []
     contexto.estado = crearEstado(() => contexto.t)
     servidor.resetHandlers(...crearHandlers(contexto.estado).handlers)
     borrarSesion()

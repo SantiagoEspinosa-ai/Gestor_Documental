@@ -15,6 +15,16 @@ export async function entrar(page: Page, usuario: UsuarioDemo) {
   await expect(page).toHaveURL(/\/folios$/)
 }
 
+/** Cierra la sesion y entra con otro usuario desde el formulario, sin recargar: conserva el estado de los mocks */
+export async function cambiarDeUsuario(page: Page, usuario: UsuarioDemo) {
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await page.getByLabel('Usuario').fill(usuario)
+  await page.getByLabel('Contraseña', { exact: true }).fill(CONTRASENAS[usuario])
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByTestId('usuario-actual')).toContainText(usuario)
+}
+
 /** Crea un folio onboarding desde "Nuevo folio" y deja la pagina en su carga de documentos */
 export async function nuevoFolio(page: Page): Promise<string> {
   await page.getByRole('button', { name: 'Nuevo folio' }).click()
