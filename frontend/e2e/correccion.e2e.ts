@@ -1,0 +1,43 @@
+// Corregir datos (PATCH /documentos/{id}/datos), con la regla decidida con PERSONA_1 en el PR #10:
+// un obligatorio no se vacia, un opcional vaciado queda en null y el anio va como entero de 4 cifras.
+import { expect, test } from '@playwright/test'
+import { abrirFolio, entrar } from './ayudas'
+
+test('revisor: no puede vaciar un campo obligatorio, si uno opcional, y el anio se valida antes de enviar', async ({ page }) => {
+  await entrar(page, 'revisor.demo')
+  await abrirFolio(page, 'ONB-2026-000001') // pasaporte seleccionado
+  const fila = (campo: string) => page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: campo, exact: true }) })
+
+  // Obligatorio: vacio -> Guardar deshabilitado y el motivo a la vista; Cancelar lo deja como estaba
+  const nombre = fila('Nombre completo')
+  await nombre.getByRole('button', { name: 'Corregir Nombre completo' }).click()
+  await nombre.getByLabel('Nuevo valor de Nombre completo').fill('')
+  await expect(nombre.getByRole('button', { name: 'Guardar corrección' })).toBeDisabled()
+  await expect(nombre).toContainText('Este campo es obligatorio: no se puede dejar vacío.')
+  await nombre.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(nombre).toContainText('LUIS DEMO PRUEBAS') // caso vencido (persona ficticia 2)
+  await expect(nombre).not.toContainText('Corregido por revisor')
+
+  // Opcional: vacio -> se guarda como null ("no detectado")
+  const nacionalidad = fila('Nacionalidad')
+  await nacionalidad.getByRole('button', { name: 'Corregir Nacionalidad' }).click()
+  await nacionalidad.getByLabel('Nuevo valor de Nacionalidad').fill('')
+  await nacionalidad.getByRole('button', { name: 'Guardar corrección' }).click()
+  await expect(page.getByTestId('aviso')).toHaveText('Nacionalidad corregido.')
+  await expect(nacionalidad).toContainText('no detectado')
+  await expect(nacionalidad).toContainText('Corregido por revisor (antes: UTOPICA)')
+
+  // anio: 4 cifras; con menos no se puede guardar
+  await page.getByRole('button', { name: /credencial_elector_vencido_foto\.jpg/ }).click()
+  const vigencia = fila('Vigencia')
+  await vigencia.getByRole('button', { name: 'Corregir Vigencia' }).click()
+  const entrada = vigencia.getByLabel('Nuevo valor de Vigencia')
+  await entrada.fill('203')
+  await expect(vigencia.getByRole('button', { name: 'Guardar corrección' })).toBeDisabled()
+  await expect(vigencia).toContainText('El año debe tener 4 cifras (AAAA)')
+  await entrada.fill('2030')
+  await vigencia.getByRole('button', { name: 'Guardar corrección' }).click()
+  await expect(page.getByTestId('aviso')).toHaveText('Vigencia corregido.')
+  await expect(vigencia).toContainText('2030')
+  await expect(vigencia).toContainText('Corregido por revisor (antes: 2029)')
+})

@@ -471,6 +471,41 @@ describe('campos sin valor', () => {
     expect(r.cuerpo.correcciones.slice(-2).map((c) => [c.campo, c.valor_nuevo])).toEqual([['sexo', null], ['nacionalidad', null]])
   })
 
+  it('PATCH de datos: null en un obligatorio da 422 y no cambia nada (tampoco los otros campos del cuerpo)', async () => {
+    const token = await entrar('revisor.demo')
+    const pasaporte = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo.documentos[0]
+    const ruta = `/documentos/${pasaporte.identificador_unico_documento}/datos`
+    for (const vacio of [null, '', '   ']) {
+      const r = await api('PATCH', ruta, { token, cuerpo: { nombre_completo: vacio, sexo: 'F' } })
+      expect([r.status, r.cuerpo.codigo]).toEqual([422, 'PETICION_INVALIDA'])
+      expect(String(r.cuerpo.mensaje)).toContain('nombre_completo')
+    }
+    const despues = (await api<ResultadoDocumento>('GET', `/documentos/${pasaporte.identificador_unico_documento}`, { token })).cuerpo
+    expect([despues.datos_extraidos.nombre_completo, despues.datos_extraidos.sexo]).toEqual(
+      [pasaporte.datos_extraidos.nombre_completo, pasaporte.datos_extraidos.sexo])
+    expect(despues.correcciones).toEqual(pasaporte.correcciones)
+    // null en un opcional se acepta
+    const opcional = await api<ResultadoDocumento>('PATCH', ruta, { token, cuerpo: { nacionalidad: null } })
+    expect([opcional.status, opcional.cuerpo.datos_extraidos.nacionalidad]).toEqual([200, null])
+  })
+
+  it('PATCH de datos: anio como entero de 4 cifras o "AAAA" se guarda como entero; otro formato, 422', async () => {
+    const token = await entrar('revisor.demo')
+    const credencial = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo.documentos[1]
+    const ruta = `/documentos/${credencial.identificador_unico_documento}/datos`
+    for (const [enviado, guardado] of [[2030, 2030], ['2031', 2031], [' 2032 ', 2032]] as const) {
+      const r = await api<ResultadoDocumento>('PATCH', ruta, { token, cuerpo: { vigencia: enviado } })
+      expect([JSON.stringify(enviado), r.status, r.cuerpo.datos_extraidos.vigencia]).toEqual([JSON.stringify(enviado), 200, guardado])
+    }
+    for (const malo of [30, 20300, 2030.5, '30', '0999', '20a9', 'AAAA', true, [2030]]) {
+      const r = await api('PATCH', ruta, { token, cuerpo: { vigencia: malo } })
+      expect([JSON.stringify(malo), r.status, r.cuerpo.codigo]).toEqual([JSON.stringify(malo), 422, 'PETICION_INVALIDA'])
+      expect(String(r.cuerpo.mensaje)).toContain('vigencia')
+    }
+    const despues = (await api<ResultadoDocumento>('GET', `/documentos/${credencial.identificador_unico_documento}`, { token })).cuerpo
+    expect(despues.datos_extraidos.vigencia).toBe(2032)
+  })
+
   it('los datos iniciales no tienen "" ni solo espacios, y VAL-004 va en un campo opcional null', async () => {
     const token = await entrar('revisor.demo')
     const folios = await Promise.all(['ONB-2026-000001', 'ONB-2026-000002', 'ONB-2026-000003', 'ONB-2026-000004']

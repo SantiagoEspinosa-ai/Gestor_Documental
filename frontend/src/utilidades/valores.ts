@@ -18,11 +18,27 @@ export function formatearValor(valor: unknown, tipo?: string | null): string {
   return String(valor)
 }
 
-/** Valor corregido para el PATCH de datos: vacio o solo espacios -> null (nunca ""); anio como numero */
-export function valorParaEnviar(texto: string, tipo?: string | null): unknown {
-  if (sinValor(texto)) return null
-  if (tipo === 'anio' && /^\d{4}$/.test(texto.trim())) return Number(texto.trim())
-  return texto.trim()
+/** Anio de 4 cifras (1000-9999): sin ceros a la izquierda, para que siga teniendo 4 cifras como entero */
+export const PATRON_ANIO = /^[1-9]\d{3}$/
+
+export const MOTIVO_OBLIGATORIO = 'Este campo es obligatorio: no se puede dejar vacío.'
+export const MOTIVO_ANIO = 'El año debe tener 4 cifras (AAAA), por ejemplo 2029.'
+
+export type CorreccionPreparada = { valida: true; valor: unknown } | { valida: false; motivo: string }
+
+/**
+ * Valor corregido para el PATCH de datos, segun la ficha (decidido con PERSONA_1 en el PR #10):
+ * - vacio o solo espacios: null en un campo opcional (nunca ""); en uno obligatorio no se puede enviar;
+ * - anio: entero de 4 cifras; otro formato no se puede enviar;
+ * - el resto: el texto sin espacios a los lados.
+ */
+export function prepararCorreccion(texto: string, campo: { tipo?: string | null; obligatorio?: boolean } = {}): CorreccionPreparada {
+  const limpio = texto.trim()
+  if (!limpio) return campo.obligatorio ? { valida: false, motivo: MOTIVO_OBLIGATORIO } : { valida: true, valor: null }
+  if (campo.tipo === 'anio') {
+    return PATRON_ANIO.test(limpio) ? { valida: true, valor: Number(limpio) } : { valida: false, motivo: MOTIVO_ANIO }
+  }
+  return { valida: true, valor: limpio }
 }
 
 /** Nombre legible de un campo tecnico: fecha_nacimiento -> "Fecha nacimiento" */

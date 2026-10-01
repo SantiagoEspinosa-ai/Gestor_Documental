@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { formatearValor, nombreCampo, porcentaje, sinValor, TEXTO_NO_DETECTADO, valorParaEnviar } from './valores'
+import {
+  formatearValor, MOTIVO_ANIO, MOTIVO_OBLIGATORIO, nombreCampo, porcentaje, prepararCorreccion, sinValor, TEXTO_NO_DETECTADO,
+} from './valores'
 
 describe('formato de valores', () => {
   it('null, "" y solo espacios se muestran como "no detectado"', () => {
@@ -17,11 +19,29 @@ describe('formato de valores', () => {
     expect(formatearValor('1990-01-31', 'texto')).toBe('1990-01-31')
   })
 
-  it('valor corregido a enviar: vacio -> null, nunca ""; anio como numero', () => {
-    expect(valorParaEnviar('   ', 'texto')).toBeNull()
-    expect(valorParaEnviar('', 'fecha')).toBeNull()
-    expect(valorParaEnviar(' ANA ', 'texto')).toBe('ANA')
-    expect(valorParaEnviar('2029', 'anio')).toBe(2029)
+  it('correccion de un campo opcional: vacio -> null, nunca ""', () => {
+    expect(prepararCorreccion('   ', { tipo: 'texto', obligatorio: false })).toEqual({ valida: true, valor: null })
+    expect(prepararCorreccion('', { tipo: 'fecha' })).toEqual({ valida: true, valor: null }) // sin ficha: opcional
+    expect(prepararCorreccion(' ANA ', { tipo: 'texto' })).toEqual({ valida: true, valor: 'ANA' })
+  })
+
+  it('correccion de un campo obligatorio: no se puede dejar vacio', () => {
+    for (const vacio of ['', '   ', '\t']) {
+      expect(prepararCorreccion(vacio, { tipo: 'texto', obligatorio: true })).toEqual({ valida: false, motivo: MOTIVO_OBLIGATORIO })
+    }
+    expect(prepararCorreccion('ANA EJEMPLO PRUEBA', { tipo: 'texto', obligatorio: true }))
+      .toEqual({ valida: true, valor: 'ANA EJEMPLO PRUEBA' })
+  })
+
+  it('anio: entero de 4 cifras; otro formato no se puede enviar', () => {
+    expect(prepararCorreccion('2029', { tipo: 'anio', obligatorio: true })).toEqual({ valida: true, valor: 2029 })
+    expect(prepararCorreccion(' 2030 ', { tipo: 'anio' })).toEqual({ valida: true, valor: 2030 })
+    for (const malo of ['29', '20299', '0999', '2029.5', '20a9', '-202', '2 029']) {
+      expect(prepararCorreccion(malo, { tipo: 'anio', obligatorio: true })).toEqual({ valida: false, motivo: MOTIVO_ANIO })
+    }
+    // vacio en un anio: manda la regla de obligatorio
+    expect(prepararCorreccion('', { tipo: 'anio', obligatorio: true })).toEqual({ valida: false, motivo: MOTIVO_OBLIGATORIO })
+    expect(prepararCorreccion('', { tipo: 'anio', obligatorio: false })).toEqual({ valida: true, valor: null })
   })
 
   it('nombre del campo y porcentaje', () => {

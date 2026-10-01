@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { MS_HASTA_COMPLETADO } from '../mocks/logica'
 import { entrarComo, montar, usarServidorMock } from '../pruebas/app'
 import { MENSAJES_ERROR } from '../utilidades/mensajes'
+import { MOTIVO_ANIO, MOTIVO_OBLIGATORIO } from '../utilidades/valores'
 import { PaginaExpediente } from './PaginaExpediente'
 
 const mock = usarServidorMock()
@@ -24,7 +25,45 @@ const aprobar = () => screen.getByRole('button', { name: 'Aprobar' }) as HTMLBut
 const posts = (ruta: string) => mock.peticiones.filter((p) => p === ruta).length
 
 describe('acciones del revisor', () => {
-  it('corrige un dato inline mostrando el valor anterior; vaciarlo lo deja en null ("no detectado")', async () => {
+  it('un campo obligatorio no se puede guardar vacío: botón deshabilitado y motivo visible, sin PATCH', async () => {
+    const u = await abrir('ONB-2026-000001') // pasaporte: nombre_completo es obligatorio
+    await u.click(within(fila('Nombre completo')).getByRole('button', { name: 'Corregir Nombre completo' }))
+    const entrada = within(fila('Nombre completo')).getByLabelText('Nuevo valor de Nombre completo') as HTMLInputElement
+    const guardar = () => within(fila('Nombre completo')).getByRole('button', { name: 'Guardar corrección' }) as HTMLButtonElement
+    expect(guardar().disabled).toBe(false) // empieza con el valor actual
+    expect(within(fila('Nombre completo')).getByText('Campo obligatorio de la ficha: escribe el valor correcto.')).toBeTruthy()
+    await u.clear(entrada)
+    expect(guardar().disabled).toBe(true)
+    expect(within(fila('Nombre completo')).getByText(MOTIVO_OBLIGATORIO)).toBeTruthy()
+    expect(entrada.getAttribute('aria-invalid')).toBe('true')
+    await u.type(entrada, '   {Enter}') // solo espacios e Intro: tampoco envia
+    expect(guardar().disabled).toBe(true)
+    expect(mock.peticiones.filter((p) => p.startsWith('PATCH '))).toEqual([])
+    await u.type(entrada, 'ANA EJEMPLO PRUEBA')
+    expect(guardar().disabled).toBe(false)
+    expect(within(fila('Nombre completo')).queryByText(MOTIVO_OBLIGATORIO)).toBeNull()
+  })
+
+  it('anio: valida las 4 cifras antes de enviar y lo envía como entero', async () => {
+    const u = await abrir('ONB-2026-000001')
+    await u.click(screen.getByRole('button', { name: /credencial_elector_vencido_foto\.jpg/ }))
+    await u.click(within(fila('Vigencia')).getByRole('button', { name: 'Corregir Vigencia' }))
+    const entrada = within(fila('Vigencia')).getByLabelText('Nuevo valor de Vigencia')
+    const guardar = () => within(fila('Vigencia')).getByRole('button', { name: 'Guardar corrección' }) as HTMLButtonElement
+    await u.clear(entrada)
+    await u.type(entrada, '203')
+    expect(guardar().disabled).toBe(true)
+    expect(within(fila('Vigencia')).getByText(MOTIVO_ANIO)).toBeTruthy()
+    await u.type(entrada, '0')
+    expect(guardar().disabled).toBe(false)
+    await u.click(guardar())
+    await waitFor(() => expect(aviso().textContent).toBe('Vigencia corregido.'))
+    const credencial = folioMock('ONB-2026-000001').documentos[1]
+    expect(credencial.datos_extraidos.vigencia).toBe(2030) // entero, no "2030"
+    expect(credencial.correcciones.at(-1)).toMatchObject({ campo: 'vigencia', valor_anterior: 2029, valor_nuevo: 2030 })
+  })
+
+  it('corrige un dato inline mostrando el valor anterior; vaciar un campo opcional lo deja en null ("no detectado")', async () => {
     const u = await abrir('ONB-2026-000001') // pasaporte seleccionado
     await u.click(within(fila('Sexo')).getByRole('button', { name: 'Corregir Sexo' }))
     expect(within(fila('Sexo')).getByText('M')).toBeTruthy() // "Valor actual: M"

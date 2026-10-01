@@ -3,7 +3,7 @@
 import { Check, Pencil, X } from 'lucide-react'
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import type { Alerta, DecisionHumana, TipoDocumental } from '../tipos/contrato'
-import { formatearValor, nombreCampo, sinValor, valorParaEnviar } from '../utilidades/valores'
+import { formatearValor, nombreCampo, prepararCorreccion, sinValor } from '../utilidades/valores'
 
 const boton = 'inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs disabled:opacity-50'
 
@@ -13,17 +13,22 @@ interface EditorCampoProps {
   campo: string
   valor: unknown
   tipo?: string | null
+  /** `obligatorio` de la ficha: no se puede guardar vacio */
+  obligatorio?: boolean
   deshabilitado: boolean
   /** Devuelve true si se guardo */
   alGuardar: (valor: unknown) => Promise<boolean>
   children: ReactNode
 }
 
-export function EditorCampo({ campo, valor, tipo, deshabilitado, alGuardar, children }: EditorCampoProps) {
+export function EditorCampo({ campo, valor, tipo, obligatorio = false, deshabilitado, alGuardar, children }: EditorCampoProps) {
   const [editando, setEditando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
   const id = useId()
+  const idAyuda = useId()
+  const idMotivo = useId()
+  const preparada = prepararCorreccion(texto, { tipo, obligatorio })
 
   if (!editando) {
     return (
@@ -40,8 +45,9 @@ export function EditorCampo({ campo, valor, tipo, deshabilitado, alGuardar, chil
 
   async function enviar(e: FormEvent) {
     e.preventDefault()
+    if (!preparada.valida) return // el boton ya esta deshabilitado; Intro tampoco envia
     setGuardando(true)
-    const ok = await alGuardar(valorParaEnviar(texto, tipo))
+    const ok = await alGuardar(preparada.valor)
     setGuardando(false)
     if (ok) setEditando(false)
   }
@@ -50,12 +56,21 @@ export function EditorCampo({ campo, valor, tipo, deshabilitado, alGuardar, chil
     <form onSubmit={enviar} className="space-y-1">
       <p className="text-xs text-slate-600">Valor actual: <span className="font-medium">{formatearValor(valor, tipo)}</span></p>
       <label htmlFor={id} className="sr-only">Nuevo valor de {nombreCampo(campo)}</label>
+      {/* anio como texto con teclado numerico: un input number vacia el valor si no es un numero y el
+          aviso de formato no llegaria a salir */}
       <input id={id} value={texto} onChange={(e) => setTexto(e.target.value)} autoFocus
-        type={tipo === 'fecha' ? 'date' : tipo === 'anio' ? 'number' : 'text'}
+        type={tipo === 'fecha' ? 'date' : 'text'} inputMode={tipo === 'anio' ? 'numeric' : undefined}
+        maxLength={tipo === 'anio' ? 4 : undefined} placeholder={tipo === 'anio' ? 'AAAA' : undefined}
+        aria-invalid={!preparada.valida} aria-describedby={preparada.valida ? idAyuda : `${idMotivo} ${idAyuda}`}
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
-      <p className="text-xs text-slate-500">Déjalo vacío si el documento no trae este dato (queda como “no detectado”).</p>
+      <p id={idMotivo} aria-live="polite" className="text-xs text-red-700">{preparada.valida ? '' : preparada.motivo}</p>
+      <p id={idAyuda} className="text-xs text-slate-500">
+        {obligatorio
+          ? 'Campo obligatorio de la ficha: escribe el valor correcto.'
+          : 'Déjalo vacío si el documento no trae este dato (queda como “no detectado”).'}
+      </p>
       <div className="flex gap-2">
-        <button type="submit" disabled={guardando} className={`${boton} border-blue-700 bg-blue-700 text-white`}>
+        <button type="submit" disabled={guardando || !preparada.valida} className={`${boton} border-blue-700 bg-blue-700 text-white`}>
           <Check className="size-3" aria-hidden /> {guardando ? 'Guardando…' : 'Guardar corrección'}
         </button>
         <button type="button" onClick={() => setEditando(false)} disabled={guardando} className={`${boton} border-slate-300`}>

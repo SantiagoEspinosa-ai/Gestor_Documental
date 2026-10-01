@@ -9,8 +9,9 @@ import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type Se
 import {
   avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, recalcularTiposDelProceso,
   resumenFolio,
-  resumenMarkdown, tipoExtraccion, valorOnull,
+  resumenMarkdown, tipoExtraccion,
 } from './logica'
+import { PATRON_ANIO, sinValor } from '../utilidades/valores'
 import { error, FalloApi, leerJson } from './respuestas'
 import { emitirToken, validarToken } from './token'
 import { USUARIOS_DEMO } from './usuarios'
@@ -55,6 +56,25 @@ function paginacion(q: URLSearchParams, tamanoPorDefecto: number): { pagina: num
     throw new FalloApi('PETICION_INVALIDA', '`pagina` >= 1 y `tamano_pagina` entre 1 y 100')
   }
   return { pagina, tamano }
+}
+
+/**
+ * Valor de un campo en PATCH /documentos/{id}/datos, como la API (decidido con PERSONA_1 en el PR #10):
+ * sin valor (null, "" o solo espacios) -> null solo si el campo es opcional; en uno obligatorio, 422.
+ * anio: entero de 4 cifras o texto "AAAA", guardado como entero; otro formato, 422. El mensaje nombra el
+ * campo, nunca el valor. Texto y fecha se guardan como llegan.
+ */
+function valorCorregido(campo: string, recibido: unknown, definicion: { tipo?: string; obligatorio?: boolean }): unknown {
+  if (sinValor(recibido)) {
+    if (definicion.obligatorio) throw new FalloApi('PETICION_INVALIDA', `\`${campo}\` es obligatorio: no se puede dejar sin valor`)
+    return null
+  }
+  if (definicion.tipo === 'anio') {
+    if (typeof recibido === 'number' && Number.isInteger(recibido) && PATRON_ANIO.test(String(recibido))) return recibido
+    if (typeof recibido === 'string' && PATRON_ANIO.test(recibido.trim())) return Number(recibido.trim())
+    throw new FalloApi('PETICION_INVALIDA', `\`${campo}\`: se esperaba un anio de 4 cifras (entero o "AAAA")`)
+  }
+  return recibido
 }
 
 function autenticar(estado: EstadoMock, request: Request): SesionMock {
@@ -290,8 +310,9 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (!Object.keys(cuerpo).length || desconocidos.length) {
       throw new FalloApi('PETICION_INVALIDA', `Campos no validos para ${tipoExtraccion(doc)}: ${desconocidos.join(', ') || '(ninguno)'}`)
     }
-    for (const [campo, recibido] of Object.entries(cuerpo)) {
-      const valor = valorOnull(recibido) // "" o solo espacios: el campo queda sin valor (null)
+    // Se validan todos antes de aplicar ninguno: un 422 no deja la correccion a medias
+    const valores = Object.entries(cuerpo).map(([campo, recibido]) => [campo, valorCorregido(campo, recibido, campos[campo])] as const)
+    for (const [campo, valor] of valores) {
       doc.correcciones.push({ campo, valor_anterior: doc.datos_extraidos[campo] ?? null, valor_nuevo: valor, usuario: usuario.usuario, fecha: fechaIso(estado) })
       doc.datos_extraidos[campo] = valor
       doc.nivel_confianza_por_campo[campo] = 1

@@ -102,8 +102,14 @@ hace fallar el build si queda algun rastro.
   - `GET /auditoria` paginada segun el ADR-008 (`PaginaAuditoria`): `tamano_pagina` 50 por defecto y
     de 1 a 100, orden `creado_en` desc e `id` desc, filtro por `folio`, 422 `PETICION_INVALIDA` fuera
     de rango.
-- Campos sin valor: siempre `null`, nunca `""` ni solo espacios (tambien al corregir con PATCH de
-  datos), con confianza 0 (ADR-007) y sin evidencia. La UI muestra `null` como "no detectado".
+- Campos sin valor: siempre `null`, nunca `""` ni solo espacios, con confianza 0 (ADR-007) y sin
+  evidencia. La UI muestra `null` como "no detectado".
+- `PATCH /documentos/{id}/datos`, como lo decidio PERSONA_1 en el PR #10:
+  - sin valor (`null`, `""` o solo espacios) se acepta como `null` solo en un campo `obligatorio: false`; en uno obligatorio, 422 `PETICION_INVALIDA`;
+  - `anio`: entero de 4 cifras o texto `"AAAA"`, guardado como entero; otro formato, 422;
+  - el mensaje nombra el campo, nunca el valor, y se valida todo el cuerpo antes de aplicar nada.
+
+  La ficha con la que se valida y la forma del `detalle` de auditoria siguen pendientes del PR #9.
 - Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
   `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y la informativa `EXP-002` (tipo no pedido
   por el proceso, expediente). Los mocks ya los usan. Cuando entren en main se pasan a los oficiales
@@ -150,8 +156,10 @@ hace fallar el build si queda algun rastro.
     severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
     icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
   - Acciones del revisor (`componentes/AccionesRevisor.tsx`, `api/revision.ts`), solo rol revisor y
-    folio abierto: corregir un dato inline mostrando el valor actual (vaciarlo envia `null`, nunca
-    `""`); confirmar la clasificacion (si cambia el tipo vuelve a `pendiente` y arranca el sondeo);
+    folio abierto: corregir un dato inline mostrando el valor actual (`utilidades/valores.ts`,
+    `prepararCorreccion`). En un campo opcional, vaciarlo envia `null`, nunca `""`. En uno obligatorio
+    de la ficha no se puede guardar vacio: "Guardar" queda deshabilitado y se explica por que. Un
+    `anio` se valida antes de enviar (4 cifras, `AAAA`) y va como entero. Confirmar la clasificacion (si cambia el tipo vuelve a `pendiente` y arranca el sondeo);
     "Aplica" / "Falso positivo" con comentario en alertas de documento y de expediente, por
     `alerta_id`; decision aprobar/rechazar con comentario y confirmacion. Aprobar esta deshabilitado
     mientras haya bloqueantes que no sean falso positivo (regla 2.2) y se listan las que bloquean.
@@ -191,7 +199,7 @@ hace fallar el build si queda algun rastro.
 ```
 npm test        # Vitest
 ```
-155 tests en 18 ficheros (2026-10-01):
+161 tests en 18 ficheros (2026-10-01):
 - Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler), flujos, datos y token
   (sigue valido tras reiniciar msw; uno retocado o inventado da `NO_AUTENTICADO`).
 - Componentes: `BarraConfianza`, `ListaAlertas` y `SoloRol`.
@@ -231,8 +239,9 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   abre "Auditoría", filtra por ese folio, ve "Decisión: Rechazado" y abre el expediente; sin sesion en
   `/auditoria?tamano_pagina=500`, tras el login como admin vuelve con los parametros y ve el 422;
   recargar mantiene la sesion y la URL completa; el revisor
-  que entra por URL ve "Sin permiso").
-- 9 tests en 5 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
+  que entra por URL ve "Sin permiso"); correccion de datos (un obligatorio no se vacia, un opcional
+  vaciado queda en "no detectado", y un `anio` con menos de 4 cifras no se guarda).
+- 10 tests en 6 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
   `nuevoFolio`, `subir`, `filaCarga` y `abrirFolio`.
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.
