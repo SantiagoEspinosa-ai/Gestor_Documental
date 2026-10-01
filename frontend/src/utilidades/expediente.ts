@@ -29,11 +29,13 @@ export function tiposRequeridosQueFaltan(
   return proceso.tipos_requeridos.filter((tipo) => !presentes.has(tipo))
 }
 
-/** Tipos de los documentos que el proceso no pide ni como requeridos ni como opcionales (EXP-002) */
-export function tiposNoPedidos(
-  expediente: Pick<ResultadoExpediente, 'documentos'>, proceso: Pick<Proceso, 'tipos_requeridos' | 'tipos_opcionales'>,
-): string[] {
-  const pedidos = new Set([...proceso.tipos_requeridos, ...proceso.tipos_opcionales])
-  const tipos = expediente.documentos.map(tipoEfectivo).filter((t): t is string => t !== null && !pedidos.has(t))
-  return [...new Set(tipos)]
+/**
+ * Tipo efectivo del documento si el proceso no lo pide ni como requerido ni como opcional (EXP-002, que
+ * va en las alertas del documento); null si esta previsto o no tiene tipo
+ */
+export function tipoNoPrevisto(
+  doc: ResultadoDocumento, proceso: Pick<Proceso, 'tipos_requeridos' | 'tipos_opcionales'>,
+): string | null {
+  const tipo = tipoEfectivo(doc)
+  return tipo !== null && !proceso.tipos_requeridos.includes(tipo) && !proceso.tipos_opcionales.includes(tipo) ? tipo : null
 }

@@ -2,7 +2,7 @@
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
 import type { Alerta, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental } from '../tipos/contrato'
 import {
-  alertasQueBloquean, bloquea, enProceso, tipoEfectivo, tipoExtraccion, tiposNoPedidos, tiposRequeridosQueFaltan,
+  alertasQueBloquean, bloquea, enProceso, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
 } from '../utilidades/expediente'
 import { sinValor } from '../utilidades/valores'
 import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } from './estado'
@@ -67,28 +67,39 @@ function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void 
 }
 
 /**
- * EXP-001 (tipo requerido que falta) y EXP-002 (tipo no pedido), con campo = nombre del tipo y el
- * tipo efectivo de cada documento. Segun PERSONA_1 solo se recalculan al crear el folio y cuando un
- * documento se procesa o se confirma. Una alerta marcada como falso positivo (aplica=false) se conserva.
+ * Alertas que dependen de los tipos del proceso, con campo = nombre del tipo y el tipo efectivo de cada
+ * documento. Segun PERSONA_1 solo se recalculan al crear el folio y cuando un documento se procesa o se
+ * confirma. En las dos, cuando la condicion desaparece se borran las sin revisar y las confirmadas; solo
+ * se conserva el falso positivo (aplica=false).
+ * - EXP-001 (bloqueante, en alertas_expediente): una por tipo requerido que falta.
+ * - EXP-002 (informativa, en alertas_encontradas del DOCUMENTO; definida por PERSONA_1 en el PR #9):
+ *   una por documento completado cuyo tipo efectivo no esta ni en tipos_requeridos ni en
+ *   tipos_opcionales. No bloquea ni cambia la recomendacion. Un documento no completado no se toca.
  */
 export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoExpediente): void {
   const proceso = estado.procesos.find((p) => p.nombre === folio.proceso)
   if (!proceso) return
-  const esperadas = [
-    ...tiposRequeridosQueFaltan(folio, proceso).map((tipo) => ({
-      codigo: 'EXP-001', campo: tipo, severidad: 'bloqueante' as const, mensaje: `Falta ${tipo}, requerido por el proceso ${folio.proceso}`,
-    })),
-    ...tiposNoPedidos(folio, proceso).map((tipo) => ({
-      codigo: 'EXP-002', campo: tipo, severidad: 'informativa' as const, mensaje: `${tipo} no lo pide el proceso ${folio.proceso}`,
-    })),
-  ]
-  const clave = (a: { codigo: string; campo: string | null }) => `${a.codigo}|${a.campo}`
-  const vigentes = new Set(esperadas.map(clave))
-  const deTipo = (a: Alerta) => a.codigo === 'EXP-001' || a.codigo === 'EXP-002'
-  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !deTipo(a) || a.aplica === false || vigentes.has(clave(a)))
-  const existentes = new Set(folio.alertas_expediente.filter(deTipo).map(clave))
-  esperadas.filter((e) => !existentes.has(clave(e))).forEach((e) =>
-    folio.alertas_expediente.push(nuevaAlerta(estado, e.codigo, e.mensaje, e.severidad, e.campo)))
+
+  const faltan = new Set(tiposRequeridosQueFaltan(folio, proceso))
+  const esExp001 = (a: Alerta) => a.codigo === 'EXP-001'
+  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !esExp001(a) || a.aplica === false || faltan.has(a.campo ?? ''))
+  const conExp001 = new Set(folio.alertas_expediente.filter(esExp001).map((a) => a.campo))
+  faltan.forEach((tipo) => {
+    if (!conExp001.has(tipo)) {
+      folio.alertas_expediente.push(nuevaAlerta(estado, 'EXP-001', `Falta ${tipo}, requerido por el proceso ${folio.proceso}`, 'bloqueante', tipo))
+    }
+  })
+
+  for (const doc of folio.documentos) {
+    if (doc.estado_analisis !== 'completado') continue
+    const noPrevisto = tipoNoPrevisto(doc, proceso)
+    doc.alertas_encontradas = doc.alertas_encontradas.filter((a) =>
+      a.codigo !== 'EXP-002' || a.campo === noPrevisto || a.aplica === false)
+    if (noPrevisto && !doc.alertas_encontradas.some((a) => a.codigo === 'EXP-002' && a.campo === noPrevisto)) {
+      const nombre = ficha(estado, noPrevisto)?.nombre_visible ?? noPrevisto
+      doc.alertas_encontradas.push(nuevaAlerta(estado, 'EXP-002', `Tipo de documento no previsto en el proceso: ${nombre}`, 'informativa', noPrevisto))
+    }
+  }
   recalcularExpediente(estado, folio)
 }
 
@@ -150,7 +161,8 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   if (!fichaExtraccion) return
   const fuente = proc.origen ?? plantilla(estado, proc.tipoContenido)
   const mismaFicha = proc.tipoExtraccion === proc.tipoContenido
-  const alertas = doc.alertas_encontradas.filter((a) => a.codigo === 'DUP-001' || a.resuelta_por_revisor)
+  // Se conservan las de plataforma (DUP-001, EXP-002: no son del motor) y las ya revisadas
+  const alertas = doc.alertas_encontradas.filter((a) => a.codigo === 'DUP-001' || a.codigo === 'EXP-002' || a.resuelta_por_revisor)
   doc.datos_extraidos = {}
   doc.nivel_confianza_por_campo = {}
   doc.evidencia_por_campo = {}

@@ -37,7 +37,8 @@ export const CODIGOS_PENDIENTES_DE_MAIN = {
     DOCUMENTO_CON_ERROR: 409, // corregir datos o confirmar la clasificacion de un documento en error
   },
   alertas: {
-    'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Tipo no pedido por el proceso (alertas_expediente)' },
+    // Definida por PERSONA_1 en el PR #9; pasa a ALERTAS cuando el #9 este en main
+    'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Documento de un tipo que el proceso no pide (alertas_encontradas del documento, campo = tipo)' },
   },
 } as const satisfies {
   errores: Record<string, number>

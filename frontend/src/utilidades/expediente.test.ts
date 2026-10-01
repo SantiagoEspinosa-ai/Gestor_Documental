@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Alerta, ResultadoDocumento, Severidad } from '../tipos/contrato'
-import { alertasQueBloquean, bloquea, tipoEfectivo, tipoExtraccion, tiposNoPedidos, tiposRequeridosQueFaltan } from './expediente'
+import { alertasQueBloquean, bloquea, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan } from './expediente'
 
 const doc = (declarado: string | null, detectado: string | null = null, confirmado: string | null = null) =>
   ({ tipo_documental_declarado: declarado, tipo_documental_detectado: detectado, tipo_documental_confirmado: confirmado }) as ResultadoDocumento
@@ -22,8 +22,13 @@ describe('tipo efectivo', () => {
     expect(tiposRequeridosQueFaltan({ documentos: [doc('credencial_elector'), doc('comprobante_domicilio')] }, proceso)).toEqual([])
   })
 
-  it('tipos que el proceso no pide (EXP-002)', () => {
-    expect(tiposNoPedidos({ documentos: [doc('pasaporte'), doc('factura'), doc('factura')] }, proceso)).toEqual(['factura'])
+  it('tipo no previsto por el proceso, por documento y con el tipo efectivo (EXP-002)', () => {
+    expect(tipoNoPrevisto(doc('factura'), proceso)).toBe('factura')
+    expect(tipoNoPrevisto(doc('pasaporte'), proceso)).toBeNull() // opcional: previsto
+    expect(tipoNoPrevisto(doc('credencial_elector'), proceso)).toBeNull() // requerido: previsto
+    expect(tipoNoPrevisto(doc('factura', 'pasaporte'), proceso)).toBeNull() // cuenta el detectado
+    expect(tipoNoPrevisto(doc('pasaporte', null, 'factura'), proceso)).toBe('factura') // y el confirmado
+    expect(tipoNoPrevisto(doc(null), proceso)).toBeNull()
   })
 })
 

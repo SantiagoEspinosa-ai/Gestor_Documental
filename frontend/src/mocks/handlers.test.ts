@@ -457,6 +457,87 @@ describe('acciones del revisor', () => {
   })
 })
 
+// ------------------------------------------------------------------ EXP-002 (definida por PERSONA_1 en el PR #9)
+
+describe('EXP-002: documento de un tipo que el proceso no pide', () => {
+  // Con config/procesos.yaml los tres tipos estan previstos (pasaporte es opcional): para provocarla, el
+  // pasaporte deja de ser opcional en el estado del mock
+  const sinPasaporteOpcional = () => { estado.procesos.find((p) => p.nombre === 'onboarding')!.tipos_opcionales = [] }
+  const exp002 = (d: ResultadoDocumento) => d.alertas_encontradas.filter((a) => a.codigo === 'EXP-002')
+
+  async function preparar() {
+    sinPasaporteOpcional()
+    const token = await entrar('revisor.demo')
+    const { folio } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
+    const subir = async (nombre: string, tipo: string) => (await api<{ identificador_unico_documento: string }>(
+      'POST', `/folios/${folio}/documentos`, { token, formulario: subida(nombre, original(nombre), tipo) })).cuerpo.identificador_unico_documento
+    const doc = async (id: string) => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
+    const expediente = async () => (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
+    /** Confirma el tipo y, si reprocesa, espera a que termine */
+    const confirmar = async (id: string, tipo: string) => {
+      const antes = exp002(await doc(id))
+      const r = await api<ResultadoDocumento>('POST', `/documentos/${id}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: tipo } })
+      expect(r.status).toBe(200)
+      if (r.cuerpo.estado_analisis === 'pendiente') {
+        // Mientras no esta completado no se toca: conserva las EXP-002 que tuviera (son de plataforma)
+        expect(exp002(r.cuerpo)).toEqual(antes)
+        t += MS_HASTA_COMPLETADO
+      }
+      return doc(id)
+    }
+    return { token, folio, subir, doc, expediente, confirmar }
+  }
+
+  it('aparece al confirmar un tipo no previsto, en el documento y no en el expediente, y desaparece al confirmar uno previsto', async () => {
+    const { subir, doc, expediente, confirmar } = await preparar()
+    const id = await subir('credencial_elector_sano_digital.pdf', 'credencial_elector')
+    t += MS_HASTA_COMPLETADO
+    expect(exp002(await doc(id))).toEqual([]) // credencial: requerida
+
+    const pasaporte = await confirmar(id, 'pasaporte')
+    expect(pasaporte.estado_analisis).toBe('completado')
+    expect(exp002(pasaporte)).toEqual([expect.objectContaining({
+      codigo: 'EXP-002', severidad: 'informativa', campo: 'pasaporte', aplica: null,
+      mensaje: 'Tipo de documento no previsto en el proceso: Pasaporte',
+    })])
+    expect(codigos((await expediente()).alertas_expediente)).not.toContain('EXP-002')
+
+    const credencial = await confirmar(id, 'credencial_elector')
+    expect(exp002(credencial)).toEqual([])
+  })
+
+  it.each([
+    [false, 'se conserva el falso positivo'],
+    [true, 'se borra la confirmada'],
+  ])('al pasar a un tipo previsto con aplica=%s: %s', async (aplica, _caso) => {
+    const { token, subir, confirmar } = await preparar()
+    const id = await subir('credencial_elector_sano_digital.pdf', 'credencial_elector')
+    t += MS_HASTA_COMPLETADO
+    const [alerta] = exp002(await confirmar(id, 'pasaporte'))
+    const resuelta = await api<ResultadoDocumento>('POST', `/documentos/${id}/alertas/${alerta.id}/resolver`, { token, cuerpo: { aplica } })
+    expect(resuelta.status).toBe(200)
+
+    const despues = exp002(await confirmar(id, 'credencial_elector'))
+    expect(despues).toEqual(aplica === false ? [expect.objectContaining({ id: alerta.id, aplica: false, campo: 'pasaporte' })] : [])
+  })
+
+  it('no bloquea la aprobacion ni cambia la recomendacion (es informativa)', async () => {
+    const { token, folio, subir, doc, expediente } = await preparar()
+    await subir('credencial_elector_sano_digital.pdf', 'credencial_elector')
+    await subir('comprobante_domicilio_sano_digital.pdf', 'comprobante_domicilio')
+    const idPasaporte = await subir('pasaporte_sano_digital.pdf', 'pasaporte')
+    t += MS_HASTA_COMPLETADO
+    const pasaporte = await doc(idPasaporte)
+    expect(exp002(pasaporte)).toHaveLength(1)
+    const antes = await expediente()
+    expect(antes.alertas_expediente).toEqual([]) // ni EXP-001 ni CMP-001: el resto del folio esta sano
+    expect(antes.documentos.every((d) => d.recomendacion === 'aprobar')).toBe(true)
+    expect(antes.recomendacion_global).toBe('aprobar')
+    const decision = await api<ResultadoExpediente>('POST', `/folios/${folio}/decision`, { token, cuerpo: { decision: 'aprobar' } })
+    expect([decision.status, decision.cuerpo.estado_general]).toEqual([200, 'aprobado'])
+  })
+})
+
 // ------------------------------------------------------------------ campos sin valor
 
 describe('campos sin valor', () => {

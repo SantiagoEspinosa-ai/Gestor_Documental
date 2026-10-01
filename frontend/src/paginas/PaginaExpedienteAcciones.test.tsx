@@ -4,7 +4,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { MS_HASTA_COMPLETADO } from '../mocks/logica'
+import { MS_HASTA_COMPLETADO, nuevaAlerta } from '../mocks/logica'
 import { entrarComo, montar, usarServidorMock } from '../pruebas/app'
 import { MENSAJES_ERROR } from '../utilidades/mensajes'
 import { MOTIVO_ANIO, MOTIVO_OBLIGATORIO } from '../utilidades/valores'
@@ -95,6 +95,21 @@ describe('acciones del revisor', () => {
     expect(aviso().textContent).toBe('Clasificación confirmada.')
     mock.t += MS_HASTA_COMPLETADO
     await waitFor(() => expect(screen.getByTestId(`estado-${id}`).textContent).toBe('Completado'))
+  })
+
+  it('EXP-002 se ve en las alertas del documento (no en las del expediente) y no impide aprobar', async () => {
+    const folio = folioMock('ONB-2026-000003')
+    folio.alertas_expediente.forEach((a) => { a.aplica = false; a.resuelta_por_revisor = true }) // sin la EXP-001 que bloquea
+    folio.documentos[0].alertas_encontradas.push(nuevaAlerta(mock.estado, 'EXP-002',
+      'Tipo de documento no previsto en el proceso: Credencial de elector', 'informativa', 'credencial_elector'))
+    await abrir('ONB-2026-000003') // la credencial queda seleccionada
+    const delDocumento = screen.getByRole('region', { name: 'Alertas del documento seleccionado' })
+    const exp002 = within(delDocumento).getByText('EXP-002').closest('li')!.textContent!
+    expect(exp002).toContain('Tipo de documento no previsto en el proceso: Credencial de elector')
+    expect(exp002).toContain('Informativa')
+    expect(within(screen.getByRole('region', { name: 'Alertas del expediente' })).queryByText('EXP-002')).toBeNull()
+    expect(aprobar().disabled).toBe(false)
+    expect(screen.queryByRole('note')?.textContent ?? '').not.toContain('EXP-002')
   })
 
   it('marca una alerta de expediente como falso positivo con comentario y entonces se puede aprobar, con confirmacion', async () => {

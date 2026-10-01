@@ -344,7 +344,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
         tipo_documental_confirmado: tipo, estado_analisis: 'pendiente', datos_extraidos: {}, nivel_confianza_por_campo: {},
         evidencia_por_campo: {}, reglas_cumplidas_e_incumplidas: { cumplidas: [], incumplidas: [] }, recomendacion: null,
         fecha_y_modelo_utilizado: null,
-        alertas_encontradas: doc.alertas_encontradas.filter((a) => a.codigo === 'DUP-001' || a.codigo === 'CLS-001'),
+        // DUP-001 y EXP-002 son de plataforma: sobreviven al reproceso (EXP-002 se recalcula al completar)
+        alertas_encontradas: doc.alertas_encontradas.filter((a) => ['DUP-001', 'CLS-001', 'EXP-002'].includes(a.codigo)),
       })
       const origen = [...estado.folios.values()].flatMap((f) => f.documentos).find((d) =>
         d !== doc && d.referencia_archivo_original.hash === doc.referencia_archivo_original.hash && d.estado_analisis === 'completado')

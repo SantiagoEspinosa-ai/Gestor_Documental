@@ -90,6 +90,14 @@ hace fallar el build si queda algun rastro.
     **tipo efectivo** (`src/utilidades/expediente.ts`): confirmado; si no, detectado; si no, declarado.
     Si el revisor la marco como falso positivo (`aplica=false`), se conserva. La pantalla de carga
     usa `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta;
+  - `EXP-002` (definida por PERSONA_1 en el PR #9; la API la emite desde `5ddf7f2`):
+    - va en `alertas_encontradas` **del documento**, no en `alertas_expediente`, y es informativa;
+    - se crea una por documento `completado` cuyo tipo efectivo no esta ni en `tipos_requeridos` ni en `tipos_opcionales` (`tipoNoPrevisto`), con `campo` = tipo y mensaje "Tipo de documento no previsto en el proceso: {nombre_visible}";
+    - se recalcula al procesar o confirmar. Si el tipo pasa a estar previsto, se borran la sin revisar y la confirmada, y solo se conserva el falso positivo (`aplica=false`);
+    - un documento no completado no se toca, y la alerta sobrevive al reproceso porque es de plataforma;
+    - no bloquea ni cambia la recomendacion.
+
+    Con `config/procesos.yaml` no sale nunca, porque `onboarding` preve los tres tipos (`pasaporte` es opcional); los tests la provocan quitando el pasaporte de los opcionales;
   - `POST /folios`: 201.
 - Alineado con la API real de PERSONA_1 (PR #3):
   - subida: 415 `FORMATO_NO_PERMITIDO` si el contenido no corresponde a la extension (firma del
@@ -111,8 +119,8 @@ hace fallar el build si queda algun rastro.
 
   La ficha con la que se valida y la forma del `detalle` de auditoria siguen pendientes del PR #9.
 - Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
-  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y la informativa `EXP-002` (tipo no pedido
-  por el proceso, expediente). Los mocks ya los usan. Cuando entren en main se pasan a los oficiales
+  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y la informativa `EXP-002` (documento de un
+  tipo que el proceso no pide, en las alertas del documento). Los dos entran en main con el PR #9. Los mocks ya los usan. Cuando entren en main se pasan a los oficiales
   y se quitan de la lista; `backend/tests/test_contrato_frontend.py` falla para recordarlo.
   `SECUENCIA_AGOTADA`, `VAL-003` (valor tomado de la MRZ), `VAL-004` (campo opcional ausente o null,
   uno por campo), `SYS-003` y `SYS-005` ya son oficiales.
@@ -199,7 +207,7 @@ hace fallar el build si queda algun rastro.
 ```
 npm test        # Vitest
 ```
-161 tests en 18 ficheros (2026-10-01):
+166 tests en 18 ficheros (2026-10-01):
 - Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler), flujos, datos y token
   (sigue valido tras reiniciar msw; uno retocado o inventado da `NO_AUTENTICADO`).
 - Componentes: `BarraConfianza`, `ListaAlertas` y `SoloRol`.
@@ -307,8 +315,11 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
 - Etapa 2: probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y reportar como
   issue cualquier desviacion del contrato, sin adaptar el frontend en silencio.
 - Etapa 2: e2e reales con los 4 casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales").
-- `DOCUMENTO_CON_ERROR` y `EXP-002` siguen en `CODIGOS_PENDIENTES_DE_MAIN`: los anade PERSONA_1 a los
-  catalogos de main junto con el codigo que los emite; entonces pasan a oficiales.
+- `DOCUMENTO_CON_ERROR` y `EXP-002` siguen en `CODIGOS_PENDIENTES_DE_MAIN` hasta que el PR #9 (que
+  los anade a los catalogos y los emite) este en main; entonces pasan a oficiales y la lista queda vacia.
+- Alinear el resto de los mocks con el PR #9: recomendacion global sin la del documento,
+  `CMP-001` conservando solo los falsos positivos, forma del `detalle` de auditoria y validacion de
+  fecha y `patron` en el PATCH.
 - Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
   descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
   de ADR) y pantalla de configuracion de procesos.
