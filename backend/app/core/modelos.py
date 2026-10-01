@@ -165,6 +165,9 @@ class Correccion(Base):
     campo: Mapped[str] = mapped_column(String(100))
     valor_anterior: Mapped[Any] = mapped_column(Json)  # texto, fecha o numero
     valor_nuevo: Mapped[Any] = mapped_column(Json)
+    # Version del Resultado sobre la que se hizo: solo se aplica a esa version (al reprocesar con otro
+    # tipo, las correcciones viejas no caen sobre una ficha distinta)
+    version_resultado: Mapped[int] = mapped_column(Integer, server_default="1")
     usuario: Mapped[str] = mapped_column(String(100))
     creado_en: Mapped[datetime] = _creado_en()
 
