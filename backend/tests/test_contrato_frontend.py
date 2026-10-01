@@ -26,6 +26,7 @@ if not CONTRATO_TS.is_file() or not (RAIZ_REPO / "config" / "tipos").is_dir():
                 "(normal dentro del contenedor del backend)", allow_module_level=True)
 
 from app.schemas import resultado  # noqa: E402
+from tests.versiones_fixtures import omitir_si_cambian_las_versiones  # noqa: E402
 
 CODIGOS_TS = FRONT / "src" / "tipos" / "codigos.ts"
 DATOS = FRONT / "src" / "mocks" / "datos"
@@ -239,15 +240,16 @@ def generador(tmp_path_factory):
 
 
 def test_datos_y_originales_coherentes_con_los_fixtures(generador):
-    gf, hashes = generador
+    gf, _ = generador
     for folio in _json("folios"):
         for doc in folio["documentos"]:
             archivo = doc["referencia_archivo_original"]["nombre_archivo"]
             caso = next(c for c in gf.CASOS if f"_{c}_" in archivo)
             tipo = doc["tipo_documental_declarado"]
-            # Mismo fichero que el generador (y que public/mock-originales) -> DUP-001 al volver a subirlo
-            assert doc["referencia_archivo_original"]["hash"] == hashes[archivo] \
-                == hashlib.sha256((ORIGINALES / archivo).read_bytes()).hexdigest()
+            # El hash del mock es el de public/mock-originales (los dos estan en el repo: no depende de
+            # versiones). Que coincida con el generador lo comprueba el test siguiente.
+            assert doc["referencia_archivo_original"]["hash"] \
+                == hashlib.sha256((ORIGINALES / archivo).read_bytes()).hexdigest(), archivo
             if doc["estado_analisis"] != "completado":
                 assert doc["datos_extraidos"] == {}
                 continue
@@ -267,3 +269,14 @@ def test_datos_y_originales_coherentes_con_los_fixtures(generador):
             for correccion in doc["correcciones"]:
                 assert correccion["valor_nuevo"] == esperados[correccion["campo"]]
                 assert doc["evidencia_por_campo"][correccion["campo"]] == "correccion_revisor"
+
+
+def test_originales_de_los_mocks_iguales_que_el_generador(generador):
+    # Mismo fichero que el generador -> DUP-001 al volver a subir un fixture generado con --hoy 2026-09-30.
+    # Depende de las versiones de PyMuPDF y Pillow: con otras se omite (tests/versiones_fixtures.py)
+    omitir_si_cambian_las_versiones()
+    _, hashes = generador
+    originales = sorted(p.name for p in ORIGINALES.iterdir())
+    assert originales
+    assert {n: hashlib.sha256((ORIGINALES / n).read_bytes()).hexdigest() for n in originales} \
+        == {n: hashes[n] for n in originales}

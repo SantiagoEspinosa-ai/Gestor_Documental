@@ -19,6 +19,8 @@ if not RUTA_SCRIPT.is_file() or not DIR_TIPOS.is_dir():
 import pymupdf  # noqa: E402
 from PIL import Image  # noqa: E402
 
+from tests.versiones_fixtures import leer_referencia, omitir_si_cambian_las_versiones  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location("generar_fixtures", RUTA_SCRIPT)
 gf = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gf)
@@ -224,10 +226,9 @@ def test_nombre_archivo_con_nivel():
 def test_sha256_de_los_fixtures_existentes_sin_cambios(generado):
     # Los niveles de dificultad no deben cambiar ni un byte de los 30 de antes: de ellos dependen
     # frontend/public/mock-originales y los SHA-256 de los mocks (scripts/generar_datos_mock.py)
+    omitir_si_cambian_las_versiones()
     _, hashes = generado
-    referencia = dict(reversed(linea.split()) for linea in
-                      (Path(__file__).parent / "sha256_fixtures_existentes.txt").read_text(encoding="utf-8").splitlines()
-                      if linea and not linea.startswith("#"))
+    _, referencia = leer_referencia()
     assert len(referencia) == 30
     assert {nombre: hashes[nombre] for nombre in referencia} == referencia, \
         "Ha cambiado un fixture existente (o la version de PyMuPDF o Pillow; ver la cabecera del fichero)"

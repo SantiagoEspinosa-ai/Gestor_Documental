@@ -1,7 +1,10 @@
 # SHA-256 de los 30 fixtures de antes de los niveles de dificultad, con --hoy 2026-09-30.
-# Generados con PyMuPDF 1.28.2 y Pillow 12.3.0 (las del .venv y del contenedor del backend).
-# Si cambian, tambien cambian frontend/public/mock-originales y los SHA-256 de los mocks:
-# no se regenera este fichero sin regenerar los mocks (scripts/generar_datos_mock.py).
+# Los bytes dependen de las versiones de PyMuPDF y Pillow de abajo (las del .venv y del contenedor
+# del backend). Con otras versiones, los tests que comparan hashes se omiten (tests/versiones_fixtures.py).
+# Si se cambian a proposito, tambien cambian frontend/public/mock-originales y los SHA-256 de los
+# mocks: no se regenera este fichero sin regenerar los mocks (scripts/generar_datos_mock.py).
+pymupdf==1.28.2
+pillow==12.3.0
 371966ecd51d0640c767e25c2c1588fd44e44d9f39207cb96747955ca8959068  comprobante_domicilio_domicilio_distinto_digital.pdf
 2da6be6e619f7bf58d2015737c122eaf90b291fc0d5d94490eba145eca863ac4  comprobante_domicilio_domicilio_distinto_escaneado.pdf
 b59751ccf862284e16643d0004d1d2e74f262036b2f55d8c1508774055ff184a  comprobante_domicilio_sano_digital.pdf
