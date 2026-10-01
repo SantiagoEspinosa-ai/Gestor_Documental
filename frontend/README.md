@@ -115,13 +115,13 @@ hace fallar el build si queda algun rastro.
 - Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
-  cada 3 s hasta completado o error, que se para al salir; `DUP-001` y errores de analisis visibles.
+  hasta completado o error (ver "Sondeo"); `DUP-001` y errores de analisis visibles.
   Solo lectura si el folio esta cerrado o el rol no puede subir (admin).
 - Expediente (`paginas/PaginaExpediente.tsx`, `/folios/{folio}`, todos los roles; diapositiva 8):
   - Cabecera: folio, referencia, fecha de solicitud, proceso, estado, recomendacion global y, si esta
     cerrado, la decision con comentario, usuario y fecha. Enlace a la carga.
   - Izquierda: documentos del folio (tambien pendientes y procesando) con su estado. Mientras haya
-    alguno en curso, sondeo de `GET /folios/{folio}` cada 3 s, que se para al terminar o al salir.
+    alguno en curso, sondeo de `GET /folios/{folio}` (ver "Sondeo").
   - Centro (`componentes/DetalleDocumento.tsx`): original (`componentes/VisorOriginal.tsx`: la URL
     se pide cada vez que se abre porque caduca; `iframe` para PDF, `img` para imagen; solo revisor y
     admin), clasificacion declarada, detectada y confirmada con su confianza, tabla de datos con
@@ -144,6 +144,11 @@ hace fallar el build si queda algun rastro.
     con `react-markdown` con `skipHtml` (nunca HTML crudo). Solo aparece si `ruta_resumen_md` no es
     `null`; un 404 `RESUMEN_NO_DISPONIBLE` muestra su mensaje. En los mocks solo lo tiene el folio
     aprobado `ONB-2026-000004` (resumen ficticio generado con sus datos).
+- Sondeo (`utilidades/sondeo.ts`, hook `useSondeo`, comun a la carga y al expediente): mientras haya
+  documentos pendientes o procesando consulta con una espera de 3 s que crece x1,5 hasta 15 s; un
+  cambio de estado vuelve a los 3 s. Tras 10 minutos sin cambios (Ollama lento o caido) se detiene y
+  muestra "Sigue en proceso" con "Comprobar de nuevo", que consulta en el momento y lo reanuda. Nunca
+  solapa consultas y se para al salir de la pantalla.
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.

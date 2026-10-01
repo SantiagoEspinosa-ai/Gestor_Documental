@@ -16,7 +16,7 @@ const fixture = (nombre: string) => new File([readFileSync(join(ORIGINALES, nomb
 
 function montarCarga(folio: string) {
   return montar(`/folios/${folio}/carga`, (
-    <Routes><Route path="/folios/:folio/carga" element={<PaginaCarga intervaloSondeoMs={30} />} /></Routes>
+    <Routes><Route path="/folios/:folio/carga" element={<PaginaCarga tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} /></Routes>
   ))
 }
 
@@ -115,5 +115,25 @@ describe('pantalla de carga', () => {
     await entrarComo('revisor.demo')
     montarCarga('ONB-2026-999999')
     expect((await screen.findByRole('alert')).textContent).toBe('El folio no existe.')
+  })
+})
+
+describe('sondeo con limite en la carga', () => {
+  it('sin cambios durante el limite muestra "Sigue en proceso" y "Comprobar de nuevo" lo reanuda', async () => {
+    await entrarComo('revisor.demo')
+    // ONB-2026-000002 tiene un pasaporte pendiente que en los datos iniciales nunca avanza
+    montar('/folios/ONB-2026-000002/carga', (
+      <Routes><Route path="/folios/:folio/carga" element={
+        <PaginaCarga tiemposSondeo={{ inicialMs: 10, maximoMs: 20, limiteSinCambiosMs: 150 }} />} /></Routes>
+    ))
+    const ruta = 'GET /documentos/00000000-0000-4000-8000-000002000003'
+    expect(await screen.findByText(/Sigue en proceso/, {}, { timeout: 2000 })).toBeTruthy()
+    const antes = mock.peticiones.filter((p) => p === ruta).length
+    expect(antes).toBeGreaterThan(2)
+    await new Promise((r) => setTimeout(r, 100))
+    expect(mock.peticiones.filter((p) => p === ruta).length).toBe(antes) // detenido: ya no consulta
+    fireEvent.click(screen.getByRole('button', { name: 'Comprobar de nuevo' }))
+    expect(screen.queryByText(/Sigue en proceso/)).toBeNull()
+    await waitFor(() => expect(mock.peticiones.filter((p) => p === ruta).length).toBeGreaterThan(antes))
   })
 })

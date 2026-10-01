@@ -13,7 +13,7 @@ function Rutas({ tamano = 20 }: { tamano?: number }) {
   return (
     <Routes>
       <Route path="/folios" element={<PaginaFolios tamanoPagina={tamano} />} />
-      <Route path="/folios/:folio/carga" element={<PaginaCarga intervaloSondeoMs={30} />} />
+      <Route path="/folios/:folio/carga" element={<PaginaCarga tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} />
     </Routes>
   )
 }

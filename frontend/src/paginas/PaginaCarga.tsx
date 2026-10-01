@@ -2,16 +2,17 @@ import { AlertTriangle, CheckCircle2, CircleX, Clock, FileUp, Info, LoaderCircle
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { listarProcesos, listarTiposDocumentales, obtenerDocumento, obtenerFolio, subirDocumento } from '../api/folios'
+import { AvisoSondeoDetenido } from '../componentes/AvisoSondeoDetenido'
 import { useRol } from '../componentes/contextoSesion'
 import { InsigniaEstado } from '../componentes/Insignias'
-import type { EstadoAnalisis, Proceso, ResultadoDocumento, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
+import type { EstadoAnalisis, Proceso, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_ANALISIS } from '../utilidades/etiquetas'
-import { tipoEfectivo, tiposRequeridosQueFaltan } from '../utilidades/expediente'
+import { enProceso, tipoEfectivo, tiposRequeridosQueFaltan } from '../utilidades/expediente'
 import { MENSAJES_ERROR, mensajeDeError } from '../utilidades/mensajes'
+import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
 
 const MAX_BYTES = 20 * 1024 * 1024
 const ROLES_SUBIR = ['integrador', 'revisor'] // POST /folios/{folio}/documentos
-const enProceso = (d: ResultadoDocumento) => d.estado_analisis === 'pendiente' || d.estado_analisis === 'procesando'
 
 interface EnCola {
   clave: number
@@ -41,7 +42,7 @@ const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
   pendiente: Clock, procesando: LoaderCircle, completado: CheckCircle2, error: CircleX,
 }
 
-export function PaginaCarga({ intervaloSondeoMs = 3000 }: { intervaloSondeoMs?: number }) {
+export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<TiemposSondeo> }) {
   const { folio = '' } = useParams()
   const rol = useRol()
   const [expediente, setExpediente] = useState<ResultadoExpediente | null>(null)
@@ -74,37 +75,25 @@ export function PaginaCarga({ intervaloSondeoMs = 3000 }: { intervaloSondeoMs?: 
     }
   }, [folio])
 
-  // Sondeo de los documentos pendientes o procesando; se para al terminar todos o al salir de la pantalla
-  const pendientes = expediente?.documentos.filter(enProceso).map((d) => d.identificador_unico_documento).join(',') ?? ''
-  useEffect(() => {
-    if (!pendientes) return
-    const ids = pendientes.split(',')
-    const control = new AbortController()
-    let enCurso = false
-    const temporizador = setInterval(async () => {
-      if (enCurso) return // no solapar peticiones si la API tarda mas que el intervalo
-      enCurso = true
-      try {
-        const docs = await Promise.all(ids.map((id) => obtenerDocumento(id, control.signal)))
-        const terminados = docs.filter((d) => !enProceso(d))
-        setExpediente((e) => e && {
-          ...e, documentos: e.documentos.map((d) => docs.find((n) => n.identificador_unico_documento === d.identificador_unico_documento) ?? d),
-        })
-        if (terminados.length) {
-          setAnuncio(terminados.map((d) => `${d.referencia_archivo_original.nombre_archivo}: ${ETIQUETA_ESTADO_ANALISIS[d.estado_analisis].toLowerCase()}`).join('. '))
-          await refrescar(control.signal) // EXP-001 y demas alertas del expediente se recalculan al procesar
-        }
-      } catch {
-        // se reintenta en el siguiente intervalo
-      } finally {
-        enCurso = false
+  // Sondeo de los documentos pendientes o procesando: 3 s que crecen hasta 15 s, se detiene tras 10 minutos
+  // sin cambios y al salir de la pantalla (utilidades/sondeo.ts)
+  const enCurso = expediente?.documentos.filter(enProceso) ?? []
+  const sondeo = useSondeo({
+    activo: enCurso.length > 0,
+    firma: firmaDocumentos(expediente?.documentos ?? []),
+    tiempos: tiemposSondeo,
+    comprobar: async (signal) => {
+      const docs = await Promise.all(enCurso.map((d) => obtenerDocumento(d.identificador_unico_documento, signal)))
+      const terminados = docs.filter((d) => !enProceso(d))
+      setExpediente((e) => e && {
+        ...e, documentos: e.documentos.map((d) => docs.find((n) => n.identificador_unico_documento === d.identificador_unico_documento) ?? d),
+      })
+      if (terminados.length) {
+        setAnuncio(terminados.map((d) => `${d.referencia_archivo_original.nombre_archivo}: ${ETIQUETA_ESTADO_ANALISIS[d.estado_analisis].toLowerCase()}`).join('. '))
+        await refrescar(signal) // EXP-001 y demas alertas del expediente se recalculan al procesar
       }
-    }, intervaloSondeoMs)
-    return () => {
-      clearInterval(temporizador)
-      control.abort()
-    }
-  }, [pendientes, intervaloSondeoMs, refrescar])
+    },
+  })
 
   const nombreVisible = (tipo: string | null) => tipos.find((t) => t.nombre === tipo)?.nombre_visible ?? tipo ?? 'Sin tipo'
   const cerrado = expediente !== null && expediente.estado_general !== 'en_revision'
@@ -235,6 +224,7 @@ export function PaginaCarga({ intervaloSondeoMs = 3000 }: { intervaloSondeoMs?: 
       )}
 
       <h2 className="mt-6 text-base font-semibold">Documentos del folio</h2>
+      {sondeo.detenido && <AvisoSondeoDetenido alReanudar={sondeo.reanudar} />}
       {expediente.documentos.length === 0 ? <p className="mt-2 text-sm text-slate-500">Aún no hay documentos.</p> : (
         <table className="mt-2 w-full border-collapse bg-white text-sm">
           <caption className="sr-only">Documentos del folio y estado del análisis</caption>

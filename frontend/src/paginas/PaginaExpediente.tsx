@@ -8,6 +8,7 @@ import {
 } from '../api/revision'
 import { ConfirmarClasificacion, EditorCampo, PanelDecision, RevisarAlerta } from '../componentes/AccionesRevisor'
 import { useRol } from '../componentes/contextoSesion'
+import { AvisoSondeoDetenido } from '../componentes/AvisoSondeoDetenido'
 import { DetalleDocumento } from '../componentes/DetalleDocumento'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
@@ -16,6 +17,7 @@ import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, TipoDocum
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
 import { alertasQueBloquean, enProceso, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
+import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 
 const ROLES_ORIGINAL = ['revisor', 'admin'] // GET /documentos/{id}/original
@@ -25,7 +27,7 @@ const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
 }
 
 /** Vista de lectura del expediente (diapositiva 8): cabecera, documentos, documento seleccionado y alertas */
-export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeoMs?: number }) {
+export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<TiemposSondeo> }) {
   const { folio = '' } = useParams()
   const rol = useRol()
   const [cargado, setCargado] = useState<ResultadoExpediente | null>(null)
@@ -83,23 +85,14 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
     ...e, documentos: e.documentos.map((d) => (d.identificador_unico_documento === nuevo.identificador_unico_documento ? nuevo : d)),
   })
 
-  // Polling del expediente cada 3 s mientras quede algun documento pendiente o procesando
-  const hayEnCurso = expediente?.documentos.some(enProceso) ?? false
-  useEffect(() => {
-    if (!hayEnCurso) return
-    const control = new AbortController()
-    let enCurso = false
-    const temporizador = setInterval(async () => {
-      if (enCurso) return // sin solapar peticiones si la API tarda mas que el intervalo
-      enCurso = true
-      await refrescar(control.signal)
-      enCurso = false
-    }, intervaloSondeoMs)
-    return () => {
-      clearInterval(temporizador)
-      control.abort()
-    }
-  }, [hayEnCurso, intervaloSondeoMs, refrescar])
+  // Sondeo del expediente mientras quede algun documento pendiente o procesando: 3 s que crecen hasta
+  // 15 s y se detiene tras 10 minutos sin cambios (utilidades/sondeo.ts)
+  const sondeo = useSondeo({
+    activo: expediente?.documentos.some(enProceso) ?? false,
+    firma: firmaDocumentos(expediente?.documentos ?? []),
+    comprobar: refrescar,
+    tiempos: tiemposSondeo,
+  })
 
   if (error && !expediente) {
     return (
@@ -156,6 +149,7 @@ export function PaginaExpediente({ intervaloSondeoMs = 3000 }: { intervaloSondeo
         )}
       </header>
 
+      {sondeo.detenido && <AvisoSondeoDetenido alReanudar={sondeo.reanudar} />}
       {aviso && (
         <p role={aviso.tipo === 'error' ? 'alert' : 'status'} data-testid="aviso"
           className={`mt-3 rounded px-3 py-2 text-sm ${aviso.tipo === 'error' ? 'border border-red-300 bg-red-50 text-red-900' : 'bg-green-50 text-green-900'}`}>

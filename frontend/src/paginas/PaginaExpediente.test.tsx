@@ -16,7 +16,7 @@ const token = () => JSON.parse(sessionStorage.getItem('gestor_documental.sesion'
 
 function montarExpediente(folio: string) {
   return montar(`/folios/${folio}`, (
-    <Routes><Route path="/folios/:folio" element={<PaginaExpediente intervaloSondeoMs={30} />} /></Routes>
+    <Routes><Route path="/folios/:folio" element={<PaginaExpediente tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} /></Routes>
   ))
 }
 const documento = (nombre: string) => screen.getByRole('button', { name: new RegExp(nombre.replaceAll('.', '\\.')) })
@@ -123,5 +123,22 @@ describe('vista de expediente', () => {
     const tras = peticiones(`GET /folios/${folio}`)
     await new Promise((r) => setTimeout(r, 150)) // 5 intervalos de 30 ms
     expect(peticiones(`GET /folios/${folio}`)).toBe(tras) // ya no sondea
+  })
+})
+
+describe('sondeo con limite en el expediente', () => {
+  it('sin cambios durante el limite muestra "Sigue en proceso" y "Comprobar de nuevo" lo reanuda', async () => {
+    await entrarComo('revisor.demo')
+    montar('/folios/ONB-2026-000002', (
+      <Routes><Route path="/folios/:folio" element={
+        <PaginaExpediente tiemposSondeo={{ inicialMs: 10, maximoMs: 20, limiteSinCambiosMs: 150 }} />} /></Routes>
+    ))
+    const aviso = await screen.findByText(/Sigue en proceso/, {}, { timeout: 2000 })
+    expect(aviso.closest('[role="status"]')).toBeTruthy()
+    const antes = peticiones('GET /folios/ONB-2026-000002')
+    await new Promise((r) => setTimeout(r, 100))
+    expect(peticiones('GET /folios/ONB-2026-000002')).toBe(antes) // detenido: ya no consulta
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Comprobar de nuevo' }))
+    await waitFor(() => expect(peticiones('GET /folios/ONB-2026-000002')).toBeGreaterThan(antes))
   })
 })

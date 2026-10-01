@@ -13,7 +13,7 @@ const mock = usarServidorMock()
 
 async function abrir(folio: string, usuario: 'revisor.demo' | 'admin.demo' | 'integrador.demo' = 'revisor.demo') {
   await entrarComo(usuario)
-  montar(`/folios/${folio}`, <Routes><Route path="/folios/:folio" element={<PaginaExpediente intervaloSondeoMs={30} />} /></Routes>)
+  montar(`/folios/${folio}`, <Routes><Route path="/folios/:folio" element={<PaginaExpediente tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} /></Routes>)
   await screen.findByRole('heading', { name: new RegExp(`Expediente ${folio}`) })
   return userEvent.setup()
 }
