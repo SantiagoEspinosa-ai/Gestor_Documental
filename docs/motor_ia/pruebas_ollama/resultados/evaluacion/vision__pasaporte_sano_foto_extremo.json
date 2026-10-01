@@ -15,10 +15,10 @@
       "fecha_nacimiento",
       "fecha_vencimiento"
     ],
-    "segundos_preparar": 0.7,
+    "segundos_preparar": 0.9,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 130,
-    "segundos_total": 135.8,
+    "segundos_total": 145.6,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -45,9 +45,9 @@
       },
       "fecha_expedicion": {
         "esperado": "2021-09-30",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "2021-09-30",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2031-09-30",
@@ -68,8 +68,8 @@
         "ok": true
       }
     },
-    "aciertos": 4,
-    "vacios": 1,
+    "aciertos": 5,
+    "vacios": 0,
     "incorrectos": 2,
     "total_campos": 7,
     "llamadas": [
@@ -77,7 +77,7 @@
         "modelo": "qwen2.5vl:3b",
         "entrada": "vision",
         "motivo": null,
-        "segundos": 74.39,
+        "segundos": 75.64,
         "tokens_entrada": 1581,
         "tokens_salida": 66,
         "reintentos": 0,
@@ -87,20 +87,22 @@
         "modelo": "qwen2.5vl:3b",
         "entrada": "vision",
         "motivo": null,
-        "segundos": 60.7,
-        "tokens_entrada": 1784,
-        "tokens_salida": 319,
+        "segundos": 69.09,
+        "tokens_entrada": 1905,
+        "tokens_salida": 365,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": true,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "aabffd2e-65fc-4556-aab5-ffa824055ee6",
+    "identificador_unico_documento": "ad6dadef-01e8-4c73-b3d8-47f046de63bd",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -109,7 +111,7 @@
       "nombre_completo": "AMA EJEMPLO PRUEBA",
       "numero_pasaporte": "000000!",
       "fecha_nacimiento": "1990-01-01",
-      "fecha_expedicion": null,
+      "fecha_expedicion": "2021-09-30",
       "fecha_vencimiento": "2031-09-30",
       "nacionalidad": "UTOPICA",
       "sexo": "F"
@@ -118,7 +120,7 @@
       "nombre_completo": 0.9,
       "numero_pasaporte": 0.9,
       "fecha_nacimiento": 0.9,
-      "fecha_expedicion": 0.0,
+      "fecha_expedicion": 0.9,
       "fecha_vencimiento": 0.9,
       "nacionalidad": 0.9,
       "sexo": 0.9
@@ -127,6 +129,7 @@
       "nombre_completo": "pagina_1",
       "numero_pasaporte": "pagina_1",
       "fecha_nacimiento": "pagina_1",
+      "fecha_expedicion": "pagina_1",
       "fecha_vencimiento": "pagina_1",
       "nacionalidad": "pagina_1",
       "sexo": "pagina_1"
@@ -140,10 +143,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T17:48:08.001704Z",
+      "fecha_analisis": "2026-10-01T18:50:08.072394Z",
       "proveedor": "ollama",
       "modelo": "qwen2.5vl:3b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_sano_foto_extremo.jpg",

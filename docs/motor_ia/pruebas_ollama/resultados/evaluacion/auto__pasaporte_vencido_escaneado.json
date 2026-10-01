@@ -8,9 +8,17 @@
     "caso": "vencido",
     "tipo": "pasaporte",
     "modalidad_fixture": "escaneado",
-    "segundos_preparar": 1.7,
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 1.6,
     "modalidad_detectada": "pdf_escaneado",
-    "segundos_total": 71.3,
+    "caracteres_texto": 266,
+    "segundos_total": 66.2,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -20,47 +28,56 @@
       "nombre_completo": {
         "esperado": "LUIS DEMO PRUEBAS",
         "extraido": "LUIS DEMO PRUEBAS",
+        "estado": "correcto",
         "ok": true
       },
       "numero_pasaporte": {
         "esperado": "ZX0000002",
         "extraido": "ZX0000002",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1985-06-15",
         "extraido": "1985-06-15",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_expedicion": {
         "esperado": "2016-08-31",
         "extraido": "2016-08-31",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2026-08-31",
         "extraido": "2026-08-31",
+        "estado": "correcto",
         "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
         "extraido": "UTOPICA",
+        "estado": "correcto",
         "ok": true
       },
       "sexo": {
         "esperado": "M",
         "extraido": "M",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 7,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 7,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 12.96,
+        "segundos": 12.31,
         "tokens_entrada": 536,
         "tokens_salida": 77,
         "reintentos": 0,
@@ -70,20 +87,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 56.61,
-        "tokens_entrada": 741,
+        "segundos": 52.27,
+        "tokens_entrada": 859,
         "tokens_salida": 403,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "5964dd99-51a7-439a-ba47-ff7fcacbb1a0",
+    "identificador_unico_documento": "48c49f15-24e0-4f49-ba40-7e2c54c35592",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -107,13 +126,13 @@
       "sexo": 1.0
     },
     "evidencia_por_campo": {
-      "nombre_completo": "pagina_1:seccion_central",
-      "numero_pasaporte": "pagina_1:seccion_central",
-      "fecha_nacimiento": "pagina_1:seccion_central",
-      "fecha_expedicion": "pagina_1:seccion_central",
-      "fecha_vencimiento": "pagina_1:seccion_central",
-      "nacionalidad": "pagina_1:seccion_central",
-      "sexo": "pagina_1:seccion_central"
+      "nombre_completo": "pagina_1:seccion_superior",
+      "numero_pasaporte": "pagina_1:seccion_superior",
+      "fecha_nacimiento": "pagina_1:seccion_superior",
+      "fecha_expedicion": "pagina_1:seccion_superior",
+      "fecha_vencimiento": "pagina_1:seccion_superior",
+      "nacionalidad": "pagina_1:seccion_superior",
+      "sexo": "pagina_1:seccion_superior"
     },
     "reglas_cumplidas_e_incumplidas": {
       "cumplidas": [],
@@ -124,10 +143,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:20:55.687442Z",
+      "fecha_analisis": "2026-10-01T19:47:07.943611Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_vencido_escaneado.pdf",

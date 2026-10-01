@@ -18,7 +18,7 @@
     "segundos_preparar": 0.9,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 157,
-    "segundos_total": 58.3,
+    "segundos_total": 228.6,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -45,39 +45,39 @@
       },
       "fecha_expedicion": {
         "esperado": "2021-09-30",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "2021-09-30",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2031-09-30",
-        "extraido": "3009/2021",
-        "estado": "incorrecto",
-        "ok": false
+        "extraido": "2031-09-30",
+        "estado": "correcto",
+        "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "UTOPICA",
+        "estado": "correcto",
+        "ok": true
       },
       "sexo": {
         "esperado": "F",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "F",
+        "estado": "correcto",
+        "ok": true
       }
     },
-    "aciertos": 2,
-    "vacios": 3,
-    "incorrectos": 2,
+    "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 1,
     "total_campos": 7,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 11.49,
+        "segundos": 29.1,
         "tokens_entrada": 503,
         "tokens_salida": 64,
         "reintentos": 0,
@@ -87,26 +87,40 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 45.97,
-        "tokens_entrada": 708,
-        "tokens_salida": 347,
+        "segundos": 55.3,
+        "tokens_entrada": 826,
+        "tokens_salida": 401,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": "reintento con vision: formato invalido en fecha_expedicion, fecha_vencimiento con texto",
+        "segundos": 143.25,
+        "tokens_entrada": 1925,
+        "tokens_salida": 373,
         "reintentos": 0,
         "lotes": 1
       }
     ],
-    "reintento_vision": false,
-    "descarga_texto_antes_de_reintento": false,
+    "reintento_vision": true,
+    "uso_vision": true,
+    "motivos_vision": [
+      "reintento con vision: formato invalido en fecha_expedicion, fecha_vencimiento con texto"
+    ],
+    "descarga_texto_antes_de_reintento": true,
     "contrato_valido": true,
     "antes_del_reintento": {
-      "aciertos": 2,
-      "vacios": 3,
-      "incorrectos": 2,
+      "aciertos": 4,
+      "vacios": 0,
+      "incorrectos": 3,
       "obligatorios_vacios": 0
     }
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "bf1e32bf-582d-4b34-80e2-cb4636915d16",
+    "identificador_unico_documento": "9e228efc-7b99-4ee9-ad59-0ca880e233a2",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -115,25 +129,28 @@
       "nombre_completo": "ANA EJEMPLO PRUEBA",
       "numero_pasaporte": "2X0000001",
       "fecha_nacimiento": "1990-01-01",
-      "fecha_expedicion": null,
-      "fecha_vencimiento": "3009/2021",
-      "nacionalidad": null,
-      "sexo": null
+      "fecha_expedicion": "2021-09-30",
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
     },
     "nivel_confianza_por_campo": {
-      "nombre_completo": 1.0,
-      "numero_pasaporte": 1.0,
-      "fecha_nacimiento": 1.0,
-      "fecha_expedicion": 0.0,
-      "fecha_vencimiento": 0.0,
-      "nacionalidad": 0.0,
-      "sexo": 0.0
+      "nombre_completo": 0.9,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.9,
+      "fecha_expedicion": 0.9,
+      "fecha_vencimiento": 0.9,
+      "nacionalidad": 0.9,
+      "sexo": 0.9
     },
     "evidencia_por_campo": {
-      "nombre_completo": "pagina_1:seccion_superior",
-      "numero_pasaporte": "pagina_1:seccion_superior",
-      "fecha_nacimiento": "pagina_1:seccion_superior",
-      "fecha_vencimiento": "pagina_1:seccion_superior"
+      "nombre_completo": "pagina_1",
+      "numero_pasaporte": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "fecha_expedicion": "pagina_1",
+      "fecha_vencimiento": "pagina_1",
+      "nacionalidad": "pagina_1",
+      "sexo": "pagina_1"
     },
     "reglas_cumplidas_e_incumplidas": {
       "cumplidas": [],
@@ -144,10 +161,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T17:08:02.226977Z",
+      "fecha_analisis": "2026-10-01T19:18:08.994631Z",
       "proveedor": "ollama",
-      "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_sano_foto_dificil.jpg",

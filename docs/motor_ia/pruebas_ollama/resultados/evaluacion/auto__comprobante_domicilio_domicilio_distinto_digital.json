@@ -8,9 +8,16 @@
     "caso": "domicilio_distinto",
     "tipo": "comprobante_domicilio",
     "modalidad_fixture": "digital",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_titular",
+      "domicilio",
+      "fecha_emision"
+    ],
     "segundos_preparar": 0.1,
     "modalidad_detectada": "pdf_digital",
-    "segundos_total": 78.0,
+    "caracteres_texto": 341,
+    "segundos_total": 67.8,
     "estado": "completado",
     "tipo_detectado": "comprobante_domicilio",
     "confianza_clasificacion": 1.0,
@@ -20,32 +27,38 @@
       "nombre_titular": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "domicilio": {
         "esperado": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
         "extraido": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
+        "estado": "correcto",
         "ok": true
       },
       "proveedor": {
         "esperado": "SERVICIOS DE EJEMPLO S.A.",
         "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_emision": {
         "esperado": "2026-09-15",
         "extraido": "2026-09-15",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 4,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 4,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 39.93,
+        "segundos": 29.06,
         "tokens_entrada": 557,
         "tokens_salida": 60,
         "reintentos": 0,
@@ -55,20 +68,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 38.01,
-        "tokens_entrada": 731,
+        "segundos": 38.53,
+        "tokens_entrada": 857,
         "tokens_salida": 274,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "377bfe30-52f9-49f2-a00e-219a681d18d3",
+    "identificador_unico_documento": "91b1fd37-a11f-4180-80af-ec654342f420",
     "tipo_documental_declarado": "comprobante_domicilio",
     "tipo_documental_detectado": "comprobante_domicilio",
     "tipo_documental_confirmado": null,
@@ -100,10 +115,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T15:56:37.017173Z",
+      "fecha_analisis": "2026-10-01T19:22:36.371166Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_comprobante_domicilio@v2"
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "comprobante_domicilio_domicilio_distinto_digital.pdf",

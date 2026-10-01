@@ -9,6 +9,7 @@ from app.modulos.motor_ia.prompts import (
     ErrorPrompt,
     formatear_contenido,
     formatear_contexto_rag,
+    formatear_campos,
     formatear_esquema,
     formatear_tipos,
     renderizar,
@@ -40,6 +41,7 @@ def variables_reales() -> dict:
         "tipos_posibles": formatear_tipos(fichas.values()),
         "contexto_rag": formatear_contexto_rag([]),
         "esquema_campos": formatear_esquema(fichas["pasaporte"]),
+        "campos_a_extraer": formatear_campos(fichas["pasaporte"]),
     }
 
 
@@ -53,9 +55,10 @@ def test_versiones_vigentes_existen_y_renderizan():
     assert "ANA EJEMPLO PRUEBA" in texto and "- pasaporte:" in texto and "{{" not in texto
 
     texto, version = renderizar("extraccion", tipo_documental="pasaporte", contenido=v["contenido"],
-                                esquema_campos=v["esquema_campos"])
+                                esquema_campos=v["esquema_campos"], campos_a_extraer=v["campos_a_extraer"])
     assert version == f"extraccion_pasaporte@{VERSIONES_VIGENTES['extraccion']}"
-    assert "(tipo: pasaporte)" in texto and "- numero_pasaporte: texto, obligatorio" in texto
+    assert "(tipo: pasaporte)" in texto and "- numero_pasaporte: texto\n" in texto
+    assert "opcional" not in texto and "obligatorio" not in texto   # v3: sin obligatoriedad (ver formatear_campos)
     assert "EXACTAMENTE como aparecen" in texto
 
 
@@ -68,7 +71,8 @@ def test_prompts_v1_siguen_disponibles():
 
 
 def test_el_frontmatter_no_llega_al_prompt():
-    texto, _ = renderizar("extraccion", tipo_documental="pasaporte", contenido="x", esquema_campos="x")
+    texto, _ = renderizar("extraccion", tipo_documental="pasaporte", contenido="x", esquema_campos="x",
+                          campos_a_extraer="x")
     assert not texto.startswith("---") and "salida: json" not in texto
 
 
@@ -144,3 +148,11 @@ def test_formatear_tipos_y_esquema():
     esquema = formatear_esquema(fichas["pasaporte"]).splitlines()
     assert esquema[0] == "- nombre_completo: texto, obligatorio"
     assert "- nacionalidad: texto, opcional" in esquema
+    assert formatear_campos(fichas["pasaporte"]).splitlines()[0] == "- nombre_completo: texto"
+
+
+def test_extraccion_v2_sigue_con_la_obligatoriedad():
+    v = variables_reales()
+    texto, version = renderizar("extraccion", "v2", tipo_documental="pasaporte", contenido=v["contenido"],
+                                esquema_campos=v["esquema_campos"])
+    assert version == "extraccion_pasaporte@v2" and "- nacionalidad: texto, opcional" in texto

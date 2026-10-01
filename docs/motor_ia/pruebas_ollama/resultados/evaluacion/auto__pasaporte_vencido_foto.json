@@ -8,9 +8,17 @@
     "caso": "vencido",
     "tipo": "pasaporte",
     "modalidad_fixture": "foto",
-    "segundos_preparar": 0.9,
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 0.8,
     "modalidad_detectada": "imagen",
-    "segundos_total": 69.0,
+    "caracteres_texto": 266,
+    "segundos_total": 64.5,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -20,47 +28,56 @@
       "nombre_completo": {
         "esperado": "LUIS DEMO PRUEBAS",
         "extraido": "LUIS DEMO PRUEBAS",
+        "estado": "correcto",
         "ok": true
       },
       "numero_pasaporte": {
         "esperado": "ZX0000002",
         "extraido": "ZX0000002",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1985-06-15",
         "extraido": "1985-06-15",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_expedicion": {
         "esperado": "2016-08-31",
         "extraido": "2016-08-31",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2026-08-31",
         "extraido": "2026-08-31",
+        "estado": "correcto",
         "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
         "extraido": "UTOPICA",
+        "estado": "correcto",
         "ok": true
       },
       "sexo": {
         "esperado": "M",
         "extraido": "M",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 7,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 7,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 11.71,
+        "segundos": 11.19,
         "tokens_entrada": 535,
         "tokens_salida": 66,
         "reintentos": 0,
@@ -70,20 +87,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 56.31,
-        "tokens_entrada": 740,
+        "segundos": 52.53,
+        "tokens_entrada": 858,
         "tokens_salida": 403,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "86de5f57-b6bd-4e3a-ac74-1bf08179e79d",
+    "identificador_unico_documento": "7001ca58-4247-4efa-84e2-06120a4f6601",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -124,10 +143,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:22:04.649529Z",
+      "fecha_analisis": "2026-10-01T19:48:12.477002Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_vencido_foto.jpg",

@@ -14,10 +14,10 @@
       "domicilio",
       "fecha_emision"
     ],
-    "segundos_preparar": 1.3,
+    "segundos_preparar": 1.1,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 207,
-    "segundos_total": 48.4,
+    "segundos_total": 49.2,
     "estado": "completado",
     "tipo_detectado": "comprobante_domicilio",
     "confianza_clasificacion": 0.95,
@@ -58,7 +58,7 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 10.04,
+        "segundos": 10.13,
         "tokens_entrada": 484,
         "tokens_salida": 57,
         "reintentos": 0,
@@ -68,26 +68,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 37.08,
-        "tokens_entrada": 658,
-        "tokens_salida": 275,
+        "segundos": 37.99,
+        "tokens_entrada": 784,
+        "tokens_salida": 274,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 4,
-      "vacios": 0,
-      "incorrectos": 0,
-      "obligatorios_vacios": 0
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "43043cb0-869b-4e14-bab4-0a19c9c1f77b",
+    "identificador_unico_documento": "66063cf6-6cbb-4673-981d-8be6b6d66aa4",
     "tipo_documental_declarado": "comprobante_domicilio",
     "tipo_documental_detectado": "comprobante_domicilio",
     "tipo_documental_confirmado": null,
@@ -108,7 +104,7 @@
       "nombre_titular": "pagina_1:seccion_superior",
       "domicilio": "pagina_1:seccion_superior",
       "proveedor": "pagina_1:seccion_superior",
-      "fecha_emision": "pagina_1:seccion_central"
+      "fecha_emision": "pagina_1:seccion_superior"
     },
     "reglas_cumplidas_e_incumplidas": {
       "cumplidas": [],
@@ -119,10 +115,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:57:12.969420Z",
+      "fecha_analisis": "2026-10-01T18:53:24.386328Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_comprobante_domicilio@v2"
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "comprobante_domicilio_sano_foto_dificil.jpg",

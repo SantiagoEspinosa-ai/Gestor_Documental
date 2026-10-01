@@ -8,9 +8,17 @@
     "caso": "sano",
     "tipo": "pasaporte",
     "modalidad_fixture": "escaneado",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
     "segundos_preparar": 1.7,
     "modalidad_detectada": "pdf_escaneado",
-    "segundos_total": 70.5,
+    "caracteres_texto": 268,
+    "segundos_total": 67.5,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -20,47 +28,56 @@
       "nombre_completo": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "numero_pasaporte": {
         "esperado": "ZX0000001",
         "extraido": "ZX0000001",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
         "extraido": "1990-01-01",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_expedicion": {
         "esperado": "2021-09-30",
         "extraido": "2021-09-30",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2031-09-30",
         "extraido": "2031-09-30",
+        "estado": "correcto",
         "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
         "extraido": "UTOPICA",
+        "estado": "correcto",
         "ok": true
       },
       "sexo": {
         "esperado": "F",
         "extraido": "F",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 7,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 7,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 13.47,
+        "segundos": 13.36,
         "tokens_entrada": 537,
         "tokens_salida": 81,
         "reintentos": 0,
@@ -70,20 +87,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 55.29,
-        "tokens_entrada": 742,
+        "segundos": 52.39,
+        "tokens_entrada": 860,
         "tokens_salida": 403,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "68c57a96-25ab-4ba3-bdc4-e066535ec027",
+    "identificador_unico_documento": "fd3c1e9f-46eb-403c-bbf9-75fd696404fb",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -124,10 +143,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:17:41.370778Z",
+      "fecha_analisis": "2026-10-01T19:44:00.841515Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_sano_escaneado.pdf",

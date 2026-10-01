@@ -8,9 +8,17 @@
     "caso": "domicilio_distinto",
     "tipo": "pasaporte",
     "modalidad_fixture": "digital",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
     "segundos_preparar": 0.1,
     "modalidad_detectada": "pdf_digital",
-    "segundos_total": 66.3,
+    "caracteres_texto": 296,
+    "segundos_total": 67.2,
     "estado": "completado",
     "tipo_detectado": "pasaporte",
     "confianza_clasificacion": 0.95,
@@ -20,47 +28,56 @@
       "nombre_completo": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "numero_pasaporte": {
         "esperado": "ZX0000001",
         "extraido": "ZX0000001",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
         "extraido": "1990-01-01",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_expedicion": {
         "esperado": "2021-09-30",
         "extraido": "2021-09-30",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2031-09-30",
         "extraido": "2031-09-30",
+        "estado": "correcto",
         "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
         "extraido": "UTOPICA",
+        "estado": "correcto",
         "ok": true
       },
       "sexo": {
         "esperado": "F",
         "extraido": "F",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 7,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 7,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 12.34,
+        "segundos": 11.44,
         "tokens_entrada": 550,
         "tokens_salida": 65,
         "reintentos": 0,
@@ -70,20 +87,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 53.85,
-        "tokens_entrada": 755,
-        "tokens_salida": 403,
+        "segundos": 55.73,
+        "tokens_entrada": 873,
+        "tokens_salida": 404,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "19186f4c-7ada-48f3-ae51-703fd54a29cc",
+    "identificador_unico_documento": "e62e86f6-b508-47c5-abb9-b627435ea0ca",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
@@ -124,10 +143,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:13:15.259731Z",
+      "fecha_analisis": "2026-10-01T19:39:48.843243Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_domicilio_distinto_digital.pdf",

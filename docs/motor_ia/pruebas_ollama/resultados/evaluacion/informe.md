@@ -18,10 +18,10 @@ esperado (error silencioso); vacio = null.
 |---|---|---|---|
 | Tipo detectado correcto (normal, ruta auto) | 27/27 | 26/27 | APROBADO |
 | CLS-001 en los casos equivocados | 3/3 | 3/3 | APROBADO |
-| CLS-001 en casos correctos (falsos positivos) | 4 | 0 | NO APROBADO |
+| CLS-001 en casos correctos (falsos positivos) | 0 | 0 | APROBADO |
 | Resultados con SYS-001 o SYS-002 (todos los bloques) | 0 | 0 | APROBADO |
 | Excepciones (resultado no valido) | 0 | 0 | APROBADO |
-| Abortos por RAM | 1 | 0 | NO APROBADO |
+| Abortos por RAM | 0 | 0 | APROBADO |
 | Tiempo medio por documento (normal, ruta auto, informativo) | 59 s | <= 90 s | si |
 
 ## Nivel normal: aciertos por tipo, modalidad y ruta
@@ -36,80 +36,53 @@ esperado (error silencioso); vacio = null.
 
 | Nivel | Ruta | Metrica | Valor | Criterio | Resultado |
 |---|---|---|---|---|---|
-| dificil | auto | correctos | 19/34 | >= 26 | NO APROBADO |
-| dificil | auto | incorrectos | 7/34 | <= 3 | NO APROBADO |
+| dificil | auto | correctos | 31/34 | >= 26 | APROBADO |
+| dificil | auto | incorrectos | 2/34 | <= 3 | APROBADO |
 | dificil | auto | tipo_correcto | 6/6 | >= 6 | APROBADO |
-| extremo | auto | incorrectos | 10/34 | <= 7 | NO APROBADO |
-| extremo | auto | tipo_correcto | 2/6 | >= 4 | NO APROBADO (referencia) |
-| extremo | auto | reintento si >= la mitad de obligatorios vacios | 0/2 | todos | NO APROBADO |
+| extremo | auto | incorrectos | 6/34 | <= 7 | APROBADO |
+| extremo | auto | tipo_correcto | 6/6 | >= 4 | APROBADO (referencia) |
+| extremo | auto | reintento si >= la mitad de obligatorios vacios | 0/0 | todos | APROBADO |
 
 ## Fixtures de dificultad: correctos, vacios e incorrectos
 
-| Nivel | Ruta | Modalidad | Correctos | Vacios | Incorrectos | Reintentos con vision |
-|---|---|---|---|---|---|---|
-| dificil | auto | escaneado | 10/17 (59 %) | 3 | 4 | 0/3 |
-| dificil | auto | foto | 9/17 (53 %) | 5 | 3 | 0/3 |
-| dificil | vision | escaneado | 16/17 (94 %) | 1 | 0 | 0/3 |
-| dificil | vision | foto | 15/17 (88 %) | 1 | 1 | 0/3 |
-| extremo | auto | escaneado | 3/17 (18 %) | 9 | 5 | 0/3 |
-| extremo | auto | foto | 6/17 (35 %) | 6 | 5 | 0/3 |
-| extremo | vision | escaneado | 16/17 (94 %) | 1 | 0 | 0/3 |
-| extremo | vision | foto | 13/17 (76 %) | 1 | 3 | 0/3 |
+| Nivel | Ruta | Modalidad | Correctos | Vacios | Incorrectos | Reintentos con vision | Usan vision |
+|---|---|---|---|---|---|---|---|
+| dificil | auto | escaneado | 16/17 (94 %) | 0 | 1 | 2/3 | 2/3 |
+| dificil | auto | foto | 15/17 (88 %) | 1 | 1 | 1/3 | 1/3 |
+| dificil | vision | escaneado | 17/17 (100 %) | 0 | 0 | 0/3 | 1/3 |
+| dificil | vision | foto | 16/17 (94 %) | 0 | 1 | 0/3 | 1/3 |
+| extremo | auto | escaneado | 14/17 (82 %) | 0 | 3 | 0/3 | 2/3 |
+| extremo | auto | foto | 14/17 (82 %) | 0 | 3 | 0/3 | 3/3 |
+| extremo | vision | escaneado | 17/17 (100 %) | 0 | 0 | 0/3 | 1/3 |
+| extremo | vision | foto | 14/17 (82 %) | 0 | 3 | 0/3 | 1/3 |
+
+**Nota: la ruta `vision` mezcla versiones del prompt de extraccion** (resultados de ejecuciones distintas; se deja como referencia):
+- `extraccion_v2`: 8 casos
+- `extraccion_v3`: 4 casos (`vision__pasaporte_sano_escaneado_dificil`, `vision__pasaporte_sano_escaneado_extremo`, `vision__pasaporte_sano_foto_dificil`, `vision__pasaporte_sano_foto_extremo`)
 
 Reintentos con vision (resultado con texto antes del reintento -> resultado final):
 
-Ninguno.
+| Caso | Antes: correctos / vacios / incorrectos | Despues: correctos / vacios / incorrectos |
+|---|---|---|
+| `auto__credencial_elector_sano_escaneado_dificil` | 5 / 0 / 1 | 6 / 0 / 0 |
+| `auto__pasaporte_sano_escaneado_dificil` | 4 / 1 / 2 | 7 / 0 / 0 |
+| `auto__pasaporte_sano_foto_dificil` | 4 / 0 / 3 | 6 / 0 / 1 |
 
 ## Campos que fallan (todos los bloques)
 
 | Ruta | Nivel | Archivo | Campo | Estado | Esperado | Extraido |
 |---|---|---|---|---|---|---|
 | auto | dificil | `comprobante_domicilio_sano_escaneado_dificil.pdf` | `domicilio` | incorrecto | CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO | GALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO |
-| auto | dificil | `credencial_elector_sano_escaneado_dificil.pdf` | `curp` | incorrecto | AEPA900101MDFXXX01 | AEPA9O0101MDFXXX01 |
-| auto | dificil | `credencial_elector_sano_foto_dificil.jpg` | `clave_elector` | vacio | EJPRAN90010199M101 | None |
-| auto | dificil | `credencial_elector_sano_foto_dificil.jpg` | `curp` | incorrecto | AEPA900101MDFXXX01 | AEPA900101MDFXXX01 EJPRAN90010199M101 |
 | auto | dificil | `credencial_elector_sano_foto_dificil.jpg` | `vigencia` | vacio | 2029 | None |
-| auto | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| auto | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `fecha_nacimiento` | incorrecto | 1990-01-01 | 2021-09-30 |
-| auto | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `nacionalidad` | vacio | UTOPICA | None |
-| auto | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `numero_pasaporte` | incorrecto | ZX0000001 | X00000015UTO9001011F3109306 |
-| auto | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `sexo` | vacio | F | None |
-| auto | dificil | `pasaporte_sano_foto_dificil.jpg` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| auto | dificil | `pasaporte_sano_foto_dificil.jpg` | `fecha_vencimiento` | incorrecto | 2031-09-30 | 3009/2021 |
-| auto | dificil | `pasaporte_sano_foto_dificil.jpg` | `nacionalidad` | vacio | UTOPICA | None |
 | auto | dificil | `pasaporte_sano_foto_dificil.jpg` | `numero_pasaporte` | incorrecto | ZX0000001 | 2X0000001 |
-| auto | dificil | `pasaporte_sano_foto_dificil.jpg` | `sexo` | vacio | F | None |
-| vision | dificil | `pasaporte_sano_escaneado_dificil.pdf` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| vision | dificil | `pasaporte_sano_foto_dificil.jpg` | `fecha_expedicion` | vacio | 2021-09-30 | None |
 | vision | dificil | `pasaporte_sano_foto_dificil.jpg` | `numero_pasaporte` | incorrecto | ZX0000001 | 2X0000001 |
-| auto | extremo | `comprobante_domicilio_sano_escaneado_extremo.pdf` | `domicilio` | incorrecto | CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO | Cormero de pense rosa 34 |
+| auto | extremo | `comprobante_domicilio_sano_escaneado_extremo.pdf` | `domicilio` | incorrecto | CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO | Cormero de pense |
 | auto | extremo | `comprobante_domicilio_sano_escaneado_extremo.pdf` | `nombre_titular` | incorrecto | ANA EJEMPLO PRUEBA | orta11 Of PAODO moon YA TIO |
-| auto | extremo | `comprobante_domicilio_sano_escaneado_extremo.pdf` | `proveedor` | vacio | SERVICIOS DE EJEMPLO S.A. | None |
-| auto | extremo | `comprobante_domicilio_sano_foto_extremo.jpg` | `domicilio` | incorrecto | CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO | CALLE FICTICIA 123, SERVICIOS DE EJEMPLO SA. |
-| auto | extremo | `comprobante_domicilio_sano_foto_extremo.jpg` | `fecha_emision` | incorrecto | 2026-09-15 | 1509 2026 |
-| auto | extremo | `comprobante_domicilio_sano_foto_extremo.jpg` | `proveedor` | incorrecto | SERVICIOS DE EJEMPLO S.A. | carat Oak PURO MP |
-| auto | extremo | `credencial_elector_sano_escaneado_extremo.pdf` | `clave_elector` | vacio | EJPRAN90010199M101 | None |
-| auto | extremo | `credencial_elector_sano_escaneado_extremo.pdf` | `curp` | incorrecto | AEPA900101MDFXXX01 | AEPA900 IOI MOF 100x0 1 ESPRANSOO1019904101 |
-| auto | extremo | `credencial_elector_sano_escaneado_extremo.pdf` | `domicilio` | incorrecto | CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO | CALLE FICTICIA 122, COLONIA DEMO, CIUDAD EJEMPLO |
-| auto | extremo | `credencial_elector_sano_escaneado_extremo.pdf` | `fecha_nacimiento` | incorrecto | 1990-01-01 | 1990 |
+| auto | extremo | `comprobante_domicilio_sano_escaneado_extremo.pdf` | `proveedor` | incorrecto | SERVICIOS DE EJEMPLO S.A. | SERVICIOS DE EJEMPLO S A. |
 | auto | extremo | `credencial_elector_sano_foto_extremo.jpg` | `curp` | incorrecto | AEPA900101MDFXXX01 | AEPA000101MDFXXX01 |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `fecha_nacimiento` | vacio | 1990-01-01 | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `fecha_vencimiento` | vacio | 2031-09-30 | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `nacionalidad` | vacio | UTOPICA | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `nombre_completo` | vacio | ANA EJEMPLO PRUEBA | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `numero_pasaporte` | vacio | ZX0000001 | None |
-| auto | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `sexo` | vacio | F | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `fecha_nacimiento` | vacio | 1990-01-01 | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `fecha_vencimiento` | vacio | 2031-09-30 | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `nacionalidad` | vacio | UTOPICA | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `nombre_completo` | vacio | ANA EJEMPLO PRUEBA | None |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `numero_pasaporte` | incorrecto | ZX0000001 | 1093060ccceeeecccecoó |
-| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `sexo` | vacio | F | None |
+| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `nombre_completo` | incorrecto | ANA EJEMPLO PRUEBA | AMA EJEMPLO PRUEBA |
+| auto | extremo | `pasaporte_sano_foto_extremo.jpg` | `numero_pasaporte` | incorrecto | ZX0000001 | 000000! |
 | vision | extremo | `credencial_elector_sano_foto_extremo.jpg` | `curp` | incorrecto | AEPA900101MDFXXX01 | AEPA000101MDFXXX01 |
-| vision | extremo | `pasaporte_sano_escaneado_extremo.pdf` | `fecha_expedicion` | vacio | 2021-09-30 | None |
-| vision | extremo | `pasaporte_sano_foto_extremo.jpg` | `fecha_expedicion` | vacio | 2021-09-30 | None |
 | vision | extremo | `pasaporte_sano_foto_extremo.jpg` | `nombre_completo` | incorrecto | ANA EJEMPLO PRUEBA | AMA EJEMPLO PRUEBA |
 | vision | extremo | `pasaporte_sano_foto_extremo.jpg` | `numero_pasaporte` | incorrecto | ZX0000001 | 000000! |
 
@@ -123,67 +96,67 @@ Ninguno.
 
 ## Casos: tiempos, modelos, RAM y reintentos
 
-| Caso | Nivel | Modalidad | Correctos | Vacios | Incorrectos | Tiempo | Llamadas | Reintento con vision | RAM libre minima |
+| Caso | Nivel | Modalidad | Correctos | Vacios | Incorrectos | Tiempo | Llamadas | Vision (motivo) | RAM libre minima |
 |---|---|---|---|---|---|---|---|---|---|
-| `auto__comprobante_domicilio_sano_escaneado_dificil` | dificil | escaneado | 3/4 | 0 | 1 | 70.1 s | gemma4:e2b (texto) 29.83 s; gemma4:e2b (texto) 38.49 s | no | 4.08 GB |
-| `auto__comprobante_domicilio_sano_foto_dificil` | dificil | foto | 4/4 | 0 | 0 | 48.4 s | gemma4:e2b (texto) 10.04 s; gemma4:e2b (texto) 37.08 s | no | 4.06 GB |
-| `auto__credencial_elector_sano_escaneado_dificil` | dificil | escaneado | 5/6 | 0 | 1 | 60.7 s | gemma4:e2b (texto) 11.42 s; gemma4:e2b (texto) 48.4 s | no | 4.01 GB |
-| `auto__credencial_elector_sano_foto_dificil` | dificil | foto | 3/6 | 2 | 1 | 62.4 s | gemma4:e2b (texto) 11.53 s; gemma4:e2b (texto) 50.19 s | no | 3.85 GB |
-| `auto__pasaporte_sano_escaneado_dificil` | dificil | escaneado | 2/7 | 3 | 2 | 75.7 s | gemma4:e2b (texto) 27.86 s; gemma4:e2b (texto) 46.41 s | no | - GB |
-| `auto__pasaporte_sano_foto_dificil` | dificil | foto | 2/7 | 3 | 2 | 58.3 s | gemma4:e2b (texto) 11.49 s; gemma4:e2b (texto) 45.97 s | no | - GB |
+| `auto__comprobante_domicilio_sano_escaneado_dificil` | dificil | escaneado | 3/4 | 0 | 1 | 67.6 s | gemma4:e2b (texto) 28.41 s; gemma4:e2b (texto) 37.46 s | no | 5.44 GB |
+| `auto__comprobante_domicilio_sano_foto_dificil` | dificil | foto | 4/4 | 0 | 0 | 49.2 s | gemma4:e2b (texto) 10.13 s; gemma4:e2b (texto) 37.99 s | no | 5.33 GB |
+| `auto__credencial_elector_sano_escaneado_dificil` | dificil | escaneado | 6/6 | 0 | 0 | 224.5 s | gemma4:e2b (texto) 29.47 s; gemma4:e2b (texto) 51.94 s; qwen2.5vl:3b (vision) 142.05 s | reintento con vision: formato invalido en curp con texto | 3.71 GB |
+| `auto__credencial_elector_sano_foto_dificil` | dificil | foto | 5/6 | 1 | 0 | 82.9 s | gemma4:e2b (texto) 29.5 s; gemma4:e2b (texto) 52.7 s | no | 3.96 GB |
+| `auto__pasaporte_sano_escaneado_dificil` | dificil | escaneado | 7/7 | 0 | 0 | 244.0 s | gemma4:e2b (texto) 28.71 s; gemma4:e2b (texto) 56.01 s; qwen2.5vl:3b (vision) 157.41 s | reintento con vision: formato invalido en numero_pasaporte con texto | 3.26 GB |
+| `auto__pasaporte_sano_foto_dificil` | dificil | foto | 6/7 | 0 | 1 | 228.6 s | gemma4:e2b (texto) 29.1 s; gemma4:e2b (texto) 55.3 s; qwen2.5vl:3b (vision) 143.25 s | reintento con vision: formato invalido en fecha_expedicion, fecha_vencimiento con texto | 4.21 GB |
 | `vision__comprobante_domicilio_sano_escaneado_dificil` | dificil | escaneado | 4/4 | 0 | 0 | 195.1 s | qwen2.5vl:3b (vision) 140.85 s; qwen2.5vl:3b (vision) 52.09 s | no | 2.46 GB |
 | `vision__comprobante_domicilio_sano_foto_dificil` | dificil | foto | 4/4 | 0 | 0 | 172.2 s | qwen2.5vl:3b (vision) 120.99 s; qwen2.5vl:3b (vision) 49.86 s | no | 1.42 GB |
 | `vision__credencial_elector_sano_escaneado_dificil` | dificil | escaneado | 6/6 | 0 | 0 | 142.0 s | qwen2.5vl:3b (vision) 77.28 s; qwen2.5vl:3b (vision) 63.29 s | no | 3.4 GB |
 | `vision__credencial_elector_sano_foto_dificil` | dificil | foto | 6/6 | 0 | 0 | 138.3 s | qwen2.5vl:3b (vision) 76.28 s; qwen2.5vl:3b (vision) 61.35 s | no | 3.22 GB |
-| `vision__pasaporte_sano_escaneado_dificil` | dificil | escaneado | 6/7 | 1 | 0 | 143.2 s | qwen2.5vl:3b (vision) 79.8 s; qwen2.5vl:3b (vision) 61.69 s | no | 2.95 GB |
-| `vision__pasaporte_sano_foto_dificil` | dificil | foto | 5/7 | 1 | 1 | 133.8 s | qwen2.5vl:3b (vision) 74.34 s; qwen2.5vl:3b (vision) 58.17 s | no | 3.05 GB |
-| `auto__comprobante_domicilio_sano_escaneado_extremo` | extremo | escaneado | 1/4 | 1 | 2 | 42.3 s | gemma4:e2b (texto) 11.26 s; gemma4:e2b (texto) 29.72 s | no | 4.08 GB |
-| `auto__comprobante_domicilio_sano_foto_extremo` | extremo | foto | 1/4 | 0 | 3 | 44.8 s | gemma4:e2b (texto) 9.55 s; gemma4:e2b (texto) 34.47 s | no | 4.04 GB |
-| `auto__credencial_elector_sano_escaneado_extremo` | extremo | escaneado | 2/6 | 1 | 3 | 57.8 s | gemma4:e2b (texto) 10.58 s; gemma4:e2b (texto) 46.4 s | no | 4.11 GB |
-| `auto__credencial_elector_sano_foto_extremo` | extremo | foto | 5/6 | 0 | 1 | 238.5 s | qwen2.5vl:3b (vision) 102.17 s; qwen2.5vl:3b (vision) 135.85 s | no | 0.99 GB |
-| `auto__pasaporte_sano_escaneado_extremo` | extremo | escaneado | 0/7 | 7 | 0 | 51.1 s | gemma4:e2b (texto) 9.28 s; gemma4:e2b (texto) 40.73 s | no | - GB |
-| `auto__pasaporte_sano_foto_extremo` | extremo | foto | 0/7 | 6 | 1 | 59.7 s | gemma4:e2b (texto) 10.72 s; gemma4:e2b (texto) 48.18 s | no | - GB |
+| `vision__pasaporte_sano_escaneado_dificil` | dificil | escaneado | 7/7 | 0 | 0 | 149.7 s | qwen2.5vl:3b (vision) 82.95 s; qwen2.5vl:3b (vision) 65.5 s | si (sin texto suficiente) | 3.44 GB |
+| `vision__pasaporte_sano_foto_dificil` | dificil | foto | 6/7 | 0 | 1 | 144.0 s | qwen2.5vl:3b (vision) 74.36 s; qwen2.5vl:3b (vision) 68.81 s | si (sin texto suficiente) | 3.45 GB |
+| `auto__comprobante_domicilio_sano_escaneado_extremo` | extremo | escaneado | 1/4 | 0 | 3 | 47.5 s | gemma4:e2b (texto) 11.1 s; gemma4:e2b (texto) 34.61 s | no | 5.33 GB |
+| `auto__comprobante_domicilio_sano_foto_extremo` | extremo | foto | 4/4 | 0 | 0 | 193.4 s | gemma4:e2b (texto) 9.67 s; qwen2.5vl:3b (vision) 125.68 s; qwen2.5vl:3b (vision) 57.28 s | reclasificacion con vision: la clasificacion con texto dio desconocido; extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido) | 3.78 GB |
+| `auto__credencial_elector_sano_escaneado_extremo` | extremo | escaneado | 6/6 | 0 | 0 | 176.0 s | gemma4:e2b (texto) 28.38 s; qwen2.5vl:3b (vision) 82.87 s; qwen2.5vl:3b (vision) 63.9 s | reclasificacion con vision: la clasificacion con texto dio desconocido; extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido) | 3.92 GB |
+| `auto__credencial_elector_sano_foto_extremo` | extremo | foto | 5/6 | 0 | 1 | 149.1 s | qwen2.5vl:3b (vision) 79.85 s; qwen2.5vl:3b (vision) 68.53 s | si (sin texto suficiente) | 3.93 GB |
+| `auto__pasaporte_sano_escaneado_extremo` | extremo | escaneado | 7/7 | 0 | 0 | 187.0 s | gemma4:e2b (texto) 28.35 s; qwen2.5vl:3b (vision) 84.82 s; qwen2.5vl:3b (vision) 71.44 s | reclasificacion con vision: la clasificacion con texto dio desconocido; extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido) | 3.66 GB |
+| `auto__pasaporte_sano_foto_extremo` | extremo | foto | 5/7 | 0 | 2 | 183.1 s | gemma4:e2b (texto) 27.56 s; qwen2.5vl:3b (vision) 86.92 s; qwen2.5vl:3b (vision) 67.86 s | reclasificacion con vision: la clasificacion con texto dio desconocido; extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido) | 4.26 GB |
 | `vision__comprobante_domicilio_sano_escaneado_extremo` | extremo | escaneado | 4/4 | 0 | 0 | 182.3 s | qwen2.5vl:3b (vision) 114.17 s; qwen2.5vl:3b (vision) 66.68 s | no | 1.74 GB |
 | `vision__comprobante_domicilio_sano_foto_extremo` | extremo | foto | 4/4 | 0 | 0 | 173.0 s | qwen2.5vl:3b (vision) 118.86 s; qwen2.5vl:3b (vision) 53.28 s | no | 1.88 GB |
 | `vision__credencial_elector_sano_escaneado_extremo` | extremo | escaneado | 6/6 | 0 | 0 | 140.7 s | qwen2.5vl:3b (vision) 71.39 s; qwen2.5vl:3b (vision) 68.26 s | no | 3.32 GB |
 | `vision__credencial_elector_sano_foto_extremo` | extremo | foto | 5/6 | 0 | 1 | 137.4 s | qwen2.5vl:3b (vision) 74.01 s; qwen2.5vl:3b (vision) 62.65 s | no | 2.95 GB |
-| `vision__pasaporte_sano_escaneado_extremo` | extremo | escaneado | 6/7 | 1 | 0 | 131.1 s | qwen2.5vl:3b (vision) 70.61 s; qwen2.5vl:3b (vision) 58.94 s | no | 3.11 GB |
-| `vision__pasaporte_sano_foto_extremo` | extremo | foto | 4/7 | 1 | 2 | 135.8 s | qwen2.5vl:3b (vision) 74.39 s; qwen2.5vl:3b (vision) 60.7 s | no | 2.97 GB |
-| `auto__comprobante_domicilio_domicilio_distinto_digital` | normal | digital | 4/4 | 0 | 0 | 78.0 s | gemma4:e2b (texto) 39.93 s; gemma4:e2b (texto) 38.01 s | no | 4.41 GB |
-| `auto__comprobante_domicilio_domicilio_distinto_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 50.9 s | gemma4:e2b (texto) 10.2 s; gemma4:e2b (texto) 38.45 s | no | 4.32 GB |
-| `auto__comprobante_domicilio_domicilio_distinto_foto` | normal | foto | 4/4 | 0 | 0 | 48.1 s | gemma4:e2b (texto) 10.53 s; gemma4:e2b (texto) 36.61 s | no | 4.33 GB |
-| `auto__comprobante_domicilio_sano_digital` | normal | digital | 4/4 | 0 | 0 | 47.1 s | gemma4:e2b (texto) 10.36 s; gemma4:e2b (texto) 36.6 s | no | 4.33 GB |
-| `auto__comprobante_domicilio_sano_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 48.5 s | gemma4:e2b (texto) 10.13 s; gemma4:e2b (texto) 36.25 s | no | 4.33 GB |
-| `auto__comprobante_domicilio_sano_foto` | normal | foto | 4/4 | 0 | 0 | 49.8 s | gemma4:e2b (texto) 11.53 s; gemma4:e2b (texto) 37.32 s | no | 4.26 GB |
-| `auto__comprobante_domicilio_vencido_digital` | normal | digital | 4/4 | 0 | 0 | 47.8 s | gemma4:e2b (texto) 11.07 s; gemma4:e2b (texto) 36.61 s | no | 4.31 GB |
-| `auto__comprobante_domicilio_vencido_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 48.0 s | gemma4:e2b (texto) 11.44 s; gemma4:e2b (texto) 34.28 s | no | 4.22 GB |
-| `auto__comprobante_domicilio_vencido_foto` | normal | foto | 4/4 | 0 | 0 | 47.5 s | gemma4:e2b (texto) 10.02 s; gemma4:e2b (texto) 36.56 s | no | 4.19 GB |
-| `auto__credencial_elector_domicilio_distinto_digital` | normal | digital | 6/6 | 0 | 0 | 63.2 s | gemma4:e2b (texto) 12.91 s; gemma4:e2b (texto) 50.24 s | no | 4.02 GB |
-| `auto__credencial_elector_domicilio_distinto_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 61.6 s | gemma4:e2b (texto) 12.28 s; gemma4:e2b (texto) 47.77 s | no | 4.08 GB |
-| `auto__credencial_elector_domicilio_distinto_foto` | normal | foto | 6/6 | 0 | 0 | 60.5 s | gemma4:e2b (texto) 11.12 s; gemma4:e2b (texto) 48.64 s | no | 4.26 GB |
-| `auto__credencial_elector_sano_digital` | normal | digital | 6/6 | 0 | 0 | 52.5 s | gemma4:e2b (texto) 9.64 s; gemma4:e2b (texto) 42.8 s | no | 4.26 GB |
-| `auto__credencial_elector_sano_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 60.8 s | gemma4:e2b (texto) 11.43 s; gemma4:e2b (texto) 48.11 s | no | 4.2 GB |
-| `auto__credencial_elector_sano_foto` | normal | foto | 6/6 | 0 | 0 | 65.0 s | gemma4:e2b (texto) 14.32 s; gemma4:e2b (texto) 50.07 s | no | 3.96 GB |
-| `auto__credencial_elector_vencido_digital` | normal | digital | 6/6 | 0 | 0 | 61.5 s | gemma4:e2b (texto) 12.9 s; gemma4:e2b (texto) 48.55 s | no | 4.01 GB |
-| `auto__credencial_elector_vencido_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 62.8 s | gemma4:e2b (texto) 10.67 s; gemma4:e2b (texto) 50.8 s | no | 3.9 GB |
-| `auto__credencial_elector_vencido_foto` | normal | foto | 6/6 | 0 | 0 | 56.2 s | gemma4:e2b (texto) 9.34 s; gemma4:e2b (texto) 45.51 s | no | 3.65 GB |
-| `auto__pasaporte_domicilio_distinto_digital` | normal | digital | 7/7 | 0 | 0 | 66.3 s | gemma4:e2b (texto) 12.34 s; gemma4:e2b (texto) 53.85 s | no | 3.67 GB |
-| `auto__pasaporte_domicilio_distinto_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 72.4 s | gemma4:e2b (texto) 13.33 s; gemma4:e2b (texto) 57.18 s | no | 3.57 GB |
-| `auto__pasaporte_domicilio_distinto_foto` | normal | foto | 7/7 | 0 | 0 | 66.5 s | gemma4:e2b (texto) 12.61 s; gemma4:e2b (texto) 52.95 s | no | 3.23 GB |
-| `auto__pasaporte_sano_digital` | normal | digital | 7/7 | 0 | 0 | 56.6 s | gemma4:e2b (texto) 9.59 s; gemma4:e2b (texto) 46.87 s | no | 3.49 GB |
-| `auto__pasaporte_sano_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 70.5 s | gemma4:e2b (texto) 13.47 s; gemma4:e2b (texto) 55.29 s | no | 3.36 GB |
-| `auto__pasaporte_sano_foto` | normal | foto | 7/7 | 0 | 0 | 57.0 s | gemma4:e2b (texto) 8.78 s; gemma4:e2b (texto) 47.36 s | no | 3.47 GB |
-| `auto__pasaporte_vencido_digital` | normal | digital | 7/7 | 0 | 0 | 66.0 s | gemma4:e2b (texto) 13.72 s; gemma4:e2b (texto) 52.12 s | no | 3.52 GB |
-| `auto__pasaporte_vencido_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 71.3 s | gemma4:e2b (texto) 12.96 s; gemma4:e2b (texto) 56.61 s | no | 3.53 GB |
-| `auto__pasaporte_vencido_foto` | normal | foto | 7/7 | 0 | 0 | 69.0 s | gemma4:e2b (texto) 11.71 s; gemma4:e2b (texto) 56.31 s | no | 3.74 GB |
-| `cls__comprobante_domicilio_sano_escaneado__como_pasaporte` | normal | escaneado | - | - | - | 80.5 s | gemma4:e2b (texto) 30.1 s; gemma4:e2b (texto) 48.07 s | no | 4.39 GB |
-| `cls__credencial_elector_sano_digital__como_pasaporte` | normal | digital | - | - | - | 55.3 s | gemma4:e2b (texto) 9.97 s; gemma4:e2b (texto) 45.25 s | no | 3.74 GB |
-| `cls__pasaporte_sano_foto__como_credencial_elector` | normal | foto | - | - | - | 51.7 s | gemma4:e2b (texto) 8.76 s; gemma4:e2b (texto) 42.0 s | no | 3.7 GB |
+| `vision__pasaporte_sano_escaneado_extremo` | extremo | escaneado | 7/7 | 0 | 0 | 140.1 s | qwen2.5vl:3b (vision) 72.68 s; qwen2.5vl:3b (vision) 66.35 s | si (sin texto suficiente) | 3.48 GB |
+| `vision__pasaporte_sano_foto_extremo` | extremo | foto | 5/7 | 0 | 2 | 145.6 s | qwen2.5vl:3b (vision) 75.64 s; qwen2.5vl:3b (vision) 69.09 s | si (sin texto suficiente) | 3.31 GB |
+| `auto__comprobante_domicilio_domicilio_distinto_digital` | normal | digital | 4/4 | 0 | 0 | 67.8 s | gemma4:e2b (texto) 29.06 s; gemma4:e2b (texto) 38.53 s | no | 5.85 GB |
+| `auto__comprobante_domicilio_domicilio_distinto_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 52.0 s | gemma4:e2b (texto) 10.27 s; gemma4:e2b (texto) 39.31 s | no | 5.7 GB |
+| `auto__comprobante_domicilio_domicilio_distinto_foto` | normal | foto | 4/4 | 0 | 0 | 49.5 s | gemma4:e2b (texto) 10.38 s; gemma4:e2b (texto) 38.02 s | no | 5.73 GB |
+| `auto__comprobante_domicilio_sano_digital` | normal | digital | 4/4 | 0 | 0 | 51.2 s | gemma4:e2b (texto) 10.94 s; gemma4:e2b (texto) 40.2 s | no | 5.67 GB |
+| `auto__comprobante_domicilio_sano_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 50.7 s | gemma4:e2b (texto) 10.36 s; gemma4:e2b (texto) 38.09 s | no | 5.63 GB |
+| `auto__comprobante_domicilio_sano_foto` | normal | foto | 4/4 | 0 | 0 | 49.9 s | gemma4:e2b (texto) 10.52 s; gemma4:e2b (texto) 38.35 s | no | 5.57 GB |
+| `auto__comprobante_domicilio_vencido_digital` | normal | digital | 4/4 | 0 | 0 | 48.9 s | gemma4:e2b (texto) 10.89 s; gemma4:e2b (texto) 37.97 s | no | 5.54 GB |
+| `auto__comprobante_domicilio_vencido_escaneado` | normal | escaneado | 4/4 | 0 | 0 | 51.8 s | gemma4:e2b (texto) 11.36 s; gemma4:e2b (texto) 38.1 s | no | 5.54 GB |
+| `auto__comprobante_domicilio_vencido_foto` | normal | foto | 4/4 | 0 | 0 | 48.3 s | gemma4:e2b (texto) 9.95 s; gemma4:e2b (texto) 37.37 s | no | 5.49 GB |
+| `auto__credencial_elector_domicilio_distinto_digital` | normal | digital | 6/6 | 0 | 0 | 72.1 s | gemma4:e2b (texto) 15.67 s; gemma4:e2b (texto) 56.43 s | no | 5.26 GB |
+| `auto__credencial_elector_domicilio_distinto_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 61.5 s | gemma4:e2b (texto) 11.24 s; gemma4:e2b (texto) 48.91 s | no | 5.46 GB |
+| `auto__credencial_elector_domicilio_distinto_foto` | normal | foto | 6/6 | 0 | 0 | 61.4 s | gemma4:e2b (texto) 11.26 s; gemma4:e2b (texto) 49.54 s | no | 5.46 GB |
+| `auto__credencial_elector_sano_digital` | normal | digital | 6/6 | 0 | 0 | 53.2 s | gemma4:e2b (texto) 9.74 s; gemma4:e2b (texto) 43.43 s | no | 5.46 GB |
+| `auto__credencial_elector_sano_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 63.1 s | gemma4:e2b (texto) 11.45 s; gemma4:e2b (texto) 50.22 s | no | 5.38 GB |
+| `auto__credencial_elector_sano_foto` | normal | foto | 6/6 | 0 | 0 | 63.8 s | gemma4:e2b (texto) 12.79 s; gemma4:e2b (texto) 50.39 s | no | 5.35 GB |
+| `auto__credencial_elector_vencido_digital` | normal | digital | 6/6 | 0 | 0 | 62.7 s | gemma4:e2b (texto) 13.24 s; gemma4:e2b (texto) 49.38 s | no | 5.61 GB |
+| `auto__credencial_elector_vencido_escaneado` | normal | escaneado | 6/6 | 0 | 0 | 71.9 s | gemma4:e2b (texto) 10.9 s; gemma4:e2b (texto) 59.69 s | no | 5.21 GB |
+| `auto__credencial_elector_vencido_foto` | normal | foto | 6/6 | 0 | 0 | 53.2 s | gemma4:e2b (texto) 8.35 s; gemma4:e2b (texto) 44.18 s | no | 5.53 GB |
+| `auto__pasaporte_domicilio_distinto_digital` | normal | digital | 7/7 | 0 | 0 | 67.2 s | gemma4:e2b (texto) 11.44 s; gemma4:e2b (texto) 55.73 s | no | 5.31 GB |
+| `auto__pasaporte_domicilio_distinto_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 73.2 s | gemma4:e2b (texto) 12.83 s; gemma4:e2b (texto) 58.68 s | no | 5.18 GB |
+| `auto__pasaporte_domicilio_distinto_foto` | normal | foto | 7/7 | 0 | 0 | 56.1 s | gemma4:e2b (texto) 8.75 s; gemma4:e2b (texto) 46.52 s | no | 5.34 GB |
+| `auto__pasaporte_sano_digital` | normal | digital | 7/7 | 0 | 0 | 55.2 s | gemma4:e2b (texto) 9.36 s; gemma4:e2b (texto) 45.81 s | no | 5.36 GB |
+| `auto__pasaporte_sano_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 67.5 s | gemma4:e2b (texto) 13.36 s; gemma4:e2b (texto) 52.39 s | no | 5.34 GB |
+| `auto__pasaporte_sano_foto` | normal | foto | 7/7 | 0 | 0 | 55.6 s | gemma4:e2b (texto) 8.63 s; gemma4:e2b (texto) 46.17 s | no | 5.29 GB |
+| `auto__pasaporte_vencido_digital` | normal | digital | 7/7 | 0 | 0 | 65.2 s | gemma4:e2b (texto) 12.95 s; gemma4:e2b (texto) 52.2 s | no | 5.29 GB |
+| `auto__pasaporte_vencido_escaneado` | normal | escaneado | 7/7 | 0 | 0 | 66.2 s | gemma4:e2b (texto) 12.31 s; gemma4:e2b (texto) 52.27 s | no | 5.27 GB |
+| `auto__pasaporte_vencido_foto` | normal | foto | 7/7 | 0 | 0 | 64.5 s | gemma4:e2b (texto) 11.19 s; gemma4:e2b (texto) 52.53 s | no | 5.26 GB |
+| `cls__comprobante_domicilio_sano_escaneado__como_pasaporte` | normal | escaneado | - | - | - | 55.6 s | gemma4:e2b (texto) 10.23 s; gemma4:e2b (texto) 43.28 s | no | 5.33 GB |
+| `cls__credencial_elector_sano_digital__como_pasaporte` | normal | digital | - | - | - | 53.8 s | gemma4:e2b (texto) 9.36 s; gemma4:e2b (texto) 44.33 s | no | 5.23 GB |
+| `cls__pasaporte_sano_foto__como_credencial_elector` | normal | foto | - | - | - | 54.4 s | gemma4:e2b (texto) 8.59 s; gemma4:e2b (texto) 44.89 s | no | 5.07 GB |
 
 ## RAM por bloque
 
 | Bloque | RAM libre minima | Abortado por RAM |
 |---|---|---|
-| 1 | 4.39 GB | no |
-| 3 | 0.99 GB | si |
-| 4 | 1.42 GB | no |
+| 1 | 5.07 GB | no |
+| 3 | 3.26 GB | no |
+| 4 | 3.31 GB | no |

@@ -8,9 +8,18 @@
     "caso": "sano",
     "tipo": "credencial_elector",
     "modalidad_fixture": "digital",
-    "segundos_preparar": 0.1,
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
+    "segundos_preparar": 0.0,
     "modalidad_detectada": "pdf_digital",
-    "segundos_total": 52.5,
+    "caracteres_texto": 234,
+    "segundos_total": 53.2,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 1.0,
@@ -20,42 +29,50 @@
       "nombre_completo": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "curp": {
         "esperado": "AEPA900101MDFXXX01",
         "extraido": "AEPA900101MDFXXX01",
+        "estado": "correcto",
         "ok": true
       },
       "clave_elector": {
         "esperado": "EJPRAN90010199M101",
         "extraido": "EJPRAN90010199M101",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
         "extraido": "1990-01-01",
+        "estado": "correcto",
         "ok": true
       },
       "domicilio": {
         "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
         "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
         "ok": true
       },
       "vigencia": {
         "esperado": "2029",
         "extraido": 2029,
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 6,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 9.64,
+        "segundos": 9.74,
         "tokens_entrada": 512,
         "tokens_salida": 82,
         "reintentos": 0,
@@ -65,20 +82,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 42.8,
-        "tokens_entrada": 705,
+        "segundos": 43.43,
+        "tokens_entrada": 827,
         "tokens_salida": 373,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "0db451b7-1052-40a9-9334-f836bf7141f2",
+    "identificador_unico_documento": "facbeea6-ed66-4a62-85e7-b9d3d2f42f54",
     "tipo_documental_declarado": "credencial_elector",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
@@ -116,10 +135,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:07:02.654037Z",
+      "fecha_analisis": "2026-10-01T19:33:26.972875Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_credencial_elector@v2"
+      "version_prompt": "extraccion_credencial_elector@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_sano_digital.pdf",

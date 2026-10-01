@@ -103,7 +103,7 @@ def test_caso_normal():
     assert [i.modelo for i in analisis.llamadas] == ["ollama-modelo-real-clasificacion", "ollama-modelo-real-extraccion"]
     clasificacion, extraccion = p.prompts
     assert "ANA EJEMPLO PRUEBA" in clasificacion[1] and "- pasaporte:" in clasificacion[1]
-    assert "(tipo: pasaporte)" in extraccion[1] and "- numero_pasaporte: texto, obligatorio" in extraccion[1]
+    assert "(tipo: pasaporte)" in extraccion[1] and "- numero_pasaporte: texto\n" in extraccion[1]
 
 
 # --- Tipo documental (ADR-006, 2.5) ---

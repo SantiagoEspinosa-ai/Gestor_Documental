@@ -8,9 +8,16 @@
     "caso": "sano",
     "tipo": "comprobante_domicilio",
     "modalidad_fixture": "digital",
-    "segundos_preparar": 0.2,
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_titular",
+      "domicilio",
+      "fecha_emision"
+    ],
+    "segundos_preparar": 0.1,
     "modalidad_detectada": "pdf_digital",
-    "segundos_total": 47.1,
+    "caracteres_texto": 342,
+    "segundos_total": 51.2,
     "estado": "completado",
     "tipo_detectado": "comprobante_domicilio",
     "confianza_clasificacion": 1.0,
@@ -20,32 +27,38 @@
       "nombre_titular": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "domicilio": {
         "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
         "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
         "ok": true
       },
       "proveedor": {
         "esperado": "SERVICIOS DE EJEMPLO S.A.",
         "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_emision": {
         "esperado": "2026-09-15",
         "extraido": "2026-09-15",
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 4,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 4,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 10.36,
+        "segundos": 10.94,
         "tokens_entrada": 559,
         "tokens_salida": 57,
         "reintentos": 0,
@@ -55,20 +68,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 36.6,
-        "tokens_entrada": 733,
-        "tokens_salida": 275,
+        "segundos": 40.2,
+        "tokens_entrada": 859,
+        "tokens_salida": 287,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "459fac15-7009-450c-8526-48ecbf9fd4a3",
+    "identificador_unico_documento": "a6ed62eb-6882-4bfe-b4f1-8a2ba3d0f826",
     "tipo_documental_declarado": "comprobante_domicilio",
     "tipo_documental_detectado": "comprobante_domicilio",
     "tipo_documental_confirmado": null,
@@ -86,9 +101,9 @@
       "fecha_emision": 1.0
     },
     "evidencia_por_campo": {
-      "nombre_titular": "pagina_1:seccion_central",
-      "domicilio": "pagina_1:seccion_central",
-      "proveedor": "pagina_1:seccion_central",
+      "nombre_titular": "pagina_1:seccion_superior",
+      "domicilio": "pagina_1:seccion_superior",
+      "proveedor": "pagina_1:seccion_superior",
       "fecha_emision": "pagina_1:seccion_central"
     },
     "reglas_cumplidas_e_incumplidas": {
@@ -100,10 +115,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T15:59:03.204823Z",
+      "fecha_analisis": "2026-10-01T19:25:09.041904Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_comprobante_domicilio@v2"
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "comprobante_domicilio_sano_digital.pdf",

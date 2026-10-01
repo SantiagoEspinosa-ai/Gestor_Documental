@@ -8,9 +8,18 @@
     "caso": "sano",
     "tipo": "credencial_elector",
     "modalidad_fixture": "digital",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
     "segundos_preparar": 0.0,
     "modalidad_detectada": "pdf_digital",
-    "segundos_total": 55.3,
+    "caracteres_texto": 234,
+    "segundos_total": 53.8,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 1.0,
@@ -20,13 +29,15 @@
     ],
     "campos": {},
     "aciertos": 0,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 0,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 9.97,
+        "segundos": 9.36,
         "tokens_entrada": 512,
         "tokens_salida": 82,
         "reintentos": 0,
@@ -35,21 +46,23 @@
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
-        "motivo": null,
-        "segundos": 45.25,
-        "tokens_entrada": 717,
-        "tokens_salida": 344,
+        "motivo": "sin reintento con vision (formato invalido en fecha_vencimiento): el tipo declarado no coincide con el detectado (CLS-001)",
+        "segundos": 44.33,
+        "tokens_entrada": 835,
+        "tokens_salida": 326,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "3c6d9aeb-f353-4687-97b9-5fdd2c3476e4",
+    "identificador_unico_documento": "a78ffbde-95fb-4f9a-b5de-b067cf7494fe",
     "tipo_documental_declarado": "pasaporte",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
@@ -100,10 +113,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:22:59.924964Z",
+      "fecha_analisis": "2026-10-01T19:49:06.220509Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_sano_digital.pdf",

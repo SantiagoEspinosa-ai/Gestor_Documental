@@ -17,7 +17,7 @@
     "segundos_preparar": 1.7,
     "modalidad_detectada": "pdf_escaneado",
     "caracteres_texto": 228,
-    "segundos_total": 70.1,
+    "segundos_total": 67.6,
     "estado": "completado",
     "tipo_detectado": "comprobante_domicilio",
     "confianza_clasificacion": 0.95,
@@ -58,7 +58,7 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 29.83,
+        "segundos": 28.41,
         "tokens_entrada": 492,
         "tokens_salida": 62,
         "reintentos": 0,
@@ -68,26 +68,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 38.49,
-        "tokens_entrada": 666,
+        "segundos": 37.46,
+        "tokens_entrada": 792,
         "tokens_salida": 275,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 3,
-      "vacios": 0,
-      "incorrectos": 1,
-      "obligatorios_vacios": 0
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "70217c8c-cb17-439a-b6fd-8ddff2f886a5",
+    "identificador_unico_documento": "4fa84d35-0886-47e8-86e3-47e660a16ffc",
     "tipo_documental_declarado": "comprobante_domicilio",
     "tipo_documental_detectado": "comprobante_domicilio",
     "tipo_documental_confirmado": null,
@@ -119,10 +115,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:55:42.203118Z",
+      "fecha_analisis": "2026-10-01T18:51:47.652129Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_comprobante_domicilio@v2"
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "comprobante_domicilio_sano_escaneado_dificil.pdf",

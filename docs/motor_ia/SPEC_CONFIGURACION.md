@@ -98,9 +98,11 @@ senales:
 - El proveedor solo expone `clasificar_con_vision(...)` y `extraer_con_vision(...)`; `clasificar()` y `extraer()`
   no reintentan. El servicio solo actua si la llamada fue con texto (`entrada == "texto"`), el proveedor tiene el
   metodo y el documento tiene imagenes.
-- Simulacion con los datos medidos (24 casos dificiles): dificil 30/34 correctos y 2 incorrectos; extremo 26/34 y
-  5; en nivel normal no cambia nada (el bloque 1 no tuvo vacios ni formatos invalidos). Sin cubrir: errores sin
-  senal (p. ej. `GALLE FICTICIA 123`); para eso, la confianza de Tesseract (pendiente).
+- Medido (bloque 3 repetido el 2026-10-01, con `extraccion_v3`): dificil 31/34 correctos y 2 incorrectos (antes
+  19/34 y 7); extremo 28/34 y 6 incorrectos (antes 9/34 y 10); tipo correcto 6/6 y 6/6 (antes 6/6 y 2/6); vacios 1
+  (antes 23); ~150 s por caso (antes ~63-82 s). Nivel normal (bloque 1 repetido): 153/153, 59,4 s de media, ningun
+  caso usa vision. Sin cubrir: errores sin senal (p. ej. `GALLE FICTICIA 123`, comprobante escaneado extremo 1/4);
+  para eso, la confianza de Tesseract (pendiente).
 
 Registro: cada llamada (`InfoLlamada`) lleva `entrada` (`texto` o `vision`) y `motivo`, y el servicio registra
 todas en `Analisis.llamadas`. Motivos:
@@ -171,7 +173,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | `clasificacion_v1`, `extraccion_v1` | en el repo (historial) | Version inicial. Falta una variable para el texto del documento | `prompts/` |
 | `clasificacion_v2`, `extraccion_v2` | `clasificacion_v2` **vigente**; `extraccion_v2` en el repo (historial) | Anaden `{{ contenido }}` (texto por pagina). `extraccion_v2`: fechas tal como aparecen, formato de evidencia, bajar la confianza si hay dudas y no inventar valores (cuerpo identico al borrador v2b validado). `clasificacion_v2`: `desconocido` si no encaja claramente | `prompts/` |
 | `correccion_json_v1` | vigente (implementado) | Instruccion del reintento cuando la respuesta no es valida; variable `{{ error }}` | `prompts/` |
-| `extraccion_v3` | **vigente** (2026-10-01) | La v2 mas una regla: asignar cada valor por su etiqueta (en espanol o en ingles: "Date of issue" = fecha de expedicion, etc.), no por su posicion, y no dejar vacio un campo cuya etiqueta aparece. Corrige que la vision dejara vacia `fecha_expedicion` en los 4 pasaportes dificiles | `prompts/` |
+| `extraccion_v3` | **vigente** (2026-10-01) | La v2 mas una regla: asignar cada valor por su etiqueta (en espanol o en ingles: "Date of issue" = fecha de expedicion, etc.), no por su posicion, y no dejar vacio un campo cuya etiqueta aparece. La lista de campos va **sin obligatoriedad** (variable `campos_a_extraer`, `formatear_campos`): con "opcional" qwen2.5vl dejaba vacia `fecha_expedicion` aunque se lee (sonda: A v3 con "opcional" vacia en 2/2; B sin "opcional" `30/09/2021` en 2/2; C sin texto OCR 1/2; D a 1400 px 1/2). 4 pasaportes dificiles con vision forzada: 21/28 -> 25/28 y 4 -> 0 vacios. La v2 sigue con `esquema_campos` (con obligatoriedad) | `prompts/` |
 | `extraccion_v4` | pendiente (etapa 3, extra 2) | Pide `observaciones_visuales` (legibilidad, recortes, alteraciones) para las alertas `VIS-xxx`. El plan lo llamaba `extraccion_v2`; se renumera porque la v2 y la v3 ya se usan (tambien en `docs/equipo/PERSONA_2_motor_ia.md`) | - |
 
 Reglas de `motor_ia/prompts.py`:
@@ -417,7 +419,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Regla de OCR pobre (seccion 3): cuatro senales (texto insuficiente, clasificacion `desconocido`, obligatorios vacios, formato invalido); reclasificacion con vision cuando el texto da `desconocido`, con `CLS-001` decidido segun la vision; extraccion directa con vision si la clasificacion ya detecto OCR pobre; motivos en `InfoLlamada.motivo`. Prompt `extraccion_v3` (asignar por etiqueta; corrige `fecha_expedicion` vacia en vision); observaciones visuales pasan a v4. Pendientes: confianza de Tesseract y especimenes | este commit |
+| 2026-10-01 | `extraccion_v3` sin la obligatoriedad en la lista de campos (`formatear_campos`, variable `campos_a_extraer`): la palabra "opcional" hacia que la vision dejara vacia `fecha_expedicion`; 4 pasaportes dificiles con vision forzada 21/28 -> 25/28. Bloque 3 repetido con la regla de OCR pobre: APRUEBA (dificil 31/34 y 2 incorrectos; extremo 28/34 y 6; tipo 6/6 y 6/6). Bloque 1 repetido: 153/153, 59,4 s. El bloque 4 no se repite: queda como referencia y el informe avisa de que mezcla v2 (8 casos) y v3 (4 pasaportes) | este commit |
+| 2026-10-01 | Regla de OCR pobre (seccion 3): cuatro senales (texto insuficiente, clasificacion `desconocido`, obligatorios vacios, formato invalido); reclasificacion con vision cuando el texto da `desconocido`, con `CLS-001` decidido segun la vision; extraccion directa con vision si la clasificacion ya detecto OCR pobre; motivos en `InfoLlamada.motivo`. Prompt `extraccion_v3` (asignar por etiqueta; corrige `fecha_expedicion` vacia en vision); observaciones visuales pasan a v4. Pendientes: confianza de Tesseract y especimenes | `903f09b` |
 | 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | `8058e7e` |
 | 2026-10-01 | Pendientes de la etapa 2: reglas de coherencia CURP <-> `fecha_nacimiento` y `fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`, con tipos de regla nuevos en las fichas (PR aparte, fichero compartido) y en el cargador | `8058e7e` |
 | 2026-10-01 | Evaluacion, bloque 3 (fixtures dificiles de PERSONA_3, ruta auto, 12 casos): NO aprueba (dificil 19/34 correctos y 7/34 incorrectos; extremo 10/34 incorrectos; 0 reintentos con vision porque `CLS-001` los bloquea). 8 de los 17 incorrectos los detectarian las reglas de la etapa 2. `evaluar_fixtures.py`: niveles de dificultad, bloques 3 y 4, campos correcto/vacio/incorrecto, `docker stop` del contenedor si la RAM baja de 1 GB y descarga del otro modelo en cada cambio | `56cca57` |

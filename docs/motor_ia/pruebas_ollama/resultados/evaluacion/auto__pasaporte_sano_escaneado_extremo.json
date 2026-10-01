@@ -15,63 +15,61 @@
       "fecha_nacimiento",
       "fecha_vencimiento"
     ],
-    "segundos_preparar": 1.1,
+    "segundos_preparar": 2.4,
     "modalidad_detectada": "pdf_escaneado",
     "caracteres_texto": 89,
-    "segundos_total": 51.1,
+    "segundos_total": 187.0,
     "estado": "completado",
-    "tipo_detectado": "desconocido",
-    "confianza_clasificacion": 0.1,
-    "clasificacion_ok": false,
-    "alertas": [
-      "CLS-001"
-    ],
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
     "campos": {
       "nombre_completo": {
         "esperado": "ANA EJEMPLO PRUEBA",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
       },
       "numero_pasaporte": {
         "esperado": "ZX0000001",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "ZX0000001",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "1990-01-01",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_expedicion": {
         "esperado": "2021-09-30",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "2021-09-30",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_vencimiento": {
         "esperado": "2031-09-30",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "2031-09-30",
+        "estado": "correcto",
+        "ok": true
       },
       "nacionalidad": {
         "esperado": "UTOPICA",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "UTOPICA",
+        "estado": "correcto",
+        "ok": true
       },
       "sexo": {
         "esperado": "F",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "F",
+        "estado": "correcto",
+        "ok": true
       }
     },
-    "aciertos": 0,
-    "vacios": 7,
+    "aciertos": 7,
+    "vacios": 0,
     "incorrectos": 0,
     "total_campos": 7,
     "llamadas": [
@@ -79,86 +77,89 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 9.28,
+        "segundos": 28.35,
         "tokens_entrada": 445,
         "tokens_salida": 51,
         "reintentos": 0,
         "lotes": 1
       },
       {
-        "modelo": "gemma4:e2b",
-        "entrada": "texto",
-        "motivo": "sin reintento con vision (4/4 campos obligatorios vacios): el tipo declarado no coincide con el detectado (CLS-001)",
-        "segundos": 40.73,
-        "tokens_entrada": 650,
-        "tokens_salida": 306,
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": "reclasificacion con vision: la clasificacion con texto dio desconocido",
+        "segundos": 84.82,
+        "tokens_entrada": 1516,
+        "tokens_salida": 66,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": "extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)",
+        "segundos": 71.44,
+        "tokens_entrada": 1840,
+        "tokens_salida": 367,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": true,
+    "motivos_vision": [
+      "reclasificacion con vision: la clasificacion con texto dio desconocido",
+      "extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)"
+    ],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 0,
-      "vacios": 7,
-      "incorrectos": 0,
-      "obligatorios_vacios": 4
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "40c86406-74f7-4355-806f-1c07a2a970da",
+    "identificador_unico_documento": "da1f0472-41e0-464e-98dc-306ce83c3104",
     "tipo_documental_declarado": "pasaporte",
-    "tipo_documental_detectado": "desconocido",
+    "tipo_documental_detectado": "pasaporte",
     "tipo_documental_confirmado": null,
-    "confianza_clasificacion": 0.1,
+    "confianza_clasificacion": 0.95,
     "datos_extraidos": {
-      "nombre_completo": null,
-      "numero_pasaporte": null,
-      "fecha_nacimiento": null,
-      "fecha_expedicion": null,
-      "fecha_vencimiento": null,
-      "nacionalidad": null,
-      "sexo": null
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": "ZX0000001",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": "2021-09-30",
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
     },
     "nivel_confianza_por_campo": {
-      "nombre_completo": 0.0,
-      "numero_pasaporte": 0.0,
-      "fecha_nacimiento": 0.0,
-      "fecha_expedicion": 0.0,
-      "fecha_vencimiento": 0.0,
-      "nacionalidad": 0.0,
-      "sexo": 0.0
+      "nombre_completo": 0.9,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.9,
+      "fecha_expedicion": 0.9,
+      "fecha_vencimiento": 0.9,
+      "nacionalidad": 0.9,
+      "sexo": 0.9
     },
-    "evidencia_por_campo": {},
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1",
+      "numero_pasaporte": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "fecha_expedicion": "pagina_1",
+      "fecha_vencimiento": "pagina_1",
+      "nacionalidad": "pagina_1",
+      "sexo": "pagina_1"
+    },
     "reglas_cumplidas_e_incumplidas": {
       "cumplidas": [],
       "incumplidas": []
     },
-    "alertas_encontradas": [
-      {
-        "id": null,
-        "codigo": "CLS-001",
-        "mensaje": "Tipo declarado 'pasaporte' distinto del detectado 'desconocido'",
-        "severidad": "critica",
-        "confianza": 1.0,
-        "campo": null,
-        "resuelta_por_revisor": false,
-        "aplica": null,
-        "comentario_revisor": null,
-        "resuelta_por": null,
-        "resuelta_en": null
-      }
-    ],
+    "alertas_encontradas": [],
     "correcciones": [],
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T17:07:03.896817Z",
+      "fecha_analisis": "2026-10-01T19:14:21.092151Z",
       "proveedor": "ollama",
-      "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_pasaporte@v2"
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_pasaporte@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "pasaporte_sano_escaneado_extremo.pdf",

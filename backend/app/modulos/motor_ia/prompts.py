@@ -115,5 +115,11 @@ def formatear_esquema(ficha: TipoDocumental) -> str:
     )
 
 
+def formatear_campos(ficha: TipoDocumental) -> str:
+    """Campos con su tipo, sin la obligatoriedad: con "opcional" qwen2.5vl dejaba vacios campos legibles
+    (fecha_expedicion del pasaporte; sonda del 2026-10-01). Lo usa extraccion_v3."""
+    return "\n".join(f"- {nombre}: {campo.tipo.value}" for nombre, campo in ficha.campos.items())
+
+
 def formatear_contexto_rag(fragmentos: Iterable[str]) -> str:
     return "\n\n".join(f.strip() for f in fragmentos if f.strip()) or "(sin contexto)"

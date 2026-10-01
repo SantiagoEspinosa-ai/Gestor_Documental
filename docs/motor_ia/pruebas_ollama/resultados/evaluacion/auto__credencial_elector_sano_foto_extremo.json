@@ -16,10 +16,10 @@
       "domicilio",
       "vigencia"
     ],
-    "segundos_preparar": 0.5,
+    "segundos_preparar": 0.8,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 15,
-    "segundos_total": 238.5,
+    "segundos_total": 149.1,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 0.95,
@@ -72,7 +72,7 @@
         "modelo": "qwen2.5vl:3b",
         "entrada": "vision",
         "motivo": null,
-        "segundos": 102.17,
+        "segundos": 79.85,
         "tokens_entrada": 1474,
         "tokens_salida": 65,
         "reintentos": 0,
@@ -82,26 +82,22 @@
         "modelo": "qwen2.5vl:3b",
         "entrada": "vision",
         "motivo": null,
-        "segundos": 135.85,
-        "tokens_entrada": 1666,
-        "tokens_salida": 340,
+        "segundos": 68.53,
+        "tokens_entrada": 1790,
+        "tokens_salida": 352,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": true,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 5,
-      "vacios": 0,
-      "incorrectos": 1,
-      "obligatorios_vacios": 0
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "add1d3d2-4c2b-44c6-9049-b8df1fb69d09",
+    "identificador_unico_documento": "c10a6ae3-2e99-4302-b6a9-2cc534cbbe9a",
     "tipo_documental_declarado": "credencial_elector",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
@@ -139,10 +135,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T17:04:56.816878Z",
+      "fecha_analisis": "2026-10-01T19:07:10.137258Z",
       "proveedor": "ollama",
       "modelo": "qwen2.5vl:3b",
-      "version_prompt": "extraccion_credencial_elector@v2"
+      "version_prompt": "extraccion_credencial_elector@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_sano_foto_extremo.jpg",

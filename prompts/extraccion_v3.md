@@ -12,8 +12,8 @@ Contenido del documento (texto extraido por pagina; puede estar vacio si el docu
 Si se adjuntan imagenes de las paginas, leelas: son la fuente principal cuando el texto este vacio
 o incompleto. Extrae solo lo que veas escrito. Nunca inventes un valor.
 
-Campos a extraer (nombre: tipo, obligatorio):
-{{ esquema_campos }}
+Campos a extraer (nombre: tipo). Extrae todos los que aparezcan en el documento:
+{{ campos_a_extraer }}
 
 Asigna cada valor por la etiqueta que lo acompana en el documento, no por su posicion ni por su orden. Las
 etiquetas pueden estar en espanol o en ingles: por ejemplo, "Fecha de expedicion" o "Date of issue" es la

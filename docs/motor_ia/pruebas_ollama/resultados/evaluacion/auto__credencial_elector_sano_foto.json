@@ -8,9 +8,18 @@
     "caso": "sano",
     "tipo": "credencial_elector",
     "modalidad_fixture": "foto",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
     "segundos_preparar": 0.6,
     "modalidad_detectada": "imagen",
-    "segundos_total": 65.0,
+    "caracteres_texto": 206,
+    "segundos_total": 63.8,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 1.0,
@@ -20,42 +29,50 @@
       "nombre_completo": {
         "esperado": "ANA EJEMPLO PRUEBA",
         "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
         "ok": true
       },
       "curp": {
         "esperado": "AEPA900101MDFXXX01",
         "extraido": "AEPA900101MDFXXX01",
+        "estado": "correcto",
         "ok": true
       },
       "clave_elector": {
         "esperado": "EJPRAN90010199M101",
         "extraido": "EJPRAN90010199M101",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
         "extraido": "1990-01-01",
+        "estado": "correcto",
         "ok": true
       },
       "domicilio": {
         "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
         "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
         "ok": true
       },
       "vigencia": {
         "esperado": "2029",
         "extraido": 2029,
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 6,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 14.32,
+        "segundos": 12.79,
         "tokens_entrada": 498,
         "tokens_salida": 69,
         "reintentos": 0,
@@ -65,20 +82,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 50.07,
-        "tokens_entrada": 691,
+        "segundos": 50.39,
+        "tokens_entrada": 813,
         "tokens_salida": 373,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "64ae80f1-4f62-4490-9ef5-286b8e89299d",
+    "identificador_unico_documento": "d6bdf084-ea0f-4253-a6ca-ea6f2848471d",
     "tipo_documental_declarado": "credencial_elector",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
@@ -116,10 +135,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:09:08.470416Z",
+      "fecha_analisis": "2026-10-01T19:35:33.862886Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_credencial_elector@v2"
+      "version_prompt": "extraccion_credencial_elector@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_sano_foto.jpg",

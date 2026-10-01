@@ -19,7 +19,7 @@
     "segundos_preparar": 0.7,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 123,
-    "segundos_total": 62.4,
+    "segundos_total": 82.9,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 1.0,
@@ -34,15 +34,15 @@
       },
       "curp": {
         "esperado": "AEPA900101MDFXXX01",
-        "extraido": "AEPA900101MDFXXX01 EJPRAN90010199M101",
-        "estado": "incorrecto",
-        "ok": false
+        "extraido": "AEPA900101MDFXXX01",
+        "estado": "correcto",
+        "ok": true
       },
       "clave_elector": {
         "esperado": "EJPRAN90010199M101",
-        "extraido": null,
-        "estado": "vacio",
-        "ok": false
+        "extraido": "EJPRAN90010199M101",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1990-01-01",
@@ -63,16 +63,16 @@
         "ok": false
       }
     },
-    "aciertos": 3,
-    "vacios": 2,
-    "incorrectos": 1,
+    "aciertos": 5,
+    "vacios": 1,
+    "incorrectos": 0,
     "total_campos": 6,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 11.53,
+        "segundos": 29.5,
         "tokens_entrada": 460,
         "tokens_salida": 65,
         "reintentos": 0,
@@ -82,34 +82,30 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 50.19,
-        "tokens_entrada": 653,
-        "tokens_salida": 351,
+        "segundos": 52.7,
+        "tokens_entrada": 775,
+        "tokens_salida": 359,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 3,
-      "vacios": 2,
-      "incorrectos": 1,
-      "obligatorios_vacios": 1
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "d45b5eb3-20c5-489c-88bc-bb937f744df1",
+    "identificador_unico_documento": "e8f7022f-8981-4c1a-b8cf-3de47dfb58e5",
     "tipo_documental_declarado": "credencial_elector",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
     "confianza_clasificacion": 1.0,
     "datos_extraidos": {
       "nombre_completo": "ANA EJEMPLO PRUEBA",
-      "curp": "AEPA900101MDFXXX01 EJPRAN90010199M101",
-      "clave_elector": null,
+      "curp": "AEPA900101MDFXXX01",
+      "clave_elector": "EJPRAN90010199M101",
       "fecha_nacimiento": "1990-01-01",
       "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
       "vigencia": null
@@ -117,7 +113,7 @@
     "nivel_confianza_por_campo": {
       "nombre_completo": 1.0,
       "curp": 1.0,
-      "clave_elector": 0.0,
+      "clave_elector": 1.0,
       "fecha_nacimiento": 1.0,
       "domicilio": 1.0,
       "vigencia": 0.0
@@ -125,6 +121,7 @@
     "evidencia_por_campo": {
       "nombre_completo": "pagina_1:seccion_superior",
       "curp": "pagina_1:seccion_superior",
+      "clave_elector": "pagina_1:seccion_superior",
       "fecha_nacimiento": "pagina_1:seccion_superior",
       "domicilio": "pagina_1:seccion_superior"
     },
@@ -137,10 +134,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T17:00:58.756137Z",
+      "fecha_analisis": "2026-10-01T19:04:41.069930Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_credencial_elector@v2"
+      "version_prompt": "extraccion_credencial_elector@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_sano_foto_dificil.jpg",

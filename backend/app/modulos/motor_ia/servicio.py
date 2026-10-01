@@ -18,6 +18,7 @@ from app.modulos.motor_ia.interfaces import DocumentoPreparado, Enrutador, Prove
 from app.modulos.motor_ia.prompts import (
     formatear_contenido,
     formatear_contexto_rag,
+    formatear_campos,
     formatear_esquema,
     formatear_tipos,
     renderizar,
@@ -179,7 +180,8 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
         if tipo is not None:
             ficha = configuracion.obtener(tipo)
             prompt, version = renderizar("extraccion", tipo_documental=ficha.nombre, contenido=contenido,
-                                         esquema_campos=formatear_esquema(ficha))
+                                         esquema_campos=formatear_esquema(ficha),
+                                         campos_a_extraer=formatear_campos(ficha))
             esquema = {n: c.model_dump(mode="json") for n, c in ficha.campos.items()}
             # CLS-001 con un tipo concreto distinto del declarado: los vacios se explican por la ficha equivocada
             cls_concreto = declarado is not None and detectado not in (None, declarado, DESCONOCIDO)

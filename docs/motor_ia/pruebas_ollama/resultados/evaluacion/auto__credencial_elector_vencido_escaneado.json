@@ -8,9 +8,18 @@
     "caso": "vencido",
     "tipo": "credencial_elector",
     "modalidad_fixture": "escaneado",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
     "segundos_preparar": 1.3,
     "modalidad_detectada": "pdf_escaneado",
-    "segundos_total": 62.8,
+    "caracteres_texto": 208,
+    "segundos_total": 71.9,
     "estado": "completado",
     "tipo_detectado": "credencial_elector",
     "confianza_clasificacion": 1.0,
@@ -20,42 +29,50 @@
       "nombre_completo": {
         "esperado": "LUIS DEMO PRUEBAS",
         "extraido": "LUIS DEMO PRUEBAS",
+        "estado": "correcto",
         "ok": true
       },
       "curp": {
         "esperado": "DEPL850615HDFXXX02",
         "extraido": "DEPL850615HDFXXX02",
+        "estado": "correcto",
         "ok": true
       },
       "clave_elector": {
         "esperado": "DEPRLU85061599H102",
         "extraido": "DEPRLU85061599H102",
+        "estado": "correcto",
         "ok": true
       },
       "fecha_nacimiento": {
         "esperado": "1985-06-15",
         "extraido": "1985-06-15",
+        "estado": "correcto",
         "ok": true
       },
       "domicilio": {
         "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
         "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "estado": "correcto",
         "ok": true
       },
       "vigencia": {
         "esperado": "2029",
         "extraido": 2029,
+        "estado": "correcto",
         "ok": true
       }
     },
     "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 0,
     "total_campos": 6,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 10.67,
+        "segundos": 10.9,
         "tokens_entrada": 497,
         "tokens_salida": 64,
         "reintentos": 0,
@@ -65,20 +82,22 @@
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 50.8,
-        "tokens_entrada": 690,
+        "segundos": 59.69,
+        "tokens_entrada": 812,
         "tokens_salida": 372,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
     "descarga_texto_antes_de_reintento": false,
     "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "217df278-f331-4c94-92e9-8ed013e8dcd4",
+    "identificador_unico_documento": "c538e3fe-a06a-4cd0-9616-1e918577d7cc",
     "tipo_documental_declarado": "credencial_elector",
     "tipo_documental_detectado": "credencial_elector",
     "tipo_documental_confirmado": null,
@@ -116,10 +135,10 @@
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:11:12.783681Z",
+      "fecha_analisis": "2026-10-01T19:37:48.445541Z",
       "proveedor": "ollama",
       "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_credencial_elector@v2"
+      "version_prompt": "extraccion_credencial_elector@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "credencial_elector_vencido_escaneado.pdf",

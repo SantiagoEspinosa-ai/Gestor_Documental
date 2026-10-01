@@ -17,14 +17,12 @@
     "segundos_preparar": 0.8,
     "modalidad_detectada": "imagen",
     "caracteres_texto": 137,
-    "segundos_total": 44.8,
+    "segundos_total": 193.4,
     "estado": "completado",
-    "tipo_detectado": "desconocido",
-    "confianza_clasificacion": 0.1,
-    "clasificacion_ok": false,
-    "alertas": [
-      "CLS-001"
-    ],
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
     "campos": {
       "nombre_titular": {
         "esperado": "ANA EJEMPLO PRUEBA",
@@ -34,111 +32,106 @@
       },
       "domicilio": {
         "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-        "extraido": "CALLE FICTICIA 123, SERVICIOS DE EJEMPLO SA.",
-        "estado": "incorrecto",
-        "ok": false
+        "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
+        "ok": true
       },
       "proveedor": {
         "esperado": "SERVICIOS DE EJEMPLO S.A.",
-        "extraido": "carat Oak PURO MP",
-        "estado": "incorrecto",
-        "ok": false
+        "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "estado": "correcto",
+        "ok": true
       },
       "fecha_emision": {
         "esperado": "2026-09-15",
-        "extraido": "1509 2026",
-        "estado": "incorrecto",
-        "ok": false
+        "extraido": "2026-09-15",
+        "estado": "correcto",
+        "ok": true
       }
     },
-    "aciertos": 1,
+    "aciertos": 4,
     "vacios": 0,
-    "incorrectos": 3,
+    "incorrectos": 0,
     "total_campos": 4,
     "llamadas": [
       {
         "modelo": "gemma4:e2b",
         "entrada": "texto",
         "motivo": null,
-        "segundos": 9.55,
+        "segundos": 9.67,
         "tokens_entrada": 458,
         "tokens_salida": 55,
         "reintentos": 0,
         "lotes": 1
       },
       {
-        "modelo": "gemma4:e2b",
-        "entrada": "texto",
-        "motivo": null,
-        "segundos": 34.47,
-        "tokens_entrada": 632,
-        "tokens_salida": 263,
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": "reclasificacion con vision: la clasificacion con texto dio desconocido",
+        "segundos": 125.68,
+        "tokens_entrada": 2222,
+        "tokens_salida": 67,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": "extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)",
+        "segundos": 57.28,
+        "tokens_entrada": 2525,
+        "tokens_salida": 285,
         "reintentos": 0,
         "lotes": 1
       }
     ],
     "reintento_vision": false,
+    "uso_vision": true,
+    "motivos_vision": [
+      "reclasificacion con vision: la clasificacion con texto dio desconocido",
+      "extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)"
+    ],
     "descarga_texto_antes_de_reintento": false,
-    "contrato_valido": true,
-    "antes_del_reintento": {
-      "aciertos": 1,
-      "vacios": 0,
-      "incorrectos": 3,
-      "obligatorios_vacios": 0
-    }
+    "contrato_valido": true
   },
   "resultado": {
     "folio_solicitud": "CLI-2026-000000",
-    "identificador_unico_documento": "223b0a7b-3be6-4aab-a618-689494c994af",
+    "identificador_unico_documento": "eb9e3ed0-b437-4686-9162-8371bac5825b",
     "tipo_documental_declarado": "comprobante_domicilio",
-    "tipo_documental_detectado": "desconocido",
+    "tipo_documental_detectado": "comprobante_domicilio",
     "tipo_documental_confirmado": null,
-    "confianza_clasificacion": 0.1,
+    "confianza_clasificacion": 0.95,
     "datos_extraidos": {
       "nombre_titular": "ANA EJEMPLO PRUEBA",
-      "domicilio": "CALLE FICTICIA 123, SERVICIOS DE EJEMPLO SA.",
-      "proveedor": "carat Oak PURO MP",
-      "fecha_emision": "1509 2026"
+      "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+      "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+      "fecha_emision": "2026-09-15"
     },
     "nivel_confianza_por_campo": {
       "nombre_titular": 0.9,
       "domicilio": 0.9,
-      "proveedor": 0.8,
-      "fecha_emision": 0.0
+      "proveedor": 0.9,
+      "fecha_emision": 0.9
     },
     "evidencia_por_campo": {
-      "nombre_titular": "pagina_1:seccion_superior",
-      "domicilio": "pagina_1:seccion_central",
-      "proveedor": "pagina_1:seccion_central",
-      "fecha_emision": "pagina_1:seccion_inferior"
+      "nombre_titular": "pagina_1",
+      "domicilio": "pagina_1",
+      "proveedor": "pagina_1",
+      "fecha_emision": "pagina_1"
     },
     "reglas_cumplidas_e_incumplidas": {
       "cumplidas": [],
       "incumplidas": []
     },
-    "alertas_encontradas": [
-      {
-        "id": null,
-        "codigo": "CLS-001",
-        "mensaje": "Tipo declarado 'comprobante_domicilio' distinto del detectado 'desconocido'",
-        "severidad": "critica",
-        "confianza": 1.0,
-        "campo": null,
-        "resuelta_por_revisor": false,
-        "aplica": null,
-        "comentario_revisor": null,
-        "resuelta_por": null,
-        "resuelta_en": null
-      }
-    ],
+    "alertas_encontradas": [],
     "correcciones": [],
     "recomendacion": null,
     "estado_analisis": "completado",
     "fecha_y_modelo_utilizado": {
-      "fecha_analisis": "2026-10-01T16:57:57.817692Z",
+      "fecha_analisis": "2026-10-01T18:56:37.775117Z",
       "proveedor": "ollama",
-      "modelo": "gemma4:e2b",
-      "version_prompt": "extraccion_comprobante_domicilio@v2"
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
     },
     "referencia_archivo_original": {
       "nombre_archivo": "comprobante_domicilio_sano_foto_extremo.jpg",

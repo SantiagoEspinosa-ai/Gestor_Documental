@@ -422,7 +422,9 @@ def generar_informe(salida: Path) -> None:
     for ruta in sorted(salida.glob("*.json")):
         if ruta.name in ("resumen.json", "ram.json"):
             continue
-        medidas.append(json.loads(ruta.read_text(encoding="utf-8"))["medida"])
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+        version = ((datos.get("resultado") or {}).get("fecha_y_modelo_utilizado") or {}).get("version_prompt") or ""
+        medidas.append({**datos["medida"], "version_extraccion": version.rpartition("@")[2] or "?"})
     for m in medidas:  # resultados anteriores a los niveles de dificultad
         m.setdefault("nivel", "normal")
         for c in m.get("campos", {}).values():
@@ -521,6 +523,15 @@ def generar_informe(salida: Path) -> None:
                     lineas.append(f"| {nivel} | {ruta} | {modalidad} | {_pct(suma(g, 'aciertos'), suma(g, 'total_campos'))} | "
                                   f"{suma(g, 'vacios')} | {suma(g, 'incorrectos')} | {sum(m.get('reintento_vision', False) for m in g)}/{len(g)} | "
                                   f"{sum(m.get('uso_vision', False) for m in g)}/{len(g)} |")
+    for ruta in ("auto", "vision"):
+        por_version: dict[str, list[str]] = {}
+        for m in grupo(dificiles, ruta):
+            por_version.setdefault(m["version_extraccion"], []).append(m["id"])
+        if len(por_version) > 1:   # resultados de distintas ejecuciones: se deja como referencia
+            lineas += ["", f"**Nota: la ruta `{ruta}` mezcla versiones del prompt de extraccion** (resultados de "
+                       "ejecuciones distintas; se deja como referencia):"]
+            lineas += [f"- `extraccion_{v}`: {len(ids)} casos" + (f" ({', '.join(f'`{i}`' for i in ids)})" if len(ids) <= 4 else "")
+                       for v, ids in sorted(por_version.items())]
     con_reintento = [m for m in dificiles if m.get("reintento_vision") and m.get("antes_del_reintento")]
     lineas += ["", "Reintentos con vision (resultado con texto antes del reintento -> resultado final):", ""]
     if con_reintento:
