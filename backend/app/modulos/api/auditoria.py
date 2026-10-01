@@ -27,7 +27,7 @@ class EntradaAuditoria(BaseModel):
 
 
 class PaginaAuditoria(BaseModel):
-    """La paginacion aun no esta en endpoints.md ("lista de EntradaAuditoria"): pendiente de PERSONA_3."""
+    """Respuesta de GET /auditoria (ADR-008, endpoints.md)."""
     elementos: list[EntradaAuditoria]
     total: int
     pagina: int

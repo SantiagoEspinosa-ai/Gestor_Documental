@@ -23,10 +23,11 @@ de FastAPI y los de rutas o metodos inexistentes. Nunca el `{"detail": ...}` por
 | 405 | `METODO_NO_PERMITIDO` | La ruta existe pero no admite ese metodo HTTP |
 | 409 | `DECISION_BLOQUEADA` | `aprobar` con una bloqueante que impide aprobar (ADR-006, 2.2) |
 | 409 | `DOCUMENTO_EN_PROCESO` | Accion del revisor sobre un documento `pendiente` o `procesando` |
+| 409 | `DOCUMENTO_CON_ERROR` | Corregir datos o confirmar la clasificacion de un documento en `error`: "El documento no se pudo procesar; vuelve a subirlo" |
 | 409 | `FOLIO_CERRADO` | Accion sobre un folio `aprobado` o `rechazado` (ADR-006, G) |
 | 409 | `SECUENCIA_AGOTADA` | Un proceso supera 999999 folios en un anio (POST /folios) |
 | 413 | `ARCHIVO_DEMASIADO_GRANDE` | El archivo supera 20 MB |
-| 415 | `FORMATO_NO_PERMITIDO` | Extension fuera de `formatos_permitidos` del tipo |
+| 415 | `FORMATO_NO_PERMITIDO` | Extension fuera de `formatos_permitidos` del tipo, o contenido que no corresponde a la extension (firma del fichero) |
 | 422 | `PETICION_INVALIDA` | Cuerpo o parametros invalidos |
 | 500 | `ERROR_INTERNO` | Error no controlado |
 
