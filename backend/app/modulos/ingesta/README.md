@@ -83,3 +83,11 @@ con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alerta
 Si falla la descarga de S3 o el motor lanza una excepcion, el documento queda en `error`, sin
 `Resultado` y sin alerta `SYS-00x` (las `SYS-001`/`SYS-002` solo existen cuando el motor devuelve un
 resultado en `error`). En la UI se ve como documento en error; hay que volver a subirlo.
+
+## Documentos de uno en uno
+La llamada al motor va dentro de un `threading.BoundedSemaphore` de `MAX_PROCESAMIENTOS_SIMULTANEOS`
+(1 por defecto): con Ollama sin GPU cada documento tarda 60-250 s y varios a la vez agotan la RAM.
+Solo se limita `analizar`; la descarga de S3 y la escritura en BD van fuera. Mientras espera su turno,
+el documento sigue en `procesando`. Vale para un solo proceso uvicorn (las BackgroundTasks son hilos
+del mismo proceso); con varios workers haria falta una cola, fuera del MVP. Con Ollama, arrancarlo con
+`OLLAMA_MAX_LOADED_MODELS=1`.

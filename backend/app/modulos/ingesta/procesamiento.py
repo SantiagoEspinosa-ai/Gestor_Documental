@@ -6,12 +6,15 @@ la plataforma guarda el resultado y cada alerta del motor en la tabla `alertas` 
 """
 import json
 import logging
+import threading
 import uuid
+from functools import lru_cache
 
 from sqlalchemy import func, select
 
 from app.core import auditoria
 from app.core.almacenamiento import get_almacenamiento
+from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
 from app.core.modelos import AlertaBD, Documento, Resultado
 # TODO: sustituir por: from app.modulos.orquestador.servicio import procesar_documento as analizar (PERSONA_2)
@@ -21,6 +24,17 @@ from app.schemas.resultado import EstadoAnalisis, ReferenciaArchivoOriginal
 log = logging.getLogger(__name__)
 
 _COLUMNAS_AUDITORIA = {"modelo", "version_prompt"}
+
+
+@lru_cache
+def _semaforo(tamano: int) -> threading.BoundedSemaphore:
+    """Limite de llamadas simultaneas al motor (MAX_PROCESAMIENTOS_SIMULTANEOS, 1 por defecto).
+
+    Con Ollama sin GPU cada documento tarda 60-250 s y varios a la vez agotan la RAM. Vale para un solo
+    proceso uvicorn: las BackgroundTasks van en hilos del mismo proceso. Con varios workers haria falta
+    una cola (fuera del MVP).
+    """
+    return threading.BoundedSemaphore(tamano)
 
 
 def _detalle_serializable(datos: dict) -> dict:
@@ -57,12 +71,15 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
 
         try:
             contenido = get_almacenamiento().descargar(doc.ruta_s3)
-            resultado, datos = analizar(
-                contenido, identificador=str(doc.id), nombre_archivo=doc.nombre_archivo,
-                tipo_declarado=doc.tipo_declarado, folio=doc.folio,
-                referencia=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo, ruta=doc.ruta_s3,
-                                                     hash=doc.hash_sha256),
-                tipo_confirmado=tipo_confirmado)
+            # Solo la llamada al motor va limitada; descarga y BD quedan fuera. Mientras espera su turno,
+            # el documento sigue en "procesando" (la UI ya sondea)
+            with _semaforo(get_settings().max_procesamientos_simultaneos):
+                resultado, datos = analizar(
+                    contenido, identificador=str(doc.id), nombre_archivo=doc.nombre_archivo,
+                    tipo_declarado=doc.tipo_declarado, folio=doc.folio,
+                    referencia=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo, ruta=doc.ruta_s3,
+                                                         hash=doc.hash_sha256),
+                    tipo_confirmado=tipo_confirmado)
             if (resultado.identificador_unico_documento != str(doc.id)
                     or resultado.folio_solicitud != doc.folio):
                 # Solo ids en el log: nada de datos extraidos

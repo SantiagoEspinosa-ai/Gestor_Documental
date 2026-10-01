@@ -1,6 +1,8 @@
 """Tests de modulos/ingesta (servicio, procesamiento y stub del motor). SQLite temporal y moto; datos ficticios."""
 import inspect
 import re
+import threading
+import time
 import uuid
 
 import boto3
@@ -343,3 +345,38 @@ def test_auditoria_del_procesamiento(sesion, s3_en_procesamiento, folio, monkeyp
     assert registro.detalle == {"proveedor": "ollama", "respaldo_usado": True,
                                 "confianzas_modelo": {"nombre_completo": 0.7},
                                 "tiempos": {"total_ms": 1200}, "tokens": {"entrada": 10, "salida": 20}}
+
+
+@pytest.mark.parametrize("maximo", [1, 2])
+def test_procesamientos_simultaneos_limitados(sesion, s3_en_procesamiento, folio, monkeypatch, maximo):
+    monkeypatch.setenv("MAX_PROCESAMIENTOS_SIMULTANEOS", str(maximo))
+    get_settings.cache_clear()
+    docs = [_subir(sesion, s3_en_procesamiento, folio, nombre=f"doc{i}.pdf", datos=PDF + str(i).encode())
+            for i in range(2)]
+    estado = {"dentro": 0, "maximo": 0}
+    candado = threading.Lock()
+
+    def motor_lento(contenido, **kwargs):
+        with candado:
+            estado["dentro"] += 1
+            estado["maximo"] = max(estado["maximo"], estado["dentro"])
+        time.sleep(0.3)
+        with candado:
+            estado["dentro"] -= 1
+        return motor_stub.procesar_documento(contenido, **kwargs)
+
+    monkeypatch.setattr(procesamiento, "analizar", motor_lento)
+    salida = threading.Barrier(2)
+
+    def lanzar(doc_id):
+        salida.wait()
+        procesar(doc_id)
+
+    hilos = [threading.Thread(target=lanzar, args=(d.id,)) for d in docs]
+    for h in hilos:
+        h.start()
+    for h in hilos:
+        h.join()
+    assert estado["maximo"] == maximo
+    sesion.expire_all()
+    assert all(sesion.get(Documento, d.id).estado_analisis == "completado" for d in docs)

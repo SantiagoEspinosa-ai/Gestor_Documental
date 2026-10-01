@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     # Ingesta (ADR-006 1.4: ARCHIVO_DEMASIADO_GRANDE)
     tamano_maximo_archivo_mb: int = 20
 
+    # Llamadas simultaneas al motor de IA (ingesta/procesamiento.py); 1 con Ollama sin GPU
+    max_procesamientos_simultaneos: int = Field(1, gt=0)
+
     # Zona horaria del negocio: decide el anio del folio (no UTC)
     zona_horaria: str = "America/Mexico_City"
 
