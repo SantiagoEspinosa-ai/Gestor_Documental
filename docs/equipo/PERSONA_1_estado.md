@@ -68,6 +68,12 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 - [ ] ADR-008 (PR #7) propuesto: si se acepta, rellenar `referencia_externa` en `listar_folios` y quitar la
       nota de `api/README.md`.
 
+### ADR-008 (aceptado el 2026-09-30), cuando el PR de contratos `docs/contratos-adr-008` este en `main`
+- [ ] `expediente.listar_folios`: rellenar `ResumenFolio.referencia_externa` desde
+      `folios.referencia_externa` (`null` si el folio se creo sin ella), con su test en `backend/tests/`.
+- [ ] `api/README.md`: quitar la nota de desviacion de `GET /auditoria` ("Pendiente de reflejar en
+      endpoints.md"); la paginacion ya es el contrato (ADR-008, punto 1).
+
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
 - [x] E2.1: `ingesta/procesamiento.py` con la interfaz acordada del motor (hoy `motor_stub.py`); cada
       alerta del motor se guarda en `alertas` con `version_resultado` (migracion 0003). Acordado con PERSONA_2.
