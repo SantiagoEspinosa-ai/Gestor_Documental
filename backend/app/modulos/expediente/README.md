@@ -47,3 +47,12 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
 3. Algun documento sin ficha para su tipo efectivo, sin `confianza_clasificacion`, o con ella o con
    algun campo por debajo de los minimos de su ficha (un campo corregido vale 1.0, ADR-006 2.4).
 4. Si no, `aprobar`. Nunca `rechazar`: la decision final es humana (regla 9 de CLAUDE.md).
+
+## Revision (E2.6)
+- `resolver_alerta_documento(sesion, documento_id, alerta_id, aplica, comentario, usuario) -> ResultadoDocumento`
+  y `resolver_alerta_expediente(sesion, folio, alerta_id, aplica, comentario, usuario) -> ResultadoExpediente`.
+  La alerta tiene que ser visible en ese recurso: de documento, de plataforma o del motor de la version
+  vigente; de expediente, del folio y sin documento. Folio cerrado -> 409 `FOLIO_CERRADO`; documento
+  `pendiente` o `procesando` -> 409 `DOCUMENTO_EN_PROCESO` (en `error` si se puede, decision del
+  usuario). Sobrescribe la resolucion, audita `alerta_resuelta` (sin el comentario) y hace commit.
+  Las resueltas se conservan en `recalcular_exp001` y `recalcular_cmp001`.

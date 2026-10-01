@@ -114,7 +114,8 @@ def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre
     return documento
 
 
-def _documento(sesion: Session, documento_id: str) -> Documento:
+def obtener_documento(sesion: Session, documento_id: str) -> Documento:
+    """Documento por id; 404 DOCUMENTO_NO_ENCONTRADO si no existe o el id no es un UUID."""
     try:
         doc = sesion.get(Documento, uuid.UUID(documento_id))
     except ValueError:
@@ -166,7 +167,7 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
 
 def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
     """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
-    return construir_resultado(sesion, _documento(sesion, documento_id))
+    return construir_resultado(sesion, obtener_documento(sesion, documento_id))
 
 
 def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
@@ -174,7 +175,7 @@ def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: 
 
     Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
     """
-    return almacenamiento.url_prefirmada(_documento(sesion, documento_id).ruta_s3)
+    return almacenamiento.url_prefirmada(obtener_documento(sesion, documento_id).ruta_s3)
 
 
 def listar_tipos() -> list[dict]:

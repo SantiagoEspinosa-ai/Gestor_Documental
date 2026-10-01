@@ -87,3 +87,19 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
   tamano_pagina}`, del mas reciente al mas antiguo (`creado_en` desc, `id` desc). `EntradaAuditoria` = `{id, usuario, accion, folio,
   documento_id (str o null), detalle, modelo, version_prompt, creado_en}`.
 - Errores: 401; 403 `SIN_PERMISO` (revisor, integrador); 422 `PETICION_INVALIDA`.
+
+## revision.py
+Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token). La logica esta en
+`expediente.servicio`.
+
+### POST /api/v1/documentos/{id}/alertas/{alerta_id}/resolver
+### POST /api/v1/folios/{folio}/alertas/{alerta_id}/resolver
+- Entrada (JSON, sin campos extra): `{aplica: bool, comentario?}` (`comentario` <= 1000).
+- Salida 200: `ResultadoDocumento` (documento) o `ResultadoExpediente` (expediente, con la
+  `recomendacion_global` ya recalculada).
+- Guarda `aplica`, `comentario_revisor`, `resuelta_por`, `resuelta_en`; se puede volver a resolver
+  mientras el folio este abierto. Audita `alerta_resuelta` sin el comentario.
+- Errores: 404 `DOCUMENTO_NO_ENCONTRADO` / `FOLIO_NO_ENCONTRADO`; 404 `ALERTA_NO_ENCONTRADA` (no
+  existe, no es UUID, es de otro documento o folio, de expediente por la ruta de documento o al reves,
+  o del motor de una version anterior); 409 `FOLIO_CERRADO`; 409 `DOCUMENTO_EN_PROCESO` (documento
+  `pendiente` o `procesando`; en `error` si se puede); 422 `PETICION_INVALIDA`.

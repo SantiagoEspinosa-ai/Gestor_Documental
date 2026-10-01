@@ -1,4 +1,5 @@
 """API publica del modulo expediente: crear, consultar y listar folios (ADR-005: solo esto se importa)."""
+import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -236,3 +237,68 @@ def listar_folios(sesion: Session, proceso: str | None = None,
         for f, docs, bloq in filas
     ]
     return elementos, total
+
+
+# --- revision: resolver alertas (E2.6a) ---
+
+def _alerta(sesion: Session, alerta_id: str) -> AlertaBD | None:
+    try:
+        return sesion.get(AlertaBD, uuid.UUID(alerta_id))
+    except ValueError:  # un id que no es UUID es una alerta que no existe (404, no 422)
+        return None
+
+
+def _alerta_no_encontrada() -> ErrorApi:
+    return ErrorApi(404, "ALERTA_NO_ENCONTRADA", "La alerta no existe en este documento o folio")
+
+
+def _exigir_folio_abierto(fila: Folio) -> None:
+    if fila.estado_general != EstadoGeneral.en_revision.value:
+        raise ErrorApi(409, "FOLIO_CERRADO", "El folio ya tiene decision y no admite cambios")
+
+
+def _guardar_resolucion(sesion: Session, alerta: AlertaBD, aplica: bool, comentario: str | None,
+                        usuario: str) -> None:
+    """Sobrescribe la resolucion (se puede volver a resolver mientras el folio este abierto)."""
+    alerta.aplica = aplica
+    alerta.comentario = comentario
+    alerta.resuelta_por = usuario
+    alerta.resuelta_en = datetime.now(timezone.utc)
+    alerta.resuelta_por_revisor = True
+    # Sin el comentario: es texto libre y puede llevar datos personales (ya esta en la alerta)
+    auditoria.registrar(sesion, "alerta_resuelta", usuario=usuario, folio=alerta.folio,
+                        documento_id=alerta.documento_id,
+                        detalle={"alerta_id": str(alerta.id), "codigo": alerta.codigo, "aplica": aplica})
+    sesion.commit()
+
+
+def resolver_alerta_documento(sesion: Session, documento_id: str, alerta_id: str, aplica: bool,
+                              comentario: str | None, usuario: str) -> ResultadoDocumento:
+    """POST /documentos/{id}/alertas/{alerta_id}/resolver. Solo alertas visibles en el documento:
+    de plataforma o del motor de la version vigente del resultado."""
+    doc = ingesta.obtener_documento(sesion, documento_id)
+    alerta = _alerta(sesion, alerta_id)
+    vigente = sesion.scalar(select(func.max(Resultado.version)).where(Resultado.documento_id == doc.id))
+    if (alerta is None or alerta.documento_id != doc.id
+            or alerta.version_resultado not in (None, vigente)):
+        raise _alerta_no_encontrada()
+    _exigir_folio_abierto(sesion.get(Folio, doc.folio))
+    # En error si se puede resolver (decision del usuario); pendiente o procesando no
+    if doc.estado_analisis in (EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value):
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
+    _guardar_resolucion(sesion, alerta, aplica, comentario, usuario)
+    return ingesta.construir_resultado(sesion, doc)
+
+
+def resolver_alerta_expediente(sesion: Session, folio: str, alerta_id: str, aplica: bool,
+                               comentario: str | None, usuario: str) -> ResultadoExpediente:
+    """POST /folios/{folio}/alertas/{alerta_id}/resolver, sobre `alertas_expediente`."""
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    alerta = _alerta(sesion, alerta_id)
+    if alerta is None or alerta.folio != folio or alerta.documento_id is not None:
+        raise _alerta_no_encontrada()
+    _exigir_folio_abierto(fila)
+    _guardar_resolucion(sesion, alerta, aplica, comentario, usuario)
+    return obtener_expediente(sesion, folio)
