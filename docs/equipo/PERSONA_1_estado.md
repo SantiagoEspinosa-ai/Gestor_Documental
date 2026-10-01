@@ -76,14 +76,17 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 - [x] E2.1: `ingesta/procesamiento.py` con la interfaz acordada del motor (hoy `motor_stub.py`); cada
       alerta del motor se guarda en `alertas` con `version_resultado` (migracion 0003). Acordado con PERSONA_2.
 - [ ] Cambiar el import de `motor_stub` por `orquestador.servicio.procesar_documento` cuando llegue a `main`.
-- [x] E2.3: `expediente.recalcular_exp001` al procesar cada documento (98196ea). Falta llamarlo tambien al
-      confirmar la clasificacion (E2.6).
-- `modulos/validacion/comparaciones.py`: `ComparacionCampo` y `CMP-001` solo en `alertas_expediente`.
-- Recomendacion global.
-- Endpoints del revisor: corregir datos (`correcciones` en el resultado), confirmar clasificacion
-  (versionado y reproceso si cambia el tipo), resolver alertas por `alerta_id` (documento y
-  expediente) y decision del folio (409 `DECISION_BLOQUEADA`, `FOLIO_CERRADO`,
-  `DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`). Todo a auditoria.
+- [x] E2.3: `expediente.recalcular_exp001` al procesar cada documento (98196ea) y al confirmar la
+      clasificacion (a1ec2c5).
+- [x] E2.4: comparaciones entre documentos (`validacion/comparaciones.py` y `servicio.py`) y `CMP-001`
+      critica en `alertas_expediente`, sin valores en el mensaje (3ded622).
+- [x] E2.5: recomendacion global al vuelo (`expediente/recomendacion.py`); nunca `rechazar` (1162822).
+- [x] E2.6a: resolver alertas de documento y de expediente (d582fcc).
+- [x] E2.6b: migracion 0004 (`correcciones.version_resultado`), corregir datos (ADR-006 2.4) y confirmar
+      clasificacion con reproceso (ADR-006 2.5); codigo nuevo `DOCUMENTO_CON_ERROR` (ea08277, cd41b1e, a1ec2c5).
+- [x] E2.6c: decision del folio y cierre (ADR-006 2.2 y G), con UPDATE condicional contra decisiones
+      simultaneas (commit "feat(api): decision del folio y cierre").
+- [ ] Pull Request de `feat/plataforma` a `main` al cerrar la etapa 2.
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.

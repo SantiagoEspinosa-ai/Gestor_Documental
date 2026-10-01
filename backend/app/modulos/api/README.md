@@ -122,3 +122,12 @@ Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token)
   con `{tipo, reproceso}`.
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`, `DOCUMENTO_EN_PROCESO`,
   `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA`.
+
+### POST /api/v1/folios/{folio}/decision (ADR-006 2.2 y G)
+- Entrada (JSON, sin campos extra): `{decision: aprobar | rechazar, comentario?}` (`comentario` <= 1000).
+- Salida 200: `ResultadoExpediente` con el folio cerrado (`aprobado` o `rechazado`), `decision_humana`,
+  `comentario_decision`, `usuario_decision` y `fecha_decision`. Audita `decision_tomada` sin el comentario.
+- Errores: 404 `FOLIO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO` (ya decidido; no se reabre nunca);
+  409 `DOCUMENTO_EN_PROCESO` (algun documento `pendiente` o `procesando`, al aprobar y al rechazar);
+  409 `DECISION_BLOQUEADA` (solo al aprobar: alguna bloqueante visible con `aplica` distinto de false);
+  422 `PETICION_INVALIDA`. Un documento en `error` no bloquea la decision.

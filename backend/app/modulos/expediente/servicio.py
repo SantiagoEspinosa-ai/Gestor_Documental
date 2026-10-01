@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as insert_postgresql
 from sqlalchemy.dialects.sqlite import insert as insert_sqlite
 from sqlalchemy.orm import Session
@@ -404,3 +404,44 @@ def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,
                         documento_id=doc.id, detalle={"tipo": tipo, "reproceso": reprocesar})
     sesion.commit()
     return ingesta.construir_resultado(sesion, doc), reprocesar
+
+
+def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comentario: str | None,
+                  usuario: str) -> ResultadoExpediente:
+    """POST /folios/{folio}/decision (ADR-006 2.2 y G). Tras decidir, el folio queda cerrado para siempre.
+
+    Un documento en `error` NO bloquea la decision: no lo pide el contrato y la decision es humana.
+    """
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    _exigir_folio_abierto(fila)
+    en_proceso = sesion.scalar(select(func.count()).select_from(Documento).where(
+        Documento.folio == folio,
+        Documento.estado_analisis.in_([EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value])))
+    if en_proceso:  # al aprobar y al rechazar (decidido con PERSONA_3)
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "Hay documentos del folio que todavia se estan procesando")
+    if decision == DecisionHumana.aprobar:
+        documentos, alertas_expediente = _documentos_y_alertas(sesion, folio)
+        visibles = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
+        # Regla 2.2: una bloqueante con aplica distinto de False impide aprobar; rechazar si se puede
+        if any(a.severidad == Severidad.bloqueante and a.aplica is not False for a in visibles):
+            raise ErrorApi(409, "DECISION_BLOQUEADA", "Hay alertas bloqueantes que impiden aprobar el folio")
+
+    # UPDATE condicional: si otro revisor decidio entre medias, afecta a 0 filas
+    estado = EstadoGeneral.aprobado if decision == DecisionHumana.aprobar else EstadoGeneral.rechazado
+    actualizadas = sesion.execute(
+        update(Folio).where(Folio.folio == folio, Folio.estado_general == EstadoGeneral.en_revision.value)
+        .values(estado_general=estado.value, decision=decision.value, decision_comentario=comentario,
+                decision_usuario=usuario, decision_fecha=datetime.now(timezone.utc))
+        .execution_options(synchronize_session=False)).rowcount
+    if actualizadas == 0:
+        sesion.rollback()
+        raise ErrorApi(409, "FOLIO_CERRADO", "El folio ya tiene decision y no admite cambios")
+    # Sin el comentario: es texto libre (ya esta en el folio)
+    auditoria.registrar(sesion, "decision_tomada", usuario=usuario, folio=folio,
+                        detalle={"decision": decision.value})
+    sesion.commit()
+    sesion.expire(fila)  # el UPDATE no paso por el ORM: releer el folio
+    # TODO (etapa 3): webhook folio.estado_cambiado
+    return obtener_expediente(sesion, folio)

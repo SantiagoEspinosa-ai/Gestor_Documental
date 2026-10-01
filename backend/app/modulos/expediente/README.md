@@ -66,3 +66,8 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
   `CLS-001` sin revisar; si no, el documento vuelve a `pendiente` y quien llama (el router) lanza
   `ingesta.procesar_documento(..., tipo_confirmado=tipo)`. En los dos casos recalcula `EXP-001` y
   `CMP-001` y audita `clasificacion_confirmada`.
+- `decidir_folio(sesion, folio, decision, comentario, usuario) -> ResultadoExpediente`: 404 ->
+  `FOLIO_CERRADO` -> `DOCUMENTO_EN_PROCESO` -> (solo al aprobar) `DECISION_BLOQUEADA`. Guarda con un
+  UPDATE condicional (`estado_general = 'en_revision'`): si otro revisor decidio entre medias, afecta a
+  0 filas y da `FOLIO_CERRADO`. Audita `decision_tomada` sin el comentario. Pendiente (etapa 3): webhook
+  `folio.estado_cambiado`.

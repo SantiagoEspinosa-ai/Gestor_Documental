@@ -14,7 +14,7 @@ from app.core.modelos import Usuario
 from app.core.seguridad import requiere_rol
 from app.modulos.expediente import servicio as expediente
 from app.modulos.ingesta import servicio as ingesta
-from app.schemas.resultado import ResultadoDocumento, ResultadoExpediente
+from app.schemas.resultado import DecisionHumana, ResultadoDocumento, ResultadoExpediente
 
 router = APIRouter(prefix="/api/v1", tags=["revision"])
 
@@ -66,3 +66,16 @@ def confirmar_clasificacion(documento_id: str, entrada: ConfirmarClasificacionEn
         background_tasks.add_task(ingesta.procesar_documento, uuid.UUID(resultado.identificador_unico_documento),
                                   tipo_confirmado=entrada.tipo_documental)
     return resultado
+
+
+class DecisionEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: DecisionHumana
+    comentario: str | None = Field(None, max_length=1000)
+
+
+@router.post("/folios/{folio}/decision", response_model=ResultadoExpediente)
+def decidir_folio(folio: str, entrada: DecisionEntrada, sesion: Session = Depends(get_sesion),
+                  usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoExpediente:
+    return expediente.decidir_folio(sesion, folio, entrada.decision, entrada.comentario, usuario.usuario)
