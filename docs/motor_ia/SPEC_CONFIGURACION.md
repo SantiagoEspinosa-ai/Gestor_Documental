@@ -231,6 +231,22 @@ se queda solo con `pagina_<n>` (seccion 4).
       `orquestador` para evitar la importacion circular.
 - [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
       confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
+- [ ] **Reglas de coherencia (etapa 2, `validacion/reglas.py`)**, propuestas tras el bloque 3 de la evaluacion
+      para detectar valores incorrectos que no rompen el patron ni la fecha (errores silenciosos):
+      - **CURP <-> `fecha_nacimiento`** (credencial de elector): las posiciones 5 a 10 de la CURP son la fecha de
+        nacimiento en `AAMMDD` (el siglo lo da la posicion 17: digito antes de 2000, letra despues). Si no
+        coinciden, alerta. Habria detectado `AEPA000101...` frente a `1990-01-01` (extremo).
+      - **`fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`** (pasaporte; en otras fichas, las que
+        tengan): si no se cumple el orden, alerta. Habria detectado `fecha_nacimiento = 2021-09-30` (dificil,
+        era la de expedicion). Los campos vacios o con fecha invalida no se comparan (ya tienen su alerta).
+      - Necesitan **tipos de regla nuevos** en `config/tipos/*.yaml` (p. ej. `coherencia_curp_fecha` con
+        `campo` y `campo_relacionado`, y `fechas_ordenadas` con una lista `campos`). Las fichas son un
+        **fichero compartido: PR pequeno aparte y con aviso**. Tambien hay que ampliar el cargador
+        (`configuracion/cargador.py`: `TipoRegla` y los campos nuevos de `Regla`, con sus validaciones y tests).
+        Severidad propuesta: `critica` (la fija cada ficha); codigo `REG-{id}` como las demas reglas.
+      - Con estas reglas y las de patron y fecha invalida, de los 17 incorrectos del bloque 3 quedarian
+        silenciosos 3 en `dificil` y 6 en `extremo`, todos de texto libre (domicilio, nombre, proveedor) o de
+        numero de pasaporte con la MRZ ilegible.
 - [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
       como fecha invalida y generar una alerta, sin fallar.
 - [ ] `VAL-004` (etapa 2): ya esta en el catalogo (PR #6). `validacion/reglas.py` la emitira, informativa y con
@@ -376,7 +392,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Evaluacion, bloque 3 (fixtures dificiles de PERSONA_3, ruta auto, 12 casos): NO aprueba (dificil 19/34 correctos y 7/34 incorrectos; extremo 10/34 incorrectos; 0 reintentos con vision porque `CLS-001` los bloquea). 8 de los 17 incorrectos los detectarian las reglas de la etapa 2. `evaluar_fixtures.py`: niveles de dificultad, bloques 3 y 4, campos correcto/vacio/incorrecto, `docker stop` del contenedor si la RAM baja de 1 GB y descarga del otro modelo en cada cambio | este commit |
+| 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | este commit |
+| 2026-10-01 | Pendientes de la etapa 2: reglas de coherencia CURP <-> `fecha_nacimiento` y `fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`, con tipos de regla nuevos en las fichas (PR aparte, fichero compartido) y en el cargador | este commit |
+| 2026-10-01 | Evaluacion, bloque 3 (fixtures dificiles de PERSONA_3, ruta auto, 12 casos): NO aprueba (dificil 19/34 correctos y 7/34 incorrectos; extremo 10/34 incorrectos; 0 reintentos con vision porque `CLS-001` los bloquea). 8 de los 17 incorrectos los detectarian las reglas de la etapa 2. `evaluar_fixtures.py`: niveles de dificultad, bloques 3 y 4, campos correcto/vacio/incorrecto, `docker stop` del contenedor si la RAM baja de 1 GB y descarga del otro modelo en cada cambio | `56cca57` |
 | 2026-10-01 | Evaluacion completa, bloque 1 (ruta auto, 30 casos): 153/153 campos, 27/27 tipos, `CLS-001` 3/3, sin errores ni abortos, 59 s de media (`pruebas_ollama/resultados/evaluacion/informe.md`). El reintento con vision pasa del proveedor al servicio y no se hace si salta `CLS-001` (el caso que tardaba 255 s baja a 80 s); el proveedor expone `extraer_con_vision`. Pendientes: `OLLAMA_MAX_LOADED_MODELS=1` en produccion y bloque 2 opcional. Script `evaluar_fixtures.py` | `a0c7675` |
 | 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | `d3e18b4` |
 | 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | `1a6b9f4` |

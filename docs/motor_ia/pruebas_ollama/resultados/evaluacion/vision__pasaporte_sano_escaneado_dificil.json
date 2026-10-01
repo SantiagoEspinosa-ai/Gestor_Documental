@@ -1,0 +1,154 @@
+{
+  "medida": {
+    "id": "vision__pasaporte_sano_escaneado_dificil",
+    "ruta": "vision",
+    "archivo": "pasaporte_sano_escaneado_dificil.pdf",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "escaneado",
+    "nivel": "dificil",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 1.7,
+    "modalidad_detectada": "pdf_escaneado",
+    "caracteres_texto": 159,
+    "segundos_total": 143.2,
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000001",
+        "extraido": "ZX0000001",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_vencimiento": {
+        "esperado": "2031-09-30",
+        "extraido": "2031-09-30",
+        "estado": "correcto",
+        "ok": true
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": "UTOPICA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "sexo": {
+        "esperado": "F",
+        "extraido": "F",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 6,
+    "vacios": 1,
+    "incorrectos": 0,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 79.8,
+        "tokens_entrada": 1582,
+        "tokens_salida": 70,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 61.69,
+        "tokens_entrada": 1785,
+        "tokens_salida": 311,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "bb31e5d4-7ad4-47bc-b9a2-5a43789d215d",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": "ZX0000001",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": null,
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 0.9,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.9,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.9,
+      "nacionalidad": 0.9,
+      "sexo": 0.9
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1",
+      "numero_pasaporte": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "fecha_vencimiento": "pagina_1",
+      "nacionalidad": "pagina_1",
+      "sexo": "pagina_1"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T17:41:27.511764Z",
+      "proveedor": "ollama",
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_sano_escaneado_dificil.pdf",
+      "ruta": "local://pasaporte_sano_escaneado_dificil.pdf",
+      "hash": "6d33f1a1ce18c57226458c397f1d4c8b3e0c372503df2764b3a6e488c38e9341"
+    }
+  }
+}

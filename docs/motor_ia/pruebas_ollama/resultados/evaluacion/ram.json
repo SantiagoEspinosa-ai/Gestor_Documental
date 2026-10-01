@@ -37,7 +37,19 @@
     "auto__credencial_elector_sano_escaneado_dificil": 4.01,
     "auto__credencial_elector_sano_escaneado_extremo": 4.11,
     "auto__credencial_elector_sano_foto_dificil": 3.85,
-    "auto__credencial_elector_sano_foto_extremo": 0.99
+    "auto__credencial_elector_sano_foto_extremo": 0.99,
+    "vision__comprobante_domicilio_sano_escaneado_dificil": 2.46,
+    "vision__comprobante_domicilio_sano_escaneado_extremo": 1.74,
+    "vision__comprobante_domicilio_sano_foto_dificil": 1.42,
+    "vision__comprobante_domicilio_sano_foto_extremo": 1.88,
+    "vision__credencial_elector_sano_escaneado_dificil": 3.4,
+    "vision__credencial_elector_sano_escaneado_extremo": 3.32,
+    "vision__credencial_elector_sano_foto_dificil": 3.22,
+    "vision__credencial_elector_sano_foto_extremo": 2.95,
+    "vision__pasaporte_sano_escaneado_dificil": 2.95,
+    "vision__pasaporte_sano_escaneado_extremo": 3.11,
+    "vision__pasaporte_sano_foto_dificil": 3.05,
+    "vision__pasaporte_sano_foto_extremo": 2.97
   },
   "bloques": {
     "1": {
@@ -47,6 +59,10 @@
     "3": {
       "ram_libre_min_gb": 0.99,
       "abortado_por_ram": true
+    },
+    "4": {
+      "ram_libre_min_gb": 1.42,
+      "abortado_por_ram": false
     }
   }
 }

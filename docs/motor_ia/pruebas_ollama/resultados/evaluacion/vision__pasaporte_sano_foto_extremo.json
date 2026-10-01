@@ -1,0 +1,154 @@
+{
+  "medida": {
+    "id": "vision__pasaporte_sano_foto_extremo",
+    "ruta": "vision",
+    "archivo": "pasaporte_sano_foto_extremo.jpg",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "foto",
+    "nivel": "extremo",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 0.7,
+    "modalidad_detectada": "imagen",
+    "caracteres_texto": 130,
+    "segundos_total": 135.8,
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "AMA EJEMPLO PRUEBA",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000001",
+        "extraido": "000000!",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_vencimiento": {
+        "esperado": "2031-09-30",
+        "extraido": "2031-09-30",
+        "estado": "correcto",
+        "ok": true
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": "UTOPICA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "sexo": {
+        "esperado": "F",
+        "extraido": "F",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 4,
+    "vacios": 1,
+    "incorrectos": 2,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 74.39,
+        "tokens_entrada": 1581,
+        "tokens_salida": 66,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 60.7,
+        "tokens_entrada": 1784,
+        "tokens_salida": 319,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "aabffd2e-65fc-4556-aab5-ffa824055ee6",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "AMA EJEMPLO PRUEBA",
+      "numero_pasaporte": "000000!",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": null,
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 0.9,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.9,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.9,
+      "nacionalidad": 0.9,
+      "sexo": 0.9
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1",
+      "numero_pasaporte": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "fecha_vencimiento": "pagina_1",
+      "nacionalidad": "pagina_1",
+      "sexo": "pagina_1"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T17:48:08.001704Z",
+      "proveedor": "ollama",
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_sano_foto_extremo.jpg",
+      "ruta": "local://pasaporte_sano_foto_extremo.jpg",
+      "hash": "e55298dad0e46e8eebeada8196ff3aee6c222ab8bd0408c1bffa094353111255"
+    }
+  }
+}
