@@ -67,7 +67,7 @@ describe('acciones del revisor', () => {
     await u.type(within(expediente).getByLabelText('Comentario sobre EXP-001'), 'Llega por otra via')
     await u.click(within(expediente).getByRole('button', { name: 'EXP-001: falso positivo' }))
     await waitFor(() => expect(aviso().textContent).toBe('Alerta EXP-001 revisada.'))
-    const revisada = within(screen.getByRole('region', { name: 'Alertas del expediente' })).getByTestId('alerta-alr-000010').textContent!
+    const revisada = within(screen.getByRole('region', { name: 'Alertas del expediente' })).getByText('EXP-001').closest('li')!.textContent!
     expect(revisada).toContain('Falso positivo')
     expect(revisada).toContain('“Llega por otra via”')
     expect(revisada).toContain('revisor.demo')
@@ -90,7 +90,7 @@ describe('acciones del revisor', () => {
     const u = await abrir('ONB-2026-000001')
     const alertasDoc = screen.getByRole('region', { name: 'Alertas del documento seleccionado' })
     await u.click(within(alertasDoc).getByRole('button', { name: 'REG-vigencia_documento: aplica' }))
-    await waitFor(() => expect(within(screen.getByTestId('alerta-alr-000002')).getByText('Aplica (confirmada por el revisor)')).toBeTruthy())
+    await waitFor(() => expect(within(within(alertasDoc).getByText('REG-vigencia_documento').closest('li')!).getByText('Aplica (confirmada por el revisor)')).toBeTruthy())
     expect(aprobar().disabled).toBe(true) // aplica=true confirma el problema: solo se puede rechazar
     expect(screen.getByRole('note').textContent).toContain('REG-vigencia_documento')
 

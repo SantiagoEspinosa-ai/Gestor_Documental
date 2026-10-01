@@ -448,7 +448,36 @@ describe('campos sin valor', () => {
     const val004 = documentos.flatMap((d) => d.alertas_encontradas.filter((a) => a.codigo === 'VAL-004').map((a) => [d, a] as const))
     expect(val004.length).toBeGreaterThan(0)
     for (const [d, a] of val004) expect([a.severidad, d.datos_extraidos[a.campo!]]).toEqual(['informativa', null])
-    const informativas = new Set(documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa').map((a) => a.codigo))
-    expect([...informativas].sort()).toEqual(['SYS-005', 'VAL-003', 'VAL-004'])
+    // Tres informativas, todas posibles con la configuracion por defecto (sin SYS-005: ADR-003)
+    const informativas = documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa')
+    expect(informativas.map((a) => [a.codigo, a.campo]).sort()).toEqual([['VAL-003', 'nacionalidad'], ['VAL-003', 'sexo'], ['VAL-004', 'proveedor']])
+  })
+})
+
+describe('modelos de los analisis (configuracion de PERSONA_2)', () => {
+  it('siempre Ollama: gemma4:e2b para PDF digitales y qwen2.5vl:3b para escaneados e imagenes; nunca SYS-005', async () => {
+    const token = await entrar('revisor.demo')
+    const folios = await Promise.all(['ONB-2026-000001', 'ONB-2026-000002', 'ONB-2026-000003', 'ONB-2026-000004']
+      .map(async (f) => (await api<ResultadoExpediente>('GET', `/folios/${f}`, { token })).cuerpo))
+    for (const d of folios.flatMap((f) => f.documentos).filter((x) => x.fecha_y_modelo_utilizado)) {
+      const nombre = d.referencia_archivo_original.nombre_archivo
+      expect([d.fecha_y_modelo_utilizado!.proveedor, d.fecha_y_modelo_utilizado!.modelo], nombre)
+        .toEqual(['ollama', nombre.includes('_digital.') ? 'gemma4:e2b' : 'qwen2.5vl:3b'])
+      expect(codigos(d.alertas_encontradas)).not.toContain('SYS-005')
+    }
+    const procesados = estado.auditoria.filter((e) => e.accion === 'documento_procesado')
+    expect(new Set(procesados.map((e) => e.modelo))).toEqual(new Set(['gemma4:e2b', 'qwen2.5vl:3b']))
+  })
+
+  it('un documento subido usa el modelo del original con el mismo SHA-256 o, si no hay, el de su extension', async () => {
+    const token = await entrar('revisor.demo')
+    const { folio } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
+    const subir = async (nombre: string, datos: Uint8Array | Buffer) => (await api<{ identificador_unico_documento: string }>(
+      'POST', `/folios/${folio}/documentos`, { token, formulario: subida(nombre, datos) })).cuerpo.identificador_unico_documento
+    const digital = await subir('credencial_elector_sano_digital.pdf', original('credencial_elector_sano_digital.pdf'))
+    const foto = await subir('credencial_elector_vencido_foto.jpg', original('credencial_elector_vencido_foto.jpg'))
+    t += MS_HASTA_COMPLETADO
+    const modelo = async (id: string) => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo.fecha_y_modelo_utilizado?.modelo
+    expect([await modelo(digital), await modelo(foto)]).toEqual(['gemma4:e2b', 'qwen2.5vl:3b'])
   })
 })

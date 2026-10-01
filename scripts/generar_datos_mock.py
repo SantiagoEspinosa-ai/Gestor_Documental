@@ -17,10 +17,12 @@ procesos y tipos_documentales se copian de config/.
 
 Los 4 folios cubren: alertas de las 4 severidades (una bloqueante), CMP-001 de domicilio en
 alertas_expediente, EXP-001 (campo = tipo que falta), una correccion, un documento en error
-(SYS-001), uno pendiente y un folio cerrado (aprobado). Las tres informativas: VAL-003 (valor tomado
-de la MRZ) en el pasaporte del folio 1, VAL-004 (proveedor opcional no leido, null) en el comprobante
-del folio 2 y SYS-005 (proveedor de respaldo) en la credencial del folio 3. Un campo sin valor es
-null, nunca "".
+(SYS-001), uno pendiente y un folio cerrado (aprobado). Tres alertas informativas, todas posibles con
+la configuracion por defecto: dos VAL-003 (nacionalidad y sexo tomados de la MRZ) en el pasaporte
+escaneado del folio 1 y VAL-004 (proveedor opcional no leido, null) en el comprobante del folio 2.
+Sin SYS-005: su unico respaldo es OpenRouter, que con PERMITIR_PROVEEDORES_NO_PRIVADOS=false no se usa
+nunca (ADR-003); un fallo de Ollama da SYS-001 (folio 3). Un campo sin valor es null, nunca "".
+Modelos: siempre Ollama, gemma4:e2b para pdf_digital y qwen2.5vl:3b para escaneados e imagenes.
 
 Es determinista: sin azar ni fecha actual. backend/tests/test_generar_datos_mock.py comprueba que
 reproduce exactamente los ficheros del repo, y test_contrato_frontend.py que son validos.
@@ -44,9 +46,12 @@ DATOS = RAIZ / "frontend" / "src" / "mocks" / "datos"
 ORIGINALES = RAIZ / "frontend" / "public" / "mock-originales"
 HOY_MOCKS = date(2026, 9, 30)
 REVISOR, INTEGRADOR = "revisor.demo", "integrador.demo"  # usuarios de frontend/src/mocks/usuarios.ts
-MODELO = ("llama3.2-vision:11b", "extraccion@v1")
-# Proveedor de respaldo de SYS-005: OpenRouter (ADR-003, PROVEEDOR_COMERCIAL de .env.example); modelo ficticio
-RESPALDO = ("openrouter", "modelo-respaldo-ficticio:free", "extraccion@v1")
+# Modelos de .env.example y docs/motor_ia/pruebas_ollama.md (PERSONA_2): texto para pdf_digital y vision
+# para pdf_escaneado e imagen. Siempre Ollama: con PERMITIR_PROVEEDORES_NO_PRIVADOS=false (ADR-003) el
+# respaldo comercial no se usa nunca, asi que los mocks no tienen SYS-005.
+PROVEEDOR = "ollama"
+MODELO_POR_MODALIDAD = {"digital": "gemma4:e2b", "escaneado": "qwen2.5vl:3b", "foto": "qwen2.5vl:3b"}
+VERSION_PROMPT = "extraccion@v1"
 
 
 def _cargar_generador():
@@ -100,9 +105,8 @@ class DatosMock:
                                "version_prompt": version_prompt, "creado_en": iso(cuando)})
 
     def documento(self, folio, secuencia, n, caso, tipo, modalidad, subido, estado="completado", alertas_extra=(),
-                  confianzas=None, correcciones=(), vacios=(), respaldo=False) -> dict:
-        """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004).
-        `respaldo`: analizado con el proveedor de respaldo (SYS-005)."""
+                  confianzas=None, correcciones=(), vacios=()) -> dict:
+        """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004)."""
         gf = self.gf
         archivo = gf.nombre_archivo(tipo, caso, modalidad)
         shutil.copyfile(self.fixtures / archivo, self.originales / archivo)
@@ -129,7 +133,7 @@ class DatosMock:
         if estado != "completado":
             if estado == "error":
                 self.auditar(None, "documento_procesado", folio, uid, {"estado_analisis": "error"},
-                             subido + timedelta(seconds=40), *MODELO)
+                             subido + timedelta(seconds=40), MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT)
             return doc
         ficha = self.fichas[tipo]
         persona = gf.PERSONAS_FICTICIAS[gf.CASOS[caso]["persona"]]
@@ -139,7 +143,7 @@ class DatosMock:
         obligatorios = [c for c in vacios if ficha["campos"][c]["obligatorio"]]
         if obligatorios:
             raise ValueError(f"{tipo}: {obligatorios} son obligatorios; vacios solo admite campos opcionales (VAL-004)")
-        proveedor, modelo, version_prompt = RESPALDO if respaldo else ("ollama", *MODELO)
+        proveedor, modelo, version_prompt = PROVEEDOR, MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT
         doc.update({
             "tipo_documental_detectado": tipo, "confianza_clasificacion": 0.94,
             "datos_extraidos": {c: v.isoformat() if isinstance(v, date) else v
@@ -159,8 +163,6 @@ class DatosMock:
         doc["alertas_encontradas"] = (
             [self.alerta(a["codigo"], a["motivo"], a["severidad"], a["campo"]) for a in incumplidas]
             + [self.alerta("VAL-004", f"Falta el campo opcional {c}", "informativa", c) for c in vacios]
-            + ([self.alerta("SYS-005", "Fallo el proveedor principal; analizado con el proveedor de respaldo",
-                            "informativa")] if respaldo else [])
             + doc["alertas_encontradas"])
         for campo, anterior, cuando in correcciones:
             doc["correcciones"].append({"campo": campo, "valor_anterior": anterior,
@@ -214,8 +216,8 @@ class DatosMock:
         f, s, t0 = "ONB-2026-000001", 1, momento(28, 9, 15)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1),
-                            alertas_extra=[self.alerta("VAL-003", "Valor de nacionalidad tomado de la MRZ: no se leyo "
-                                                       "en la zona visual", "informativa", "nacionalidad")])
+                            alertas_extra=[self.alerta("VAL-003", f"Valor de {c} tomado de la MRZ: no se leyo en la "
+                                                       "zona visual", "informativa", c) for c in ("nacionalidad", "sexo")])
         d2 = self.documento(f, s, 2, "vencido", "credencial_elector", "foto", t0 + timedelta(minutes=2),
                             confianzas={"clave_elector": 0.62},
                             alertas_extra=[self.alerta("VAL-002", "Confianza de clave_elector (0.62) por debajo del "
@@ -242,7 +244,7 @@ class DatosMock:
         # 3. Ana, falta el comprobante: EXP-001 (campo = tipo que falta) y un documento en error (SYS-001)
         f, s, t0 = "ONB-2026-000003", 3, momento(30, 8, 5)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
-        d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1), respaldo=True)
+        d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1))
         d2 = self.documento(f, s, 2, "sano", "pasaporte", "foto", t0 + timedelta(minutes=2), estado="error",
                             alertas_extra=[self.alerta("SYS-001", "Fallo del proveedor principal y sin respaldo", "critica")])
         folios.append(self.expediente(f, None, t0, [d1, d2], [

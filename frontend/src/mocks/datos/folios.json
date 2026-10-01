@@ -51,7 +51,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000002",
+            "id": "alr-000003",
             "codigo": "REG-vigencia_documento",
             "mensaje": "El pasaporte esta vencido",
             "severidad": "bloqueante",
@@ -64,7 +64,7 @@
             "resuelta_en": null
           },
           {
-            "id": "alr-000003",
+            "id": "alr-000004",
             "codigo": "REG-vigencia_proxima",
             "mensaje": "El pasaporte vence en menos de 90 dias",
             "severidad": "preventiva",
@@ -88,6 +88,19 @@
             "comentario_revisor": null,
             "resuelta_por": null,
             "resuelta_en": null
+          },
+          {
+            "id": "alr-000002",
+            "codigo": "VAL-003",
+            "mensaje": "Valor de sexo tomado de la MRZ: no se leyo en la zona visual",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "sexo",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
           }
         ],
         "correcciones": [],
@@ -96,7 +109,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-28T09:16:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "qwen2.5vl:3b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -145,7 +158,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000004",
+            "id": "alr-000005",
             "codigo": "VAL-002",
             "mensaje": "Confianza de clave_elector (0.62) por debajo del minimo de la ficha (0.80)",
             "severidad": "preventiva",
@@ -164,7 +177,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-28T09:17:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "qwen2.5vl:3b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -211,7 +224,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-28T09:18:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -253,7 +266,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000005",
+            "id": "alr-000006",
             "codigo": "DUP-001",
             "mensaje": "Mismo SHA-256 que el documento 00000000-0000-4000-8000-000001000003 del folio",
             "severidad": "critica",
@@ -272,7 +285,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-28T09:19:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -377,7 +390,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-29T11:41:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "qwen2.5vl:3b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -418,7 +431,7 @@
         },
         "alertas_encontradas": [
           {
-            "id": "alr-000006",
+            "id": "alr-000007",
             "codigo": "VAL-004",
             "mensaje": "Falta el campo opcional proveedor",
             "severidad": "informativa",
@@ -437,7 +450,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-29T11:42:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "qwen2.5vl:3b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -484,7 +497,7 @@
     ],
     "alertas_expediente": [
       {
-        "id": "alr-000007",
+        "id": "alr-000008",
         "codigo": "CMP-001",
         "mensaje": "domicilio distinto entre credencial_elector y comprobante_domicilio",
         "severidad": "critica",
@@ -549,28 +562,14 @@
           ],
           "incumplidas": []
         },
-        "alertas_encontradas": [
-          {
-            "id": "alr-000008",
-            "codigo": "SYS-005",
-            "mensaje": "Fallo el proveedor principal; analizado con el proveedor de respaldo",
-            "severidad": "informativa",
-            "confianza": 1.0,
-            "campo": null,
-            "resuelta_por_revisor": false,
-            "aplica": null,
-            "comentario_revisor": null,
-            "resuelta_por": null,
-            "resuelta_en": null
-          }
-        ],
+        "alertas_encontradas": [],
         "correcciones": [],
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-30T08:06:40Z",
-          "proveedor": "openrouter",
-          "modelo": "modelo-respaldo-ficticio:free",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -698,7 +697,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-25T10:01:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -752,7 +751,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-25T10:02:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {
@@ -799,7 +798,7 @@
         "fecha_y_modelo_utilizado": {
           "fecha_analisis": "2026-09-25T10:03:40Z",
           "proveedor": "ollama",
-          "modelo": "llama3.2-vision:11b",
+          "modelo": "gemma4:e2b",
           "version_prompt": "extraccion@v1"
         },
         "referencia_archivo_original": {

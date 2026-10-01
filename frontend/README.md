@@ -160,16 +160,43 @@ npm test        # Vitest
   Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
+### e2e reales de la etapa 2 (contra el backend y Ollama, sin mocks)
+- `OLLAMA_BASE_URL` del backend, segun donde corren el backend y Ollama (`.env.example`):
+
+  | Backend | Ollama | `OLLAMA_BASE_URL` |
+  |---|---|---|
+  | En el equipo (venv) | Instalado en el equipo | `http://localhost:11434` |
+  | En un contenedor (`docker compose up`) | Instalado en el equipo (Docker Desktop) | `http://host.docker.internal:11434` (valor por defecto) |
+  | En un contenedor | Contenedor, con `docker compose --profile ollama up` | `http://ollama:11434` |
+
+- Modelos que hay que tener descargados en ese Ollama (con el perfil, dentro del contenedor:
+  `docker compose exec ollama ollama pull ...`):
+  ```
+  ollama pull qwen2.5vl:3b   # vision: pdf_escaneado e imagen (~5 GB de RAM)
+  ollama pull gemma4:e2b     # texto: pdf_digital
+  ```
+- Antes de lanzarlos, comprobar que Ollama responde (`GET <OLLAMA_BASE_URL>/api/tags`) y lista los dos
+  modelos. Los tiempos reales son de minutos por documento (vision ~110 s), no los ~9 s del mock.
+- `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` (por defecto): OpenRouter no se usa nunca, ni como respaldo
+  (ADR-003). Si Ollama falla, el documento acaba en `error` con `SYS-001`.
+
 ## Tipos y datos de los mocks
 - `src/tipos/contrato.ts` refleja `backend/app/schemas/resultado.py` campo a campo (las claves
   siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
 - `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
   (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
-  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado. Las tres
-  informativas: `VAL-003` (valor de `nacionalidad` tomado de la MRZ) en el pasaporte de
-  `ONB-2026-000001`, `VAL-004` (`proveedor` sin leer, `null`) en el comprobante de `ONB-2026-000002` y
-  `SYS-005` (analizado con el proveedor de respaldo, `openrouter` con un modelo ficticio) en la
-  credencial de `ONB-2026-000003`.
+  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado. Tres alertas
+  informativas, todas posibles con la configuracion por defecto: dos `VAL-003` (`nacionalidad` y
+  `sexo` tomados de la MRZ) en el pasaporte escaneado de `ONB-2026-000001` y `VAL-004` (`proveedor`
+  sin leer, `null`) en el comprobante de `ONB-2026-000002`.
+- Sin `SYS-005`: lo emite `motor_ia` cuando el principal falla y se usa el respaldo, y el unico
+  respaldo de `config/modelos.yaml` es OpenRouter (`privado: false`), que con
+  `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` no se usa nunca (ADR-003). Con esa configuracion, un fallo
+  de Ollama da `SYS-001` (documento en error de `ONB-2026-000003`).
+- `fecha_y_modelo_utilizado` y la auditoria de `documento_procesado` usan siempre `ollama` con los
+  modelos de `.env.example` (`docs/motor_ia/pruebas_ollama.md`): `gemma4:e2b` para los PDF digitales
+  (solo texto) y `qwen2.5vl:3b` para escaneados e imagenes. Un documento subido en la sesion toma el
+  modelo del original con el mismo SHA-256; si no lo hay, el de su extension (PDF -> texto).
 - Confianza (ADR-007): la calcula el codigo comprobando el dato, no el modelo. La barra de la tabla
   de datos usara `ETIQUETA_CONFIANZA` ("Confianza verificada") y `AYUDA_CONFIANZA`
   (`src/utilidades/etiquetas.ts`).

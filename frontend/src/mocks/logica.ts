@@ -10,7 +10,22 @@ import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } fro
 /** pendiente -> procesando a los 3 s, -> completado a los 9 s */
 export const MS_HASTA_PROCESANDO = 3_000
 export const MS_HASTA_COMPLETADO = 9_000
-const MODELO = { proveedor: 'ollama', modelo: 'llama3.2-vision:11b', version_prompt: 'extraccion@v1' }
+// Modelos de .env.example (PERSONA_2, docs/motor_ia/pruebas_ollama.md). Siempre Ollama: con
+// PERMITIR_PROVEEDORES_NO_PRIVADOS=false el respaldo comercial no se usa nunca (ADR-003), asi que no hay SYS-005.
+const PROVEEDOR = 'ollama'
+export const MODELO_TEXTO = 'gemma4:e2b' // pdf_digital
+export const MODELO_VISION = 'qwen2.5vl:3b' // pdf_escaneado e imagen
+const VERSION_PROMPT = 'extraccion@v1'
+
+/**
+ * Modelo con el que se "analiza" un documento subido: el del documento de los datos con el mismo
+ * SHA-256 (sabe si es digital o escaneado); si no hay, por la extension: imagen -> vision, PDF -> texto
+ * (el mock no distingue un PDF escaneado de uno digital).
+ */
+function modeloDeAnalisis(doc: ResultadoDocumento, proc: Procesamiento): string {
+  if (proc.origen?.fecha_y_modelo_utilizado) return proc.origen.fecha_y_modelo_utilizado.modelo
+  return /\.pdf$/i.test(doc.referencia_archivo_original.nombre_archivo) ? MODELO_TEXTO : MODELO_VISION
+}
 
 export function normalizar(valor: unknown): string {
   return String(valor).normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase().split(/\s+/).filter(Boolean).join(' ')
@@ -172,10 +187,11 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   doc.alertas_encontradas = alertas
   doc.tipo_documental_detectado = proc.tipoContenido
   doc.confianza_clasificacion = proc.confianzaClasificacion
-  doc.fecha_y_modelo_utilizado = { fecha_analisis: fechaIso(estado), ...MODELO }
+  const modelo = modeloDeAnalisis(doc, proc)
+  doc.fecha_y_modelo_utilizado = { fecha_analisis: fechaIso(estado), proveedor: PROVEEDOR, modelo, version_prompt: VERSION_PROMPT }
   doc.estado_analisis = 'completado'
   auditar(estado, null, 'documento_procesado', folio.folio, doc.identificador_unico_documento,
-    { estado_analisis: 'completado' }, MODELO.modelo, MODELO.version_prompt)
+    { estado_analisis: 'completado' }, modelo, VERSION_PROMPT)
 }
 
 /** Avanza con el reloj el analisis de los documentos subidos en esta sesion */

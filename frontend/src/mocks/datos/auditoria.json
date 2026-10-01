@@ -34,7 +34,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-25T10:01:40Z"
   },
@@ -62,7 +62,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-25T10:02:40Z"
   },
@@ -90,7 +90,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-25T10:03:40Z"
   },
@@ -142,7 +142,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-28T09:16:40Z"
   },
@@ -170,7 +170,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-28T09:17:40Z"
   },
@@ -198,7 +198,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-28T09:18:40Z"
   },
@@ -226,7 +226,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-28T09:19:40Z"
   },
@@ -265,7 +265,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-29T11:41:40Z"
   },
@@ -293,7 +293,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-29T11:42:40Z"
   },
@@ -360,7 +360,7 @@
     "detalle": {
       "estado_analisis": "completado"
     },
-    "modelo": "modelo-respaldo-ficticio:free",
+    "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-30T08:06:40Z"
   },
@@ -388,7 +388,7 @@
     "detalle": {
       "estado_analisis": "error"
     },
-    "modelo": "llama3.2-vision:11b",
+    "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-30T08:07:40Z"
   }
