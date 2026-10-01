@@ -66,9 +66,10 @@ def _resumen(nombre: str, doc, analisis) -> str:
     r = analisis.resultado
     lineas = [f"archivo: {nombre} | modalidad: {doc.modalidad.value} | paginas: {len(doc.paginas)}"]
     for i, info in enumerate(analisis.llamadas, start=1):
-        lineas.append(f"llamada {i}: {info.proveedor} {info.modelo} | {info.segundos} s | tokens "
+        lineas.append(f"llamada {i}: {info.proveedor} {info.modelo} ({info.entrada or '-'}) | {info.segundos} s | tokens "
                       f"{info.tokens_entrada} entrada / {info.tokens_salida} salida | peticiones {info.peticiones} "
-                      f"| reintentos {info.reintentos} | lotes {info.lotes}")
+                      f"| reintentos {info.reintentos} | lotes {info.lotes}"
+                      + (f" | {info.motivo}" if info.motivo else ""))
     confianza = f" ({r.confianza_clasificacion:.2f})" if r.confianza_clasificacion is not None else ""
     alertas = ", ".join(f"{a.codigo} {a.severidad.value}" + (f" [{a.campo}]" if a.campo else "")
                         for a in r.alertas_encontradas) or "ninguna"

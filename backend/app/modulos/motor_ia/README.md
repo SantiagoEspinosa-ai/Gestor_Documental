@@ -16,9 +16,9 @@ Configuracion vigente (modelos, enrutador, reglas de vision y parseo, prompts):
 - Tests: `backend/tests/test_servicio_motor.py` (proveedores y enrutador falsos).
 
 Proveedores (cada uno en `proveedores/<nombre>.py`, implementan `ProveedorLLM`):
-- `ollama.py` -> `OllamaProvider(base_url, modelo_texto, modelo_vision)`. Modelo de texto si
-  `pdf_digital` (sin imagenes); de vision en el resto, con las paginas reducidas a 1000 px y por lotes
-  de 4. `ultima_llamada` guarda el modelo real, los tiempos y los tokens; `modelo_para(doc)` da el
+- `ollama.py` -> `OllamaProvider(base_url, modelo_texto, modelo_vision)`. Modelo de texto (sin imagenes)
+  si hay texto suficiente; de vision si no o como reintento, con las paginas reducidas a 1000 px y por
+  lotes de 4. `ultima_llamada` guarda el modelo real, los tiempos y los tokens; `modelo_para(doc)` da el
   modelo segun la modalidad. Errores: `ErrorProveedor` (usar el respaldo) y `ErrorRespuestaInvalida`
   (JSON invalido tras el reintento -> `SYS-002`).
 - `base.py` -> parametros de llamada (constantes), parseo estricto, postprocesado (fechas, anio,
@@ -51,10 +51,12 @@ python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf
   el codigo; los errores nombran la variable, nunca su valor.
 - `obtener(tarea, tipo)`: `por_tipo` si existe; si no, `principal`. `respaldo(tarea, tipo)`: el
   `respaldo`, o `None` si es el mismo que el principal o no esta disponible (aviso en el log).
-- **Regla de modalidad** (decidida sin ADR): el enrutador devuelve el proveedor y el proveedor elige su
-  modelo segun `DocumentoPreparado.modalidad`: el de texto si es `pdf_digital` y el de vision en el
-  resto (`OllamaProvider.modelo_para`). `Enrutador.obtener` no recibe la modalidad, asi que el Contrato 3
-  no cambia.
+- **Regla de modelo** (decidida sin ADR): el enrutador devuelve el proveedor y el proveedor elige su
+  modelo: el de texto, sin imagenes, si todas las paginas tienen al menos 30 caracteres de texto (capa del
+  PDF u OCR), y el de vision si alguna no llega (`OllamaProvider.modelo_para`, `usa_texto`). Si la
+  extraccion con texto deja vacia la mitad o mas de los campos obligatorios, se reintenta con vision
+  (riesgo 2 del plan); `ultimas_llamadas` registra las dos llamadas con `entrada` y `motivo`.
+  `Enrutador.obtener` no cambia, asi que el Contrato 3 tampoco.
 - **Barrera de privacidad** (ADR-003): un proveedor con `privado: false` solo se usa con
   `PERMITIR_PROVEEDORES_NO_PRIVADOS=true` (desarrollo con fixtures ficticios). Si es un principal y la
   barrera esta cerrada, error al arrancar; si es un respaldo, `None`.

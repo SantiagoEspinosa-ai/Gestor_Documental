@@ -1,7 +1,9 @@
 """
 Adaptador de Ollama (ADR-005): unico sitio donde se llama a la API HTTP de Ollama.
-Implementa ProveedorLLM (Contrato 3). Elige el modelo por modalidad (spec, seccion 3):
-texto si `pdf_digital`, vision en el resto, con las paginas reducidas y por lotes.
+Implementa ProveedorLLM (Contrato 3). Regla del enrutador (spec, seccion 3): modelo de texto, sin
+imagenes, si todas las paginas tienen texto suficiente (capa del PDF u OCR); vision en el resto, con las
+paginas reducidas y por lotes. Si la extraccion con texto deja vacia la mitad o mas de los campos
+obligatorios, se reintenta con vision (riesgo 2 del plan).
 """
 from __future__ import annotations
 
@@ -31,14 +33,23 @@ from app.modulos.motor_ia.proveedores.base import (
     InfoLlamada,
     RespuestaNoValida,
     combinar_lotes,
+    combinar_texto_y_vision,
     lotes_de_paginas,
+    necesita_reintento_vision,
+    obligatorios_vacios,
     parsear_clasificacion,
     parsear_extraccion,
     postprocesar_clasificacion,
     postprocesar_extraccion,
     reducir_imagen,
+    tiene_texto_suficiente,
     timeout_vision,
 )
+
+# Modalidad que se pasa al postprocesado solo para decidir el formato de la evidencia:
+# con texto se conserva el detalle (`pagina_1:Fecha de caducidad`); con vision, solo `pagina_<n>`.
+_EVIDENCIA_CON_DETALLE = Modalidad.pdf_digital
+_EVIDENCIA_SOLO_PAGINA = Modalidad.imagen
 
 
 class OllamaProvider:
@@ -53,15 +64,23 @@ class OllamaProvider:
         self._cliente = cliente or httpx.Client()
         self._capacidades: dict[str, frozenset[str]] = {}
         self.ultima_llamada: InfoLlamada | None = None
+        # Llamadas de la ultima operacion (clasificar o extraer); con reintento de vision son dos.
+        self.ultimas_llamadas: list[InfoLlamada] = []
 
     # --- ProveedorLLM ---
 
+    @staticmethod
+    def usa_texto(doc: DocumentoPreparado) -> bool:
+        return tiene_texto_suficiente(doc.paginas)
+
     def modelo_para(self, doc: DocumentoPreparado) -> str:
-        return self.modelo_texto if doc.modalidad is Modalidad.pdf_digital else self.modelo_vision
+        return self.modelo_texto if self.usa_texto(doc) else self.modelo_vision
 
     def clasificar(self, doc: DocumentoPreparado, tipos_posibles: list[str], prompt: str) -> ResultadoClasificacion:
-        info = self._empezar(doc)
-        lote = [] if doc.modalidad is Modalidad.pdf_digital else lotes_de_paginas(doc.paginas)[0]
+        self.ultimas_llamadas = []
+        texto = self.usa_texto(doc)
+        info = self._empezar(self.modelo_para(doc), "texto" if texto else "vision")
+        lote = [] if texto else lotes_de_paginas(doc.paginas)[0]
         try:
             respuesta = self._pedir(info, prompt, lote, parsear_clasificacion)
         finally:
@@ -69,29 +88,53 @@ class OllamaProvider:
         return postprocesar_clasificacion(respuesta, tipos_posibles)
 
     def extraer(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str) -> ResultadoExtraccion:
-        info = self._empezar(doc)
+        self.ultimas_llamadas = []
+        if not self.usa_texto(doc):
+            return self._extraer_vision(doc, esquema_campos, prompt)
+        resultado = self._extraer_texto(doc, esquema_campos, prompt)
+        if not necesita_reintento_vision(resultado, esquema_campos) or not any(p.imagen_png for p in doc.paginas):
+            return resultado
+        info_texto = self.ultima_llamada
+        vacios, total = obligatorios_vacios(resultado, esquema_campos)
+        motivo = f"reintento con vision: {vacios}/{total} campos obligatorios vacios con texto"
         try:
-            if doc.modalidad is Modalidad.pdf_digital:
-                respuesta = self._pedir(info, prompt, [], parsear_extraccion)
-                return postprocesar_extraccion(respuesta, esquema_campos, doc.modalidad,
-                                               [p.numero for p in doc.paginas])
+            vision = self._extraer_vision(doc, esquema_campos, prompt, motivo)
+        except ErrorProveedor as error:
+            self.ultimas_llamadas[-1].motivo = f"{motivo}; fallo ({error}): se conserva el resultado con texto"
+            self.ultima_llamada = info_texto
+            return resultado
+        return combinar_texto_y_vision(resultado, vision)
+
+    # --- Internos ---
+
+    def _extraer_texto(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str) -> ResultadoExtraccion:
+        info = self._empezar(self.modelo_texto, "texto")
+        try:
+            respuesta = self._pedir(info, prompt, [], parsear_extraccion)
+        finally:
+            self._terminar(info)
+        return postprocesar_extraccion(respuesta, esquema_campos, _EVIDENCIA_CON_DETALLE, [p.numero for p in doc.paginas])
+
+    def _extraer_vision(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str,
+                        motivo: str | None = None) -> ResultadoExtraccion:
+        info = self._empezar(self.modelo_vision, "vision", motivo)
+        try:
             lotes = lotes_de_paginas(doc.paginas)
             info.lotes = len(lotes)
             resultados = []
             for lote in lotes:
                 respuesta = self._pedir(info, prompt, lote, parsear_extraccion)
-                resultados.append(postprocesar_extraccion(respuesta, esquema_campos, doc.modalidad,
+                resultados.append(postprocesar_extraccion(respuesta, esquema_campos, _EVIDENCIA_SOLO_PAGINA,
                                                           [p.numero for p in lote]))
             return combinar_lotes(resultados)
         finally:
             self._terminar(info)
 
-    # --- Internos ---
-
-    def _empezar(self, doc: DocumentoPreparado) -> InfoLlamada:
-        info = InfoLlamada(proveedor=self.nombre, modelo=self.modelo_para(doc))
+    def _empezar(self, modelo: str, entrada: str, motivo: str | None = None) -> InfoLlamada:
+        info = InfoLlamada(proveedor=self.nombre, modelo=modelo, entrada=entrada, motivo=motivo)
         info.segundos = time.perf_counter()
         self.ultima_llamada = info
+        self.ultimas_llamadas.append(info)
         return info
 
     @staticmethod

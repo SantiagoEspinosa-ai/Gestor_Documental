@@ -1,0 +1,95 @@
+{
+  "medida": {
+    "alternativa": "B",
+    "archivo": "pasaporte_sano_escaneado.pdf",
+    "modalidad_original": "pdf_escaneado",
+    "num_ctx": 8192,
+    "caracteres_ocr": 311,
+    "preparar_s": 1.6,
+    "analisis_s": 133.7,
+    "llamadas": [
+      {
+        "modelo": "qwen2.5vl:3b",
+        "segundos": 91.38,
+        "tokens_entrada": 1641,
+        "tokens_salida": 90,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "segundos": 42.26,
+        "tokens_entrada": 1844,
+        "tokens_salida": 311,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "aciertos": "6/7",
+    "fallos": {
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "obtenido": null
+      }
+    },
+    "alertas": [],
+    "evidencias": [
+      "pagina_1"
+    ]
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "53d2f390-2d65-40b5-8a7d-889f9e79b938",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": "ZX0000001",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": null,
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 0.9,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.9,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.9,
+      "nacionalidad": 0.9,
+      "sexo": 0.9
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1",
+      "numero_pasaporte": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "fecha_vencimiento": "pagina_1",
+      "nacionalidad": "pagina_1",
+      "sexo": "pagina_1"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-09-30T22:04:25.248393Z",
+      "proveedor": "ollama",
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_sano_escaneado.pdf",
+      "ruta": "local://pasaporte_sano_escaneado.pdf",
+      "hash": "0b30d434cb47098788f021f943b201b2f1f5a8577a902dbc169d4775e091bacc"
+    }
+  }
+}

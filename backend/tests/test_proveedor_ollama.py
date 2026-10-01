@@ -54,7 +54,10 @@ class OllamaFalso:
         self.timeouts.append(peticion.extensions["timeout"]["read"])
         if self.estado != 200:
             return httpx.Response(self.estado, json={"error": "simulado"})
-        return httpx.Response(200, json=self.cola.pop(0))
+        siguiente = self.cola.pop(0)
+        if isinstance(siguiente, int):  # un codigo HTTP de error para esta peticion concreta
+            return httpx.Response(siguiente, json={"error": "simulado"})
+        return httpx.Response(200, json=siguiente)
 
 
 def proveedor(falso: OllamaFalso) -> OllamaProvider:
@@ -68,8 +71,16 @@ def png(ancho: int = 2000, alto: int = 1414) -> bytes:
     return salida.getvalue()
 
 
-def documento(modalidad: Modalidad, n_paginas: int = 1) -> DocumentoPreparado:
-    paginas = [Pagina(i, texto="PASAPORTE ANA EJEMPLO PRUEBA", imagen_png=png()) for i in range(1, n_paginas + 1)]
+# Texto suficiente (>= 30 caracteres sin espacios) para la regla del enrutador; datos inventados.
+TEXTO_SUFICIENTE = "PASAPORTE DE MUESTRA SIN VALIDEZ ANA EJEMPLO PRUEBA X1234567P"
+
+
+def documento(modalidad: Modalidad, n_paginas: int = 1, texto: str | None = None,
+              con_imagenes: bool = True) -> DocumentoPreparado:
+    """Por defecto: pdf_digital con texto suficiente; escaneado e imagen sin texto (OCR no disponible)."""
+    if texto is None and modalidad is Modalidad.pdf_digital:
+        texto = TEXTO_SUFICIENTE
+    paginas = [Pagina(i, texto=texto, imagen_png=png() if con_imagenes else None) for i in range(1, n_paginas + 1)]
     return DocumentoPreparado("00000000-0000-4000-8000-000000000001", modalidad, paginas, "pasaporte")
 
 
@@ -198,3 +209,94 @@ def test_protocolo_proveedor_llm():
     p = proveedor(OllamaFalso())
     assert (p.nombre, p.modelo, p.soporta_vision) == ("ollama", "gemma4:e2b", True)
     assert p.base_url == "http://ollama-falso:11434"
+
+
+# --- Regla del enrutador: texto si todas las paginas tienen texto suficiente (capa del PDF u OCR) ---
+
+def test_la_constante_coincide_con_el_umbral_de_modalidad():
+    from app.modulos.motor_ia.proveedores.base import MIN_CARACTERES_TEXTO_POR_PAGINA
+    from app.modulos.orquestador.modalidad import UMBRAL_CARACTERES_POR_PAGINA
+    assert MIN_CARACTERES_TEXTO_POR_PAGINA == UMBRAL_CARACTERES_POR_PAGINA
+
+
+@pytest.mark.parametrize("modalidad", [Modalidad.pdf_escaneado, Modalidad.imagen])
+def test_escaneado_o_imagen_con_ocr_suficiente_usa_el_modelo_de_texto(modalidad):
+    falso = OllamaFalso(guardada("texto_gemma4_extraccion_pasaporte_ok"))
+    p = proveedor(falso)
+    r = p.extraer(documento(modalidad, texto=TEXTO_SUFICIENTE), esquema(), "PROMPT")
+    assert falso.chats[0]["model"] == "gemma4:e2b" and "images" not in falso.chats[0]["messages"][0]
+    assert [i.entrada for i in p.ultimas_llamadas] == ["texto"] and p.ultima_llamada.motivo is None
+    assert r.evidencia_por_campo["fecha_vencimiento"] == "pagina_1:Fecha de caducidad"  # con texto, con detalle
+
+
+def test_si_una_pagina_no_tiene_texto_suficiente_va_a_vision():
+    doc = documento(Modalidad.pdf_escaneado, n_paginas=2, texto=TEXTO_SUFICIENTE)
+    doc.paginas[1].texto = "PAGINA 2"  # menos de 30 caracteres
+    falso = OllamaFalso(guardada("vision_qwen_extraccion_foto_degradada"))
+    p = proveedor(falso)
+    p.extraer(doc, esquema(), "P")
+    assert falso.chats[0]["model"] == "qwen2.5vl:3b" and len(falso.chats[0]["messages"][0]["images"]) == 2
+    assert p.modelo_para(doc) == "qwen2.5vl:3b" and p.ultima_llamada.entrada == "vision"
+
+
+def test_clasificar_con_texto_suficiente_no_envia_imagenes():
+    falso = OllamaFalso(guardada("texto_gemma4_clasificacion_pasaporte"))
+    p = proveedor(falso)
+    p.clasificar(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), TIPOS, "P")
+    assert falso.chats[0]["model"] == "gemma4:e2b" and "images" not in falso.chats[0]["messages"][0]
+
+
+# --- Reintento con vision si la extraccion con texto sale muy incompleta (riesgo 2 del plan) ---
+
+def _texto_incompleto() -> dict:
+    # 3 de los 4 obligatorios del pasaporte a null; nacionalidad (opcional) con valor
+    datos = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": None, "fecha_nacimiento": None,
+             "fecha_vencimiento": None, "nacionalidad": "PAIS FICTICIO"}
+    return respuesta(json.dumps({"datos_extraidos": datos, "nivel_confianza_por_campo": {c: 0.9 for c in datos},
+                                 "evidencia_por_campo": {c: "pagina_1" for c in datos}}))
+
+
+def test_reintento_con_vision_si_faltan_la_mitad_o_mas_de_los_obligatorios():
+    vision = respuesta(json.dumps({
+        "datos_extraidos": {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": "X1234567P",
+                            "fecha_nacimiento": "01/01/1990", "fecha_vencimiento": "25/07/2031", "nacionalidad": None},
+        "nivel_confianza_por_campo": {"numero_pasaporte": 0.9},
+        "evidencia_por_campo": {"numero_pasaporte": "pagina_1"}}))
+    falso = OllamaFalso(_texto_incompleto(), vision)
+    p = proveedor(falso)
+    r = p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "PROMPT")
+    assert [c["model"] for c in falso.chats] == ["gemma4:e2b", "qwen2.5vl:3b"]
+    assert "images" not in falso.chats[0]["messages"][0] and len(falso.chats[1]["messages"][0]["images"]) == 1
+    assert r.datos_extraidos["numero_pasaporte"] == "X1234567P"      # manda la vision
+    assert r.datos_extraidos["fecha_vencimiento"] == "2031-07-25"
+    assert r.datos_extraidos["nacionalidad"] == "PAIS FICTICIO"      # el texto rellena lo que la vision deja vacio
+    assert [i.entrada for i in p.ultimas_llamadas] == ["texto", "vision"]
+    assert p.ultimas_llamadas[1].motivo == "reintento con vision: 3/4 campos obligatorios vacios con texto"
+    assert p.ultima_llamada.modelo == "qwen2.5vl:3b"
+
+
+def test_sin_reintento_si_falta_menos_de_la_mitad():
+    datos = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": "X1234567P",
+             "fecha_nacimiento": "1990-01-01", "fecha_vencimiento": None}
+    falso = OllamaFalso(respuesta(json.dumps({"datos_extraidos": datos, "nivel_confianza_por_campo": {},
+                                              "evidencia_por_campo": {}})))
+    p = proveedor(falso)
+    p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "P")
+    assert len(falso.chats) == 1 and [i.entrada for i in p.ultimas_llamadas] == ["texto"]
+
+
+def test_sin_reintento_si_no_hay_imagenes():
+    falso = OllamaFalso(_texto_incompleto())
+    p = proveedor(falso)
+    r = p.extraer(documento(Modalidad.pdf_digital, con_imagenes=False), esquema(), "P")
+    assert len(falso.chats) == 1 and r.datos_extraidos["numero_pasaporte"] is None
+
+
+def test_si_el_reintento_con_vision_falla_se_conserva_el_texto():
+    falso = OllamaFalso(_texto_incompleto(), 500)
+    p = proveedor(falso)
+    r = p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "P")
+    assert r.datos_extraidos["nombre_completo"] == "ANA EJEMPLO PRUEBA"
+    assert p.ultima_llamada.modelo == "gemma4:e2b"
+    motivo = p.ultimas_llamadas[-1].motivo
+    assert "fallo" in motivo and "se conserva el resultado con texto" in motivo

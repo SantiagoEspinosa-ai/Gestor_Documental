@@ -175,6 +175,18 @@ def test_campos_nulos_o_ausentes_y_valores_no_texto():
     assert set(r.datos_extraidos) == set(esquema("pasaporte"))
 
 
+@pytest.mark.parametrize("vacio", ["", " ", "   ", "\t\n", "  "])
+@pytest.mark.parametrize("tipo, campo", [("pasaporte", "nacionalidad"), ("pasaporte", "fecha_expedicion"),
+                                         ("credencial_elector", "vigencia")])
+def test_textos_vacios_o_solo_espacios_pasan_a_null(vacio, tipo, campo):
+    # Acordado con PERSONA_3: asi VAL-001 (obligatorio) y VAL-004 (opcional) los ven como ausentes.
+    r = postprocesar_extraccion(_respuesta({campo: vacio}, {campo: 0.9}, {campo: "pagina_1"}), esquema(tipo),
+                                Modalidad.pdf_digital, [1])
+    assert r.datos_extraidos[campo] is None
+    assert r.nivel_confianza_por_campo[campo] == 0.0
+    assert campo not in r.evidencia_por_campo
+
+
 @pytest.mark.parametrize("evidencia, esperada", [
     ("pagina_2", "pagina_6"),              # relativa a las imagenes del lote -> pagina real
     ("pagina_6:seccion_central", "pagina_6"),
@@ -246,3 +258,35 @@ def test_recortar_texto():
 
 def test_timeout_vision():
     assert timeout_vision(4) == 660 and timeout_vision(1) == 210 and timeout_vision(0) == 210
+
+
+# --- Regla de texto suficiente y reintento con vision ---
+
+def test_tiene_texto_suficiente():
+    from app.modulos.motor_ia.proveedores.base import tiene_texto_suficiente
+    suficiente = "X" * 30
+    assert tiene_texto_suficiente([Pagina(1, suficiente), Pagina(2, " ".join(suficiente))])
+    assert not tiene_texto_suficiente([Pagina(1, suficiente), Pagina(2, "X" * 29)])
+    assert not tiene_texto_suficiente([Pagina(1, None)]) and not tiene_texto_suficiente([])
+
+
+@pytest.mark.parametrize("vacios, reintento", [(0, False), (1, False), (2, True), (4, True)])
+def test_necesita_reintento_vision_con_la_mitad_o_mas_de_obligatorios_vacios(vacios, reintento):
+    from app.modulos.motor_ia.proveedores.base import necesita_reintento_vision, obligatorios_vacios
+    obligatorios = ["nombre_completo", "numero_pasaporte", "fecha_nacimiento", "fecha_vencimiento"]
+    datos = {c: (None if i < vacios else "valor") for i, c in enumerate(obligatorios)}
+    resultado = ResultadoExtraccion({**datos, "sexo": None}, {}, {})
+    assert obligatorios_vacios(resultado, esquema("pasaporte")) == (vacios, 4)
+    assert necesita_reintento_vision(resultado, esquema("pasaporte")) is reintento
+
+
+def test_combinar_texto_y_vision():
+    from app.modulos.motor_ia.proveedores.base import combinar_texto_y_vision
+    texto = ResultadoExtraccion({"a": "A-texto", "b": "B-texto", "c": None}, {"a": 0.9, "b": 0.8, "c": 0},
+                                {"a": "pagina_1:detalle", "b": "pagina_1"}, ["texto"])
+    vision = ResultadoExtraccion({"a": "A-vision", "b": None, "c": None}, {"a": 0.9, "b": 0, "c": 0},
+                                 {"a": "pagina_1"}, ["vision"])
+    r = combinar_texto_y_vision(texto, vision)
+    assert r.datos_extraidos == {"a": "A-vision", "b": "B-texto", "c": None}
+    assert r.evidencia_por_campo == {"a": "pagina_1", "b": "pagina_1"}
+    assert r.nivel_confianza_por_campo["b"] == 0.8 and r.observaciones_visuales == ["vision", "texto"]

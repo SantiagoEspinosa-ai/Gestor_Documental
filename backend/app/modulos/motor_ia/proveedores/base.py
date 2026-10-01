@@ -31,6 +31,13 @@ TIMEOUT_TEXTO_S = 120
 TIMEOUT_VISION_BASE_S = 60
 TIMEOUT_VISION_POR_PAGINA_S = 150
 KEEP_ALIVE = "10m"
+# Regla del enrutador (spec, seccion 3): modelo de texto si TODAS las paginas tienen al menos estos caracteres
+# de texto (capa del PDF u OCR), sin contar espacios; si no, vision. Mismo valor que
+# orquestador.modalidad.UMBRAL_CARACTERES_POR_PAGINA (un test lo comprueba).
+MIN_CARACTERES_TEXTO_POR_PAGINA = 30
+# Riesgo 2 del plan (OCR malo -> vision): si la extraccion con texto deja vacios al menos esta fraccion de
+# los campos obligatorios, se reintenta con vision.
+FRACCION_OBLIGATORIOS_VACIOS_REINTENTO = 0.5
 
 DESCONOCIDO = "desconocido"
 MARCA_RECORTE = "[texto recortado]"
@@ -59,6 +66,8 @@ class InfoLlamada:
     peticiones: int = 0
     reintentos: int = 0
     lotes: int = 1
+    entrada: str = ""            # "texto" (sin imagenes) o "vision"
+    motivo: str | None = None    # p. ej. por que se reintento con vision
 
 
 # --- Parseo estricto ---
@@ -186,6 +195,8 @@ def postprocesar_extraccion(respuesta: _Extraccion, esquema_campos: Mapping[str,
     for campo, definicion in esquema_campos.items():
         valor = respuesta.datos_extraidos.get(campo)
         if isinstance(valor, str):
+            # "" y los textos solo con espacios cuentan como ausentes (null): asi los ven VAL-001 y VAL-004
+            # (acordado con PERSONA_3).
             valor = valor.strip() or None
         confianza = _confianza(respuesta.nivel_confianza_por_campo.get(campo))
         if valor is None:
@@ -236,6 +247,39 @@ def combinar_lotes(resultados: list[ResultadoExtraccion]) -> ResultadoExtraccion
         datos[campo] = elegido.datos_extraidos.get(campo)
         confianzas[campo] = elegido.nivel_confianza_por_campo.get(campo, 0.0)
     observaciones = list(dict.fromkeys(o for r in resultados for o in r.observaciones_visuales))
+    return ResultadoExtraccion(datos, confianzas, evidencias, observaciones)
+
+
+def tiene_texto_suficiente(paginas: list[Pagina], minimo: int = MIN_CARACTERES_TEXTO_POR_PAGINA) -> bool:
+    """True si hay paginas y todas tienen al menos `minimo` caracteres de texto, sin contar espacios."""
+    return bool(paginas) and all(len("".join((p.texto or "").split())) >= minimo for p in paginas)
+
+
+def obligatorios_vacios(resultado: ResultadoExtraccion, esquema_campos: Mapping[str, Any]) -> tuple[int, int]:
+    """(campos obligatorios a null, campos obligatorios) de la ficha."""
+    obligatorios = [c for c, d in esquema_campos.items()
+                    if (d.get("obligatorio") if isinstance(d, Mapping) else getattr(d, "obligatorio", False))]
+    return sum(resultado.datos_extraidos.get(c) is None for c in obligatorios), len(obligatorios)
+
+
+def necesita_reintento_vision(resultado: ResultadoExtraccion, esquema_campos: Mapping[str, Any]) -> bool:
+    vacios, total = obligatorios_vacios(resultado, esquema_campos)
+    return total > 0 and vacios >= FRACCION_OBLIGATORIOS_VACIOS_REINTENTO * total
+
+
+def combinar_texto_y_vision(texto: ResultadoExtraccion, vision: ResultadoExtraccion) -> ResultadoExtraccion:
+    """Tras el reintento con vision: manda la vision; el texto solo rellena los campos que la vision dejo a null."""
+    datos, confianzas = dict(vision.datos_extraidos), dict(vision.nivel_confianza_por_campo)
+    evidencias = dict(vision.evidencia_por_campo)
+    for campo, valor in texto.datos_extraidos.items():
+        if datos.get(campo) is None and valor is not None:
+            datos[campo] = valor
+            confianzas[campo] = texto.nivel_confianza_por_campo.get(campo, 0.0)
+            if campo in texto.evidencia_por_campo:
+                evidencias[campo] = texto.evidencia_por_campo[campo]
+            else:
+                evidencias.pop(campo, None)
+    observaciones = list(dict.fromkeys([*vision.observaciones_visuales, *texto.observaciones_visuales]))
     return ResultadoExtraccion(datos, confianzas, evidencias, observaciones)
 
 

@@ -77,9 +77,11 @@ class _Contexto:
                                        confianza=CONFIANZA_ALERTA_DETERMINISTA, campo=campo))
 
     def registrar(self, proveedor: ProveedorLLM) -> None:
-        info = getattr(proveedor, "ultima_llamada", None)
-        if info is not None and not any(info is x for x in self.llamadas):
-            self.llamadas.append(info)
+        """Todas las llamadas de la ultima operacion (con reintento de vision son dos)."""
+        infos = getattr(proveedor, "ultimas_llamadas", None) or [getattr(proveedor, "ultima_llamada", None)]
+        for info in infos:
+            if info is not None and not any(info is x for x in self.llamadas):
+                self.llamadas.append(info)
 
     def con_respaldo(self, tarea: Tarea, tipo: str | None, llamada: Callable[[ProveedorLLM], T]) -> tuple[T, ProveedorLLM]:
         """Principal y, si falla (tambien por JSON invalido), el respaldo. SYS-005 si se usa el respaldo."""

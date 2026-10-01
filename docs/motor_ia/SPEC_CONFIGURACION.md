@@ -67,10 +67,26 @@ Modelos descartados:
 
 ## 3. Regla del enrutador
 
-Regla: **modelo de texto si `doc.modalidad == pdf_digital`; modelo de vision en el resto.**
-Se aplica a clasificacion y a extraccion. Se decide sin ADR: `Enrutador.obtener(tarea, tipo)`
-(Contrato 3) devuelve el proveedor configurado y el proveedor elige su modelo de texto o de vision
-segun `DocumentoPreparado.modalidad`. Documentado en `backend/app/modulos/motor_ia/README.md`.
+Regla (decidida el 2026-10-01, sustituye a "texto si `pdf_digital`"): **modelo de texto, sin imagenes, si
+TODAS las paginas tienen al menos 30 caracteres de texto (capa del PDF u OCR), sin contar espacios; modelo de
+vision si alguna no llega.** Se aplica a clasificacion y a extraccion, sea cual sea la modalidad.
+`MIN_CARACTERES_TEXTO_POR_PAGINA = 30` en `proveedores/base.py`, igual que
+`UMBRAL_CARACTERES_POR_PAGINA` de `modalidad.py` (un test lo comprueba).
+
+**Reintento con vision** (mitigacion del riesgo 2 de `PLAN_PROYECTO.md`: fotos con OCR malo -> vision): si la
+extraccion con texto deja a `null` **la mitad o mas de los campos obligatorios** de la ficha
+(`FRACCION_OBLIGATORIOS_VACIOS_REINTENTO = 0.5`) y el documento tiene imagenes, se repite la extraccion con
+vision. Manda el resultado de vision; el de texto solo rellena los campos que la vision deja a `null`. Si el
+reintento falla, se conserva el resultado con texto. La clasificacion no se reintenta.
+
+Registro: cada llamada (`InfoLlamada`) lleva `entrada` (`texto` o `vision`) y `motivo`; con reintento hay dos
+llamadas en la misma extraccion (`OllamaProvider.ultimas_llamadas`) y el servicio registra las dos en
+`Analisis.llamadas`. El motivo queda como `reintento con vision: 3/4 campos obligatorios vacios con texto`.
+`fecha_y_modelo_utilizado.modelo` es el de la ultima llamada (la de vision si hubo reintento).
+
+Se decide sin ADR: `Enrutador.obtener(tarea, tipo)` (Contrato 3) devuelve el proveedor configurado y el
+proveedor elige su modelo (`OllamaProvider.modelo_para`, `usa_texto`). Datos: `pruebas_ollama.md`,
+"Alternativas para documentos sin capa de texto". Documentado en `backend/app/modulos/motor_ia/README.md`.
 
 Enrutador (`motor_ia/enrutador.py`, implementado):
 
@@ -86,9 +102,11 @@ Enrutador (`motor_ia/enrutador.py`, implementado):
 
 | Modalidad | Que prepara el orquestador | Modelo | Que se envia al modelo |
 |---|---|---|---|
-| `pdf_digital` | Texto por pagina (PyMuPDF) + PNG a 150 dpi | texto: `gemma4:e2b` | Solo el texto, en `{{ contenido }}`. Los PNG no se envian |
-| `pdf_escaneado` | PNG a 200 dpi; por pagina, capa de texto si supera el umbral (PDF mixto) y OCR si no | vision: `qwen2.5vl:3b` | Imagenes reducidas a 1000 px de ancho + texto OCR en `{{ contenido }}` (ver pendiente OCR frente a vision) |
-| `imagen` | La propia imagen, orientada segun EXIF y en PNG, + OCR | vision: `qwen2.5vl:3b` | Igual que `pdf_escaneado` |
+| Modalidad | Que prepara el orquestador | Modelo habitual | Cuando va a vision |
+|---|---|---|---|
+| `pdf_digital` | Texto por pagina (PyMuPDF) + PNG a 150 dpi | texto `gemma4:e2b` (todas las paginas superan el umbral por definicion) | Solo como reintento si la extraccion sale muy incompleta |
+| `pdf_escaneado` | PNG a 200 dpi; por pagina, capa de texto si supera el umbral (PDF mixto) y OCR si no | texto `gemma4:e2b` con el texto OCR, si todas las paginas lo superan | Alguna pagina sin texto suficiente (p. ej. sin Tesseract) o reintento: `qwen2.5vl:3b` con las imagenes a 1000 px + el texto en `{{ contenido }}` |
+| `imagen` | La propia imagen, orientada segun EXIF y en PNG, + OCR | igual que `pdf_escaneado` | igual que `pdf_escaneado` |
 
 Respaldo: si el proveedor principal falla, se usa el `respaldo` de `modelos.yaml` (OpenRouter
 gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estado_analisis=error` +
@@ -101,11 +119,11 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Fechas | El prompt pide las fechas **tal como aparecen**; el codigo las normaliza con `normalizar_fecha` (dia/mes/anio -> `AAAA-MM-DD`, separadores `/ . -` y espacio; ISO valido se deja igual; fecha imposible -> `None`) | Al convertirlas, `qwen2.5vl:3b` intercambia dia y mes (`10/05/2024` -> `2024-10-05`). Sin convertir: 3/3 correctas en 4 de 4 | `motor_ia/proveedores/base.py` (tarea 7). Referencia: `pruebas_ollama/prueba_fechas.py` | unitario con los 11 casos del autotest |
 | Tamano de imagen | `ANCHO_MAX_IMAGEN = 1000`: `reducir_imagen` antes de enviar; solo reduce y mantiene la proporcion | Sube los aciertos de 5/7 a 6/7 y ahorra ~20 % de tiempo; 800 px no mejora | `proveedores/base.py` | unitario |
 | Lotes de vision | `MAX_PAGINAS_POR_LLAMADA_VISION = 4`. Con mas paginas no se ignora ninguna: se procesan por lotes de 4 y se combinan (`combinar_lotes`). Por campo, el valor no nulo con evidencia valida; ante empate, el de la pagina mas baja; si ningun lote tiene evidencia valida, el primer valor no nulo. La clasificacion solo usa el primer lote. En un lote, `pagina_1..k` relativa a las imagenes enviadas se traduce a la pagina real | Cada pagina A4 a 1000 px suma ~1 850 tokens y ~130 s en CPU | `proveedores/base.py`, `proveedores/ollama.py` | unitario con Ollama simulado |
-| Contexto | `NUM_CTX = 16384`. Medido (`pruebas_ollama/prueba_num_ctx.py`): 1 pagina A4 + prompt = 2 457 tokens; 4 paginas + prompt + 20 000 caracteres = 13 476; con `NUM_PREDICT` quedan ~2 100 de margen (13 %) | Si no se fija, Ollama usa un contexto menor y recorta la entrada sin avisar | `proveedores/base.py` | unitario del cuerpo de la peticion |
+| Contexto | `NUM_CTX = 16384`. Medido (`pruebas_ollama/prueba_num_ctx.py`): 1 pagina A4 + prompt = 2 457 tokens; 4 paginas + prompt + 20 000 caracteres = 13 476; con `NUM_PREDICT` quedan ~2 100 de margen (13 %) | Si no se fija, Ollama usa un contexto menor y recorta la entrada sin avisar. **Se mantiene fijo** (2026-10-01): bajarlo a 8192 solo ahorra ~0,3 GB del modelo y ~0,1 GB de consumo real, y la vision pasa a ser el caso poco frecuente | `proveedores/base.py` | unitario del cuerpo de la peticion |
 | Timeouts | Texto: 120 s. Vision: 60 s + 150 s por imagen (4 imagenes -> 660 s). El reintento de correccion, sin imagenes, usa el de texto | Medido: 4 paginas = 499 s solo de lectura del prompt; un timeout fijo de 300 s fallaria siempre | `proveedores/base.py` (`timeout_vision`) | unitario |
 | Texto largo | `MAX_CARACTERES_TEXTO = 20000`: `recortar_texto` respeta el orden de las paginas y marca `[texto recortado]`. Si se recorta, alerta **`SYS-003`** (preventiva): "El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido". En el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main` | Mantener el prompt dentro de `NUM_CTX` | `proveedores/base.py`; la alerta, en `motor_ia/servicio.py` (tarea 9) | unitario |
 | Evidencia | Valida: `pagina_<n>[:detalle]` de una pagina del documento. En vision solo `pagina_<n>`; en texto se conserva el detalle (p. ej. `pagina_1:Fecha de caducidad`). Si es invalida, se quita: el Contrato 1 no admite valores nulos | `qwen2.5vl:3b` copia la seccion del ejemplo o devuelve `seccion_superior` sin pagina | `proveedores/base.py` | unitario con respuestas guardadas |
-| Campos y tipos | Solo se conservan los campos de la ficha (`qwen` anadio `tipo` y `pais_emisor`); un campo ausente queda `null` con confianza 0. `anio` de 4 cifras -> entero; si no, texto original con confianza 0. Los valores que no son texto se convierten a texto | La regla `anio_mayor_o_igual_actual` compara numeros | `proveedores/base.py` | unitario |
+| Campos y tipos | Solo se conservan los campos de la ficha (`qwen` anadio `tipo` y `pais_emisor`); un campo ausente queda `null` con confianza 0. **`""` y los textos solo con espacios (incluidos tabuladores, saltos de linea y espacio duro) pasan a `null`** con confianza 0 y sin evidencia, en cualquier tipo de campo, para que `VAL-001` y `VAL-004` los vean como ausentes (acordado con PERSONA_3). `anio` de 4 cifras -> entero; si no, texto original con confianza 0. Los valores que no son texto se convierten a texto | La regla `anio_mayor_o_igual_actual` compara numeros | `proveedores/base.py` | unitario |
 | Fecha no normalizable | Se conserva el texto original con confianza 0 (p. ej. `"mayo 2034"`). **Las reglas de fecha de la etapa 2 deben tratarlo como fecha invalida y generar una alerta, sin fallar** | Que el revisor vea el dato y no salte un falso `VAL-001` (obligatorio ausente) | `proveedores/base.py`; reglas en `validacion/reglas.py` (etapa 2) | unitario |
 | Clasificacion fuera de la lista | Un tipo que no esta entre los posibles pasa a `desconocido` con confianza 0; se ignoran mayusculas y espacios | El modelo puede inventar tipos | `proveedores/base.py` | unitario |
 | Confianza del modelo | **No se usa en las reglas.** ADR-007 **aceptado** (2026-09-30): `nivel_confianza_por_campo` y `confianza_clasificacion` las calcula el codigo y la del modelo va solo a la auditoria | Siempre 0,9 o 1, tambien en datos mal leidos o inventados | `motor_ia` y `validacion/reglas.py` (etapa 2) | unitario |
@@ -169,8 +187,8 @@ se queda solo con `pagina_<n>` (seccion 4).
       32 GB de RAM y mas nucleos.
 - [ ] **Instalar Tesseract** (`spa+eng`) en Windows; puede necesitar a TI. Plan B: OCR dentro del
       contenedor del backend.
-- [ ] **OCR + texto frente a vision** para `pdf_escaneado` e `imagen`: comparar aciertos y tiempo
-      (Tesseract + `gemma4:e2b` frente a `qwen2.5vl:3b`) cuando haya Tesseract.
+- [x] **OCR + texto frente a vision** medido el 2026-10-01 en el contenedor: OCR + `gemma4:e2b` 7/7 en ~68 s;
+      `qwen2.5vl:3b` 6/7 en ~130 s. Regla nueva del enrutador (seccion 3).
 - [ ] **Probar credencial de elector y comprobante de domicilio**: solo se ha probado el pasaporte.
 - [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
       scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
@@ -207,9 +225,9 @@ se queda solo con `pagina_<n>` (seccion 4).
       PERSONA_2 lo revisa.
 - [ ] `NUM_CTX` con documentos reales: el margen medido es del 13 %; revisarlo si hay paginas mas altas que
       A4 (p. ej. oficio) o texto que tokenice peor que el de relleno usado en la medida.
-- [ ] **Ejecutar el CLI con vision** (`pasaporte_sano_escaneado.pdf` y `pasaporte_sano_foto.jpg`) cuando haya RAM
-      (margen de 6,5 GB libres; faltaron 0,25 GB el 2026-09-30) o la maquina con GPU. El digital salio 7/7
-      (`pruebas_ollama.md`, "Ejecucion del CLI").
+- [x] **Vision con los fixtures escaneado y foto**: ejecutada el 2026-10-01 con `analizar()` (alternativa B,
+      `qwen2.5vl:3b`): 6/7 en ambos; para 1 pagina bastan ~5,8 GB libres. Con la regla nueva, esos fixtures van
+      a texto con OCR (7/7).
 - [ ] **Mejorar la evidencia del prompt de extraccion** (etapa 2): en la ejecucion real, `gemma4:e2b` devolvio
       `pagina_1:seccion_central` en los 7 campos; es valida, pero no dice donde esta cada dato.
 - [ ] Riesgo: la confianza que da el modelo no es fiable (0,9-1 incluso en datos inventados).
@@ -330,7 +348,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | este commit |
+| 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | este commit |
+| 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | `5f6292d` |
 | 2026-09-30 | Ejecucion real del CLI (entregable de la etapa 1): `pasaporte_sano_digital.pdf` 7/7 en 68 s con `gemma4:e2b`; vision pendiente por RAM (faltaron 0,25 GB). Pendientes: CLI con vision y mejorar la evidencia del prompt | `3dfb54a` |
 | 2026-09-30 | `motor_ia/cli.py` (seccion 12): JSON por stdout y resumen por stderr, salidas 0/1/2, `local://` + SHA-256, `.env` con `python-dotenv` (anadido a `requirements.txt`), ruta desde la raiz del repo, `--tipo-confirmado` (11 tests). PR de `.env.example` subido en `chore/env-example` | `e5e8c5a` |
 | 2026-09-30 | Seccion 11: acuerdo con PERSONA_1 para la etapa 2 (`procesar_documento`, `datos_auditoria`, errores, reparto de alertas y recomendaciones) y propuesta para evitar la importacion circular: dependencia `orquestador -> motor_ia`, con la MRZ en `orquestador` | `39bf63f` |

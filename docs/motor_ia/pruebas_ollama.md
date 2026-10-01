@@ -101,6 +101,41 @@ una y otra y con el vigilante de RAM (aborta por debajo de 1 GB).
 - Vision: pendiente de ejecutar cuando haya RAM suficiente (`qwen2.5vl:3b` consume ~5 GB) o la maquina con GPU.
   No se lanzo con el margen reducido.
 
+## Alternativas para documentos sin capa de texto (2026-10-01)
+
+`pasaporte_sano_escaneado.pdf` y `pasaporte_sano_foto.jpg` (fixtures de PERSONA_3, datos ficticios), con
+`preparar()` + `analizar()` en el contenedor del backend contra el Ollama del equipo. Un modelo cada vez,
+descargando los modelos entre casos y con el vigilante de RAM (aborta por debajo de 1 GB).
+
+- **A**: OCR (Tesseract en el contenedor) + modelo de texto `gemma4:e2b`, sin imagenes.
+- **B**: `qwen2.5vl:3b` (vision) con `num_ctx = 8192`.
+
+| Alternativa | Fichero | Campos correctos (`INDICE.md`) | Tiempo total | RAM libre minima | Detalle |
+|---|---|---|---|---|---|
+| **A** | escaneado | **7/7** | **70 s** | **3,17 GB** | OCR 1,9 s + clasificacion 28 s + extraccion 40 s |
+| **A** | foto | **7/7** | **66 s** | **3,55 GB** | OCR 0,8 s + 27 s + 38 s |
+| B | escaneado | 6/7 | 135 s | 2,24 GB | clasificacion 91 s + extraccion 42 s; falta `fecha_expedicion` |
+| B | foto | 6/7 | 123 s | 2,17 GB | 81 s + 41 s; falta `fecha_expedicion` |
+
+RAM de `qwen2.5vl:3b` segun `num_ctx` (1 pagina, `num_predict=1`):
+
+| `num_ctx` | Tamano del modelo en Ollama | RAM consumida | RAM libre minima |
+|---|---|---|---|
+| 16384 | 3,50 GB | 4,39 GB | 1,92 GB |
+| 8192 | 3,21 GB | 4,27 GB | 2,22 GB |
+
+Conclusiones:
+- Con texto OCR suficiente (~310 caracteres por pagina en estos fixtures), el modelo de texto acierta mas y
+  tarda la mitad que la vision. Regla nueva del enrutador: texto si todas las paginas tienen >= 30 caracteres
+  (capa del PDF u OCR); vision si no, o como reintento si la extraccion con texto sale muy incompleta
+  (`SPEC_CONFIGURACION.md`, seccion 3).
+- Bajar `num_ctx` a 8192 apenas ahorra RAM: se mantiene fijo a 16384.
+- El margen de 6,5 GB que impidio la vision el 2026-09-30 era conservador: para 1 pagina bastan ~5,8 GB.
+- La evidencia de A vuelve a ser `pagina_1:seccion_central` en todos los campos (pendiente de mejorar).
+
+Resultados: `pruebas_ollama/resultados/alternativas_vision/` (`A_*.json` y `B_*.json` con la medida y el
+`ResultadoDocumento`; `ram_num_ctx.json`).
+
 ## Fallo de gemma4 con imagenes en Windows
 
 `gemma4` anuncia vision, pero en Ollama para Windows no procesa las imagenes: el codificador recibe

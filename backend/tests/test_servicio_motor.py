@@ -241,3 +241,23 @@ def test_sexo_leido_no_se_sustituye_por_la_mrz():
     doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, MRZ)], "pasaporte")
     analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": "M"}), doc=doc)
     assert analisis.resultado.datos_extraidos["sexo"] == "M" and codigos(analisis.resultado) == []
+
+
+def test_registra_todas_las_llamadas_de_una_operacion():
+    # Con reintento de vision, el proveedor hace dos llamadas en una sola extraccion: se registran las dos.
+    class ProveedorConReintento(ProveedorFalso):
+        def clasificar(self, doc, tipos_posibles, prompt):
+            self.ultimas_llamadas = []
+            return super().clasificar(doc, tipos_posibles, prompt)
+
+        def extraer(self, doc, esquema_campos, prompt):
+            resultado = super().extraer(doc, esquema_campos, prompt)
+            texto = InfoLlamada(proveedor="ollama", modelo="texto-real", entrada="texto")
+            vision = InfoLlamada(proveedor="ollama", modelo="vision-real", entrada="vision",
+                                 motivo="reintento con vision")
+            self.ultimas_llamadas, self.ultima_llamada = [texto, vision], vision
+            return resultado
+
+    analisis, _ = ejecutar(ProveedorConReintento("ollama"))
+    assert [(i.modelo, i.entrada) for i in analisis.llamadas][-2:] == [("texto-real", "texto"), ("vision-real", "vision")]
+    assert analisis.resultado.fecha_y_modelo_utilizado.modelo == "vision-real"
