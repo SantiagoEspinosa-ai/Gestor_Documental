@@ -212,9 +212,9 @@ def test_pendientes_de_main_avisa_si_no_puede_leer(fuente, mensaje):
 
 
 def test_pendientes_de_main_lee_el_codigos_ts_actual():
-    # Hoy siguen pendientes DOCUMENTO_CON_ERROR (se mueve cuando el PR #9 este en main) y EXP-002
+    # Desde el PR #9 (DOCUMENTO_CON_ERROR y EXP-002 ya en los catalogos) no queda ningun pendiente
     errores, alertas = pendientes_de_main()
-    assert set(errores) <= {"DOCUMENTO_CON_ERROR"} and set(alertas) <= {"EXP-002"}
+    assert (errores, alertas) == ({}, {})
 
 
 def test_acciones_de_auditoria_iguales_que_endpoints_md():

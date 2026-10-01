@@ -17,6 +17,7 @@ export const ESTADO_HTTP_POR_ERROR = {
   METODO_NO_PERMITIDO: 405,
   DECISION_BLOQUEADA: 409,
   DOCUMENTO_EN_PROCESO: 409,
+  DOCUMENTO_CON_ERROR: 409, // PR #9: corregir datos o confirmar la clasificacion de un documento en error
   FOLIO_CERRADO: 409,
   SECUENCIA_AGOTADA: 409,
   ARCHIVO_DEMASIADO_GRANDE: 413,
@@ -30,16 +31,11 @@ export const ESTADO_HTTP_POR_ERROR = {
  * Se permiten en el frontend y en los mocks mientras tanto. Cuando entren en
  * docs/contratos/codigos_error.md o codigos_alertas.md, se pasan a ESTADO_HTTP_POR_ERROR o a ALERTAS
  * y se quitan de aqui: backend/tests/test_contrato_frontend.py falla para recordarlo.
- * La lista debe quedar vacia.
+ * La lista debe quedar vacia. Vacia desde el PR #9 (DOCUMENTO_CON_ERROR y EXP-002 ya son oficiales).
  */
 export const CODIGOS_PENDIENTES_DE_MAIN = {
-  errores: {
-    DOCUMENTO_CON_ERROR: 409, // corregir datos o confirmar la clasificacion de un documento en error
-  },
-  alertas: {
-    // Definida por PERSONA_1 en el PR #9; pasa a ALERTAS cuando el #9 este en main
-    'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Documento de un tipo que el proceso no pide (alertas_encontradas del documento, campo = tipo)' },
-  },
+  errores: {},
+  alertas: {},
 } as const satisfies {
   errores: Record<string, number>
   alertas: Record<string, { emisor: string; severidad: Severidad; cuando: string }>
@@ -66,6 +62,7 @@ export const ALERTAS = {
   'DUP-001': { emisor: 'ingesta', severidad: 'critica', cuando: 'Mismo SHA-256 ya presente en el folio (no bloquea la subida)' },
   'CMP-001': { emisor: 'validacion', severidad: 'critica', cuando: 'Un campo comparado no coincide entre documentos (va en alertas_expediente)' },
   'EXP-001': { emisor: 'expediente', severidad: 'bloqueante', cuando: 'Falta un tipo requerido del proceso (va en alertas_expediente)' },
+  'EXP-002': { emisor: 'expediente', severidad: 'informativa', cuando: 'Documento de un tipo que el proceso no pide (ni requerido ni opcional); va en alertas_encontradas del documento, con campo = tipo' },
   'SYS-001': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Fallo del proveedor principal y sin respaldo; estado_analisis=error' },
   'SYS-002': { emisor: 'motor_ia', severidad: 'critica', cuando: 'JSON del modelo invalido tras el reintento de correccion' },
   'SYS-003': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Texto recortado por MAX_CARACTERES_TEXTO; pueden faltar campos de las paginas finales' },
