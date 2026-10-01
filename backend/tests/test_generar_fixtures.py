@@ -201,13 +201,36 @@ def test_codigos_reg_coinciden_con_el_catalogo(fichas):
 
 # ---------------------------------------------------------------- ficheros generados
 
+ARCHIVOS_DIFICULTAD = {f"{t}_sano_{m}_{n}{ext}" for t in TIPOS for m, ext in (("escaneado", ".pdf"), ("foto", ".jpg"))
+                       for n in ("dificil", "extremo")}
+
+
 def test_se_generan_todos_los_ficheros(generado):
     salida, hashes = generado
     esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
     esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
-    assert set(hashes) == esperados and len(esperados) == 30
-    assert all((salida / nombre).is_file() for nombre in esperados)
+    assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12
+    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD
+    assert all((salida / nombre).is_file() for nombre in hashes)
     assert (salida / "INDICE.md").is_file()
+
+
+def test_nombre_archivo_con_nivel():
+    assert gf.nombre_archivo("pasaporte", "sano", "foto", "dificil") == "pasaporte_sano_foto_dificil.jpg"
+    assert gf.nombre_archivo("pasaporte", "sano", "foto") == gf.nombre_archivo("pasaporte", "sano", "foto", "normal") \
+        == "pasaporte_sano_foto.jpg"
+
+
+def test_sha256_de_los_fixtures_existentes_sin_cambios(generado):
+    # Los niveles de dificultad no deben cambiar ni un byte de los 30 de antes: de ellos dependen
+    # frontend/public/mock-originales y los SHA-256 de los mocks (scripts/generar_datos_mock.py)
+    _, hashes = generado
+    referencia = dict(reversed(linea.split()) for linea in
+                      (Path(__file__).parent / "sha256_fixtures_existentes.txt").read_text(encoding="utf-8").splitlines()
+                      if linea and not linea.startswith("#"))
+    assert len(referencia) == 30
+    assert {nombre: hashes[nombre] for nombre in referencia} == referencia, \
+        "Ha cambiado un fixture existente (o la version de PyMuPDF o Pillow; ver la cabecera del fichero)"
 
 
 def test_capa_de_texto_de_los_digitales(generado):
@@ -219,12 +242,42 @@ def test_capa_de_texto_de_los_digitales(generado):
 
 def test_escaneados_sin_capa_de_texto(generado):
     salida, _ = generado
-    for caso in gf.CASOS:
-        for tipo in TIPOS:
-            with pymupdf.open(salida / gf.nombre_archivo(tipo, caso, "escaneado")) as doc:
-                assert doc.page_count == 1
-                assert doc[0].get_text() == ""
-                assert len(doc[0].get_images()) == 1
+    escaneados = [gf.nombre_archivo(t, c, "escaneado") for c in gf.CASOS for t in TIPOS]
+    escaneados += [a for a in ARCHIVOS_DIFICULTAD if "_escaneado_" in a]
+    assert len(escaneados) == 15
+    for archivo in escaneados:
+        with pymupdf.open(salida / archivo) as doc:
+            assert doc.page_count == 1
+            assert doc[0].get_text() == "", archivo
+            assert len(doc[0].get_images()) == 1
+
+
+def test_escaneado_extremo_tiene_menos_resolucion_y_el_mismo_tamano_de_pagina(generado):
+    salida, _ = generado
+    with pymupdf.open(salida / "pasaporte_sano_escaneado.pdf") as normal, \
+            pymupdf.open(salida / "pasaporte_sano_escaneado_extremo.pdf") as extremo:
+        ancho_normal = normal[0].get_images()[0][2]
+        ancho_extremo = extremo[0].get_images()[0][2]
+        assert ancho_extremo < ancho_normal * 0.6  # 105 dpi frente a 200
+        # el documento mide lo mismo; la pagina algo mas por la rotacion mayor (expand=True)
+        assert normal[0].rect.width <= extremo[0].rect.width < normal[0].rect.width * 1.1
+
+
+def test_fotos_de_dificultad_son_jpg_rgb_sin_exif(generado):
+    salida, _ = generado
+    for archivo in (a for a in ARCHIVOS_DIFICULTAD if "_foto_" in a):
+        with Image.open(salida / archivo) as foto:
+            assert foto.format == "JPEG" and foto.mode == "RGB" and "exif" not in foto.info
+
+
+def test_parametros_por_nivel_degradan_cada_vez_mas():
+    for modalidad, niveles in gf.PARAMETROS.items():
+        normal, dificil, extremo = (niveles[n] for n in ("normal", "dificil", "extremo"))
+        assert normal["dpi"] >= dificil["dpi"] > extremo["dpi"], modalidad
+        assert normal["ruido"] < dificil["ruido"] < extremo["ruido"], modalidad
+        assert normal["calidad"] > dificil["calidad"] > extremo["calidad"], modalidad
+        assert dificil["rotacion"][1] < extremo["rotacion"][0], modalidad
+    assert gf.PARAMETROS["foto"]["dificil"]["perspectiva"] == (0.08, 0.10)
 
 
 def test_fotos_son_jpg_rgb_sin_exif(generado):
@@ -255,11 +308,37 @@ def test_indice_contiene_fecha_valores_y_alertas(generado):
     assert "Alertas esperadas: ninguna." in indice.split("### Folio `sano`")[1].split("### Folio")[0]
 
 
+def test_indice_seccion_fixtures_de_dificultad(generado):
+    salida, hashes = generado
+    seccion = (salida / "INDICE.md").read_text(encoding="utf-8").split("## Fixtures de dificultad")[1]
+    for archivo in ARCHIVOS_DIFICULTAD:
+        fila = next(l for l in seccion.splitlines() if l.startswith(f"| `{archivo}` |"))
+        nivel = "dificil" if "_dificil." in archivo else "extremo"
+        assert f"| {nivel} |" in fila and "dpi" in fila and "rotacion" in fila and "JPEG" in fila
+        assert hashes[archivo][:16] in fila
+    assert "perspectiva" in next(l for l in seccion.splitlines() if "pasaporte_sano_foto_dificil.jpg" in l)
+    # valores esperados: los del caso sano
+    sano = gf.valores_documento("pasaporte", gf.PERSONAS_FICTICIAS[0], "sano", HOY)
+    assert "### Valores esperados: pasaporte" in seccion
+    assert f"| `numero_pasaporte` | {sano['numero_pasaporte']} |" in seccion
+    assert f"| `fecha_vencimiento` | {sano['fecha_vencimiento'].isoformat()} |" in seccion
+
+
 def test_determinismo_byte_a_byte_con_el_mismo_hoy(generado, tmp_path):
     salida, hashes = generado
     otra = gf.generar(HOY, tmp_path)  # incluye PDF escaneados y JPG
     assert otra == hashes
     assert (tmp_path / "INDICE.md").read_bytes() == (salida / "INDICE.md").read_bytes()
+    # Los de dificultad tambien, y cada uno con su semilla (derivada del nombre): ninguno coincide
+    # con otro ni con su version normal
+    assert {a: otra[a] for a in ARCHIVOS_DIFICULTAD} == {a: hashes[a] for a in ARCHIVOS_DIFICULTAD}
+    assert len({hashes[a] for a in ARCHIVOS_DIFICULTAD}) == 12
+    assert not {hashes[a] for a in ARCHIVOS_DIFICULTAD} & {hashes[a] for a in hashes if a not in ARCHIVOS_DIFICULTAD}
+
+
+def test_semilla_derivada_del_nombre():
+    assert gf.rng_para("pasaporte_sano_foto_dificil.jpg").random() == gf.rng_para("pasaporte_sano_foto_dificil.jpg").random()
+    assert gf.rng_para("pasaporte_sano_foto_dificil.jpg").random() != gf.rng_para("pasaporte_sano_foto_extremo.jpg").random()
 
 
 def test_otro_hoy_cambia_los_ficheros(generado, tmp_path):

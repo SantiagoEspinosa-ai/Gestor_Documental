@@ -27,9 +27,31 @@ Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segun
 - `_escaneado.pdf`: imagen a 200 dpi en gris, con ruido y rotacion ligera, sin capa de texto.
 - `_foto.jpg`: foto simulada con perspectiva, sombra y luz desigual.
 
+## Niveles de dificultad
+Para que PERSONA_2 decida cuando el motor pasa del OCR al modelo de vision, el caso `sano` de los
+3 tipos tiene ademas escaneado y foto en dos niveles mas degradados (12 ficheros):
+
+| Nivel | Escaneado | Foto | OCR esperado |
+|---|---|---|---|
+| `normal` (sin sufijo) | 200 dpi, rotacion 0,4-1,2 grados, ruido 0,06, JPEG 80 | 150 dpi, perspectiva 3-6 %, JPEG 88 | ~100 % de los campos |
+| `dificil` | 150 dpi, rotacion 2-3 grados, ruido 0,18, desenfoque 1,1 px, JPEG 40 | 130 dpi, perspectiva 8-10 %, rotacion 2-3 grados, ruido 0,18, desenfoque 1,3 px, JPEG 40 | 50-80 % |
+| `extremo` | 105 dpi, rotacion 4-6 grados, ruido 0,22, desenfoque 1,3 px, JPEG 30 | 115 dpi, perspectiva 12-15 %, rotacion 4-6 grados, ruido 0,21, desenfoque 1,45 px, JPEG 30 | < 30 %, pero legible para una persona |
+
+- Valores esperados: los del caso `sano`. `INDICE.md` los repite en "Fixtures de dificultad", con los
+  parametros aplicados a cada fichero (angulo y perspectiva concretos) y su SHA-256.
+- No forman parte de ningun folio de prueba ni de los mocks.
+- Los parametros (`PARAMETROS` en el generador) se ajustaron con `verificar_ocr_fixtures.py`. El OCR
+  cae de golpe al bajar la resolucion: en la foto extrema, 115 dpi da 12 % y 118 dpi da 0 %. Tras
+  tocarlos, vuelve a verificar.
+- El nivel `normal` no cambia: sus SHA-256 estan fijados en
+  `backend/tests/sha256_fixtures_existentes.txt`, porque de ellos dependen
+  `frontend/public/mock-originales` y los mocks.
+
 ## Nombres
 `{tipo}_{caso}_{modalidad}.{pdf|jpg}`, con `tipo` = `pasaporte`, `credencial_elector` o
 `comprobante_domicilio`. Ejemplo: `pasaporte_vencido_escaneado.pdf`.
+Niveles de dificultad: `{tipo}_sano_{modalidad}_{nivel}.{pdf|jpg}`, por ejemplo
+`pasaporte_sano_foto_dificil.jpg`.
 
 ## INDICE.md
 `fixtures/generados/INDICE.md` es la verdad de referencia para los tests: archivos y SHA-256, valores
@@ -45,6 +67,7 @@ severidad y si van en el documento o en `alertas_expediente`:
 | `falta_requerido` | pasaporte y credencial de `sano` | `EXP-001` (campo `comprobante_domicilio`) en `alertas_expediente` |
 
 Solo lista alertas deterministas: `VAL-002`, `CLS-002` y `VIS-xxx` dependen del modelo.
+Al final, la seccion "Fixtures de dificultad" (ver "Niveles de dificultad").
 
 ## Legibilidad OCR
 Tras cambiar el generador, comprueba que Tesseract los lee (contenedor del backend, PowerShell,
@@ -53,9 +76,17 @@ desde la raiz del repo):
 docker compose run --rm --no-deps -v "${PWD}\fixtures:/fixtures" -v "${PWD}\scripts:/scripts:ro" `
     backend python /scripts/verificar_ocr_fixtures.py --control
 ```
-Deja la tabla en `fixtures/generados/resultado_ocr.md`. Referencia: 150/153 campos. Los fallos
-(sexo "M" suelto y Z/2 en la MRZ de `pasaporte_vencido`) ocurren tambien en el control digital y
-se dejan a proposito porque son realistas.
+Deja la tabla en `fixtures/generados/resultado_ocr.md`, agrupada por nivel. Referencia (2026-10-01):
+
+| Nivel | Ficheros | Campos encontrados |
+|---|---|---|
+| control (render del digital) | 9 | 50/51 (98 %) |
+| normal | 18 | 100/102 (98 %) |
+| dificil | 6 | 24/34 (71 %) |
+| extremo | 6 | 5/34 (15 %) |
+
+Los fallos de los niveles control y normal (sexo "M" suelto y Z/2 en la MRZ de `pasaporte_vencido`)
+ocurren tambien en el control digital y se dejan a proposito porque son realistas.
 
 ## Prohibido
 Nunca anadas aqui (ni en `generados/`, ni en el bucket S3, ni en capturas) documentos, nombres,

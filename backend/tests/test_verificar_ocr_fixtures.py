@@ -32,8 +32,39 @@ def indice(tmp_path_factory):
 
 
 def test_parser_lee_todos_los_archivos_del_indice(indice):
-    assert len(indice) == 30
+    assert len(indice) == 42  # 30 normales + 12 de dificultad
     assert {d["caso"] for d in indice.values()} == {"sano", "vencido", "domicilio_distinto", "duplicado"}
+    assert indice["pasaporte_vencido_foto.jpg"]["nivel"] == "normal"
+    assert indice["pasaporte_vencido_foto.jpg"]["modalidad"] == "foto"
+
+
+def test_parser_lee_los_fixtures_de_dificultad_con_los_valores_del_caso_sano(indice):
+    dificultad = {a: d for a, d in indice.items() if d["nivel"] != "normal"}
+    assert len(dificultad) == 12
+    assert {d["nivel"] for d in dificultad.values()} == {"dificil", "extremo"}
+    doc = indice["pasaporte_sano_foto_extremo.jpg"]
+    assert (doc["caso"], doc["tipo"], doc["modalidad"], doc["nivel"]) == ("sano", "pasaporte", "foto", "extremo")
+    assert doc["campos"] == indice["pasaporte_sano_digital.pdf"]["campos"]
+    assert doc["mrz"] == indice["pasaporte_sano_digital.pdf"]["mrz"] and len(doc["mrz"]) == 2
+    assert indice["credencial_elector_sano_escaneado_dificil.pdf"]["modalidad"] == "escaneado"
+
+
+def test_nivel_de_separa_el_control_digital():
+    assert vo.nivel_de({"modalidad": "digital", "nivel": "normal"}) == "control"
+    assert vo.nivel_de({"modalidad": "foto", "nivel": "extremo"}) == "extremo"
+
+
+def test_resumen_por_nivel_agrupa_y_ordena():
+    resultados = [("extremo", "foto", "pasaporte", 1, 7), ("normal", "foto", "pasaporte", 7, 7),
+                  ("dificil", "escaneado", "pasaporte", 4, 7), ("dificil", "foto", "pasaporte", 5, 7),
+                  ("control", "digital", "pasaporte", 7, 7)]
+    tabla = vo.resumen_por_nivel(resultados)
+    assert tabla[:6] == ["| Nivel | Ficheros | Campos encontrados |", "|---|---|---|",
+                         "| control | 1 | 7/7 (100%) |", "| normal | 1 | 7/7 (100%) |",
+                         "| dificil | 2 | 9/14 (64%) |", "| extremo | 1 | 1/7 (14%) |"]
+    detalle = tabla[tabla.index("| Nivel | Modalidad | Tipo | Campos encontrados |") + 2:]
+    assert detalle[:3] == ["| control | digital | pasaporte | 7/7 (100%) |", "| normal | foto | pasaporte | 7/7 (100%) |",
+                           "| dificil | escaneado | pasaporte | 4/7 (57%) |"]
 
 
 def test_parser_convierte_fechas_al_formato_del_documento(indice):

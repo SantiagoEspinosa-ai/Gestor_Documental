@@ -24,8 +24,16 @@ Modalidades por documento:
   - *_digital.pdf:   capa de texto real (PyMuPDF)
   - *_escaneado.pdf: render a imagen con ruido y rotacion ligera, SIN capa de texto
   - *_foto.jpg:      perspectiva y sombra sobre un fondo (Pillow)
+Niveles de dificultad (solo caso sano, escaneado y foto), para decidir cuando el motor pasa del OCR
+al modelo de vision. Nombre: {tipo}_sano_{modalidad}_{nivel}.{pdf|jpg}:
+  - normal:  los ficheros de arriba, sin sufijo. Sus parametros no se tocan: de sus SHA-256 dependen
+             frontend/public/mock-originales y los mocks (scripts/generar_datos_mock.py)
+  - dificil: mas ruido, rotacion, perspectiva, desenfoque y compresion; el OCR lee parte de los campos
+  - extremo: ademas baja resolucion; el OCR falla en la mayoria, pero una persona aun puede leerlo
+  Objetivo de campos leidos con verificar_ocr_fixtures.py: normal ~100 %, dificil 50-80 %, extremo < 30 %.
 INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio de prueba, calculadas
-a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos).
+a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
+seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
 Tras cambiar este generador, comprueba la legibilidad OCR con scripts/verificar_ocr_fixtures.py
 (Tesseract en el contenedor del backend; el comando esta en su docstring).
@@ -38,6 +46,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+import math
 import random
 import re
 import shutil
@@ -113,6 +122,34 @@ PAGINAS = {
 }
 DPI_ESCANEO = 200
 DPI_FOTO = 150
+
+# Parametros por nivel de dificultad. "normal" son los de siempre: no cambiarlos (ver docstring).
+# rotacion: rango de grados (signo al azar); perspectiva: estrechamiento de cada lado de arriba, en
+# fraccion del ancho; ruido: peso del ruido en Image.blend; desenfoque: radio gaussiano en px;
+# calidad: JPEG. Ajustados con scripts/verificar_ocr_fixtures.py (fixtures/README.md): el OCR cae
+# de golpe al bajar la resolucion (foto extrema: 115 dpi da 12 %, 118 dpi da 0 %), asi que un cambio
+# pequeno aqui puede sacar un nivel de su rango. Vuelve a verificar despues de tocarlos.
+NIVEL_NORMAL = "normal"
+NIVELES_DIFICULTAD = ("dificil", "extremo")
+CASO_DIFICULTAD = "sano"
+PARAMETROS = {
+    "escaneado": {
+        "normal": {"dpi": DPI_ESCANEO, "contraste": 0.9, "rotacion": (0.4, 1.2), "ruido": 0.06,
+                   "desenfoque": 0.5, "calidad": 80},
+        "dificil": {"dpi": 150, "contraste": 0.7, "rotacion": (2.0, 3.0), "ruido": 0.18,
+                    "desenfoque": 1.1, "calidad": 40},
+        "extremo": {"dpi": 105, "contraste": 0.6, "rotacion": (4.0, 6.0), "ruido": 0.22,
+                    "desenfoque": 1.3, "calidad": 30},
+    },
+    "foto": {
+        "normal": {"dpi": DPI_FOTO, "perspectiva": (0.03, 0.06), "rotacion": None, "ruido": 0.0,
+                   "desenfoque": 0.6, "calidad": 88},
+        "dificil": {"dpi": 130, "perspectiva": (0.08, 0.10), "rotacion": (2.0, 3.0), "ruido": 0.18,
+                    "desenfoque": 1.3, "calidad": 40},
+        "extremo": {"dpi": 115, "perspectiva": (0.12, 0.15), "rotacion": (4.0, 6.0), "ruido": 0.21,
+                    "desenfoque": 1.45, "calidad": 30},
+    },
+}
 GRIS_TEXTO = (0.35, 0.35, 0.35)
 GRIS_MARCA = (0.93, 0.93, 0.93)  # marca de agua muy tenue
 AZUL_CABECERA = (0.12, 0.23, 0.42)
@@ -148,8 +185,9 @@ def rng_para(nombre_archivo: str) -> random.Random:
     return random.Random(f"{SEMILLA}:{nombre_archivo}")
 
 
-def nombre_archivo(tipo: str, caso: str, modalidad: str) -> str:
-    return f"{tipo}_{caso}_{modalidad}{MODALIDADES[modalidad]}"
+def nombre_archivo(tipo: str, caso: str, modalidad: str, nivel: str = NIVEL_NORMAL) -> str:
+    sufijo = "" if nivel == NIVEL_NORMAL else f"_{nivel}"
+    return f"{tipo}_{caso}_{modalidad}{sufijo}{MODALIDADES[modalidad]}"
 
 
 # ---------------------------------------------------------------- coherencia con la CURP
@@ -454,24 +492,30 @@ def ruido(tamano: tuple[int, int], rng: random.Random) -> Image.Image:
     return Image.frombytes("L", tamano, rng.randbytes(tamano[0] * tamano[1]))
 
 
-def generar_escaneado(digital: Path, destino: Path, ficha: dict, caso: str, hoy: date) -> None:
-    """Imagen en gris con ruido y rotacion ligera, dentro de un PDF SIN capa de texto."""
+def generar_escaneado(digital: Path, destino: Path, ficha: dict, caso: str, hoy: date,
+                      nivel: str = NIVEL_NORMAL) -> dict:
+    """Imagen en gris con ruido y rotacion, dentro de un PDF SIN capa de texto. Devuelve los
+    parametros aplicados. Con menos dpi la imagen tiene menos pixeles y la pagina el mismo tamano."""
+    p = PARAMETROS["escaneado"][nivel]
     rng = rng_para(destino.name)
-    img = ImageEnhance.Contrast(renderizar(digital, DPI_ESCANEO, "L")).enhance(0.9)
-    angulo = rng.uniform(0.4, 1.2) * rng.choice((-1, 1))
+    img = ImageEnhance.Contrast(renderizar(digital, p["dpi"], "L")).enhance(p["contraste"])
+    angulo = rng.uniform(*p["rotacion"]) * rng.choice((-1, 1))
     img = img.rotate(angulo, resample=Image.BICUBIC, expand=True, fillcolor=255)
-    img = Image.blend(img, ruido(img.size, rng), 0.06).filter(ImageFilter.GaussianBlur(0.5))
+    img = Image.blend(img, ruido(img.size, rng), p["ruido"]).filter(ImageFilter.GaussianBlur(p["desenfoque"]))
     jpg = io.BytesIO()
-    img.save(jpg, "JPEG", quality=80)
+    img.save(jpg, "JPEG", quality=p["calidad"])
     doc = pymupdf.open()
-    pagina = doc.new_page(width=img.width * 72 / DPI_ESCANEO, height=img.height * 72 / DPI_ESCANEO)
+    pagina = doc.new_page(width=img.width * 72 / p["dpi"], height=img.height * 72 / p["dpi"])
     pagina.insert_image(pagina.rect, stream=jpg.getvalue())
-    doc.set_metadata(metadatos(ficha, caso, "escaneado", hoy))
+    modalidad = "escaneado" if nivel == NIVEL_NORMAL else f"escaneado, nivel {nivel}"
+    doc.set_metadata(metadatos(ficha, caso, modalidad, hoy))
     doc.save(destino, garbage=4, deflate=True, no_new_id=True)
     doc.close()
     with pymupdf.open(destino) as comprobacion:
         if comprobacion[0].get_text().strip():
             raise ErrorFixture(f"{destino.name}: el escaneado no debe tener capa de texto")
+    return {"dpi": p["dpi"], "rotacion": angulo, "ruido": p["ruido"], "desenfoque": p["desenfoque"],
+            "calidad": p["calidad"], "contraste": p["contraste"]}
 
 
 def coeficientes_perspectiva(destino: list, origen: list) -> list[float]:
@@ -492,10 +536,20 @@ def coeficientes_perspectiva(destino: list, origen: list) -> list[float]:
     return [m[i][n] / m[i][i] for i in range(n)]
 
 
-def generar_foto(digital: Path, destino: Path) -> None:
-    """Foto de movil simulada: perspectiva suave, sombra y luz desigual sobre una mesa."""
+def rotar_puntos(puntos: list, grados: float, centro: tuple[float, float]) -> list:
+    angulo = math.radians(grados)
+    cx, cy = centro
+    return [(cx + (x - cx) * math.cos(angulo) - (y - cy) * math.sin(angulo),
+             cy + (x - cx) * math.sin(angulo) + (y - cy) * math.cos(angulo)) for x, y in puntos]
+
+
+def generar_foto(digital: Path, destino: Path, nivel: str = NIVEL_NORMAL) -> dict:
+    """Foto de movil simulada: perspectiva, sombra y luz desigual sobre una mesa. Devuelve los
+    parametros aplicados. Los pasos extra de los niveles (rotacion, ruido) solo tiran del generador
+    aleatorio si el nivel los tiene, asi el nivel normal sale igual byte a byte."""
+    p = PARAMETROS["foto"][nivel]
     rng = rng_para(destino.name)
-    img = renderizar(digital, DPI_FOTO, "RGB")
+    img = renderizar(digital, p["dpi"], "RGB")
     w, h = img.size
     margen = int(0.08 * max(w, h))
     lienzo = (w + 2 * margen, h + 2 * margen)
@@ -503,10 +557,14 @@ def generar_foto(digital: Path, destino: Path) -> None:
     textura = ruido((lienzo[0] // 8, lienzo[1] // 8), rng).resize(lienzo, Image.BILINEAR)
     fondo = Image.blend(Image.new("RGB", lienzo, (118, 104, 88)), Image.merge("RGB", (textura,) * 3), 0.10)
     # Perspectiva: la parte de arriba se ve mas estrecha (camara algo inclinada)
-    t = rng.uniform(0.03, 0.06) * w
+    t = rng.uniform(*p["perspectiva"]) * w
     j = lambda: rng.uniform(-0.01, 0.01) * h
     destino_quad = [(margen + t, margen + j()), (margen + w - t, margen + j()),
                     (margen + w, margen + h + j()), (margen, margen + h + j())]
+    angulo = 0.0
+    if p["rotacion"]:  # documento girado sobre la mesa (el margen deja sitio hasta ~6 grados)
+        angulo = rng.uniform(*p["rotacion"]) * rng.choice((-1, 1))
+        destino_quad = rotar_puntos(destino_quad, angulo, (lienzo[0] / 2, lienzo[1] / 2))
     coef = coeficientes_perspectiva(destino_quad, [(0, 0), (w, 0), (w, h), (0, h)])
     documento = img.transform(lienzo, Image.PERSPECTIVE, coef, Image.BICUBIC)
     mascara = Image.new("L", (w, h), 255).transform(lienzo, Image.PERSPECTIVE, coef, Image.BICUBIC)
@@ -524,7 +582,11 @@ def generar_foto(digital: Path, destino: Path) -> None:
     x0, y0 = (lado - lienzo[0]) // 2, (lado - lienzo[1]) // 2
     gradiente = gradiente.crop((x0, y0, x0 + lienzo[0], y0 + lienzo[1])).point(lambda p: int(p * 0.7))
     foto = Image.composite(ImageEnhance.Brightness(fondo).enhance(0.75), fondo, gradiente)
-    foto.filter(ImageFilter.GaussianBlur(0.6)).save(destino, "JPEG", quality=88)
+    if p["ruido"]:  # ruido del sensor
+        foto = Image.blend(foto, Image.merge("RGB", (ruido(lienzo, rng),) * 3), p["ruido"])
+    foto.filter(ImageFilter.GaussianBlur(p["desenfoque"])).save(destino, "JPEG", quality=p["calidad"])
+    return {"dpi": p["dpi"], "perspectiva": t / w, "rotacion": angulo, "ruido": p["ruido"],
+            "desenfoque": p["desenfoque"], "calidad": p["calidad"]}
 
 
 # ---------------------------------------------------------------- generacion e INDICE.md
@@ -542,7 +604,7 @@ def sha256(ruta: Path) -> str:
 
 
 def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, documentos: dict,
-                    hashes: dict) -> Path:
+                    hashes: dict, dificultad: dict) -> Path:
     persona = lambda i: f"persona {i + 1} ({PERSONAS_FICTICIAS[i]['nombre_completo'].upper()})"
     iso = lambda v: v.isoformat() if isinstance(v, date) else str(v)
     lineas = [
@@ -587,6 +649,22 @@ def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, docume
         lineas += ["| Codigo | Severidad | Donde | Campo | Motivo |", "|---|---|---|---|---|"]
         lineas += [f"| `{a['codigo']}` | {a['severidad']} | {a['donde']} | {a['campo'] or '-'} | {a['motivo']} |"
                    for a in alertas]
+    lineas += ["", "## Fixtures de dificultad", "",
+               f"Escaneado y foto del caso `{CASO_DIFICULTAD}` con mas degradacion, para decidir cuando el motor",
+               "pasa del OCR al modelo de vision. El nivel `normal` son los `*_sano_escaneado.pdf` y",
+               "`*_sano_foto.jpg` de arriba. Objetivo de campos leidos con `scripts/verificar_ocr_fixtures.py`:",
+               "normal ~100 %, dificil 50-80 %, extremo < 30 %. No forman parte de ningun folio de prueba.", "",
+               "| Archivo | Tipo | Modalidad | Nivel | Parametros aplicados | SHA-256 |", "|---|---|---|---|---|---|"]
+    lineas += [f"| `{archivo}` | {d['tipo']} | {d['modalidad']} | {d['nivel']} | "
+               f"{describir_parametros(d['parametros'])} | `{hashes[archivo][:16]}...` |"
+               for archivo, d in dificultad.items()]
+    for tipo in fichas:
+        valores = documentos[(CASO_DIFICULTAD, tipo)]["valores"]
+        lineas += ["", f"### Valores esperados: {tipo}", "",
+                   f"Los mismos que `{CASO_DIFICULTAD} / {tipo}`.", "", "| Campo | Valor esperado |", "|---|---|"]
+        lineas += [f"| `{campo}` | {iso(valores[campo])} |" for campo in fichas[tipo]["campos"]]
+        if tipo == "pasaporte":
+            lineas += ["", "MRZ:", "", "```", *generar_mrz(valores), "```"]
     ruta = salida / "INDICE.md"
     ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
     return ruta
@@ -615,10 +693,38 @@ def generar(hoy: date, salida: Path = SALIDA) -> dict[str, str]:
         for modalidad in MODALIDADES:
             shutil.copyfile(salida / nombre_archivo(tipo, origen, modalidad),
                             salida / nombre_archivo(tipo, caso, modalidad))
+    dificultad = generar_dificultad(salida, fichas, hoy)
     hashes = {nombre_archivo(t, c, m): sha256(salida / nombre_archivo(t, c, m))
               for (c, t) in documentos for m in MODALIDADES}
-    escribir_indice(salida, hoy, fichas, proceso, documentos, hashes)
+    hashes |= {archivo: sha256(salida / archivo) for archivo in dificultad}
+    escribir_indice(salida, hoy, fichas, proceso, documentos, hashes, dificultad)
     return hashes
+
+
+def generar_dificultad(salida: Path, fichas: dict, hoy: date) -> dict[str, dict]:
+    """Escaneado y foto de cada tipo del caso sano en los niveles dificil y extremo, a partir de su
+    PDF digital (ya generado). Devuelve {archivo: {tipo, modalidad, nivel, parametros}}."""
+    dificultad = {}
+    for tipo, ficha in fichas.items():
+        digital = salida / nombre_archivo(tipo, CASO_DIFICULTAD, "digital")
+        for modalidad in ("escaneado", "foto"):
+            for nivel in NIVELES_DIFICULTAD:
+                destino = salida / nombre_archivo(tipo, CASO_DIFICULTAD, modalidad, nivel)
+                parametros = (generar_escaneado(digital, destino, ficha, CASO_DIFICULTAD, hoy, nivel)
+                              if modalidad == "escaneado" else generar_foto(digital, destino, nivel))
+                dificultad[destino.name] = {"tipo": tipo, "modalidad": modalidad, "nivel": nivel,
+                                            "parametros": parametros}
+    return dificultad
+
+
+def describir_parametros(p: dict) -> str:
+    partes = [f"{p['dpi']} dpi", f"rotacion {p['rotacion']:+.2f} grados"]
+    if "perspectiva" in p:
+        partes.append(f"perspectiva {p['perspectiva']:.1%}")
+    if "contraste" in p:
+        partes.append(f"contraste {p['contraste']}")
+    partes += [f"ruido {p['ruido']}", f"desenfoque {p['desenfoque']} px", f"JPEG {p['calidad']}"]
+    return ", ".join(partes)
 
 
 def main() -> None:

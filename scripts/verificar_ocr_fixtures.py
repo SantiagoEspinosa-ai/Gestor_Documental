@@ -12,6 +12,9 @@ Que hace:
   - Compara el texto con los valores esperados de fixtures/generados/INDICE.md (fechas en
     DD/MM/AAAA, como aparecen en el documento), normalizando mayusculas, acentos y espacios y
     exigiendo palabra completa. Las copias del caso duplicado no se procesan (son identicas a sano).
+  - Incluye los "Fixtures de dificultad" de INDICE.md (niveles dificil y extremo del caso sano, con
+    sus valores esperados) y agrupa el resultado por nivel: control (render del digital), normal,
+    dificil y extremo.
   - Escribe la tabla en fixtures/generados/resultado_ocr.md (ignorado por git, como INDICE.md).
 
 Como ejecutarlo (PowerShell, desde la raiz del repo, con los fixtures ya generados). Se usa el
@@ -27,6 +30,9 @@ Como interpretar el resultado:
     ruido. Si solo falla en escaneado o foto, el ruido, la rotacion o la perspectiva son excesivos.
   - Referencia (2026-09-30): 150/153 campos. Los fallos (sexo "M" suelto y Z/2 en la MRZ de
     pasaporte_vencido) ocurren tambien en el control y se dejan a proposito: son casos realistas.
+  - Referencia por nivel (2026-10-01, Tesseract del contenedor; objetivo entre parentesis):
+    normal 100/102 = 98 % (~100 %), dificil 24/34 = 71 % (50-80 %), extremo 5/34 = 15 % (< 30 %).
+    Un nivel fuera de su rango tras cambiar el generador: ajusta PARAMETROS en generar_fixtures.py.
 """
 from __future__ import annotations
 
@@ -59,21 +65,27 @@ def contiene_palabra(esperado: str, texto: str) -> bool:
 
 
 def parsear_indice(ruta: Path) -> dict[str, dict]:
-    """{archivo: {caso, tipo, campos: {campo: valor como aparece en el documento}, mrz, archivos}}"""
-    documentos, actual, en_mrz = {}, None, False
+    """{archivo: {caso, tipo, modalidad, nivel, campos: {campo: valor como aparece en el documento},
+    mrz, archivos}}. Los ficheros de "Fixtures de dificultad" usan los valores de su caso (sano)."""
+    documentos, actual, en_mrz, seccion, dificultad = {}, None, False, "", []
     for linea in ruta.read_text(encoding="utf-8").splitlines():
         if m := re.match(r"^### (\S+) / (\S+)$", linea):
             actual = {"caso": m[1], "tipo": m[2], "campos": {}, "mrz": [], "archivos": []}
             en_mrz = False
             continue
         if linea.startswith("## "):
-            actual = None
+            actual, seccion = None, linea[3:].strip()
+        if seccion == "Fixtures de dificultad" and (
+                m := re.match(r"^\| `([^`]+)` \| (\w+) \| (\w+) \| (\w+) \|", linea)):
+            dificultad.append((m[1], m[2], m[3], m[4]))
         if actual is None:
             continue
         if "Archivos:" in linea:
             actual["archivos"] = re.findall(r"`([^`]+)`", linea.split("Archivos:")[1])
             for archivo in actual["archivos"]:
-                documentos[archivo] = actual
+                modalidad = re.search(r"_(digital|escaneado|foto)\.", archivo)[1]
+                # copia superficial: comparte campos y mrz, que se rellenan en las lineas siguientes
+                documentos[archivo] = {**actual, "modalidad": modalidad, "nivel": "normal"}
         elif m := re.match(r"^\| `(\w+)` \| (.+) \|$", linea):
             valor = m[2].strip()
             if f := re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", valor):
@@ -83,7 +95,37 @@ def parsear_indice(ruta: Path) -> dict[str, dict]:
             en_mrz = not en_mrz
         elif en_mrz:
             actual["mrz"].append(linea)
+    for archivo, tipo, modalidad, nivel in dificultad:
+        base = next(d for d in documentos.values() if d["caso"] == "sano" and d["tipo"] == tipo)
+        documentos[archivo] = {**base, "modalidad": modalidad, "nivel": nivel}
     return documentos
+
+
+ORDEN_NIVELES = ("control", "normal", "dificil", "extremo")
+
+
+def nivel_de(doc: dict) -> str:
+    """El render del PDF digital (--control) va aparte: no es un nivel de degradacion."""
+    return "control" if doc["modalidad"] == "digital" else doc["nivel"]
+
+
+def resumen_por_nivel(resultados: list[tuple[str, str, str, int, int]]) -> list[str]:
+    """Tablas Markdown a partir de (nivel, modalidad, tipo, encontrados, total) por fichero."""
+    def suma(clave) -> dict:
+        acumulado: dict = {}
+        for nivel, modalidad, tipo, ok, total in resultados:
+            fila = acumulado.setdefault(clave(nivel, modalidad, tipo), [0, 0, 0])
+            fila[0] += ok
+            fila[1] += total
+            fila[2] += 1
+        return dict(sorted(acumulado.items(), key=lambda kv: (ORDEN_NIVELES.index(kv[0][0]), kv[0][1:])))
+
+    pct = lambda ok, total: f"{ok}/{total} ({ok / total:.0%})"
+    tabla = ["| Nivel | Ficheros | Campos encontrados |", "|---|---|---|"]
+    tabla += [f"| {n} | {f} | {pct(ok, t)} |" for (n,), (ok, t, f) in suma(lambda n, m, t: (n,)).items()]
+    tabla += ["", "| Nivel | Modalidad | Tipo | Campos encontrados |", "|---|---|---|---|"]
+    tabla += [f"| {n} | {m} | {ti} | {pct(ok, t)} |" for (n, m, ti), (ok, t, _) in suma(lambda *k: k).items()]
+    return tabla
 
 
 def leer_texto(ruta: Path) -> str:
@@ -143,33 +185,27 @@ def main() -> None:
 
     documentos = parsear_indice(args.fixtures / "INDICE.md")
     modalidades = ["escaneado", "foto"] + (["digital"] if args.control else [])
-    archivos = sorted(a for a, d in documentos.items()
-                      if d["caso"] != "duplicado" and any(f"_{m}." in a for m in modalidades))
+    archivos = sorted((a for a, d in documentos.items() if d["caso"] != "duplicado" and d["modalidad"] in modalidades),
+                      key=lambda a: (ORDEN_NIVELES.index(nivel_de(documentos[a])), a))
     print(f"Tesseract {pytesseract.get_tesseract_version()} | idiomas {IDIOMAS} | {len(archivos)} ficheros\n")
 
-    filas, resumen = [], {}
+    filas, resultados = [], []
     for archivo in archivos:
         doc = documentos[archivo]
-        modalidad = next(m for m in modalidades if f"_{m}." in archivo)
         inicio = time.perf_counter()
         crudo = leer_texto(args.fixtures / archivo)
         segundos = time.perf_counter() - inicio
         fallos, mrz_ok = comparar(doc, crudo)
         total = len(doc["campos"])
         encontrados = total - len(fallos)
-        acumulado = resumen.setdefault((modalidad, doc["tipo"]), [0, 0])
-        acumulado[0] += encontrados
-        acumulado[1] += total
+        resultados.append((nivel_de(doc), doc["modalidad"], doc["tipo"], encontrados, total))
         mrz = f"{mrz_ok}/{len(doc['mrz'])}" if doc["mrz"] else "-"
-        filas.append(f"| `{archivo}` | {modalidad} | {encontrados}/{total} | {mrz} | {segundos:.1f}s | "
-                     f"{'; '.join(fallos) or '-'} |")
+        filas.append(f"| `{archivo}` | {nivel_de(doc)} | {doc['modalidad']} | {encontrados}/{total} | {mrz} | "
+                     f"{segundos:.1f}s | {'; '.join(fallos) or '-'} |")
         print(f"{encontrados}/{total}  {archivo}")
 
-    tabla = ["| Archivo | Modalidad | Campos | MRZ | Tiempo | No encontrados (esperado ~ OCR parecido) |",
-             "|---|---|---|---|---|---|", *filas, "",
-             "| Modalidad | Tipo | Campos encontrados |", "|---|---|---|"]
-    for (modalidad, tipo), (ok, total) in sorted(resumen.items()):
-        tabla.append(f"| {modalidad} | {tipo} | {ok}/{total} ({ok / total:.0%}) |")
+    tabla = ["| Archivo | Nivel | Modalidad | Campos | MRZ | Tiempo | No encontrados (esperado ~ OCR parecido) |",
+             "|---|---|---|---|---|---|---|", *filas, "", *resumen_por_nivel(resultados)]
     salida = "\n".join(tabla)
     print("\n" + salida)
     destino = args.salida or args.fixtures / "resultado_ocr.md"
