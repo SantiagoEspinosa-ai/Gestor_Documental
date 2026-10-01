@@ -11,8 +11,8 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   misma transaccion; audita `folio_creado`. Errores: 404 `PROCESO_NO_ENCONTRADO`, 409 `SECUENCIA_AGOTADA`.
 - `recalcular_exp001(sesion, folio)`: ajusta las EXP-001 a los documentos `completado` del folio. Tipo
   efectivo de cada documento: `tipo_documental_confirmado` > `tipo_documental_detectado` del resultado
-  vigente > `tipo_declarado`. Tipo presente: borra sus EXP-001 sin revisar (`aplica` NULL) y conserva
-  las revisadas. Tipo que falta: crea su EXP-001 si no hay ninguna. Sin commit (lo hace quien llama) e
+  vigente > `tipo_declarado`. Tipo presente: borra sus EXP-001 sin revisar o confirmadas (`aplica` NULL o
+  true) y solo conserva los falsos positivos (`aplica` false). Tipo que falta: crea su EXP-001 si no hay ninguna. Sin commit (lo hace quien llama) e
   idempotente. La llama `ingesta` al procesar cada documento; en la E2.6 tambien confirmar clasificacion.
 - `obtener_expediente(sesion, folio) -> ResultadoExpediente`
   Todos los documentos del folio (por `creado_en` e `id`), tengan resultado o no, armados con
@@ -33,8 +33,8 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   `validacion.servicio.comparar`) los documentos `completado` del folio, con su tipo efectivo y los
   `datos_extraidos` de su resultado vigente, segun las `comparaciones` de las fichas. No se guarda.
 - `recalcular_cmp001(sesion, folio)`: una `CMP-001` critica de expediente por campo que no coincide,
-  con un mensaje que solo nombra el campo (nunca los valores). Borra las sin revisar de campos que ya
-  coinciden; conserva las revisadas. Sin commit e idempotente; la llama `ingesta` al procesar.
+  con un mensaje que solo nombra el campo (nunca los valores). En campos que ya coinciden borra las sin
+  revisar o confirmadas y solo conserva los falsos positivos (`aplica` false). Sin commit e idempotente; la llama `ingesta` al procesar.
 
 ## recomendacion.py
 `calcular_recomendacion_global(documentos, alertas, fichas) -> Recomendacion`, logica pura. La
@@ -56,7 +56,8 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
   vigente; de expediente, del folio y sin documento. Folio cerrado -> 409 `FOLIO_CERRADO`; documento
   `pendiente` o `procesando` -> 409 `DOCUMENTO_EN_PROCESO` (en `error` si se puede, decision del
   usuario). Sobrescribe la resolucion, audita `alerta_resuelta` (sin el comentario) y hace commit.
-  Las resueltas se conservan en `recalcular_exp001` y `recalcular_cmp001`.
+  `recalcular_exp001` y `recalcular_cmp001` solo conservan las resueltas como falso positivo
+  (`aplica` false); las confirmadas desaparecen cuando la condicion deja de darse.
 - `corregir_datos(sesion, documento_id, cambios, usuario) -> ResultadoDocumento`: valida contra la
   ficha del tipo de EXTRACCION (confirmado > declarado > detectado, no el efectivo) y guarda una `Correccion` por campo sobre la version vigente del resultado
   (sin version nueva); recalcula `CMP-001`. Orden comun de las acciones sobre un documento: 404 ->

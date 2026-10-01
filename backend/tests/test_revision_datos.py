@@ -237,3 +237,17 @@ def test_se_valida_con_la_ficha_usada_para_extraer(cliente, sesion, s3, folio, m
     assert _patch(cliente, doc.id, {"numero_pasaporte": "ZX0000001"}).status_code == 200
     r = _patch(cliente, doc.id, {"curp": "AEPA900101MDFXXX01"})
     assert (r.status_code, r.json()["mensaje"]) == (422, "campo desconocido: curp")
+
+
+@pytest.mark.parametrize("aplica,sigue", [(True, False), (None, False), (False, True)])
+def test_cmp001_al_corregir_solo_sobrevive_el_falso_positivo(cliente, sesion, s3, folio, motor, aplica, sigue):
+    motor["comprobante_domicilio"][0]["domicilio"] = "Avenida Inventada 456"
+    _subir(sesion, s3, folio)
+    comprobante = _subir(sesion, s3, folio, tipo="comprobante_domicilio")
+    cmp_id = sesion.scalar(select(AlertaBD.id).where(AlertaBD.codigo == "CMP-001"))
+    if aplica is not None:
+        assert cliente.post(f"/api/v1/folios/{folio}/alertas/{cmp_id}/resolver", json={"aplica": aplica},
+                            headers=_cab()).status_code == 200
+    _patch(cliente, comprobante.id, {"domicilio": "Calle Ficticia 123"})
+    sesion.expire_all()
+    assert (sesion.get(AlertaBD, cmp_id) is not None) is sigue

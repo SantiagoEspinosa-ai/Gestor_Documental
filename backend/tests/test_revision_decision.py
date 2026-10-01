@@ -286,3 +286,15 @@ def test_bloqueante_de_una_version_anterior_no_cuenta(cliente, sesion, s3, folio
     procesamiento.procesar(credencial.id)  # v2 sin la bloqueante: la de v1 sigue en BD pero no es visible
     assert bloqueantes() == (0, 0)
     assert _decidir(cliente, folio, {"decision": "aprobar"}).status_code == 200
+
+
+def test_exp001_confirmada_desaparece_al_llegar_el_documento(cliente, sesion, s3, folio):
+    _subir(sesion, s3, folio)  # queda la EXP-001 de comprobante_domicilio
+    exp_id = sesion.scalar(select(AlertaBD.id).where(AlertaBD.folio == folio, AlertaBD.codigo == "EXP-001"))
+    r = cliente.post(f"/api/v1/folios/{folio}/alertas/{exp_id}/resolver", json={"aplica": True}, headers=_cab())
+    assert r.status_code == 200
+    assert _decidir(cliente, folio, {"decision": "aprobar"}).status_code == 409  # confirmada: bloquea
+    _subir(sesion, s3, folio, tipo="comprobante_domicilio")  # la condicion ya no se da
+    sesion.expire_all()
+    assert sesion.get(AlertaBD, exp_id) is None
+    assert _decidir(cliente, folio, {"decision": "aprobar"}).status_code == 200

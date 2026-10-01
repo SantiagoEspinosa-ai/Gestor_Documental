@@ -59,7 +59,8 @@ def _tipo_efectivo(sesion: Session, documento: Documento) -> str | None:
 def recalcular_exp001(sesion: Session, folio: str) -> None:
     """Ajusta las EXP-001 del folio a los documentos `completado` que tiene. Sin commit; idempotente.
 
-    Tipo presente: se borran sus EXP-001 sin revisar (`aplica` NULL); las revisadas se conservan.
+    Tipo presente: se borran sus EXP-001 sin revisar (`aplica` NULL) y las confirmadas (`aplica` True):
+    la condicion ya no se da. Solo se conservan los falsos positivos (`aplica` False).
     Tipo que falta: se crea su EXP-001 si no hay ninguna de ese campo.
     Lo llaman el procesamiento de cada documento y confirmar_clasificacion.
     """
@@ -79,7 +80,7 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
         del_tipo = [a for a in existentes if a.campo == tipo]
         if tipo in presentes:
             for alerta in del_tipo:
-                if alerta.aplica is None:
+                if alerta.aplica is not False:  # solo sobreviven los falsos positivos
                     sesion.delete(alerta)
         elif not del_tipo:
             _crear_exp001(sesion, folio, tipo)
@@ -114,9 +115,9 @@ def comparaciones_actuales(sesion: Session, folio: str) -> list[ComparacionCampo
 def recalcular_cmp001(sesion: Session, folio: str) -> None:
     """Una CMP-001 (critica, de expediente) por campo comparado que no coincide. Sin commit; idempotente.
 
-    El mensaje lleva solo el nombre del campo, nunca los valores (son datos personales). Se borran las
-    CMP-001 sin revisar (`aplica` NULL) de campos que ya coinciden o ya no se comparan; las revisadas
-    se conservan.
+    El mensaje lleva solo el nombre del campo, nunca los valores (son datos personales). En campos que
+    ya coinciden o ya no se comparan se borran las CMP-001 sin revisar (`aplica` NULL) y las confirmadas
+    (`aplica` True); solo se conservan los falsos positivos (`aplica` False).
     """
     sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama
     no_coinciden = {c.campo for c in comparaciones_actuales(sesion, folio) if not c.coincide}
@@ -124,7 +125,7 @@ def recalcular_cmp001(sesion: Session, folio: str) -> None:
         AlertaBD.folio == folio, AlertaBD.documento_id.is_(None), AlertaBD.codigo == "CMP-001")).all()
 
     for alerta in existentes:
-        if alerta.campo not in no_coinciden and alerta.aplica is None:
+        if alerta.campo not in no_coinciden and alerta.aplica is not False:  # solo falsos positivos
             sesion.delete(alerta)
     con_alerta = {a.campo for a in existentes}
     for campo in sorted(no_coinciden - con_alerta):
