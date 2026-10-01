@@ -83,7 +83,7 @@ hace fallar el build si queda algun rastro.
     fichero) y `folio_creado` con `detalle` vacio;
   - `GET /auditoria` paginada segun el ADR-008 (`PaginaAuditoria`): `tamano_pagina` 50 por defecto y
     de 1 a 100, orden `creado_en` desc e `id` desc, filtro por `folio`, 422 `PETICION_INVALIDA` fuera
-    de rango. `endpoints.md` se actualiza en el PR de contratos del ADR-008.
+    de rango.
 - Campos sin valor: siempre `null`, nunca `""` ni solo espacios (tambien al corregir con PATCH de
   datos), con confianza 0 (ADR-007) y sin evidencia. La UI muestra `null` como "no detectado".
 - Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
@@ -104,14 +104,11 @@ hace fallar el build si queda algun rastro.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
 - Folios (`paginas/PaginaFolios.tsx`, revisor y admin): `GET /folios` paginado (20), filtros de
-  proceso y estado, columnas folio, proceso, fecha de solicitud, estado, recomendacion, documentos e
-  indicador de bloqueantes sin resolver. "Nuevo folio" (integrador y revisor): proceso de
+  proceso y estado, columnas folio, referencia (`referencia_externa` de `ResumenFolio`, ADR-008; "—"
+  si es `null`), proceso, fecha de solicitud, estado, recomendacion, documentos e indicador de
+  bloqueantes sin resolver. Una sola peticion por pagina. "Nuevo folio" (integrador y revisor): proceso de
   `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene `GET /folios`: ve un
   campo para abrir un folio por su numero.
-  - Pendiente del PR de contratos del ADR-008 (aceptado): la columna `referencia_externa` no esta
-    porque `ResumenFolio` aun no la tiene en `resultado.py` (pedirla con `GET /folios/{folio}` por fila
-    costaba una peticion por folio). Vuelve cuando ese PR este en main. La carga de un folio si la
-    muestra (viene en `ResultadoExpediente`).
 - Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`, con enlace "Ver expediente"): arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`

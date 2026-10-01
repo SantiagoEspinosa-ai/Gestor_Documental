@@ -395,7 +395,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/tipos-documentales', TODOS, () => HttpResponse.json(estado.tipos))
 
-  // ADR-008 (aceptado): paginada; endpoints.md se actualiza en el PR de contratos del ADR-008
+  // Paginada (ADR-008, punto 1)
   ruta('GET', '/auditoria', ['admin'], ({ request }) => {
     const q = new URL(request.url).searchParams
     const { pagina, tamano } = paginacion(q, 50)

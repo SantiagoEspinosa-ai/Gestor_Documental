@@ -29,11 +29,14 @@ describe('pantalla de folios', () => {
     expect(filas().map((f) => within(f).getByRole('rowheader').textContent))
       .toEqual(['ONB-2026-000003', 'ONB-2026-000002', 'ONB-2026-000001', 'ONB-2026-000004'])
     const cabeceras = screen.getAllByRole('columnheader').map((c) => c.textContent)
-    expect(cabeceras).not.toContain('Referencia externa') // vuelve con el ADR-008
+    expect(cabeceras).toEqual(['Folio', 'Referencia', 'Proceso', 'Fecha de solicitud', 'Estado', 'Recomendación', 'Documentos',
+      'Bloqueantes', 'Acciones'])
     const f1 = filas()[2]
-    expect(celdas(f1).slice(0, 5)).toEqual(['onboarding', '28/09/2026, 09:15', 'En revisión', 'Revisión manual', '4'])
+    expect(celdas(f1).slice(0, 6)).toEqual(['CLI-000101', 'onboarding', '28/09/2026, 09:15', 'En revisión', 'Revisión manual', '4'])
     expect(within(f1).getByText('1 alerta bloqueante sin resolver')).toBeTruthy()
-    expect(celdas(filas()[3])[2]).toBe('Aprobado')
+    expect(celdas(filas()[3])[3]).toBe('Aprobado')
+    // ADR-008: referencia_externa null (folio creado sin ella) se muestra como "—"
+    expect(celdas(filas()[0])[0]).toBe('—')
     expect(screen.getByText('Página 1 de 1 (4 folios)')).toBeTruthy()
     // Una sola peticion de lista: ya no se pide GET /folios/{folio} por fila
     expect(mock.peticiones.filter((p) => p.startsWith('GET /folios/'))).toEqual([])

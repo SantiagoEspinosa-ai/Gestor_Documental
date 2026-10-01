@@ -134,6 +134,8 @@ export interface ResumenFolio {
   n_documentos: number
   n_bloqueantes_sin_resolver: number
   fecha_solicitud: FechaIso | null
+  /** ADR-008; = folios.referencia_externa (id opaco, ADR-004) */
+  referencia_externa: string | null
 }
 
 // ------------------------------------------------------------------ Contrato 2: peticiones y respuestas
@@ -305,7 +307,7 @@ export interface EntradaAuditoria {
 /**
  * GET /auditoria?folio=&pagina=1&tamano_pagina=50 (ADR-008, punto 1): tamano_pagina de 1 a 100 (50 por
  * defecto), orden creado_en desc e id desc, filtro por folio; fuera de rango, 422 PETICION_INVALIDA.
- * Misma forma que PaginaFolios. endpoints.md se actualiza en el PR de contratos del ADR-008.
+ * Misma forma que PaginaFolios.
  */
 export interface PaginaAuditoria {
   elementos: EntradaAuditoria[]

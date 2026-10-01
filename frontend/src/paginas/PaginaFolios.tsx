@@ -10,7 +10,6 @@ import { ESTADOS_GENERALES, type EstadoGeneral, type PaginaFolios as Pagina, typ
 import { ETIQUETA_ESTADO_GENERAL, fechaHora } from '../utilidades/etiquetas'
 import { mensajeDeError } from '../utilidades/mensajes'
 
-// Sin columna referencia_externa: ResumenFolio no la tiene. Vuelve con el ADR-008 (ver README).
 const ROLES_LISTA = ['revisor', 'admin'] as const // GET /folios
 const ROLES_CREAR = ['integrador', 'revisor'] as const // POST /folios
 
@@ -94,7 +93,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
               <caption className="sr-only">Folios, del más reciente al más antiguo</caption>
               <thead className="bg-slate-100 text-left">
                 <tr>
-                  {['Folio', 'Proceso', 'Fecha de solicitud', 'Estado', 'Recomendación', 'Documentos', 'Bloqueantes', 'Acciones']
+                  {['Folio', 'Referencia', 'Proceso', 'Fecha de solicitud', 'Estado', 'Recomendación', 'Documentos', 'Bloqueantes', 'Acciones']
                     .map((c) => <th key={c} scope="col" className="px-3 py-2 font-medium">{c}</th>)}
                 </tr>
               </thead>
@@ -105,6 +104,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
                       <th scope="row" className="px-3 py-2 text-left font-mono font-normal">
                         <Link to={`/folios/${f.folio}`} className="text-blue-700 underline">{f.folio}</Link>
                       </th>
+                      <td className="px-3 py-2 font-mono">{f.referencia_externa ?? '—'}</td>
                       <td className="px-3 py-2">{f.proceso}</td>
                       <td className="px-3 py-2">{fechaHora(f.fecha_solicitud)}</td>
                       <td className="px-3 py-2"><InsigniaEstado estado={f.estado_general} /></td>
@@ -121,7 +121,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
                   )
                 })}
                 {datos && datos.elementos.length === 0 && (
-                  <tr><td colSpan={8} className="px-3 py-6 text-center text-slate-500">No hay folios con esos filtros.</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-6 text-center text-slate-500">No hay folios con esos filtros.</td></tr>
                 )}
               </tbody>
             </table>

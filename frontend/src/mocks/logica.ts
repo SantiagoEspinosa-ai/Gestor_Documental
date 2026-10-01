@@ -134,6 +134,7 @@ export function resumenFolio(folio: ResultadoExpediente): ResumenFolio {
     folio: folio.folio, proceso: folio.proceso, estado_general: folio.estado_general,
     recomendacion_global: folio.recomendacion_global, n_documentos: folio.documentos.length,
     n_bloqueantes_sin_resolver: bloqueantesSinResolver(folio).length, fecha_solicitud: folio.fecha_solicitud,
+    referencia_externa: folio.referencia_externa,
   }
 }
 
