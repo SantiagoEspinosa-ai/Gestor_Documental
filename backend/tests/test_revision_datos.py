@@ -20,6 +20,7 @@ from app.main import app
 from app.modulos.expediente import servicio as expediente
 from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
+from app.schemas.resultado import Alerta
 
 SECRETO = "clave-ficticia-de-test"
 BUCKET = "bucket-de-test"
@@ -219,3 +220,20 @@ def test_404_403_401(cliente, sesion, s3, folio, motor):
     for rol in ("admin", "integrador"):
         assert _patch(cliente, doc.id, {"nombre_completo": "Ana"}, rol=rol).status_code == 403
     assert cliente.patch(f"/api/v1/documentos/{doc.id}/datos", json={"nombre_completo": "Ana"}).status_code == 401
+
+
+def test_se_valida_con_la_ficha_usada_para_extraer(cliente, sesion, s3, folio, monkeypatch):
+    # Declarado pasaporte, detectado credencial_elector (CLS-001 pendiente): se extrajo con la ficha
+    # del declarado (ADR-006 2.5), asi que se corrigen campos de pasaporte, no de credencial
+    def detecta_credencial(contenido, **kwargs):
+        resultado, datos = motor_stub.procesar_documento(contenido, **kwargs)
+        cls = Alerta(codigo="CLS-001", mensaje="ficticia", severidad="critica", confianza=0.9)
+        return resultado.model_copy(update={"tipo_documental_detectado": "credencial_elector",
+                                            "confianza_clasificacion": 0.99,
+                                            "alertas_encontradas": [cls]}), datos
+
+    monkeypatch.setattr(procesamiento, "analizar", detecta_credencial)
+    doc = _subir(sesion, s3, folio, tipo="pasaporte")
+    assert _patch(cliente, doc.id, {"numero_pasaporte": "ZX0000001"}).status_code == 200
+    r = _patch(cliente, doc.id, {"curp": "AEPA900101MDFXXX01"})
+    assert (r.status_code, r.json()["mensaje"]) == (422, "campo desconocido: curp")

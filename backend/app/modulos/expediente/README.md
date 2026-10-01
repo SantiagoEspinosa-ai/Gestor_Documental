@@ -57,7 +57,7 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
   usuario). Sobrescribe la resolucion, audita `alerta_resuelta` (sin el comentario) y hace commit.
   Las resueltas se conservan en `recalcular_exp001` y `recalcular_cmp001`.
 - `corregir_datos(sesion, documento_id, cambios, usuario) -> ResultadoDocumento`: valida contra la
-  ficha del tipo efectivo y guarda una `Correccion` por campo sobre la version vigente del resultado
+  ficha del tipo de EXTRACCION (confirmado > declarado > detectado, no el efectivo) y guarda una `Correccion` por campo sobre la version vigente del resultado
   (sin version nueva); recalcula `CMP-001`. Orden comun de las acciones sobre un documento: 404 ->
   `FOLIO_CERRADO` -> `DOCUMENTO_EN_PROCESO` / `DOCUMENTO_CON_ERROR`. Las comparaciones usan los datos
   ya corregidos.

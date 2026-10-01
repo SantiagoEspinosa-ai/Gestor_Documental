@@ -43,8 +43,14 @@ def _crear_exp001(sesion: Session, folio: str, tipo: str) -> None:
                         mensaje=f"Falta el documento requerido: {ingesta.nombre_visible_tipo(tipo)}"))
 
 
+# Dos criterios distintos de "tipo" de un documento; no se mezclan:
+# - tipo EFECTIVO (confirmado > detectado > declarado): que documento ES. Lo usan EXP-001, EXP-002,
+#   las comparaciones y la recomendacion.
+# - tipo de EXTRACCION (confirmado > declarado > detectado, ADR-006 2.5): con que ficha se extrajeron
+#   los datos. Lo usan corregir_datos (validar campos) y confirmar_clasificacion (reproceso o no).
+
 def _tipo_efectivo(sesion: Session, documento: Documento) -> str | None:
-    """Confirmado por el revisor > detectado en el resultado vigente > declarado al subir."""
+    """Tipo EFECTIVO: confirmado por el revisor > detectado en el resultado vigente > declarado al subir."""
     if documento.tipo_documental_confirmado:
         return documento.tipo_documental_confirmado
     return _resultado_vigente(sesion, documento).get("tipo_documental_detectado") or documento.tipo_declarado
@@ -78,6 +84,12 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
         elif not del_tipo:
             _crear_exp001(sesion, folio, tipo)
     sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
+
+
+def _tipo_extraccion(sesion: Session, documento: Documento) -> str | None:
+    """Tipo de EXTRACCION (ADR-006 2.5): confirmado previo > declarado > detectado del resultado vigente."""
+    return (documento.tipo_documental_confirmado or documento.tipo_declarado
+            or _resultado_vigente(sesion, documento).get("tipo_documental_detectado"))
 
 
 def _resultado_vigente(sesion: Session, documento: Documento) -> dict:
@@ -344,8 +356,8 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
         raise ErrorApi(422, "PETICION_INVALIDA", "No hay campos que corregir")
 
     actual = ingesta.construir_resultado(sesion, doc)  # con las correcciones previas ya aplicadas
-    tipo = actual.tipo_documental_confirmado or actual.tipo_documental_detectado or actual.tipo_documental_declarado
-    campos = (_fichas().get(tipo) or {}).get("campos") or {}
+    # Se valida con la ficha con la que se EXTRAJERON los datos, no con el tipo efectivo
+    campos = (_fichas().get(_tipo_extraccion(sesion, doc)) or {}).get("campos") or {}
     for campo, valor in cambios.items():
         if campo not in campos:
             raise ErrorApi(422, "PETICION_INVALIDA", f"campo desconocido: {campo}")
@@ -378,9 +390,7 @@ def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,
 
     vigente = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id)
                             .order_by(Resultado.version.desc()).limit(1))
-    # Tipo con el que se extrajo (ADR-006 2.5): confirmado previo > declarado > detectado
-    extraido = (doc.tipo_documental_confirmado or doc.tipo_declarado
-                or ((vigente.json if vigente else {}) or {}).get("tipo_documental_detectado"))
+    extraido = _tipo_extraccion(sesion, doc)  # antes de guardar el confirmado nuevo
     doc.tipo_documental_confirmado = tipo
     reprocesar = tipo != extraido
 
