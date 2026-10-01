@@ -12,9 +12,11 @@ from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
 from app.modulos.ingesta import servicio as ingesta
+from app.modulos.expediente.recomendacion import DocumentoParaRecomendar, calcular_recomendacion_global
 from app.modulos.validacion import servicio as validacion
-from app.schemas.resultado import (ComparacionCampo, DecisionHumana, EstadoAnalisis, EstadoGeneral,
-                                   ResultadoExpediente, ResumenFolio, Severidad)
+from app.schemas.resultado import (Alerta, ComparacionCampo, DecisionHumana, EstadoAnalisis, EstadoGeneral,
+                                   Recomendacion, ResultadoDocumento, ResultadoExpediente, ResumenFolio,
+                                   Severidad)
 
 MAX_SECUENCIA = 999_999  # NNNNNN
 
@@ -89,8 +91,7 @@ def comparaciones_actuales(sesion: Session, folio: str) -> list[ComparacionCampo
     documentos = [validacion.DocumentoComparable(
         id=str(d.id), tipo=_tipo_efectivo(sesion, d),
         datos=_resultado_vigente(sesion, d).get("datos_extraidos") or {}) for d in completados]
-    # TODO: las fichas saldran de configuracion.servicio.listar() de PERSONA_2 (hoy, el stub de ingesta)
-    return validacion.comparar(documentos, ingesta.listar_tipos())
+    return validacion.comparar(documentos, _fichas())
 
 
 def recalcular_cmp001(sesion: Session, folio: str) -> None:
@@ -145,19 +146,41 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
     return folio
 
 
-def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
-    fila = sesion.get(Folio, folio)
-    if fila is None:
-        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+def _fichas() -> dict[str, dict]:
+    # TODO: las fichas saldran de configuracion.servicio.listar() de PERSONA_2 (hoy, el stub de ingesta)
+    return {f["nombre"]: f for f in ingesta.listar_tipos()}
 
-    # Todos los documentos del folio, tengan resultado o no; el mismo armado que GET /documentos/{id}
+
+def _documentos_y_alertas(sesion: Session, folio: str) -> tuple[list[ResultadoDocumento], list[Alerta]]:
+    """Todos los documentos del folio armados como GET /documentos/{id} y las alertas de expediente."""
     documentos = sesion.scalars(select(Documento).where(Documento.folio == folio)
                                 .order_by(Documento.creado_en, Documento.id)).all()
     # Alertas de expediente = las del folio sin documento (ADR-006 2.1)
     alertas_expediente = sesion.scalars(
         select(AlertaBD).where(AlertaBD.folio == folio, AlertaBD.documento_id.is_(None))
-        .order_by(AlertaBD.creado_en, AlertaBD.campo)
-    )
+        .order_by(AlertaBD.creado_en, AlertaBD.campo)).all()
+    return ([ingesta.construir_resultado(sesion, d) for d in documentos],
+            [ingesta.alerta_desde_bd(a) for a in alertas_expediente])
+
+
+def _recomendar(documentos: list[ResultadoDocumento], alertas_expediente: list[Alerta],
+                fichas: dict[str, dict]) -> Recomendacion:
+    """Recomendacion global a partir del expediente ya armado (la por documento es del motor)."""
+    para_recomendar = [DocumentoParaRecomendar(
+        estado=d.estado_analisis,
+        tipo=d.tipo_documental_confirmado or d.tipo_documental_detectado or d.tipo_documental_declarado,
+        confianza_clasificacion=d.confianza_clasificacion,
+        confianza_por_campo=d.nivel_confianza_por_campo) for d in documentos]
+    alertas = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
+    return calcular_recomendacion_global(para_recomendar, alertas, fichas)
+
+
+def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+
+    documentos, alertas_expediente = _documentos_y_alertas(sesion, folio)
     # Los nombres de columna de BD se traducen aqui a los del Contrato 1
     return ResultadoExpediente(
         folio=fila.folio,
@@ -165,10 +188,10 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         referencia_externa=fila.referencia_externa,  # ADR-004
         fecha_solicitud=fila.creado_en,              # ADR-004
         estado_general=EstadoGeneral(fila.estado_general),
-        documentos=[ingesta.construir_resultado(sesion, d) for d in documentos],
+        documentos=documentos,
         comparaciones=comparaciones_actuales(sesion, folio),
-        alertas_expediente=[ingesta.alerta_desde_bd(a) for a in alertas_expediente],
-        recomendacion_global=None,
+        alertas_expediente=alertas_expediente,
+        recomendacion_global=_recomendar(documentos, alertas_expediente, _fichas()),
         decision_humana=DecisionHumana(fila.decision) if fila.decision else None,
         comentario_decision=fila.decision_comentario,  # ADR-006 G
         usuario_decision=fila.decision_usuario,
@@ -202,10 +225,13 @@ def listar_folios(sesion: Session, proceso: str | None = None,
         .order_by(Folio.creado_en.desc(), Folio.folio.desc())
         .offset((pagina - 1) * tamano_pagina)
         .limit(tamano_pagina)
-    )
+    ).all()
+    fichas = _fichas()
+    # N+1: el expediente de cada folio de la pagina se arma aparte (aceptable en el MVP)
     elementos = [
         ResumenFolio(folio=f.folio, proceso=f.proceso, estado_general=EstadoGeneral(f.estado_general),
-                     recomendacion_global=None, n_documentos=docs, n_bloqueantes_sin_resolver=bloq,
+                     recomendacion_global=_recomendar(*_documentos_y_alertas(sesion, f.folio), fichas),
+                     n_documentos=docs, n_bloqueantes_sin_resolver=bloq,
                      fecha_solicitud=f.creado_en, referencia_externa=f.referencia_externa)  # ADR-008
         for f, docs, bloq in filas
     ]

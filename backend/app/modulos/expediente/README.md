@@ -18,17 +18,32 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   Todos los documentos del folio (por `creado_en` e `id`), tengan resultado o no, armados con
   `ingesta.servicio.construir_resultado` (igual que `GET /documentos/{id}`). `alertas_expediente` =
   alertas del folio sin documento, con `id` y revision (`ingesta.servicio.alerta_desde_bd`).
-  `comparaciones` = `comparaciones_actuales`, al vuelo. `recomendacion_global` nula por ahora (E2.5).
+  `comparaciones` = `comparaciones_actuales`, al vuelo. `recomendacion_global` = la de
+  `recomendacion.py`, calculada al vuelo con esos mismos documentos y alertas (no se guarda).
   Traduce columnas de BD al Contrato 1: `referencia_externa` y `fecha_solicitud` (= `creado_en`,
   ADR-004); `decision_humana`, `comentario_decision`, `usuario_decision` y `fecha_decision`
   (= `decision*` del folio, ADR-006 G). Error: 404 `FOLIO_NO_ENCONTRADO`.
 - `listar_folios(sesion, proceso=None, estado_general=None, pagina=1, tamano_pagina=20) -> (list[ResumenFolio], total)`
   Del mas reciente al mas antiguo (`creado_en`, `folio`). `referencia_externa` = la del folio
   (ADR-008). `n_bloqueantes_sin_resolver`: alertas bloqueantes del folio, de documento o de
-  expediente, con `aplica` NULL o true (ADR-006 2.2).
+  expediente, con `aplica` NULL o true (ADR-006 2.2). `recomendacion_global` como en el expediente;
+  arma el expediente de cada folio de la pagina aparte (N+1 consultas, aceptable en el MVP).
 - `comparaciones_actuales(sesion, folio) -> list[ComparacionCampo]`: compara (via
   `validacion.servicio.comparar`) los documentos `completado` del folio, con su tipo efectivo y los
   `datos_extraidos` de su resultado vigente, segun las `comparaciones` de las fichas. No se guarda.
 - `recalcular_cmp001(sesion, folio)`: una `CMP-001` critica de expediente por campo que no coincide,
   con un mensaje que solo nombra el campo (nunca los valores). Borra las sin revisar de campos que ya
   coinciden; conserva las revisadas. Sin commit e idempotente; la llama `ingesta` al procesar.
+
+## recomendacion.py
+`calcular_recomendacion_global(documentos, alertas, fichas) -> Recomendacion`, logica pura. La
+recomendacion POR DOCUMENTO es del motor de PERSONA_2 (`ResultadoDocumento.recomendacion`) y la
+plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la primera pide
+`revision_manual`):
+1. Sin documentos, o alguno `pendiente`, `procesando` o `error`.
+2. Alguna alerta critica o bloqueante (de documento o de expediente) con `aplica` distinto de false.
+   Decision del usuario: una critica o bloqueante marcada `aplica=false` (falso positivo) no cuenta.
+   Las preventivas e informativas no cuentan nunca.
+3. Algun documento sin ficha para su tipo efectivo, sin `confianza_clasificacion`, o con ella o con
+   algun campo por debajo de los minimos de su ficha (un campo corregido vale 1.0, ADR-006 2.4).
+4. Si no, `aprobar`. Nunca `rechazar`: la decision final es humana (regla 9 de CLAUDE.md).
