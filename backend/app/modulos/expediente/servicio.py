@@ -180,6 +180,15 @@ def _documentos_y_alertas(sesion: Session, folio: str) -> tuple[list[ResultadoDo
             [ingesta.alerta_desde_bd(a) for a in alertas_expediente])
 
 
+def _bloqueantes_sin_resolver(documentos: list[ResultadoDocumento],
+                              alertas_expediente: list[Alerta]) -> list[Alerta]:
+    """Regla ADR-006 2.2 sobre las alertas VISIBLES (las de documento como construir_resultado, de
+    plataforma y del motor de la version vigente, y las de expediente): bloqueantes con aplica distinto
+    de False. La usan la lista de folios y la decision."""
+    visibles = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
+    return [a for a in visibles if a.severidad == Severidad.bloqueante and a.aplica is not False]
+
+
 def _recomendar(documentos: list[ResultadoDocumento], alertas_expediente: list[Alerta],
                 fichas: dict[str, dict]) -> Recomendacion:
     """Recomendacion global a partir del expediente ya armado (la por documento es del motor)."""
@@ -230,28 +239,24 @@ def listar_folios(sesion: Session, proceso: str | None = None,
 
     n_documentos = (select(func.count()).select_from(Documento)
                     .where(Documento.folio == Folio.folio).scalar_subquery())
-    # Regla ADR-006 2.2: bloqueante con aplica NULL (sin revisar) o true (confirmada)
-    n_bloqueantes = (select(func.count()).select_from(AlertaBD)
-                     .where(AlertaBD.folio == Folio.folio,
-                            AlertaBD.severidad == Severidad.bloqueante.value,
-                            or_(AlertaBD.aplica.is_(None), AlertaBD.aplica.is_(True)))
-                     .scalar_subquery())
     filas = sesion.execute(
-        select(Folio, n_documentos, n_bloqueantes)
+        select(Folio, n_documentos)
         .where(*filtros)
         .order_by(Folio.creado_en.desc(), Folio.folio.desc())
         .offset((pagina - 1) * tamano_pagina)
         .limit(tamano_pagina)
     ).all()
     fichas = _fichas()
-    # N+1: el expediente de cada folio de la pagina se arma aparte (aceptable en el MVP)
-    elementos = [
-        ResumenFolio(folio=f.folio, proceso=f.proceso, estado_general=EstadoGeneral(f.estado_general),
-                     recomendacion_global=_recomendar(*_documentos_y_alertas(sesion, f.folio), fichas),
-                     n_documentos=docs, n_bloqueantes_sin_resolver=bloq,
-                     fecha_solicitud=f.creado_en, referencia_externa=f.referencia_externa)  # ADR-008
-        for f, docs, bloq in filas
-    ]
+    elementos = []
+    for f, docs in filas:
+        # N+1: el expediente de cada folio de la pagina se arma aparte (aceptable en el MVP). Asi la
+        # recomendacion y las bloqueantes ven las mismas alertas que GET /folios/{folio}
+        documentos, alertas_expediente = _documentos_y_alertas(sesion, f.folio)
+        elementos.append(ResumenFolio(
+            folio=f.folio, proceso=f.proceso, estado_general=EstadoGeneral(f.estado_general),
+            recomendacion_global=_recomendar(documentos, alertas_expediente, fichas), n_documentos=docs,
+            n_bloqueantes_sin_resolver=len(_bloqueantes_sin_resolver(documentos, alertas_expediente)),
+            fecha_solicitud=f.creado_en, referencia_externa=f.referencia_externa))  # ADR-008
     return elementos, total
 
 
@@ -432,10 +437,8 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
     if en_proceso:  # al aprobar y al rechazar (decidido con PERSONA_3)
         raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "Hay documentos del folio que todavia se estan procesando")
     if decision == DecisionHumana.aprobar:
-        documentos, alertas_expediente = _documentos_y_alertas(sesion, folio)
-        visibles = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
-        # Regla 2.2: una bloqueante con aplica distinto de False impide aprobar; rechazar si se puede
-        if any(a.severidad == Severidad.bloqueante and a.aplica is not False for a in visibles):
+        # Regla 2.2: una bloqueante visible con aplica distinto de False impide aprobar (rechazar, no)
+        if _bloqueantes_sin_resolver(*_documentos_y_alertas(sesion, folio)):
             raise ErrorApi(409, "DECISION_BLOQUEADA", "Hay alertas bloqueantes que impiden aprobar el folio")
 
     # UPDATE condicional: si otro revisor decidio entre medias, afecta a 0 filas

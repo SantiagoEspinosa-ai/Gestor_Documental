@@ -21,9 +21,9 @@ from app.core.modelos import AlertaBD, Auditoria, Documento, Folio, Proceso, Sec
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio as expediente
-from app.modulos.ingesta import procesamiento
+from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
-from app.schemas.resultado import DecisionHumana
+from app.schemas.resultado import Alerta, DecisionHumana
 
 SECRETO = "clave-ficticia-de-test"
 BUCKET = "bucket-de-test"
@@ -258,3 +258,31 @@ def test_decision_concurrente_postgres(monkeypatch):
         engine.dispose()
         get_settings.cache_clear()
         db.get_engine.cache_clear()
+
+
+def test_bloqueante_de_una_version_anterior_no_cuenta(cliente, sesion, s3, folio, monkeypatch):
+    llamadas = []
+
+    def bloqueante_solo_en_v1(contenido, **kwargs):
+        resultado, datos = motor_stub.procesar_documento(contenido, **kwargs)
+        llamadas.append(1)
+        alertas = [Alerta(codigo="REG-vigencia_documento", mensaje="Vencida (ficticia)", severidad="bloqueante",
+                          confianza=1.0)] if len(llamadas) == 1 else []
+        return resultado.model_copy(update={"alertas_encontradas": alertas}), datos
+
+    monkeypatch.setattr(procesamiento, "analizar", bloqueante_solo_en_v1)
+    credencial = _subir(sesion, s3, folio)
+    _subir(sesion, s3, folio, tipo="comprobante_domicilio")
+
+    def bloqueantes():
+        lista = cliente.get("/api/v1/folios", headers=_cab()).json()["elementos"][0]["n_bloqueantes_sin_resolver"]
+        alertas = cliente.get(f"/api/v1/folios/{folio}", headers=_cab()).json()
+        en_expediente = sum(1 for d in alertas["documentos"] for a in d["alertas_encontradas"]
+                            if a["severidad"] == "bloqueante") + \
+            sum(1 for a in alertas["alertas_expediente"] if a["severidad"] == "bloqueante")
+        return lista, en_expediente
+
+    assert bloqueantes() == (1, 1)
+    procesamiento.procesar(credencial.id)  # v2 sin la bloqueante: la de v1 sigue en BD pero no es visible
+    assert bloqueantes() == (0, 0)
+    assert _decidir(cliente, folio, {"decision": "aprobar"}).status_code == 200

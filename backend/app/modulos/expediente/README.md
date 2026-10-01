@@ -25,8 +25,9 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   (= `decision*` del folio, ADR-006 G). Error: 404 `FOLIO_NO_ENCONTRADO`.
 - `listar_folios(sesion, proceso=None, estado_general=None, pagina=1, tamano_pagina=20) -> (list[ResumenFolio], total)`
   Del mas reciente al mas antiguo (`creado_en`, `folio`). `referencia_externa` = la del folio
-  (ADR-008). `n_bloqueantes_sin_resolver`: alertas bloqueantes del folio, de documento o de
-  expediente, con `aplica` NULL o true (ADR-006 2.2). `recomendacion_global` como en el expediente;
+  (ADR-008). `n_bloqueantes_sin_resolver`: alertas bloqueantes VISIBLES (las de documento como
+  `construir_resultado`, sin las del motor de versiones anteriores, y las de expediente) con `aplica`
+  distinto de false (ADR-006 2.2); la misma regla que bloquea `aprobar`. `recomendacion_global` como en el expediente;
   arma el expediente de cada folio de la pagina aparte (N+1 consultas, aceptable en el MVP).
 - `comparaciones_actuales(sesion, folio) -> list[ComparacionCampo]`: compara (via
   `validacion.servicio.comparar`) los documentos `completado` del folio, con su tipo efectivo y los
