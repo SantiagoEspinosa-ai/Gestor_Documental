@@ -90,3 +90,32 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
+
+## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; PROPUESTA hasta aprobar su PR)
+Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_estado.md`. Rama:
+`feat/plataforma`. El punto "Entregar las claves AWS a PERSONA_3" de arriba ya no hace falta.
+
+### Etapa 2 (sin esperar al motor)
+- [ ] H1: UI contra la API real con el stub; issue por cada desviacion del contrato.
+- [ ] H2: test de rutas de `app.openapi()` frente a `endpoints.md`.
+- [ ] H6 (humo): proyecto de Playwright aparte contra `docker compose`, con el stub.
+- [ ] H7: borrador del ADR de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`) el dia 7.
+
+### Etapa 2 (con el motor de PERSONA_2)
+- [ ] H3: mocks con `version_prompt` y evidencias reales (tras fusionar el PR #11).
+- [ ] H4: "Tipo no reconocido" (tras el ADR-009 de `desconocido`, H9 de PERSONA_2, aun sin PR).
+- [ ] H5: etiqueta de la confianza segun la decision sobre ADR-007 (H10: PERSONA_2 propone no
+      sustituir el stub hasta entonces; confirmarlo).
+- [ ] H6 (completo): folios de `INDICE.md` con el motor real; 5 min por documento, 10 min por folio de 3.
+- [ ] Revisar la forma de `tiempos` y `tokens` del `detalle` de `documento_procesado` y la nota del
+      `anio` `"0999"` (las dos, del PR #9).
+
+### Etapa 3
+- [ ] H8: pantalla de procesos en solo lectura.
+- [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
+- [ ] H17: enmascaramiento en la UI con "mostrar" (tras H7 y `sensible: true` de PERSONA_2).
+
+### Etapa 4
+- [ ] H19: guion de la demo, ensayo y `docker compose up` desde cero.
+- [ ] `frontend/README.md`: Node >= 22.22 y responsable; `docs/arquitectura_solucion.md` (PR #12) con
+      el reparto nuevo.

@@ -125,3 +125,41 @@ Aplicados en `resultado.py` y `endpoints.md` por el PR de contratos `docs/contra
 - Reglas de validacion y parsers siempre con test.
 - Si algo del contrato no encaja, propon un ADR en `docs/adr/` en vez de cambiarlo.
 - Datos ficticios siempre; claves solo en `.env`.
+
+## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; PROPUESTA hasta aprobar su PR)
+PERSONA_3 pasa a otro proyecto. Heredas el frontend, los tests e2e, las pantallas de la etapa 3 y la
+demo. Se hacen en `feat/plataforma` (`feat/interfaz` queda sin uso: todo su contenido esta en `main`).
+Ids, dependencias y recortes: `docs/equipo/PERSONA_3_estado.md`. Antes de empezar, lee
+`frontend/README.md` entero.
+
+| Id | Tarea | Etapa |
+|---|---|---|
+| H1 | Frontend contra tu API (`VITE_USAR_MOCKS=false` en `frontend/.env`). Cada desviacion del contrato, como issue; no adaptar la UI en silencio | 2 (ya, con el stub) |
+| H2 | Test que compare las rutas y metodos de `app.openapi()` con `endpoints.md` y revisar las formas frente a `frontend/src/tipos/contrato.ts` | 2 |
+| H3 | Mocks con el motor real (`version_prompt` `extraccion_{tipo}@v3`, evidencias `pagina_1:seccion_*`, documento `desconocido`, fecha no normalizable, `fecha_analisis` con microsegundos), regenerados con `scripts/generar_datos_mock.py` | 2, tras el PR #11 |
+| H4 | `desconocido` como "Tipo no reconocido" en `DetalleDocumento.tsx` y `PaginaCarga.tsx`; aviso si no hay ficha ni datos | 2, tras el ADR-009 de PERSONA_2 (H9, propuesto en `docs/adr-009-desconocido`) |
+| H5 | Etiqueta "Confianza verificada" solo si la confianza la calcula el codigo (ADR-007); si el motor real entra antes, "Confianza" de forma temporal. PERSONA_2 propone no sustituir el stub hasta ADR-007 (H10): confirmalo y la etiqueta no cambia | 2, segun H10 |
+| H6 | e2e reales: proyecto de Playwright aparte (`VITE_USAR_MOCKS=false`, `workers: 1`). Humo ya con el stub (login, folio, 3 tipos con `tipo_declarado`, completado, `EXP-001` desaparece, corregir, aprobar, `FOLIO_CERRADO`). Con el motor real, los folios de `INDICE.md` con fixtures normales: espera de 5 min por documento y `test.setTimeout` de 10 min por folio de 3; calentar Ollama antes | 2 (hito del dia 8) |
+| H7 | ADR de la etapa 3 (reserva el numero en el chat): enmascaramiento en la API con "mostrar" auditado, edicion de procesos y forma de `/antecedentes` (`referencia_persona` y respuesta si `permitir_antecedentes=false`). Revisa PERSONA_2 | borrador el dia 7 |
+| H8 | Pantalla de configuracion de procesos (admin) en solo lectura con `GET /procesos` | 3 |
+| H16 | Router `GET /folios/{folio}/antecedentes` (ya era tuyo) y pantalla "Antecedentes" en el expediente | 3, tras H7 y H14 |
+| H17 | Enmascaramiento en la UI: valor enmascarado de la API y boton "mostrar" que registra `dato_revelado` | 3, tras H7 y H15 |
+| H19 | Demo: guion, ensayo y `docker compose up` desde cero en una maquina limpia (PERSONA_2 aporta el motor y la maquina de Ollama) | 4 |
+
+Ficheros de partida: `frontend/README.md` (arranque, mocks, pantallas, tests y "e2e reales"),
+`frontend/src/tipos/contrato.ts` y `codigos.ts`, `frontend/src/mocks/` (`handlers.ts`, `logica.ts`),
+`frontend/e2e/` y `playwright.config.ts`, `scripts/generar_datos_mock.py`,
+`backend/tests/test_contrato_frontend.py` y el anexo de `PERSONA_3_estado.md`.
+
+Acuerdos que hay que respetar:
+- La UI no inventa campos: si el contrato no cubre algo, ADR. Un cambio en `resultado.py` obliga a
+  tocar `contrato.ts` en el mismo PR (`test_contrato_frontend.py` falla si no).
+- Los mocks salen de `generar_datos_mock.py` (no editar los JSON a mano) con fecha fija `2026-09-30`;
+  los fixtures, con `--hoy 2026-09-30`.
+- `npm run build` nunca incluye msw: no quitar `scripts/comprobar-build-sin-mocks.mjs`.
+- El enmascaramiento no se hace solo en la UI (ADR-006, bloque 4): primero la API.
+- La confianza del modelo (`confianzas_modelo`) no se muestra (ADR-007); claves desconocidas del
+  `detalle` de auditoria salen enmascaradas.
+- Antes de crear la migracion de `memoria_folios`, PERSONA_2 te avisa para encadenarla en tu historia
+  de Alembic (sin dos "heads").
+- La entrega de claves AWS a PERSONA_3 ya no hace falta.
