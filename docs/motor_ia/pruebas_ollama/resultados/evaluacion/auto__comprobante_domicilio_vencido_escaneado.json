@@ -1,0 +1,114 @@
+{
+  "medida": {
+    "id": "auto__comprobante_domicilio_vencido_escaneado",
+    "ruta": "auto",
+    "archivo": "comprobante_domicilio_vencido_escaneado.pdf",
+    "declarado": "comprobante_domicilio",
+    "clasificacion_equivocada": false,
+    "caso": "vencido",
+    "tipo": "comprobante_domicilio",
+    "modalidad_fixture": "escaneado",
+    "segundos_preparar": 2.2,
+    "modalidad_detectada": "pdf_escaneado",
+    "segundos_total": 48.0,
+    "estado": "completado",
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_titular": {
+        "esperado": "LUIS DEMO PRUEBAS",
+        "extraido": "LUIS DEMO PRUEBAS",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "ok": true
+      },
+      "proveedor": {
+        "esperado": "SERVICIOS DE EJEMPLO S.A.",
+        "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "ok": true
+      },
+      "fecha_emision": {
+        "esperado": "2026-09-15",
+        "extraido": "2026-09-15",
+        "ok": true
+      }
+    },
+    "aciertos": 4,
+    "total_campos": 4,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 11.44,
+        "tokens_entrada": 539,
+        "tokens_salida": 67,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 34.28,
+        "tokens_entrada": 713,
+        "tokens_salida": 259,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "8691c5c2-2f17-4ca8-9965-3ad3b3c9e984",
+    "tipo_documental_declarado": "comprobante_domicilio",
+    "tipo_documental_detectado": "comprobante_domicilio",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_titular": "LUIS DEMO PRUEBAS",
+      "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+      "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+      "fecha_emision": "2026-09-15"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_titular": 1.0,
+      "domicilio": 1.0,
+      "proveedor": 1.0,
+      "fecha_emision": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_titular": "pagina_1:seccion_central",
+      "domicilio": "pagina_1:seccion_central",
+      "proveedor": "pagina_1:seccion_central",
+      "fecha_emision": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:02:17.283561Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_comprobante_domicilio@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "comprobante_domicilio_vencido_escaneado.pdf",
+      "ruta": "local://comprobante_domicilio_vencido_escaneado.pdf",
+      "hash": "c41d6f840ab6a6b278c92e629a5b2b48b5bd38bc6a88fff5d23519713f2a92d5"
+    }
+  }
+}

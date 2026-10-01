@@ -2,8 +2,8 @@
 Adaptador de Ollama (ADR-005): unico sitio donde se llama a la API HTTP de Ollama.
 Implementa ProveedorLLM (Contrato 3). Regla del enrutador (spec, seccion 3): modelo de texto, sin
 imagenes, si todas las paginas tienen texto suficiente (capa del PDF u OCR); vision en el resto, con las
-paginas reducidas y por lotes. Si la extraccion con texto deja vacia la mitad o mas de los campos
-obligatorios, se reintenta con vision (riesgo 2 del plan).
+paginas reducidas y por lotes. El reintento con vision lo decide el servicio (motor_ia/servicio.py),
+que conoce la clasificacion; aqui solo se expone `extraer_con_vision`.
 """
 from __future__ import annotations
 
@@ -33,10 +33,7 @@ from app.modulos.motor_ia.proveedores.base import (
     InfoLlamada,
     RespuestaNoValida,
     combinar_lotes,
-    combinar_texto_y_vision,
     lotes_de_paginas,
-    necesita_reintento_vision,
-    obligatorios_vacios,
     parsear_clasificacion,
     parsear_extraccion,
     postprocesar_clasificacion,
@@ -64,7 +61,7 @@ class OllamaProvider:
         self._cliente = cliente or httpx.Client()
         self._capacidades: dict[str, frozenset[str]] = {}
         self.ultima_llamada: InfoLlamada | None = None
-        # Llamadas de la ultima operacion (clasificar o extraer); con reintento de vision son dos.
+        # Llamadas de la ultima operacion (clasificar, extraer o extraer_con_vision).
         self.ultimas_llamadas: list[InfoLlamada] = []
 
     # --- ProveedorLLM ---
@@ -88,22 +85,18 @@ class OllamaProvider:
         return postprocesar_clasificacion(respuesta, tipos_posibles)
 
     def extraer(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str) -> ResultadoExtraccion:
+        """Texto si hay texto suficiente; vision si no. No reintenta: lo decide el servicio."""
         self.ultimas_llamadas = []
         if not self.usa_texto(doc):
             return self._extraer_vision(doc, esquema_campos, prompt)
-        resultado = self._extraer_texto(doc, esquema_campos, prompt)
-        if not necesita_reintento_vision(resultado, esquema_campos) or not any(p.imagen_png for p in doc.paginas):
-            return resultado
-        info_texto = self.ultima_llamada
-        vacios, total = obligatorios_vacios(resultado, esquema_campos)
-        motivo = f"reintento con vision: {vacios}/{total} campos obligatorios vacios con texto"
-        try:
-            vision = self._extraer_vision(doc, esquema_campos, prompt, motivo)
-        except ErrorProveedor as error:
-            self.ultimas_llamadas[-1].motivo = f"{motivo}; fallo ({error}): se conserva el resultado con texto"
-            self.ultima_llamada = info_texto
-            return resultado
-        return combinar_texto_y_vision(resultado, vision)
+        return self._extraer_texto(doc, esquema_campos, prompt)
+
+    def extraer_con_vision(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str,
+                           motivo: str | None = None) -> ResultadoExtraccion:
+        """Extraccion forzada con el modelo de vision (reintento decidido por el servicio). `motivo` queda en
+        la llamada."""
+        self.ultimas_llamadas = []
+        return self._extraer_vision(doc, esquema_campos, prompt, motivo)
 
     # --- Internos ---
 

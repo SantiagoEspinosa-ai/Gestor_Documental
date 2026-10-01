@@ -14,7 +14,7 @@ from typing import TypeVar
 
 from app.modulos.configuracion import servicio as configuracion
 from app.modulos.motor_ia.enrutador import crear_enrutador
-from app.modulos.motor_ia.interfaces import DocumentoPreparado, Enrutador, ProveedorLLM, Tarea
+from app.modulos.motor_ia.interfaces import DocumentoPreparado, Enrutador, ProveedorLLM, ResultadoExtraccion, Tarea
 from app.modulos.motor_ia.prompts import (
     formatear_contenido,
     formatear_contexto_rag,
@@ -28,6 +28,9 @@ from app.modulos.motor_ia.proveedores.base import (
     ErrorProveedor,
     ErrorRespuestaInvalida,
     InfoLlamada,
+    combinar_texto_y_vision,
+    necesita_reintento_vision,
+    obligatorios_vacios,
     recortar_texto,
 )
 from app.modulos.orquestador import servicio as orquestador
@@ -147,7 +150,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
         "referencia_archivo_original": referencia,
         "estado_analisis": EstadoAnalisis.completado,
     }
-    fecha_modelo: tuple[ProveedorLLM, str] | None = None
+    fecha_modelo: tuple[str, str, str] | None = None  # (proveedor, version_prompt, modelo real)
 
     try:
         detectado = None
@@ -160,7 +163,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             detectado = clasificacion.tipo_documental_detectado
             datos["tipo_documental_detectado"] = detectado
             datos["confianza_clasificacion"] = clasificacion.confianza  # provisional: del modelo (ADR-007, etapa 2)
-            fecha_modelo = (proveedor, version)
+            fecha_modelo = (proveedor.nombre, version, _modelo_usado(proveedor))
             if declarado is not None and detectado != declarado:
                 ctx.alerta("CLS-001", Severidad.critica,
                            f"Tipo declarado '{declarado}' distinto del detectado '{detectado}'")
@@ -173,7 +176,9 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             esquema = {n: c.model_dump(mode="json") for n, c in ficha.campos.items()}
             extraccion, proveedor = ctx.con_respaldo(
                 Tarea.extraccion, ficha.nombre, lambda p: p.extraer(doc_modelo, esquema, prompt))
-            fecha_modelo = (proveedor, version)
+            hay_cls_001 = any(a.codigo == "CLS-001" for a in ctx.alertas)
+            extraccion, modelo = _reintento_vision(ctx, proveedor, doc_modelo, esquema, prompt, extraccion, hay_cls_001)
+            fecha_modelo = (proveedor.nombre, version, modelo)
             valores = dict(extraccion.datos_extraidos)
             confianzas = dict(extraccion.nivel_confianza_por_campo)  # provisional: del modelo (ADR-007, etapa 2)
             evidencias = dict(extraccion.evidencia_por_campo)
@@ -188,12 +193,42 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
         datos["estado_analisis"] = EstadoAnalisis.error
 
     if fecha_modelo is not None:
-        proveedor, version = fecha_modelo
+        nombre_proveedor, version, modelo = fecha_modelo
         datos["fecha_y_modelo_utilizado"] = FechaYModelo(
-            fecha_analisis=ahora or datetime.now(timezone.utc), proveedor=proveedor.nombre,
-            modelo=_modelo_usado(proveedor), version_prompt=version)
+            fecha_analisis=ahora or datetime.now(timezone.utc), proveedor=nombre_proveedor,
+            modelo=modelo, version_prompt=version)
     datos["alertas_encontradas"] = ctx.alertas
     return Analisis(ResultadoDocumento(**datos), ctx.llamadas)
+
+
+def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, esquema: dict, prompt: str,
+                      extraccion: ResultadoExtraccion, hay_cls_001: bool) -> tuple[ResultadoExtraccion, str]:
+    """Riesgo 2 del plan (OCR malo -> vision). Si la extraccion se hizo con texto y deja a null la mitad o mas
+    de los obligatorios, se repite con vision; manda la vision y el texto rellena sus nulos. No se reintenta
+    si salta CLS-001: los vacios se explican porque se extrajo con la ficha del tipo declarado. Si el
+    reintento falla, se conserva el texto. Devuelve (extraccion, modelo real usado)."""
+    modelo = _modelo_usado(proveedor)
+    info = getattr(proveedor, "ultima_llamada", None)
+    if (info is None or info.entrada != "texto" or not hasattr(proveedor, "extraer_con_vision")
+            or not necesita_reintento_vision(extraccion, esquema) or not any(p.imagen_png for p in doc.paginas)):
+        return extraccion, modelo
+    vacios, total = obligatorios_vacios(extraccion, esquema)
+    if hay_cls_001:
+        info.motivo = (f"sin reintento con vision ({vacios}/{total} campos obligatorios vacios): "
+                       "el tipo declarado no coincide con el detectado (CLS-001)")
+        return extraccion, modelo
+    motivo = f"reintento con vision: {vacios}/{total} campos obligatorios vacios con texto"
+    try:
+        vision = proveedor.extraer_con_vision(doc, esquema, prompt, motivo)
+    except ErrorProveedor as error:
+        logger.warning("extraccion: fallo el reintento con vision: %s", error)
+        fallida = getattr(proveedor, "ultima_llamada", None)
+        if fallida is not None and fallida is not info:
+            fallida.motivo = f"{motivo}; fallo ({error}): se conserva el resultado con texto"
+        return extraccion, modelo
+    finally:
+        ctx.registrar(proveedor)
+    return combinar_texto_y_vision(extraccion, vision), _modelo_usado(proveedor)
 
 
 def _sexo_desde_mrz(doc: DocumentoPreparado, valores: dict, confianzas: dict, evidencias: dict, ctx: _Contexto) -> None:

@@ -261,3 +261,103 @@ def test_registra_todas_las_llamadas_de_una_operacion():
     analisis, _ = ejecutar(ProveedorConReintento("ollama"))
     assert [(i.modelo, i.entrada) for i in analisis.llamadas][-2:] == [("texto-real", "texto"), ("vision-real", "vision")]
     assert analisis.resultado.fecha_y_modelo_utilizado.modelo == "vision-real"
+
+
+# --- Reintento con vision decidido por el servicio (riesgo 2 del plan) ---
+
+INCOMPLETOS = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": None, "fecha_nacimiento": None,
+               "fecha_expedicion": None, "fecha_vencimiento": None, "nacionalidad": "PAIS FICTICIO", "sexo": None}
+
+
+class ProveedorConVision(ProveedorFalso):
+    """Extrae con texto (entrada 'texto') y, si el servicio lo pide, con vision."""
+
+    def __init__(self, *a, datos_vision=None, falla_vision=None, entrada_extraer="texto", **k):
+        super().__init__(*a, **k)
+        self.datos_vision = DATOS_PASAPORTE if datos_vision is None else datos_vision
+        self.falla_vision, self.entrada_extraer = falla_vision, entrada_extraer
+        self.pedidos_vision: list[str] = []
+
+    def _nueva(self, modelo, entrada, motivo=None):
+        self.ultima_llamada = InfoLlamada(proveedor=self.nombre, modelo=modelo, entrada=entrada, motivo=motivo)
+        self.ultimas_llamadas = [self.ultima_llamada]
+
+    def clasificar(self, doc, tipos_posibles, prompt):
+        resultado = super().clasificar(doc, tipos_posibles, prompt)
+        self._nueva("modelo-texto", "texto")
+        return resultado
+
+    def extraer(self, doc, esquema_campos, prompt):
+        resultado = super().extraer(doc, esquema_campos, prompt)
+        self._nueva("modelo-texto" if self.entrada_extraer == "texto" else "modelo-vision", self.entrada_extraer)
+        return resultado
+
+    def extraer_con_vision(self, doc, esquema_campos, prompt, motivo=None):
+        self.pedidos_vision.append(motivo)
+        self._nueva("modelo-vision", "vision", motivo)
+        if self.falla_vision:
+            raise self.falla_vision
+        datos = {c: self.datos_vision.get(c) for c in esquema_campos}
+        return ResultadoExtraccion(datos, {c: 0.8 for c in datos if datos[c] is not None},
+                                   {c: "pagina_1" for c in datos if datos[c] is not None})
+
+
+def doc_con_imagenes(declarado="pasaporte", con_imagenes=True):
+    return DocumentoPreparado("id", Modalidad.imagen,
+                              [Pagina(1, texto="PASAPORTE DE MUESTRA ANA EJEMPLO PRUEBA",
+                                      imagen_png=b"png-ficticio" if con_imagenes else None)], declarado)
+
+
+def test_reintenta_con_vision_si_faltan_la_mitad_o_mas_de_los_obligatorios():
+    p = ProveedorConVision("ollama", datos=INCOMPLETOS, datos_vision={**DATOS_PASAPORTE, "nacionalidad": None})
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes())
+    r = analisis.resultado
+    assert p.pedidos_vision == ["reintento con vision: 3/4 campos obligatorios vacios con texto"]
+    assert r.datos_extraidos["numero_pasaporte"] == "X1234567P"        # manda la vision
+    assert r.datos_extraidos["nacionalidad"] == "PAIS FICTICIO"        # el texto rellena lo que la vision deja vacio
+    assert [(i.entrada, i.motivo) for i in analisis.llamadas][-2:] == [
+        ("texto", None), ("vision", "reintento con vision: 3/4 campos obligatorios vacios con texto")]
+    assert r.fecha_y_modelo_utilizado.modelo == "modelo-vision"
+
+
+def test_no_reintenta_si_salta_cls_001():
+    p = ProveedorConVision("ollama", tipo="comprobante_domicilio", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    assert p.pedidos_vision == []
+    assert ("CLS-001", "critica", None) in codigos(analisis.resultado)
+    assert analisis.llamadas[-1].motivo == ("sin reintento con vision (3/4 campos obligatorios vacios): "
+                                            "el tipo declarado no coincide con el detectado (CLS-001)")
+    assert analisis.resultado.fecha_y_modelo_utilizado.modelo == "modelo-texto"
+
+
+def test_con_tipo_confirmado_si_reintenta():
+    p = ProveedorConVision("ollama", tipo="comprobante_domicilio", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="comprobante_domicilio"), tipo_confirmado="pasaporte")
+    assert len(p.pedidos_vision) == 1 and codigos(analisis.resultado) == []
+
+
+def test_no_reintenta_si_falta_menos_de_la_mitad():
+    p = ProveedorConVision("ollama", datos={**DATOS_PASAPORTE, "fecha_vencimiento": None})
+    ejecutar(p, doc=doc_con_imagenes())
+    assert p.pedidos_vision == []
+
+
+def test_no_reintenta_sin_imagenes():
+    p = ProveedorConVision("ollama", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(con_imagenes=False))
+    assert p.pedidos_vision == [] and analisis.resultado.datos_extraidos["numero_pasaporte"] is None
+
+
+def test_no_reintenta_si_la_extraccion_ya_fue_con_vision():
+    p = ProveedorConVision("ollama", datos=INCOMPLETOS, entrada_extraer="vision")
+    ejecutar(p, doc=doc_con_imagenes())
+    assert p.pedidos_vision == []
+
+
+def test_si_el_reintento_falla_se_conserva_el_texto():
+    p = ProveedorConVision("ollama", datos=INCOMPLETOS, falla_vision=ErrorProveedor("vision caida"))
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes())
+    r = analisis.resultado
+    assert r.estado_analisis is EstadoAnalisis.completado and r.datos_extraidos["nombre_completo"] == "ANA EJEMPLO PRUEBA"
+    assert r.fecha_y_modelo_utilizado.modelo == "modelo-texto"
+    assert "fallo (vision caida): se conserva el resultado con texto" in analisis.llamadas[-1].motivo

@@ -1,0 +1,138 @@
+{
+  "medida": {
+    "id": "auto__pasaporte_domicilio_distinto_digital",
+    "ruta": "auto",
+    "archivo": "pasaporte_domicilio_distinto_digital.pdf",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "domicilio_distinto",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "digital",
+    "segundos_preparar": 0.1,
+    "modalidad_detectada": "pdf_digital",
+    "segundos_total": 66.3,
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000001",
+        "extraido": "ZX0000001",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "extraido": "2021-09-30",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "esperado": "2031-09-30",
+        "extraido": "2031-09-30",
+        "ok": true
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": "UTOPICA",
+        "ok": true
+      },
+      "sexo": {
+        "esperado": "F",
+        "extraido": "F",
+        "ok": true
+      }
+    },
+    "aciertos": 7,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 12.34,
+        "tokens_entrada": 550,
+        "tokens_salida": 65,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 53.85,
+        "tokens_entrada": 755,
+        "tokens_salida": 403,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "19186f4c-7ada-48f3-ae51-703fd54a29cc",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": "ZX0000001",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": "2021-09-30",
+      "fecha_vencimiento": "2031-09-30",
+      "nacionalidad": "UTOPICA",
+      "sexo": "F"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "numero_pasaporte": 1.0,
+      "fecha_nacimiento": 1.0,
+      "fecha_expedicion": 1.0,
+      "fecha_vencimiento": 1.0,
+      "nacionalidad": 1.0,
+      "sexo": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "numero_pasaporte": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "fecha_expedicion": "pagina_1:seccion_central",
+      "fecha_vencimiento": "pagina_1:seccion_central",
+      "nacionalidad": "pagina_1:seccion_central",
+      "sexo": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:13:15.259731Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_domicilio_distinto_digital.pdf",
+      "ruta": "local://pasaporte_domicilio_distinto_digital.pdf",
+      "hash": "8573f96ba1982a3fc848902d3be366a8c0f51cb2f96445e42a12bf09d9965b90"
+    }
+  }
+}

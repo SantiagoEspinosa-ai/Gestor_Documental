@@ -79,10 +79,22 @@ extraccion con texto deja a `null` **la mitad o mas de los campos obligatorios**
 vision. Manda el resultado de vision; el de texto solo rellena los campos que la vision deja a `null`. Si el
 reintento falla, se conserva el resultado con texto. La clasificacion no se reintenta.
 
+**Lo decide el servicio, no el proveedor** (2026-10-01, hallazgo del bloque 1 de la evaluacion):
+`motor_ia/servicio.py` (`_reintento_vision`) conoce la clasificacion y **no reintenta si salta `CLS-001`**:
+con el tipo declarado equivocado se extrae con la ficha del declarado (ADR-006, 2.5), los obligatorios vacios
+se explican por el tipo y la vision no puede mejorarlos (en la evaluacion costaba ~200 s sin aportar nada). Con
+`tipo_confirmado` no hay clasificacion ni `CLS-001`, asi que si se reintenta. El proveedor solo expone
+`OllamaProvider.extraer_con_vision(doc, esquema, prompt, motivo)`; `extraer()` ya no reintenta. El servicio
+solo reintenta si la extraccion fue con texto (`entrada == "texto"`), el proveedor tiene
+`extraer_con_vision` y el documento tiene imagenes.
+
 Registro: cada llamada (`InfoLlamada`) lleva `entrada` (`texto` o `vision`) y `motivo`; con reintento hay dos
-llamadas en la misma extraccion (`OllamaProvider.ultimas_llamadas`) y el servicio registra las dos en
-`Analisis.llamadas`. El motivo queda como `reintento con vision: 3/4 campos obligatorios vacios con texto`.
-`fecha_y_modelo_utilizado.modelo` es el de la ultima llamada (la de vision si hubo reintento).
+llamadas (la de texto y la de `extraer_con_vision`) y el servicio registra las dos en `Analisis.llamadas`.
+Motivos: `reintento con vision: 3/4 campos obligatorios vacios con texto`; si no se reintenta por `CLS-001`,
+la llamada de texto lleva `sin reintento con vision (3/4 campos obligatorios vacios): el tipo declarado no
+coincide con el detectado (CLS-001)`; si el reintento falla, `...; fallo (...): se conserva el resultado con
+texto`. `fecha_y_modelo_utilizado.modelo` es el modelo del resultado que se usa (el de vision si el
+reintento funciona; el de texto si no se reintenta o el reintento falla).
 
 Se decide sin ADR: `Enrutador.obtener(tarea, tipo)` (Contrato 3) devuelve el proveedor configurado y el
 proveedor elige su modelo (`OllamaProvider.modelo_para`, `usa_texto`). Datos: `pruebas_ollama.md`,
@@ -230,6 +242,14 @@ se queda solo con `pagina_<n>` (seccion 4).
       a texto con OCR (7/7).
 - [ ] **Mejorar la evidencia del prompt de extraccion** (etapa 2): en la ejecucion real, `gemma4:e2b` devolvio
       `pagina_1:seccion_central` en los 7 campos; es valida, pero no dice donde esta cada dato.
+- [ ] **Produccion: arrancar Ollama con `OLLAMA_MAX_LOADED_MODELS=1`** (configuracion del servidor, sin codigo):
+      con el reintento con vision, Ollama tendria cargados a la vez `gemma4:e2b` (~3 GB) y `qwen2.5vl:3b`
+      (~4,3 GB), y una maquina de 16 GB se queda sin RAM. Con la variable, descarga un modelo al cargar otro.
+      En la evaluacion (`pruebas_ollama/evaluar_fixtures.py`) se descarga el de texto antes del reintento
+      (`keep_alive: 0`) y queda anotado en el informe. Revisarlo en la maquina con GPU.
+- [ ] **Opcional: bloque 2 de la evaluacion** (`pruebas_ollama/evaluar_fixtures.py lanzar --bloque 2`): vision
+      forzada en los 18 escaneados y fotos, como referencia del respaldo (~40-45 min; criterio >= 40/51 por
+      modalidad, no bloquea). El bloque 1 (ruta auto) aprobo todo el 2026-10-01.
 - [ ] Riesgo: la confianza que da el modelo no es fiable (0,9-1 incluso en datos inventados).
 - [ ] Riesgo: el modelo no es determinista ni con `temperature: 0`.
 - [x] Borrar `qwen2.5:7b` de Ollama local (4,7 GB, descartado). Hecho el 2026-09-30.
@@ -287,6 +307,7 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | Tipo desconocido sin declarado ni confirmado | **No se extrae y no se emite alerta**: `completado` con datos vacios. Si en la etapa 2 hace falta, se pedira un `CLS-003` |
 | Extraccion | Prompt `extraccion_v2` con el esquema de la ficha; `version_prompt` `extraccion_<tipo>@v2` |
 | Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza **1,0** si todos los digitos de control son correctos y **0,5** si alguno falla (provisional hasta ADR-007) |
+| Reintento con vision | Ver seccion 3: lo decide `_reintento_vision`; no se reintenta si salta `CLS-001` |
 | Respaldo | Si el principal lanza `ErrorProveedor` (incluido JSON invalido tras el reintento), se prueba el respaldo; si funciona, `SYS-005` (informativa), una sola vez por documento |
 | Sin respaldo o falla tambien | `estado_analisis=error` + `SYS-002` si el ultimo fallo fue JSON invalido, `SYS-001` si no (criticas). Si la clasificacion salio bien, se conserva |
 | `fecha_y_modelo_utilizado` | Proveedor, **modelo real** (`ultima_llamada.modelo`) y `version_prompt` de la extraccion; si no hubo extraccion, los de la clasificacion; `None` si no hubo ninguna llamada correcta |
@@ -348,7 +369,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | este commit |
+| 2026-10-01 | Evaluacion completa, bloque 1 (ruta auto, 30 casos): 153/153 campos, 27/27 tipos, `CLS-001` 3/3, sin errores ni abortos, 59 s de media (`pruebas_ollama/resultados/evaluacion/informe.md`). El reintento con vision pasa del proveedor al servicio y no se hace si salta `CLS-001` (el caso que tardaba 255 s baja a 80 s); el proveedor expone `extraer_con_vision`. Pendientes: `OLLAMA_MAX_LOADED_MODELS=1` en produccion y bloque 2 opcional. Script `evaluar_fixtures.py` | este commit |
+| 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | `d3e18b4` |
 | 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | `1a6b9f4` |
 | 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | `5f6292d` |
 | 2026-09-30 | Ejecucion real del CLI (entregable de la etapa 1): `pasaporte_sano_digital.pdf` 7/7 en 68 s con `gemma4:e2b`; vision pendiente por RAM (faltaron 0,25 GB). Pendientes: CLI con vision y mejorar la evidencia del prompt | `3dfb54a` |

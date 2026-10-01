@@ -1,0 +1,112 @@
+{
+  "medida": {
+    "id": "cls__comprobante_domicilio_sano_escaneado__como_pasaporte",
+    "ruta": "auto",
+    "archivo": "comprobante_domicilio_sano_escaneado.pdf",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": true,
+    "caso": "sano",
+    "tipo": "comprobante_domicilio",
+    "modalidad_fixture": "escaneado",
+    "segundos_preparar": 2.3,
+    "modalidad_detectada": "pdf_escaneado",
+    "segundos_total": 80.5,
+    "estado": "completado",
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [
+      "CLS-001"
+    ],
+    "campos": {},
+    "aciertos": 0,
+    "total_campos": 0,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 30.1,
+        "tokens_entrada": 536,
+        "tokens_salida": 56,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": "sin reintento con vision (3/4 campos obligatorios vacios): el tipo declarado no coincide con el detectado (CLS-001)",
+        "segundos": 48.07,
+        "tokens_entrada": 741,
+        "tokens_salida": 345,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "e21552a7-67c1-428e-aa93-1f4d9b25b8f9",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "comprobante_domicilio",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": null,
+      "fecha_nacimiento": null,
+      "fecha_expedicion": null,
+      "fecha_vencimiento": null,
+      "nacionalidad": null,
+      "sexo": null
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "numero_pasaporte": 0.0,
+      "fecha_nacimiento": 0.0,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.0,
+      "nacionalidad": 0.0,
+      "sexo": 0.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [
+      {
+        "id": null,
+        "codigo": "CLS-001",
+        "mensaje": "Tipo declarado 'pasaporte' distinto del detectado 'comprobante_domicilio'",
+        "severidad": "critica",
+        "confianza": 1.0,
+        "campo": null,
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:43:29.333503Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "comprobante_domicilio_sano_escaneado.pdf",
+      "ruta": "local://comprobante_domicilio_sano_escaneado.pdf",
+      "hash": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c"
+    }
+  }
+}

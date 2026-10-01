@@ -246,57 +246,31 @@ def test_clasificar_con_texto_suficiente_no_envia_imagenes():
     assert falso.chats[0]["model"] == "gemma4:e2b" and "images" not in falso.chats[0]["messages"][0]
 
 
-# --- Reintento con vision si la extraccion con texto sale muy incompleta (riesgo 2 del plan) ---
+# --- El reintento con vision lo decide el servicio; el proveedor solo expone extraer_con_vision ---
 
 def _texto_incompleto() -> dict:
-    # 3 de los 4 obligatorios del pasaporte a null; nacionalidad (opcional) con valor
+    # 3 de los 4 obligatorios del pasaporte a null
     datos = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": None, "fecha_nacimiento": None,
              "fecha_vencimiento": None, "nacionalidad": "PAIS FICTICIO"}
     return respuesta(json.dumps({"datos_extraidos": datos, "nivel_confianza_por_campo": {c: 0.9 for c in datos},
                                  "evidencia_por_campo": {c: "pagina_1" for c in datos}}))
 
 
-def test_reintento_con_vision_si_faltan_la_mitad_o_mas_de_los_obligatorios():
-    vision = respuesta(json.dumps({
-        "datos_extraidos": {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": "X1234567P",
-                            "fecha_nacimiento": "01/01/1990", "fecha_vencimiento": "25/07/2031", "nacionalidad": None},
-        "nivel_confianza_por_campo": {"numero_pasaporte": 0.9},
-        "evidencia_por_campo": {"numero_pasaporte": "pagina_1"}}))
-    falso = OllamaFalso(_texto_incompleto(), vision)
-    p = proveedor(falso)
-    r = p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "PROMPT")
-    assert [c["model"] for c in falso.chats] == ["gemma4:e2b", "qwen2.5vl:3b"]
-    assert "images" not in falso.chats[0]["messages"][0] and len(falso.chats[1]["messages"][0]["images"]) == 1
-    assert r.datos_extraidos["numero_pasaporte"] == "X1234567P"      # manda la vision
-    assert r.datos_extraidos["fecha_vencimiento"] == "2031-07-25"
-    assert r.datos_extraidos["nacionalidad"] == "PAIS FICTICIO"      # el texto rellena lo que la vision deja vacio
-    assert [i.entrada for i in p.ultimas_llamadas] == ["texto", "vision"]
-    assert p.ultimas_llamadas[1].motivo == "reintento con vision: 3/4 campos obligatorios vacios con texto"
-    assert p.ultima_llamada.modelo == "qwen2.5vl:3b"
-
-
-def test_sin_reintento_si_falta_menos_de_la_mitad():
-    datos = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": "X1234567P",
-             "fecha_nacimiento": "1990-01-01", "fecha_vencimiento": None}
-    falso = OllamaFalso(respuesta(json.dumps({"datos_extraidos": datos, "nivel_confianza_por_campo": {},
-                                              "evidencia_por_campo": {}})))
-    p = proveedor(falso)
-    p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "P")
-    assert len(falso.chats) == 1 and [i.entrada for i in p.ultimas_llamadas] == ["texto"]
-
-
-def test_sin_reintento_si_no_hay_imagenes():
+def test_extraer_no_reintenta_aunque_falten_obligatorios():
     falso = OllamaFalso(_texto_incompleto())
     p = proveedor(falso)
-    r = p.extraer(documento(Modalidad.pdf_digital, con_imagenes=False), esquema(), "P")
-    assert len(falso.chats) == 1 and r.datos_extraidos["numero_pasaporte"] is None
-
-
-def test_si_el_reintento_con_vision_falla_se_conserva_el_texto():
-    falso = OllamaFalso(_texto_incompleto(), 500)
-    p = proveedor(falso)
     r = p.extraer(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "P")
-    assert r.datos_extraidos["nombre_completo"] == "ANA EJEMPLO PRUEBA"
-    assert p.ultima_llamada.modelo == "gemma4:e2b"
-    motivo = p.ultimas_llamadas[-1].motivo
-    assert "fallo" in motivo and "se conserva el resultado con texto" in motivo
+    assert len(falso.chats) == 1 and falso.chats[0]["model"] == "gemma4:e2b"
+    assert r.datos_extraidos["numero_pasaporte"] is None
+    assert [i.entrada for i in p.ultimas_llamadas] == ["texto"]
+
+
+def test_extraer_con_vision_usa_el_modelo_de_vision_y_registra_el_motivo():
+    falso = OllamaFalso(guardada("vision_qwen_extraccion_fechas_tal_cual"))
+    p = proveedor(falso)
+    r = p.extraer_con_vision(documento(Modalidad.imagen, texto=TEXTO_SUFICIENTE), esquema(), "P",
+                             "reintento con vision: 3/4 campos obligatorios vacios con texto")
+    assert falso.chats[0]["model"] == "qwen2.5vl:3b" and len(falso.chats[0]["messages"][0]["images"]) == 1
+    assert r.datos_extraidos["fecha_vencimiento"] == "2031-07-25"
+    assert [(i.entrada, i.motivo) for i in p.ultimas_llamadas] == [
+        ("vision", "reintento con vision: 3/4 campos obligatorios vacios con texto")]

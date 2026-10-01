@@ -136,6 +136,30 @@ Conclusiones:
 Resultados: `pruebas_ollama/resultados/alternativas_vision/` (`A_*.json` y `B_*.json` con la medida y el
 `ResultadoDocumento`; `ram_num_ctx.json`).
 
+## Evaluacion completa con los fixtures (2026-10-01)
+
+`pruebas_ollama/evaluar_fixtures.py` recorre los 27 fixtures distintos (sin `duplicado`), ejecuta
+`preparar()` + `analizar()` en el contenedor y compara cada campo con `INDICE.md`. Reanudable, con vigilante de
+RAM (1 GB) y un modelo cada vez. Informe completo: `pruebas_ollama/resultados/evaluacion/informe.md`.
+
+**Bloque 1** (ruta auto: regla del enrutador; 27 documentos + 3 casos de `CLS-001`): **aprobado**.
+
+| Criterio | Resultado | Minimo |
+|---|---|---|
+| Digital | 51/51 | 49/51 |
+| Escaneado (OCR + texto) | 51/51 | 47/51 |
+| Foto (OCR + texto) | 51/51 | 47/51 |
+| Tipo detectado correcto | 27/27 | 26/27 |
+| `CLS-001` con el tipo declarado equivocado / falsos positivos | 3/3 / 0 | 3/3 / 0 |
+| `SYS-001`/`SYS-002`, excepciones, abortos por RAM | 0 / 0 / 0 | 0 |
+| Tiempo medio por documento | 59 s | <= 90 s |
+
+Hallazgo: en `comprobante_domicilio_sano_escaneado.pdf` declarado como `pasaporte` saltaba el reintento con
+vision (3/4 obligatorios vacios por extraer con la ficha equivocada) y el caso tardaba 255 s sin mejorar nada.
+Desde el 2026-10-01 el servicio no reintenta si salta `CLS-001`: repetido, 80 s y sin llamada de vision.
+
+**Bloque 2** (vision forzada en escaneado y foto): no ejecutado; pendiente opcional.
+
 ## Fallo de gemma4 con imagenes en Windows
 
 `gemma4` anuncia vision, pero en Ollama para Windows no procesa las imagenes: el codificador recibe
@@ -168,6 +192,7 @@ Con el venv del backend, desde `docs/motor_ia/pruebas_ollama/` (Ollama local en 
 | `diagnostico_hola.py --modelo <m> [--sin-think]` | Imagen con "HOLA" |
 | `diagnostico_transcripcion.py --modelo <m>` | Transcripcion literal con tope de tokens |
 | `prueba_num_ctx.py --modelo qwen2.5vl:3b --num-ctx 16384` | Tokens de 1 y de 4 paginas A4 con el prompt real |
+| `evaluar_fixtures.py lanzar --bloque 1` (o `2`; `--casos`, `--solo`, `--repetir`) | Evaluacion completa con los fixtures (desde la raiz del repo) |
 
 `--sin-think` es para modelos sin razonamiento, como `qwen2.5vl`. Las imagenes versionadas no se
 regeneran; si se borran, los scripts las vuelven a crear. Las salidas crudas (`respuestas/`,

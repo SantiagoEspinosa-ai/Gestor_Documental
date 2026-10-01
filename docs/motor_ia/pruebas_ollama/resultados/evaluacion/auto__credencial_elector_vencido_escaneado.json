@@ -1,0 +1,130 @@
+{
+  "medida": {
+    "id": "auto__credencial_elector_vencido_escaneado",
+    "ruta": "auto",
+    "archivo": "credencial_elector_vencido_escaneado.pdf",
+    "declarado": "credencial_elector",
+    "clasificacion_equivocada": false,
+    "caso": "vencido",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "escaneado",
+    "segundos_preparar": 1.3,
+    "modalidad_detectada": "pdf_escaneado",
+    "segundos_total": 62.8,
+    "estado": "completado",
+    "tipo_detectado": "credencial_elector",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "LUIS DEMO PRUEBAS",
+        "extraido": "LUIS DEMO PRUEBAS",
+        "ok": true
+      },
+      "curp": {
+        "esperado": "DEPL850615HDFXXX02",
+        "extraido": "DEPL850615HDFXXX02",
+        "ok": true
+      },
+      "clave_elector": {
+        "esperado": "DEPRLU85061599H102",
+        "extraido": "DEPRLU85061599H102",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1985-06-15",
+        "extraido": "1985-06-15",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "ok": true
+      },
+      "vigencia": {
+        "esperado": "2029",
+        "extraido": 2029,
+        "ok": true
+      }
+    },
+    "aciertos": 6,
+    "total_campos": 6,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 10.67,
+        "tokens_entrada": 497,
+        "tokens_salida": 64,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 50.8,
+        "tokens_entrada": 690,
+        "tokens_salida": 372,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "217df278-f331-4c94-92e9-8ed013e8dcd4",
+    "tipo_documental_declarado": "credencial_elector",
+    "tipo_documental_detectado": "credencial_elector",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_completo": "LUIS DEMO PRUEBAS",
+      "curp": "DEPL850615HDFXXX02",
+      "clave_elector": "DEPRLU85061599H102",
+      "fecha_nacimiento": "1985-06-15",
+      "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+      "vigencia": 2029
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "curp": 1.0,
+      "clave_elector": 1.0,
+      "fecha_nacimiento": 1.0,
+      "domicilio": 1.0,
+      "vigencia": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "curp": "pagina_1:seccion_central",
+      "clave_elector": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "domicilio": "pagina_1:seccion_central",
+      "vigencia": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:11:12.783681Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_credencial_elector@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_vencido_escaneado.pdf",
+      "ruta": "local://credencial_elector_vencido_escaneado.pdf",
+      "hash": "008fc4526ea6c2424ee40797ade56ed7a3cd7f7bbb87aeecb0eb9dc7373fef51"
+    }
+  }
+}

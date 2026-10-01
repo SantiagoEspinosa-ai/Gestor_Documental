@@ -1,0 +1,114 @@
+{
+  "medida": {
+    "id": "cls__credencial_elector_sano_digital__como_pasaporte",
+    "ruta": "auto",
+    "archivo": "credencial_elector_sano_digital.pdf",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": true,
+    "caso": "sano",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "digital",
+    "segundos_preparar": 0.0,
+    "modalidad_detectada": "pdf_digital",
+    "segundos_total": 55.3,
+    "estado": "completado",
+    "tipo_detectado": "credencial_elector",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [
+      "CLS-001"
+    ],
+    "campos": {},
+    "aciertos": 0,
+    "total_campos": 0,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 9.97,
+        "tokens_entrada": 512,
+        "tokens_salida": 82,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 45.25,
+        "tokens_entrada": 717,
+        "tokens_salida": 344,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "3c6d9aeb-f353-4687-97b9-5fdd2c3476e4",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "credencial_elector",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": null,
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": null,
+      "fecha_vencimiento": "2029",
+      "nacionalidad": null,
+      "sexo": null
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "numero_pasaporte": 0.0,
+      "fecha_nacimiento": 1.0,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.0,
+      "nacionalidad": 0.0,
+      "sexo": 0.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "fecha_vencimiento": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [
+      {
+        "id": null,
+        "codigo": "CLS-001",
+        "mensaje": "Tipo declarado 'pasaporte' distinto del detectado 'credencial_elector'",
+        "severidad": "critica",
+        "confianza": 1.0,
+        "campo": null,
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:22:59.924964Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_sano_digital.pdf",
+      "ruta": "local://credencial_elector_sano_digital.pdf",
+      "hash": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019"
+    }
+  }
+}

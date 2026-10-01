@@ -1,0 +1,130 @@
+{
+  "medida": {
+    "id": "auto__credencial_elector_sano_foto",
+    "ruta": "auto",
+    "archivo": "credencial_elector_sano_foto.jpg",
+    "declarado": "credencial_elector",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "foto",
+    "segundos_preparar": 0.6,
+    "modalidad_detectada": "imagen",
+    "segundos_total": 65.0,
+    "estado": "completado",
+    "tipo_detectado": "credencial_elector",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "ok": true
+      },
+      "curp": {
+        "esperado": "AEPA900101MDFXXX01",
+        "extraido": "AEPA900101MDFXXX01",
+        "ok": true
+      },
+      "clave_elector": {
+        "esperado": "EJPRAN90010199M101",
+        "extraido": "EJPRAN90010199M101",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "ok": true
+      },
+      "vigencia": {
+        "esperado": "2029",
+        "extraido": 2029,
+        "ok": true
+      }
+    },
+    "aciertos": 6,
+    "total_campos": 6,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 14.32,
+        "tokens_entrada": 498,
+        "tokens_salida": 69,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 50.07,
+        "tokens_entrada": 691,
+        "tokens_salida": 373,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "64ae80f1-4f62-4490-9ef5-286b8e89299d",
+    "tipo_documental_declarado": "credencial_elector",
+    "tipo_documental_detectado": "credencial_elector",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "curp": "AEPA900101MDFXXX01",
+      "clave_elector": "EJPRAN90010199M101",
+      "fecha_nacimiento": "1990-01-01",
+      "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+      "vigencia": 2029
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "curp": 1.0,
+      "clave_elector": 1.0,
+      "fecha_nacimiento": 1.0,
+      "domicilio": 1.0,
+      "vigencia": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "curp": "pagina_1:seccion_central",
+      "clave_elector": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "domicilio": "pagina_1:seccion_central",
+      "vigencia": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:09:08.470416Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_credencial_elector@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_sano_foto.jpg",
+      "ruta": "local://credencial_elector_sano_foto.jpg",
+      "hash": "d6948dc69216718c6713c724ac68e5683d4c58e483bd1a651c1a9683c6803798"
+    }
+  }
+}

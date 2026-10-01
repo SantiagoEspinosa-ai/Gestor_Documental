@@ -54,8 +54,9 @@ python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf
 - **Regla de modelo** (decidida sin ADR): el enrutador devuelve el proveedor y el proveedor elige su
   modelo: el de texto, sin imagenes, si todas las paginas tienen al menos 30 caracteres de texto (capa del
   PDF u OCR), y el de vision si alguna no llega (`OllamaProvider.modelo_para`, `usa_texto`). Si la
-  extraccion con texto deja vacia la mitad o mas de los campos obligatorios, se reintenta con vision
-  (riesgo 2 del plan); `ultimas_llamadas` registra las dos llamadas con `entrada` y `motivo`.
+  extraccion con texto deja vacia la mitad o mas de los campos obligatorios, el **servicio** reintenta con
+  vision (`OllamaProvider.extraer_con_vision`; riesgo 2 del plan), salvo si salta `CLS-001`. Las dos
+  llamadas quedan en `Analisis.llamadas` con `entrada` y `motivo`.
   `Enrutador.obtener` no cambia, asi que el Contrato 3 tampoco.
 - **Barrera de privacidad** (ADR-003): un proveedor con `privado: false` solo se usa con
   `PERMITIR_PROVEEDORES_NO_PRIVADOS=true` (desarrollo con fixtures ficticios). Si es un principal y la
