@@ -1,0 +1,190 @@
+[
+  {
+    "nombre": "comprobante_domicilio",
+    "nombre_visible": "Comprobante de domicilio",
+    "categoria": "domicilio",
+    "descripcion": "Recibo de servicio (luz, agua, telefono) o estado de cuenta con domicilio del titular.",
+    "formatos_permitidos": [
+      "pdf",
+      "jpg",
+      "jpeg",
+      "png"
+    ],
+    "campos": {
+      "nombre_titular": {
+        "tipo": "texto",
+        "obligatorio": true
+      },
+      "domicilio": {
+        "tipo": "texto",
+        "obligatorio": true
+      },
+      "proveedor": {
+        "tipo": "texto",
+        "obligatorio": false
+      },
+      "fecha_emision": {
+        "tipo": "fecha",
+        "obligatorio": true
+      }
+    },
+    "confianza_minima_clasificacion": 0.8,
+    "confianza_minima_campo": 0.75,
+    "reglas": [
+      {
+        "id": "antiguedad_maxima",
+        "tipo": "fecha_no_anterior_a_hoy_menos_dias",
+        "campo": "fecha_emision",
+        "dias": 90,
+        "severidad": "critica",
+        "mensaje": "El comprobante tiene mas de 3 meses"
+      }
+    ],
+    "comparaciones": {
+      "credencial_elector": [
+        "domicilio"
+      ]
+    }
+  },
+  {
+    "nombre": "credencial_elector",
+    "nombre_visible": "Credencial de elector",
+    "categoria": "identificacion",
+    "descripcion": "Credencial para votar vigente, anverso (y reverso opcional).",
+    "formatos_permitidos": [
+      "pdf",
+      "jpg",
+      "jpeg",
+      "png"
+    ],
+    "campos": {
+      "nombre_completo": {
+        "tipo": "texto",
+        "obligatorio": true
+      },
+      "curp": {
+        "tipo": "texto",
+        "obligatorio": true,
+        "patron": "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"
+      },
+      "clave_elector": {
+        "tipo": "texto",
+        "obligatorio": false
+      },
+      "fecha_nacimiento": {
+        "tipo": "fecha",
+        "obligatorio": true
+      },
+      "domicilio": {
+        "tipo": "texto",
+        "obligatorio": true
+      },
+      "vigencia": {
+        "tipo": "anio",
+        "obligatorio": true
+      }
+    },
+    "confianza_minima_clasificacion": 0.85,
+    "confianza_minima_campo": 0.8,
+    "reglas": [
+      {
+        "id": "vigencia_documento",
+        "tipo": "anio_mayor_o_igual_actual",
+        "campo": "vigencia",
+        "severidad": "bloqueante",
+        "mensaje": "La credencial esta vencida"
+      },
+      {
+        "id": "formato_curp_valido",
+        "tipo": "patron",
+        "campo": "curp",
+        "severidad": "critica",
+        "mensaje": "La CURP no tiene un formato valido"
+      }
+    ],
+    "comparaciones": {
+      "pasaporte": [
+        "nombre_completo",
+        "fecha_nacimiento"
+      ],
+      "comprobante_domicilio": [
+        "domicilio"
+      ]
+    }
+  },
+  {
+    "nombre": "pasaporte",
+    "nombre_visible": "Pasaporte",
+    "categoria": "identificacion",
+    "descripcion": "Pasaporte vigente, pagina de datos personales con zona MRZ.",
+    "formatos_permitidos": [
+      "pdf",
+      "jpg",
+      "jpeg",
+      "png"
+    ],
+    "campos": {
+      "nombre_completo": {
+        "tipo": "texto",
+        "obligatorio": true
+      },
+      "numero_pasaporte": {
+        "tipo": "texto",
+        "obligatorio": true,
+        "patron": "^[A-Z0-9]{8,9}$"
+      },
+      "fecha_nacimiento": {
+        "tipo": "fecha",
+        "obligatorio": true
+      },
+      "fecha_expedicion": {
+        "tipo": "fecha",
+        "obligatorio": false
+      },
+      "fecha_vencimiento": {
+        "tipo": "fecha",
+        "obligatorio": true
+      },
+      "nacionalidad": {
+        "tipo": "texto",
+        "obligatorio": false
+      },
+      "sexo": {
+        "tipo": "texto",
+        "obligatorio": false
+      }
+    },
+    "confianza_minima_clasificacion": 0.85,
+    "confianza_minima_campo": 0.8,
+    "reglas": [
+      {
+        "id": "vigencia_documento",
+        "tipo": "fecha_posterior_a_hoy",
+        "campo": "fecha_vencimiento",
+        "severidad": "bloqueante",
+        "mensaje": "El pasaporte esta vencido"
+      },
+      {
+        "id": "vigencia_proxima",
+        "tipo": "fecha_posterior_a_hoy_mas_dias",
+        "campo": "fecha_vencimiento",
+        "dias": 90,
+        "severidad": "preventiva",
+        "mensaje": "El pasaporte vence en menos de 90 dias"
+      },
+      {
+        "id": "formato_numero",
+        "tipo": "patron",
+        "campo": "numero_pasaporte",
+        "severidad": "critica",
+        "mensaje": "El numero de pasaporte no tiene un formato valido"
+      }
+    ],
+    "comparaciones": {
+      "credencial_elector": [
+        "nombre_completo",
+        "fecha_nacimiento"
+      ]
+    }
+  }
+]

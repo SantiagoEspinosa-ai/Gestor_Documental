@@ -1,0 +1,870 @@
+[
+  {
+    "folio": "ONB-2026-000001",
+    "proceso": "onboarding",
+    "referencia_externa": "CLI-000101",
+    "fecha_solicitud": "2026-09-28T09:15:00Z",
+    "estado_general": "en_revision",
+    "documentos": [
+      {
+        "folio_solicitud": "ONB-2026-000001",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000001000001",
+        "tipo_documental_declarado": "pasaporte",
+        "tipo_documental_detectado": "pasaporte",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "LUIS DEMO PRUEBAS",
+          "numero_pasaporte": "ZX0000002",
+          "fecha_nacimiento": "1985-06-15",
+          "fecha_expedicion": "2016-08-31",
+          "fecha_vencimiento": "2026-08-31",
+          "nacionalidad": "UTOPICA",
+          "sexo": "M"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 0.88,
+          "numero_pasaporte": 0.97,
+          "fecha_nacimiento": 0.92,
+          "fecha_expedicion": 0.9,
+          "fecha_vencimiento": 0.86,
+          "nacionalidad": 0.98,
+          "sexo": 0.86
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "pagina_1",
+          "numero_pasaporte": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "fecha_expedicion": "pagina_1",
+          "fecha_vencimiento": "pagina_1",
+          "nacionalidad": "pagina_1",
+          "sexo": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "formato_numero"
+          ],
+          "incumplidas": [
+            "vigencia_documento",
+            "vigencia_proxima"
+          ]
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000003",
+            "codigo": "REG-vigencia_documento",
+            "mensaje": "El pasaporte esta vencido",
+            "severidad": "bloqueante",
+            "confianza": 1.0,
+            "campo": "fecha_vencimiento",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          },
+          {
+            "id": "alr-000004",
+            "codigo": "REG-vigencia_proxima",
+            "mensaje": "El pasaporte vence en menos de 90 dias",
+            "severidad": "preventiva",
+            "confianza": 1.0,
+            "campo": "fecha_vencimiento",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          },
+          {
+            "id": "alr-000001",
+            "codigo": "VAL-003",
+            "mensaje": "Valor de nacionalidad tomado de la MRZ: no se leyo en la zona visual",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "nacionalidad",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          },
+          {
+            "id": "alr-000002",
+            "codigo": "VAL-003",
+            "mensaje": "Valor de sexo tomado de la MRZ: no se leyo en la zona visual",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "sexo",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": "revision_manual",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-28T09:16:40Z",
+          "proveedor": "ollama",
+          "modelo": "qwen2.5vl:3b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "pasaporte_vencido_escaneado.pdf",
+          "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000001.pdf",
+          "hash": "34e4b2f91a6b515f2759b3d807116c42755614b2d680164e798e8c9db56ba489"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000001",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000001000002",
+        "tipo_documental_declarado": "credencial_elector",
+        "tipo_documental_detectado": "credencial_elector",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "LUIS DEMO PRUEBAS",
+          "curp": "DEPL850615HDFXXX02",
+          "clave_elector": "DEPRLU85061599H102",
+          "fecha_nacimiento": "1985-06-15",
+          "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+          "vigencia": 2029
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 0.96,
+          "curp": 0.91,
+          "clave_elector": 0.62,
+          "fecha_nacimiento": 0.97,
+          "domicilio": 0.94,
+          "vigencia": 0.88
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "pagina_1",
+          "curp": "pagina_1",
+          "clave_elector": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "domicilio": "pagina_1",
+          "vigencia": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "vigencia_documento",
+            "formato_curp_valido"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000005",
+            "codigo": "VAL-002",
+            "mensaje": "Confianza de clave_elector (0.62) por debajo del minimo de la ficha (0.80)",
+            "severidad": "preventiva",
+            "confianza": 0.62,
+            "campo": "clave_elector",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": "revision_manual",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-28T09:17:40Z",
+          "proveedor": "ollama",
+          "modelo": "qwen2.5vl:3b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "credencial_elector_vencido_foto.jpg",
+          "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000002.jpg",
+          "hash": "22311aa31b84acd5fd808df72094bb0723531f91593dbc422f26d2ea17e4d86e"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000001",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000001000003",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": "comprobante_domicilio",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_titular": "LUIS DEMO PRUEBAS",
+          "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+          "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+          "fecha_emision": "2026-09-15"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_titular": 0.87,
+          "domicilio": 0.91,
+          "proveedor": 0.97,
+          "fecha_emision": 0.9
+        },
+        "evidencia_por_campo": {
+          "nombre_titular": "pagina_1",
+          "domicilio": "pagina_1",
+          "proveedor": "pagina_1",
+          "fecha_emision": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "antiguedad_maxima"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-28T09:18:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
+          "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000003.pdf",
+          "hash": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000001",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000001000004",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": "comprobante_domicilio",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_titular": "LUIS DEMO PRUEBAS",
+          "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+          "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+          "fecha_emision": "2026-09-15"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_titular": 0.87,
+          "domicilio": 0.91,
+          "proveedor": 0.97,
+          "fecha_emision": 0.9
+        },
+        "evidencia_por_campo": {
+          "nombre_titular": "pagina_1",
+          "domicilio": "pagina_1",
+          "proveedor": "pagina_1",
+          "fecha_emision": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "antiguedad_maxima"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000006",
+            "codigo": "DUP-001",
+            "mensaje": "Mismo SHA-256 que el documento 00000000-0000-4000-8000-000001000003 del folio",
+            "severidad": "critica",
+            "confianza": 1.0,
+            "campo": null,
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": "revision_manual",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-28T09:19:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
+          "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000004.pdf",
+          "hash": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2"
+        }
+      }
+    ],
+    "comparaciones": [
+      {
+        "campo": "domicilio",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000001000002": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+          "00000000-0000-4000-8000-000001000003": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+          "00000000-0000-4000-8000-000001000004": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO"
+        }
+      },
+      {
+        "campo": "fecha_nacimiento",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000001000001": "1985-06-15",
+          "00000000-0000-4000-8000-000001000002": "1985-06-15"
+        }
+      },
+      {
+        "campo": "nombre_completo",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000001000001": "LUIS DEMO PRUEBAS",
+          "00000000-0000-4000-8000-000001000002": "LUIS DEMO PRUEBAS"
+        }
+      }
+    ],
+    "alertas_expediente": [],
+    "recomendacion_global": "revision_manual",
+    "decision_humana": null,
+    "comentario_decision": null,
+    "usuario_decision": null,
+    "fecha_decision": null,
+    "ruta_resumen_md": null
+  },
+  {
+    "folio": "ONB-2026-000002",
+    "proceso": "onboarding",
+    "referencia_externa": "CLI-000102",
+    "fecha_solicitud": "2026-09-29T11:40:00Z",
+    "estado_general": "en_revision",
+    "documentos": [
+      {
+        "folio_solicitud": "ONB-2026-000002",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000002000001",
+        "tipo_documental_declarado": "credencial_elector",
+        "tipo_documental_detectado": "credencial_elector",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "ANA EJEMPLO PRUEBA",
+          "curp": "AEPA900101MDFXXX01",
+          "clave_elector": "EJPRAN90010199M101",
+          "fecha_nacimiento": "1990-01-01",
+          "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "vigencia": 2029
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 1.0,
+          "curp": 0.91,
+          "clave_elector": 0.91,
+          "fecha_nacimiento": 0.97,
+          "domicilio": 0.94,
+          "vigencia": 0.88
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "correccion_revisor",
+          "curp": "pagina_1",
+          "clave_elector": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "domicilio": "pagina_1",
+          "vigencia": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "vigencia_documento",
+            "formato_curp_valido"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [
+          {
+            "campo": "nombre_completo",
+            "valor_anterior": "ANA EJEMPL0 PRUEBA",
+            "valor_nuevo": "ANA EJEMPLO PRUEBA",
+            "usuario": "revisor.demo",
+            "fecha": "2026-09-29T12:05:00Z"
+          }
+        ],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-29T11:41:40Z",
+          "proveedor": "ollama",
+          "modelo": "qwen2.5vl:3b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "credencial_elector_domicilio_distinto_escaneado.pdf",
+          "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000001.pdf",
+          "hash": "ce0e2ac91a272e9215b1d6114a9b8569a1212dde9d06e3ce728ad6afefdef398"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000002",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000002000002",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": "comprobante_domicilio",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_titular": "ANA EJEMPLO PRUEBA",
+          "domicilio": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
+          "proveedor": null,
+          "fecha_emision": "2026-09-15"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_titular": 0.87,
+          "domicilio": 0.91,
+          "proveedor": 0.0,
+          "fecha_emision": 0.9
+        },
+        "evidencia_por_campo": {
+          "nombre_titular": "pagina_1",
+          "domicilio": "pagina_1",
+          "fecha_emision": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "antiguedad_maxima"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000007",
+            "codigo": "VAL-004",
+            "mensaje": "Falta el campo opcional proveedor",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "proveedor",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": "revision_manual",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-29T11:42:40Z",
+          "proveedor": "ollama",
+          "modelo": "qwen2.5vl:3b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_domicilio_distinto_foto.jpg",
+          "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000002.jpg",
+          "hash": "c0cef4f378646a6c23c4c2eb546c733fbb6b4f0a3f5b7078673f2b447b09adf5"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000002",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000002000003",
+        "tipo_documental_declarado": "pasaporte",
+        "tipo_documental_detectado": null,
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": null,
+        "datos_extraidos": {},
+        "nivel_confianza_por_campo": {},
+        "evidencia_por_campo": {},
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": null,
+        "estado_analisis": "pendiente",
+        "fecha_y_modelo_utilizado": null,
+        "referencia_archivo_original": {
+          "nombre_archivo": "pasaporte_domicilio_distinto_digital.pdf",
+          "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000003.pdf",
+          "hash": "8573f96ba1982a3fc848902d3be366a8c0f51cb2f96445e42a12bf09d9965b90"
+        }
+      }
+    ],
+    "comparaciones": [
+      {
+        "campo": "domicilio",
+        "coincide": false,
+        "valores": {
+          "00000000-0000-4000-8000-000002000001": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "00000000-0000-4000-8000-000002000002": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO"
+        }
+      }
+    ],
+    "alertas_expediente": [
+      {
+        "id": "alr-000008",
+        "codigo": "CMP-001",
+        "mensaje": "Los documentos no coinciden en domicilio",
+        "severidad": "critica",
+        "confianza": 1.0,
+        "campo": "domicilio",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "recomendacion_global": "revision_manual",
+    "decision_humana": null,
+    "comentario_decision": null,
+    "usuario_decision": null,
+    "fecha_decision": null,
+    "ruta_resumen_md": null
+  },
+  {
+    "folio": "ONB-2026-000003",
+    "proceso": "onboarding",
+    "referencia_externa": null,
+    "fecha_solicitud": "2026-09-30T08:05:00Z",
+    "estado_general": "en_revision",
+    "documentos": [
+      {
+        "folio_solicitud": "ONB-2026-000003",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000003000001",
+        "tipo_documental_declarado": "credencial_elector",
+        "tipo_documental_detectado": "credencial_elector",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "ANA EJEMPLO PRUEBA",
+          "curp": "AEPA900101MDFXXX01",
+          "clave_elector": "EJPRAN90010199M101",
+          "fecha_nacimiento": "1990-01-01",
+          "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "vigencia": 2029
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 0.96,
+          "curp": 0.91,
+          "clave_elector": 0.91,
+          "fecha_nacimiento": 0.97,
+          "domicilio": 0.94,
+          "vigencia": 0.88
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "pagina_1",
+          "curp": "pagina_1",
+          "clave_elector": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "domicilio": "pagina_1",
+          "vigencia": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "vigencia_documento",
+            "formato_curp_valido"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-30T08:06:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "credencial_elector_sano_digital.pdf",
+          "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000001.pdf",
+          "hash": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000003",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000003000002",
+        "tipo_documental_declarado": "pasaporte",
+        "tipo_documental_detectado": null,
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": null,
+        "datos_extraidos": {},
+        "nivel_confianza_por_campo": {},
+        "evidencia_por_campo": {},
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000009",
+            "codigo": "SYS-001",
+            "mensaje": "Fallo del proveedor principal y sin respaldo",
+            "severidad": "critica",
+            "confianza": 1.0,
+            "campo": null,
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": null,
+        "estado_analisis": "error",
+        "fecha_y_modelo_utilizado": null,
+        "referencia_archivo_original": {
+          "nombre_archivo": "pasaporte_sano_foto.jpg",
+          "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000002.jpg",
+          "hash": "de8469e84785466615ab18fefb645b6d0e6edb16264b43cc18474dc80b567480"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000003",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000003000003",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": null,
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": null,
+        "datos_extraidos": {},
+        "nivel_confianza_por_campo": {},
+        "evidencia_por_campo": {},
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": null,
+        "estado_analisis": "error",
+        "fecha_y_modelo_utilizado": null,
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_sano_escaneado.pdf",
+          "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000003.pdf",
+          "hash": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c"
+        }
+      }
+    ],
+    "comparaciones": [],
+    "alertas_expediente": [
+      {
+        "id": "alr-000010",
+        "codigo": "EXP-001",
+        "mensaje": "Falta el documento requerido: Comprobante de domicilio",
+        "severidad": "bloqueante",
+        "confianza": 1.0,
+        "campo": "comprobante_domicilio",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "recomendacion_global": "revision_manual",
+    "decision_humana": null,
+    "comentario_decision": null,
+    "usuario_decision": null,
+    "fecha_decision": null,
+    "ruta_resumen_md": null
+  },
+  {
+    "folio": "ONB-2026-000004",
+    "proceso": "onboarding",
+    "referencia_externa": "CLI-000104",
+    "fecha_solicitud": "2026-09-25T10:00:00Z",
+    "estado_general": "aprobado",
+    "documentos": [
+      {
+        "folio_solicitud": "ONB-2026-000004",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000004000001",
+        "tipo_documental_declarado": "pasaporte",
+        "tipo_documental_detectado": "pasaporte",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "ANA EJEMPLO PRUEBA",
+          "numero_pasaporte": "ZX0000001",
+          "fecha_nacimiento": "1990-01-01",
+          "fecha_expedicion": "2021-09-30",
+          "fecha_vencimiento": "2031-09-30",
+          "nacionalidad": "UTOPICA",
+          "sexo": "F"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 0.88,
+          "numero_pasaporte": 0.97,
+          "fecha_nacimiento": 0.92,
+          "fecha_expedicion": 0.9,
+          "fecha_vencimiento": 0.86,
+          "nacionalidad": 0.98,
+          "sexo": 0.86
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "pagina_1",
+          "numero_pasaporte": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "fecha_expedicion": "pagina_1",
+          "fecha_vencimiento": "pagina_1",
+          "nacionalidad": "pagina_1",
+          "sexo": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "vigencia_documento",
+            "vigencia_proxima",
+            "formato_numero"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-25T10:01:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "pasaporte_sano_digital.pdf",
+          "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000001.pdf",
+          "hash": "44a92b42e7d1e55944ea5a7d250abbc49fa0c79792cda02f87c77c3eb8c06d6c"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000004",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000004000002",
+        "tipo_documental_declarado": "credencial_elector",
+        "tipo_documental_detectado": "credencial_elector",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_completo": "ANA EJEMPLO PRUEBA",
+          "curp": "AEPA900101MDFXXX01",
+          "clave_elector": "EJPRAN90010199M101",
+          "fecha_nacimiento": "1990-01-01",
+          "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "vigencia": 2029
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_completo": 0.96,
+          "curp": 0.91,
+          "clave_elector": 0.91,
+          "fecha_nacimiento": 0.97,
+          "domicilio": 0.94,
+          "vigencia": 0.88
+        },
+        "evidencia_por_campo": {
+          "nombre_completo": "pagina_1",
+          "curp": "pagina_1",
+          "clave_elector": "pagina_1",
+          "fecha_nacimiento": "pagina_1",
+          "domicilio": "pagina_1",
+          "vigencia": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "vigencia_documento",
+            "formato_curp_valido"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-25T10:02:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "credencial_elector_sano_digital.pdf",
+          "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000002.pdf",
+          "hash": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019"
+        }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000004",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000004000003",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": "comprobante_domicilio",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": 0.94,
+        "datos_extraidos": {
+          "nombre_titular": "ANA EJEMPLO PRUEBA",
+          "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+          "fecha_emision": "2026-09-15"
+        },
+        "nivel_confianza_por_campo": {
+          "nombre_titular": 0.87,
+          "domicilio": 0.91,
+          "proveedor": 0.97,
+          "fecha_emision": 0.9
+        },
+        "evidencia_por_campo": {
+          "nombre_titular": "pagina_1",
+          "domicilio": "pagina_1",
+          "proveedor": "pagina_1",
+          "fecha_emision": "pagina_1"
+        },
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [
+            "antiguedad_maxima"
+          ],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": "aprobar",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-25T10:03:40Z",
+          "proveedor": "ollama",
+          "modelo": "gemma4:e2b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_sano_digital.pdf",
+          "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000003.pdf",
+          "hash": "b59751ccf862284e16643d0004d1d2e74f262036b2f55d8c1508774055ff184a"
+        }
+      }
+    ],
+    "comparaciones": [
+      {
+        "campo": "domicilio",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000004000002": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "00000000-0000-4000-8000-000004000003": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO"
+        }
+      },
+      {
+        "campo": "fecha_nacimiento",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000004000001": "1990-01-01",
+          "00000000-0000-4000-8000-000004000002": "1990-01-01"
+        }
+      },
+      {
+        "campo": "nombre_completo",
+        "coincide": true,
+        "valores": {
+          "00000000-0000-4000-8000-000004000001": "ANA EJEMPLO PRUEBA",
+          "00000000-0000-4000-8000-000004000002": "ANA EJEMPLO PRUEBA"
+        }
+      }
+    ],
+    "alertas_expediente": [],
+    "recomendacion_global": "aprobar",
+    "decision_humana": "aprobar",
+    "comentario_decision": "Documentacion completa y coherente",
+    "usuario_decision": "revisor.demo",
+    "fecha_decision": "2026-09-26T12:30:00Z",
+    "ruta_resumen_md": "onboarding/2026/000004/resumen.md"
+  }
+]
