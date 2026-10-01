@@ -12,8 +12,9 @@ from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado, SecuenciaFolio
 from app.modulos.ingesta import servicio as ingesta
-from app.schemas.resultado import (DecisionHumana, EstadoAnalisis, EstadoGeneral, ResultadoExpediente,
-                                   ResumenFolio, Severidad)
+from app.modulos.validacion import servicio as validacion
+from app.schemas.resultado import (ComparacionCampo, DecisionHumana, EstadoAnalisis, EstadoGeneral,
+                                   ResultadoExpediente, ResumenFolio, Severidad)
 
 MAX_SECUENCIA = 999_999  # NNNNNN
 
@@ -42,9 +43,7 @@ def _tipo_efectivo(sesion: Session, documento: Documento) -> str | None:
     """Confirmado por el revisor > detectado en el resultado vigente > declarado al subir."""
     if documento.tipo_documental_confirmado:
         return documento.tipo_documental_confirmado
-    vigente = sesion.scalar(select(Resultado.json).where(Resultado.documento_id == documento.id)
-                            .order_by(Resultado.version.desc()).limit(1))
-    return (vigente or {}).get("tipo_documental_detectado") or documento.tipo_declarado
+    return _resultado_vigente(sesion, documento).get("tipo_documental_detectado") or documento.tipo_declarado
 
 
 def recalcular_exp001(sesion: Session, folio: str) -> None:
@@ -74,6 +73,46 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
                     sesion.delete(alerta)
         elif not del_tipo:
             _crear_exp001(sesion, folio, tipo)
+    sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
+
+
+def _resultado_vigente(sesion: Session, documento: Documento) -> dict:
+    return sesion.scalar(select(Resultado.json).where(Resultado.documento_id == documento.id)
+                         .order_by(Resultado.version.desc()).limit(1)) or {}
+
+
+def comparaciones_actuales(sesion: Session, folio: str) -> list[ComparacionCampo]:
+    """Comparaciones entre los documentos `completado` del folio, calculadas al vuelo (no se guardan)."""
+    completados = sesion.scalars(select(Documento).where(
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value)
+        .order_by(Documento.creado_en, Documento.id)).all()
+    documentos = [validacion.DocumentoComparable(
+        id=str(d.id), tipo=_tipo_efectivo(sesion, d),
+        datos=_resultado_vigente(sesion, d).get("datos_extraidos") or {}) for d in completados]
+    # TODO: las fichas saldran de configuracion.servicio.listar() de PERSONA_2 (hoy, el stub de ingesta)
+    return validacion.comparar(documentos, ingesta.listar_tipos())
+
+
+def recalcular_cmp001(sesion: Session, folio: str) -> None:
+    """Una CMP-001 (critica, de expediente) por campo comparado que no coincide. Sin commit; idempotente.
+
+    El mensaje lleva solo el nombre del campo, nunca los valores (son datos personales). Se borran las
+    CMP-001 sin revisar (`aplica` NULL) de campos que ya coinciden o ya no se comparan; las revisadas
+    se conservan.
+    """
+    sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama
+    no_coinciden = {c.campo for c in comparaciones_actuales(sesion, folio) if not c.coincide}
+    existentes = sesion.scalars(select(AlertaBD).where(
+        AlertaBD.folio == folio, AlertaBD.documento_id.is_(None), AlertaBD.codigo == "CMP-001")).all()
+
+    for alerta in existentes:
+        if alerta.campo not in no_coinciden and alerta.aplica is None:
+            sesion.delete(alerta)
+    con_alerta = {a.campo for a in existentes}
+    for campo in sorted(no_coinciden - con_alerta):
+        sesion.add(AlertaBD(folio=folio, documento_id=None, codigo="CMP-001",
+                            severidad=Severidad.critica.value, confianza=1.0, campo=campo,
+                            mensaje=f"Los documentos no coinciden en {campo}"))
     sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
 
 
@@ -127,7 +166,7 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         fecha_solicitud=fila.creado_en,              # ADR-004
         estado_general=EstadoGeneral(fila.estado_general),
         documentos=[ingesta.construir_resultado(sesion, d) for d in documentos],
-        comparaciones=[],
+        comparaciones=comparaciones_actuales(sesion, folio),
         alertas_expediente=[ingesta.alerta_desde_bd(a) for a in alertas_expediente],
         recomendacion_global=None,
         decision_humana=DecisionHumana(fila.decision) if fila.decision else None,

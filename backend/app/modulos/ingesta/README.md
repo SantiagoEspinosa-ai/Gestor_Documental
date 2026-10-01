@@ -53,9 +53,9 @@ PERSONA_2 este en main.
 Si falla la descarga, el motor lanza o el resultado es de otro documento/folio: estado `error`, sin
 `Resultado` y sin relanzar. Al reprocesar solo se muestran las alertas del motor de la version nueva;
 las de plataforma (`DUP-001`, `EXP-001`, `CMP-001`, con `version_resultado` NULL) se conservan.
-Antes del commit llama a `expediente.servicio.recalcular_exp001` (en la misma transaccion). El import
-es diferido (`_expediente_servicio()`) para romper el ciclo expediente -> ingesta.servicio ->
-procesamiento -> expediente.
+Antes del commit llama a `expediente.servicio.recalcular_exp001` y `recalcular_cmp001` (en la misma
+transaccion). El import es diferido (`_expediente_servicio()`) para romper el ciclo
+expediente -> ingesta.servicio -> procesamiento -> expediente.
 
 ## Interfaz acordada con el motor (PERSONA_2)
 `app.modulos.orquestador.servicio.procesar_documento(contenido: bytes, *, identificador: str,
