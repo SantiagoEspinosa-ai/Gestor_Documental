@@ -100,6 +100,16 @@ lo anterior de este prompt los contradice, prevalecen ellos.
 - Etapa 3: `GET /folios/{folio}/resumen.md` devuelve 404 `RESUMEN_NO_DISPONIBLE` mientras no exista.
 - Fuera del MVP: reprocesar documentos en `error`.
 
+## Cambios de contrato aceptados el 2026-09-30 (ADR-008)
+Aplicados en `resultado.py` y `endpoints.md` por el PR de contratos `docs/contratos-adr-008`.
+- `GET /auditoria` paginado (`PaginaAuditoria`: `{elementos, total, pagina, tamano_pagina}`,
+  `tamano_pagina` 50 por defecto y de 1 a 100, orden `creado_en` desc e `id` desc, filtro por `folio`,
+  422 `PETICION_INVALIDA` fuera de rango). Ya implementado en el PR #3: quitar de `api/README.md` la
+  nota de desviacion ("Pendiente de reflejar en endpoints.md").
+- `ResumenFolio.referencia_externa`: rellenarlo en `expediente.listar_folios` desde
+  `folios.referencia_externa` (`null` si el folio se creo sin ella), con su test en `backend/tests/`,
+  cuando el PR de contratos este en `main`.
+
 ## Etapa 3 (dias 9-12)
 - `modulos/expediente/resumen.py`: plantilla Jinja `expediente/plantillas/resumen.md.j2` con
   referencia de la persona, tipos presentados, datos validados, alertas, resultado, decisiones y
