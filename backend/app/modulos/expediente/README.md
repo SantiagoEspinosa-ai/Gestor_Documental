@@ -78,3 +78,11 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
 La recomendacion global no usa `ResultadoDocumento.recomendacion`. Esa la da el motor de PERSONA_2 al
 analizar, y la plataforma no la recalcula al corregir datos o resolver alertas (acordado con
 PERSONA_2). Si se quiere recalcular, hay que hablarlo con ella.
+
+## EXP-002
+`recalcular_exp002(sesion, folio)`: una `EXP-002` informativa, de plataforma y en el DOCUMENTO
+(`documento_id` = el documento, `version_resultado` NULL, `campo` = tipo), por cada documento
+`completado` cuyo tipo efectivo no esta en `tipos_requeridos` ni en `tipos_opcionales` del proceso.
+Si el tipo pasa a estar previsto, se borran las sin revisar o confirmadas; solo se conservan los
+falsos positivos. No bloquea ni cambia la recomendacion. Sin commit e idempotente; la llaman el
+procesamiento y `confirmar_clasificacion`, junto a `recalcular_exp001`.

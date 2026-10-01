@@ -87,6 +87,35 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
     sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
 
 
+def recalcular_exp002(sesion: Session, folio: str) -> None:
+    """EXP-002 (informativa, de plataforma, EN EL DOCUMENTO) por cada documento `completado` cuyo tipo
+    EFECTIVO no esta ni en `tipos_requeridos` ni en `tipos_opcionales` del proceso. Sin commit; idempotente.
+
+    Si el tipo deja de ser no previsto (p. ej. al confirmar otro), se borran sus EXP-002 sin revisar o
+    confirmadas; solo se conservan los falsos positivos (`aplica` False). No bloquea ni cambia la
+    recomendacion (es informativa). Los documentos no completados no se tocan.
+    """
+    sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama
+    proceso = sesion.get(Proceso, sesion.get(Folio, folio).proceso)
+    previstos = set(proceso.tipos_requeridos or []) | set(proceso.tipos_opcionales or [])
+    completados = sesion.scalars(select(Documento).where(
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value)).all()
+    for doc in completados:
+        tipo = _tipo_efectivo(sesion, doc)
+        no_previsto = tipo if tipo and tipo not in previstos else None
+        existentes = sesion.scalars(select(AlertaBD).where(
+            AlertaBD.documento_id == doc.id, AlertaBD.codigo == "EXP-002")).all()
+        for alerta in existentes:
+            if alerta.campo != no_previsto and alerta.aplica is not False:  # solo falsos positivos
+                sesion.delete(alerta)
+        if no_previsto and not any(a.campo == no_previsto for a in existentes):
+            sesion.add(AlertaBD(folio=folio, documento_id=doc.id, version_resultado=None, codigo="EXP-002",
+                                severidad=Severidad.informativa.value, confianza=1.0, campo=no_previsto,
+                                mensaje=f"Tipo de documento no previsto en el proceso: "
+                                        f"{ingesta.nombre_visible_tipo(no_previsto)}"))
+    sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
+
+
 def _tipo_extraccion(sesion: Session, documento: Documento) -> str | None:
     """Tipo de EXTRACCION (ADR-006 2.5): confirmado previo > declarado > detectado del resultado vigente."""
     return (documento.tipo_documental_confirmado or documento.tipo_declarado
@@ -432,6 +461,7 @@ def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,
             alerta.resuelta_por_revisor = True
     # Un documento pendiente ya no cuenta para EXP-001 ni para las comparaciones
     recalcular_exp001(sesion, doc.folio)
+    recalcular_exp002(sesion, doc.folio)
     recalcular_cmp001(sesion, doc.folio)
     auditoria.registrar(sesion, "clasificacion_confirmada", usuario=usuario, folio=doc.folio,
                         documento_id=doc.id, detalle={"tipo": tipo, "reproceso": reprocesar})

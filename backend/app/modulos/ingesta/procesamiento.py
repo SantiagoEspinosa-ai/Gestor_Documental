@@ -83,6 +83,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
             doc.estado_analisis = resultado.estado_analisis.value  # completado o error, lo que diga el motor
             expediente = _expediente_servicio()
             expediente.recalcular_exp001(sesion, doc.folio)
+            expediente.recalcular_exp002(sesion, doc.folio)
             expediente.recalcular_cmp001(sesion, doc.folio)
             auditoria.registrar(sesion, "documento_procesado", folio=doc.folio, documento_id=doc.id,
                                 modelo=datos.get("modelo"), version_prompt=datos.get("version_prompt"),

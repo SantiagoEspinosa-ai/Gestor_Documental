@@ -19,6 +19,7 @@ La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
 | `DUP-001` | ingesta | critica | Mismo SHA-256 ya presente en el folio (no bloquea la subida) |
 | `CMP-001` | validacion (comparaciones) | critica | Un campo de `comparaciones` no coincide entre documentos del folio (va en `alertas_expediente`, una por campo; ADR-006, 2.3) |
 | `EXP-001` | expediente | bloqueante | Falta un documento de `tipos_requeridos` del proceso (va en `alertas_expediente`) |
+| `EXP-002` | expediente | informativa | Documento de un tipo que el proceso no pide (ni en `tipos_requeridos` ni en `tipos_opcionales`); va en `alertas_encontradas` del documento, con `campo` = tipo |
 | `SYS-001` | motor_ia | critica | Fallo del proveedor principal y sin respaldo; `estado_analisis=error` |
 | `SYS-002` | motor_ia | critica | JSON del modelo invalido tras el reintento de correccion |
 | `SYS-003` | motor_ia | preventiva | El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido |
