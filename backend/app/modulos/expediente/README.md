@@ -22,5 +22,5 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   ADR-004); `decision_humana`, `comentario_decision`, `usuario_decision` y `fecha_decision`
   (= `decision*` del folio, ADR-006 G). Error: 404 `FOLIO_NO_ENCONTRADO`.
 - `listar_folios(sesion, proceso=None, estado_general=None, pagina=1, tamano_pagina=20) -> (list[ResumenFolio], total)`
-  Del mas reciente al mas antiguo (`creado_en`, `folio`). `n_bloqueantes_sin_resolver`: alertas
+  Del mas reciente al mas antiguo (`creado_en`, `folio`). `referencia_externa` = la del folio (ADR-008). `n_bloqueantes_sin_resolver`: alertas
   bloqueantes del folio, de documento o de expediente, con `aplica` NULL o true (ADR-006 2.2).

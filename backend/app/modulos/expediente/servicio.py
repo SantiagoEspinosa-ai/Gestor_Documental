@@ -167,7 +167,7 @@ def listar_folios(sesion: Session, proceso: str | None = None,
     elementos = [
         ResumenFolio(folio=f.folio, proceso=f.proceso, estado_general=EstadoGeneral(f.estado_general),
                      recomendacion_global=None, n_documentos=docs, n_bloqueantes_sin_resolver=bloq,
-                     fecha_solicitud=f.creado_en)
+                     fecha_solicitud=f.creado_en, referencia_externa=f.referencia_externa)  # ADR-008
         for f, docs, bloq in filas
     ]
     return elementos, total

@@ -27,7 +27,7 @@ class EntradaAuditoria(BaseModel):
 
 
 class PaginaAuditoria(BaseModel):
-    """Se aparta de ADR-006 1.5 ("lista de EntradaAuditoria"); se formalizara con el ADR-008 (PERSONA_3)."""
+    """Respuesta de GET /auditoria (ADR-008, endpoints.md)."""
     elementos: list[EntradaAuditoria]
     total: int
     pagina: int

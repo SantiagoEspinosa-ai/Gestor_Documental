@@ -30,8 +30,8 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
 - Query: `proceso?`, `estado_general?` (en_revision | aprobado | rechazado), `pagina` >= 1,
   `tamano_pagina` 1-100 (20 por defecto).
 - Salida 200: `{elementos: [ResumenFolio], total, pagina, tamano_pagina}`, del mas reciente al mas antiguo.
-  `ResumenFolio` (Contrato 1, ADR-006 1.1) = `{folio, proceso, estado_general, recomendacion_global,
-  n_documentos, n_bloqueantes_sin_resolver, fecha_solicitud}`. `PaginaFolios` es del Contrato 2.
+  `ResumenFolio` (Contrato 1, ADR-006 1.1 y ADR-008) = `{folio, proceso, estado_general,
+  recomendacion_global, n_documentos, n_bloqueantes_sin_resolver, fecha_solicitud, referencia_externa}`. `PaginaFolios` es del Contrato 2.
 - Errores: 422 `PETICION_INVALIDA`.
 
 ### GET /api/v1/folios/{folio} (cualquier rol)
@@ -83,9 +83,7 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 
 ### GET /api/v1/auditoria (admin)
 - Query: `folio?`, `pagina` >= 1, `tamano_pagina` 1-100 (50 por defecto).
-- Salida 200: `{elementos: [EntradaAuditoria], total, pagina, tamano_pagina}`, del mas reciente al
-  mas antiguo (`creado_en` desc, `id` desc). `EntradaAuditoria` = `{id, usuario, accion, folio,
+- Salida 200: `PaginaAuditoria` (ADR-008) = `{elementos: [EntradaAuditoria], total, pagina,
+  tamano_pagina}`, del mas reciente al mas antiguo (`creado_en` desc, `id` desc). `EntradaAuditoria` = `{id, usuario, accion, folio,
   documento_id (str o null), detalle, modelo, version_prompt, creado_en}`.
-- La respuesta paginada se aparta de ADR-006 1.5 ("lista de `EntradaAuditoria`"); se formalizara con
-  el ADR-008 (lo redacta PERSONA_3), que tambien anade `referencia_externa` a `ResumenFolio`.
 - Errores: 401; 403 `SIN_PERMISO` (revisor, integrador); 422 `PETICION_INVALIDA`.
