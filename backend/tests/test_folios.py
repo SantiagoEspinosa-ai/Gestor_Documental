@@ -298,6 +298,14 @@ def test_lista_paginacion_total_filtros_y_orden(cliente, sesion):
                                       "referencia_externa"}  # ADR-008
 
 
+def test_lista_con_referencia_externa(cliente, sesion):  # ADR-008
+    servicio.crear_folio(sesion, "onboarding", "CLI-000123", "x")
+    servicio.crear_folio(sesion, "otro", None, "x")
+    elementos = cliente.get(URL, headers=_cab("revisor")).json()["elementos"]
+    por_proceso = {e["proceso"]: e["referencia_externa"] for e in elementos}
+    assert por_proceso == {"onboarding": "CLI-000123", "otro": None}
+
+
 @pytest.mark.parametrize("params", [{"estado_general": "cerrado"}, {"pagina": 0},
                                     {"tamano_pagina": 101}])
 def test_lista_parametros_invalidos(cliente, params):

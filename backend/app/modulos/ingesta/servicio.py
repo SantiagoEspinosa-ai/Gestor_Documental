@@ -4,15 +4,16 @@ import logging
 import uuid
 from pathlib import PurePath
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core import auditoria
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Documento, Folio, Resultado
-from app.modulos.ingesta import tipos
+from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado
+from app.modulos.ingesta import procesamiento, tipos
+from app.schemas.resultado import Correccion as CorreccionContrato
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
                                    ResultadoDocumento, Severidad)
 
@@ -114,7 +115,8 @@ def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre
     return documento
 
 
-def _documento(sesion: Session, documento_id: str) -> Documento:
+def obtener_documento(sesion: Session, documento_id: str) -> Documento:
+    """Documento por id; 404 DOCUMENTO_NO_ENCONTRADO si no existe o el id no es un UUID."""
     try:
         doc = sesion.get(Documento, uuid.UUID(documento_id))
     except ValueError:
@@ -124,26 +126,57 @@ def _documento(sesion: Session, documento_id: str) -> Documento:
     return doc
 
 
+def _aplicar_correcciones(sesion: Session, resultado: ResultadoDocumento, documento_id: uuid.UUID,
+                          version: int) -> ResultadoDocumento:
+    """Correcciones de esa version, en orden: gana el ultimo valor; confianza 1.0 y evidencia
+    "correccion_revisor" (ADR-006 2.4). Las de otras versiones no se aplican."""
+    filas = sesion.scalars(select(Correccion).where(
+        Correccion.documento_id == documento_id, Correccion.version_resultado == version)
+        .order_by(Correccion.creado_en, Correccion.id)).all()
+    if not filas:
+        return resultado
+    datos = dict(resultado.datos_extraidos)
+    confianzas = dict(resultado.nivel_confianza_por_campo)
+    evidencias = dict(resultado.evidencia_por_campo)
+    for c in filas:
+        datos[c.campo] = c.valor_nuevo
+        confianzas[c.campo] = 1.0
+        evidencias[c.campo] = "correccion_revisor"
+    return resultado.model_copy(update={
+        "datos_extraidos": datos, "nivel_confianza_por_campo": confianzas, "evidencia_por_campo": evidencias,
+        "correcciones": [CorreccionContrato(campo=c.campo, valor_anterior=c.valor_anterior,
+                                            valor_nuevo=c.valor_nuevo, usuario=c.usuario, fecha=c.creado_en)
+                         for c in filas]})
+
+
 def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocumento:
     """ResultadoDocumento de un documento, con la BD como fuente de verdad.
 
     Con resultado: la version mayor, sobrescribiendo con la BD `estado_analisis`,
-    `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision).
+    `tipo_documental_confirmado` y `alertas_encontradas` (tabla `alertas`, con id y revision: las de
+    plataforma y las del motor de esa version), y con las correcciones del revisor de ESA version
+    aplicadas encima (ADR-006 2.4).
     Sin resultado todavia: uno minimo con el estado de la fila y sus alertas.
     Lo usan GET /documentos/{id} y el expediente, para que los dos digan lo mismo.
     """
-    alertas = [alerta_desde_bd(a) for a in sesion.scalars(
-        select(AlertaBD).where(AlertaBD.documento_id == documento.id)
-        .order_by(AlertaBD.creado_en, AlertaBD.id))]
-    estado = EstadoAnalisis(documento.estado_analisis)
     fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == documento.id)
                          .order_by(Resultado.version.desc()).limit(1))
+    # De plataforma (version_resultado NULL) + las del motor de la version vigente; las de versiones
+    # anteriores del motor ya no se muestran al reprocesar
+    vigentes = AlertaBD.version_resultado.is_(None)
     if fila is not None:
-        return ResultadoDocumento.model_validate(fila.json).model_copy(update={
+        vigentes = or_(vigentes, AlertaBD.version_resultado == fila.version)
+    alertas = [alerta_desde_bd(a) for a in sesion.scalars(
+        select(AlertaBD).where(AlertaBD.documento_id == documento.id, vigentes)
+        .order_by(AlertaBD.creado_en, AlertaBD.id))]
+    estado = EstadoAnalisis(documento.estado_analisis)
+    if fila is not None:
+        resultado = ResultadoDocumento.model_validate(fila.json).model_copy(update={
             "estado_analisis": estado,
             "tipo_documental_confirmado": documento.tipo_documental_confirmado,
             "alertas_encontradas": alertas,
         })
+        return _aplicar_correcciones(sesion, resultado, documento.id, fila.version)
     return ResultadoDocumento(
         folio_solicitud=documento.folio,
         identificador_unico_documento=str(documento.id),
@@ -160,7 +193,7 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
 
 def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
     """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
-    return construir_resultado(sesion, _documento(sesion, documento_id))
+    return construir_resultado(sesion, obtener_documento(sesion, documento_id))
 
 
 def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
@@ -168,7 +201,7 @@ def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: 
 
     Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
     """
-    return almacenamiento.url_prefirmada(_documento(sesion, documento_id).ruta_s3)
+    return almacenamiento.url_prefirmada(obtener_documento(sesion, documento_id).ruta_s3)
 
 
 def listar_tipos() -> list[dict]:
@@ -179,3 +212,13 @@ def listar_tipos() -> list[dict]:
 def nombre_visible_tipo(tipo: str) -> str:
     """Nombre legible de un tipo documental (p. ej. para mensajes de alerta)."""
     return tipos.nombre_visible(tipo)
+
+
+def procesar_documento(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
+    """Procesa el documento en segundo plano (BackgroundTask): ver `procesamiento.procesar`."""
+    procesamiento.procesar(documento_id, tipo_confirmado)
+
+
+def existe_tipo(tipo: str) -> bool:
+    """True si hay ficha para ese tipo documental."""
+    return tipos.existe_tipo(tipo)

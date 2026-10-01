@@ -10,7 +10,6 @@ from app.core.errores import ErrorApi
 from app.core.modelos import Usuario
 from app.core.seguridad import requiere_rol, usuario_actual
 from app.modulos.ingesta import servicio as ingesta
-from app.modulos.ingesta.procesamiento_stub import procesar_documento
 from app.schemas.resultado import EstadoAnalisis, ResultadoDocumento
 
 router = APIRouter(prefix="/api/v1", tags=["documentos"])
@@ -39,7 +38,7 @@ def subir(folio: str, background_tasks: BackgroundTasks, archivo: UploadFile = F
 
     documento = ingesta.ingestar(sesion, almacenamiento, folio, archivo.filename or "", datos,
                                  tipo_declarado or None, usuario.usuario)
-    background_tasks.add_task(procesar_documento, documento.id)
+    background_tasks.add_task(ingesta.procesar_documento, documento.id)
     return DocumentoAceptado(identificador_unico_documento=str(documento.id),
                              estado_analisis=EstadoAnalisis.pendiente)
 
