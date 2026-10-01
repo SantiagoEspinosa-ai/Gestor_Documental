@@ -1,6 +1,8 @@
 """
 Integracion con los fixtures ficticios de PERSONA_3 y el Tesseract real: preparar() no debe quedar por
 debajo de la linea base (150/153 campos) y la MRZ debe dar el sexo y detectar lecturas erroneas.
+Solo se usan los casos y el nivel conocidos (normal: digital, escaneado y foto de sano, vencido y
+domicilio_distinto): si PERSONA_3 anade fixtures o niveles nuevos, este test no cambia.
 Se salta si no hay fixtures (no estan en git). Ejecucion: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 8.
 """
 import os
@@ -14,7 +16,11 @@ import pytest
 from app.modulos.orquestador.mrz import buscar_mrz, validar_digitos
 from app.modulos.orquestador.preparador import preparar
 
-LINEA_BASE = 150  # de 153 (scripts/verificar_ocr_fixtures.py de PERSONA_3, 2026-09-30)
+# Linea base: 150 de 153 campos (scripts/verificar_ocr_fixtures.py de PERSONA_3, 2026-09-30), es decir, como
+# mucho 3 campos sin encontrar en los casos conocidos.
+MAX_NO_ENCONTRADOS = 3
+CASOS_CONOCIDOS = {"sano", "vencido", "domicilio_distinto"}
+NIVEL_NORMAL = re.compile(r".+_(digital|escaneado|foto)\.(pdf|jpg)")  # sin sufijo _dificil / _extremo
 
 
 def _dir_fixtures() -> Path:
@@ -61,7 +67,7 @@ def _indice() -> dict[str, dict]:
             en_mrz = not en_mrz
         elif en_mrz:
             actual["mrz"].append(linea)
-    return {a: d for a, d in documentos.items() if d["caso"] != "duplicado"}
+    return {a: d for a, d in documentos.items() if d["caso"] in CASOS_CONOCIDOS and NIVEL_NORMAL.fullmatch(a)}
 
 
 @pytest.fixture(scope="module")
@@ -80,8 +86,8 @@ def test_no_baja_de_la_linea_base(preparados):
                 encontrados += 1
             else:
                 fallos.append(f"{archivo}:{campo}")
-    assert total == 153
-    assert encontrados >= LINEA_BASE, f"{encontrados}/{total}; no encontrados: {fallos}"
+    assert len(preparados) == 3 * 3 * len(CASOS_CONOCIDOS) and total > 0   # 3 tipos x 3 modalidades por caso
+    assert total - encontrados <= MAX_NO_ENCONTRADOS, f"{encontrados}/{total}; no encontrados: {fallos}"
 
 
 def test_modalidades_de_los_fixtures(preparados):

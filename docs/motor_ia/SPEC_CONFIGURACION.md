@@ -16,16 +16,16 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 |---|---|---|---|
 | Fichas de tipos documentales | `config/tipos/*.yaml` (repo) | `configuracion/cargador.py`, expuesto por `configuracion/servicio.py` | implementado |
 | `ejemplos_referencia` de las fichas | `config/tipos/*.yaml`: fixtures del caso sano en `fixtures/generados/`, con las mismas modalidades que ya tenia cada ficha (acordado con PERSONA_3) | referencia; test de nombres en `test_configuracion.py` | implementado |
-| Fixtures de prueba | `fixtures/generados/` (en `.gitignore`): 30 ficheros + `INDICE.md`, generados en local con `scripts/generar_fixtures.py` de `feat/interfaz` (seccion 8) | tests de `ocr.py` y del preparador; valores esperados en `INDICE.md` | generados en local el 2026-09-30 |
+| Fixtures de prueba | `fixtures/generados/` (en `.gitignore`): **42 fixtures** (27 de los casos sano, vencido y domicilio_distinto + 3 duplicados + 12 de dificultad) + `INDICE.md`, generados en local con `scripts/generar_fixtures.py` (en `main` desde el PR #10; seccion 8). Especimenes (fotos de movil): `fixtures/especimenes/` (PR #10) | tests de `ocr.py` y del preparador; evaluacion (`evaluar_fixtures.py`); valores esperados en `INDICE.md` | generados en local |
 | Asignacion de modelos por tarea | `config/modelos.yaml` (repo) | `motor_ia/enrutador.py` (`crear_enrutador`), validacion estricta | implementado |
-| Barrera de privacidad | `.env`: `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`) | `motor_ia/enrutador.py` | implementado; falta en `.env.example` (PR pendiente) y avisar al equipo |
-| Nombres de los modelos de Ollama | `.env`: `OLLAMA_MODELO_TEXTO`, `OLLAMA_MODELO_VISION` | leidos por el enrutador via `modelos.yaml` (`modelo_texto_env`, `modelo_vision_env`) | implementado; `.env.example` pendiente de PR |
+| Barrera de privacidad | `.env`: `PERMITIR_PROVEEDORES_NO_PRIVADOS` (por defecto `false`) | `motor_ia/enrutador.py` | implementado; en `.env.example` (PR #5) |
+| Nombres de los modelos de Ollama | `.env`: `OLLAMA_MODELO_TEXTO`, `OLLAMA_MODELO_VISION` | leidos por el enrutador via `modelos.yaml` (`modelo_texto_env`, `modelo_vision_env`) | implementado; en `.env.example` (PR #5) |
 | URL de Ollama | `.env`: `OLLAMA_BASE_URL` | la lee el enrutador y la pasa a `OllamaProvider(base_url, ...)` | implementado |
 | Proveedor comercial (respaldo) | `.env`: `PROVEEDOR_COMERCIAL_*` (ADR-003) | `motor_ia/proveedores/openrouter.py` | pendiente (cuenta sin crear) |
-| Carpeta de configuracion | `.env` opcional: `CONFIG_DIR`; por defecto `config/` de la raiz del repo | `configuracion/cargador.py` | implementado; falta en `.env.example` |
-| Carpeta de prompts | `.env` opcional: `PROMPTS_DIR` (en Docker, `/prompts`); por defecto `prompts/` de la raiz del repo | `motor_ia/prompts.py` | implementado; falta en `.env.example` |
-| Prompts versionados | `prompts/<id>_<version>.md` (repo), con frontmatter `id`, `version`, `salida` | `motor_ia/prompts.py` (`renderizar`) | implementado: v1 y v2 |
-| Version vigente de cada prompt | constante `VERSIONES_VIGENTES` en `motor_ia/prompts.py` (`clasificacion: v2`, `extraccion: v2`, `correccion_json: v1`) | `motor_ia/prompts.py` | implementado |
+| Carpeta de configuracion | `.env` opcional: `CONFIG_DIR`; por defecto `config/` de la raiz del repo | `configuracion/cargador.py` | implementado; en `.env.example` |
+| Carpeta de prompts | `.env` opcional: `PROMPTS_DIR` (en Docker, `/prompts`); por defecto `prompts/` de la raiz del repo | `motor_ia/prompts.py` | implementado; en `.env.example` (PR #5) |
+| Prompts versionados | `prompts/<id>_<version>.md` (repo), con frontmatter `id`, `version`, `salida` | `motor_ia/prompts.py` (`renderizar`) | implementado: v1, v2 y v3 |
+| Version vigente de cada prompt | constante `VERSIONES_VIGENTES` en `motor_ia/prompts.py` (`clasificacion: v2`, `extraccion: v3`, `correccion_json: v1`) | `motor_ia/prompts.py` | implementado |
 | Borradores de prompts | `docs/motor_ia/pruebas_ollama/prompts_borrador/` (repo) | `extraccion_v2b.md` paso a `prompts/extraccion_v2.md` | referencia |
 | Parametros de llamada (`TEMPERATURA`, `NUM_PREDICT`, `NUM_CTX`, `ANCHO_MAX_IMAGEN`, `MAX_PAGINAS_POR_LLAMADA_VISION`, `MAX_CARACTERES_TEXTO`, timeouts, `KEEP_ALIVE`) | constantes en `motor_ia/proveedores/base.py` | `motor_ia/proveedores/*.py` | implementado (valores en la seccion 4) |
 | Procesos (`procesos.yaml`) | `config/procesos.yaml` (repo) | modulo de PERSONA_1 | fuera de este ambito |
@@ -154,7 +154,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Lotes de vision | `MAX_PAGINAS_POR_LLAMADA_VISION = 4`. Con mas paginas no se ignora ninguna: se procesan por lotes de 4 y se combinan (`combinar_lotes`). Por campo, el valor no nulo con evidencia valida; ante empate, el de la pagina mas baja; si ningun lote tiene evidencia valida, el primer valor no nulo. La clasificacion solo usa el primer lote. En un lote, `pagina_1..k` relativa a las imagenes enviadas se traduce a la pagina real | Cada pagina A4 a 1000 px suma ~1 850 tokens y ~130 s en CPU | `proveedores/base.py`, `proveedores/ollama.py` | unitario con Ollama simulado |
 | Contexto | `NUM_CTX = 16384`. Medido (`pruebas_ollama/prueba_num_ctx.py`): 1 pagina A4 + prompt = 2 457 tokens; 4 paginas + prompt + 20 000 caracteres = 13 476; con `NUM_PREDICT` quedan ~2 100 de margen (13 %) | Si no se fija, Ollama usa un contexto menor y recorta la entrada sin avisar. **Se mantiene fijo** (2026-10-01): bajarlo a 8192 solo ahorra ~0,3 GB del modelo y ~0,1 GB de consumo real, y la vision pasa a ser el caso poco frecuente | `proveedores/base.py` | unitario del cuerpo de la peticion |
 | Timeouts | Texto: 120 s. Vision: 60 s + 150 s por imagen (4 imagenes -> 660 s). El reintento de correccion, sin imagenes, usa el de texto | Medido: 4 paginas = 499 s solo de lectura del prompt; un timeout fijo de 300 s fallaria siempre | `proveedores/base.py` (`timeout_vision`) | unitario |
-| Texto largo | `MAX_CARACTERES_TEXTO = 20000`: `recortar_texto` respeta el orden de las paginas y marca `[texto recortado]`. Si se recorta, alerta **`SYS-003`** (preventiva): "El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido". En el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main` | Mantener el prompt dentro de `NUM_CTX` | `proveedores/base.py`; la alerta, en `motor_ia/servicio.py` (tarea 9) | unitario |
+| Texto largo | `MAX_CARACTERES_TEXTO = 20000`: `recortar_texto` respeta el orden de las paginas y marca `[texto recortado]`. Si se recorta, alerta **`SYS-003`** (preventiva): "El texto del documento supera `MAX_CARACTERES_TEXTO` y se ha recortado; los campos de las paginas finales pueden no haberse extraido". En el catalogo desde el PR #4 (`docs/adr-007-y-alertas`, fusionado en `main`) | Mantener el prompt dentro de `NUM_CTX` | `proveedores/base.py`; la alerta, en `motor_ia/servicio.py` (tarea 9) | unitario |
 | Evidencia | Valida: `pagina_<n>[:detalle]` de una pagina del documento. En vision solo `pagina_<n>`; en texto se conserva el detalle (p. ej. `pagina_1:Fecha de caducidad`). Si es invalida, se quita: el Contrato 1 no admite valores nulos | `qwen2.5vl:3b` copia la seccion del ejemplo o devuelve `seccion_superior` sin pagina | `proveedores/base.py` | unitario con respuestas guardadas |
 | Campos y tipos | Solo se conservan los campos de la ficha (`qwen` anadio `tipo` y `pais_emisor`); un campo ausente queda `null` con confianza 0. **`""` y los textos solo con espacios (incluidos tabuladores, saltos de linea y espacio duro) pasan a `null`** con confianza 0 y sin evidencia, en cualquier tipo de campo, para que `VAL-001` y `VAL-004` los vean como ausentes (acordado con PERSONA_3). `anio` de 4 cifras -> entero; si no, texto original con confianza 0. Los valores que no son texto se convierten a texto | La regla `anio_mayor_o_igual_actual` compara numeros | `proveedores/base.py` | unitario |
 | Fecha no normalizable | Se conserva el texto original con confianza 0 (p. ej. `"mayo 2034"`). **Las reglas de fecha de la etapa 2 deben tratarlo como fecha invalida y generar una alerta, sin fallar** | Que el revisor vea el dato y no salte un falso `VAL-001` (obligatorio ausente) | `proveedores/base.py`; reglas en `validacion/reglas.py` (etapa 2) | unitario |
@@ -182,10 +182,10 @@ Reglas de `motor_ia/prompts.py`:
 
 | Regla | Detalle |
 |---|---|
-| `version_prompt` (`FechaYModelo`) | Sigue el ejemplo de `resultado.py`. Extraccion: `<id>_<tipo>@<version>` (p. ej. `extraccion_pasaporte@v2`). Clasificacion, sin tipo: `clasificacion@v2` |
+| `version_prompt` (`FechaYModelo`) | Sigue el ejemplo de `resultado.py`. Extraccion: `<id>_<tipo>@<version>` (p. ej. `extraccion_pasaporte@v3`). Clasificacion, sin tipo: `clasificacion@v2` |
 | Variables | Jinja con `StrictUndefined`: si falta una variable, `ErrorPrompt`. `tipo_documental` se pasa aparte y tambien es variable del prompt |
 | Contenido del documento | Se inserta como valor; nunca se interpreta como plantilla (un `{{ ... }}` del documento queda literal) |
-| Formato comun | `formatear_contenido` (`--- pagina_<n> ---`; `(sin texto extraido)` si no hay texto), `formatear_tipos`, `formatear_esquema`, `formatear_contexto_rag` (`(sin contexto)` si esta vacio) |
+| Formato comun | `formatear_contenido` (`--- pagina_<n> ---`; `(sin texto extraido)` si no hay texto), `formatear_tipos`, `formatear_esquema` (con obligatoriedad; v1 y v2), `formatear_campos` (sin obligatoriedad; `extraccion_v3`), `formatear_contexto_rag` (`(sin contexto)` si esta vacio) |
 | Errores | `ErrorPrompt`: fichero inexistente, frontmatter ausente o mal formado, `id`/`version` distintos del nombre del fichero, plantilla invalida, prompt sin version vigente |
 
 Nota: el borrador `extraccion_v2.md` (fechas convertidas por el modelo) queda como referencia de lo
@@ -207,7 +207,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Preparador: sin Tesseract | Las paginas que necesitaban OCR quedan con `texto=None`; aviso unico en el log, sin el nombre del archivo; la vision sigue | plan de la tarea 4 | implementado |
 | Preparador: limite de paginas | Ninguno en el MVP (el proveedor trabaja por lotes de 4) | plan de la tarea 4 | decidido |
 | CLI sin BD ni S3 | `folio_solicitud = "CLI-2026-000000"`; `referencia_archivo_original.ruta = "local://<nombre_archivo>"` (sin rutas personales); `hash` = SHA-256 real del archivo | objetivo de la etapa 1 | decidido (tarea 10) |
-| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. `SYS-003` (preventiva): texto recortado. Informativas: `SYS-005` (motor_ia: se uso el proveedor de respaldo) y `VAL-003` (orquestador/ocr: campo tomado de la MRZ). `SYS-004` se retiro en la revision del PR #4 (la ingesta rechaza con 415) y no se reutiliza; `SYS-005` conserva su numero. Catalogo: `docs/contratos/codigos_alertas.md`; `SYS-003`, `SYS-005` y `VAL-003`, en el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`. El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | `CLS-001`, `SYS-001`, `SYS-002`, `SYS-003`, `SYS-005` y `VAL-003` implementados en `motor_ia/servicio.py` (seccion 10); `CLS-002` y `VAL-002`, en la etapa 2 (deuda ADR-007) |
+| Codigos de alerta del motor | `CLS-001` (critica): tipo declarado distinto del detectado. `SYS-001` (critica): fallo del proveedor sin respaldo. `SYS-002` (critica): JSON invalido tras el reintento. `SYS-003` (preventiva): texto recortado. Informativas: `SYS-005` (motor_ia: se uso el proveedor de respaldo) y `VAL-003` (orquestador/ocr: campo tomado de la MRZ). `SYS-004` se retiro en la revision del PR #4 (la ingesta rechaza con 415) y no se reutiliza; `SYS-005` conserva su numero. Catalogo: `docs/contratos/codigos_alertas.md`; `SYS-003`, `SYS-005` y `VAL-003`, en el catalogo desde el PR #4 (`docs/adr-007-y-alertas`, fusionado en `main`). El motor no rellena `Alerta.id` | prompt de PERSONA_2, ADR-006 | `CLS-001`, `SYS-001`, `SYS-002`, `SYS-003`, `SYS-005` y `VAL-003` implementados en `motor_ia/servicio.py` (seccion 10); `CLS-002` y `VAL-002`, en la etapa 2 (deuda ADR-007) |
 | `Tarea.validacion` (Contrato 3) | Se acepta en `modelos.yaml`, pero no se usa: la validacion son reglas deterministas en `validacion/reglas.py`, sin modelo. No se cambia el contrato | analisis de la etapa 0; tarea 8 | implementado (el enrutador la acepta) |
 | Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
@@ -223,18 +223,19 @@ se queda solo con `pagina_<n>` (seccion 4).
       contenedor del backend.
 - [x] **OCR + texto frente a vision** medido el 2026-10-01 en el contenedor: OCR + `gemma4:e2b` 7/7 en ~68 s;
       `qwen2.5vl:3b` 6/7 en ~130 s. Regla nueva del enrutador (seccion 3).
-- [ ] **Probar credencial de elector y comprobante de domicilio**: solo se ha probado el pasaporte.
-- [x] **Fixtures de PERSONA_3** generados en local el 2026-09-30 (30 ficheros + `INDICE.md`), sin anadir sus
-      scripts a `feat/motor-ia`. `ejemplos_referencia` de las fichas apuntan al caso sano.
+- [x] **Probar credencial de elector y comprobante de domicilio**: evaluados con los tres tipos en los bloques 1 y 3
+      (`pruebas_ollama/resultados/evaluacion/informe.md`).
+- [x] **Fixtures de PERSONA_3** generados en local: 42 fixtures (27 + 3 duplicados + 12 de dificultad) + `INDICE.md`;
+      el generador esta en `main` desde el PR #10. `ejemplos_referencia` de las fichas apuntan al caso sano.
 - [ ] **OpenRouter**: crear la cuenta gratuita y probar los prompts con fixtures ficticios (propuesto al equipo).
 - [ ] **Aplicar ADR-006**: 1.5 serializar `TipoDocumental` en `configuracion/servicio.py` (para
       `/tipos-documentales`) y 2.5 `tipo_confirmado` en `procesar_documento` (etapa 2).
-- [ ] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2) al abrir el PR de
-      etapa: es un fichero compartido.
-- [ ] Aviso a PERSONA_1: `configuracion.cargar()` en el arranque de `main.py` (mensaje preparado).
-- [ ] **Fusionar el PR unico `docs/adr-007-y-alertas` (PR #4, `4263190`), pendiente de fusionar en `main`**: ADR-007 aceptado, `SYS-003`,
-      `SYS-005`, `VAL-003` y el comentario de `resultado.py` (sin `SYS-004`, retirado en la revision). Sustituye a las ramas `docs/adr-007-confianza`
-      y `docs/alerta-sys-003` (borradas del remoto y en local). Abrir el PR y avisar al equipo.
+- [x] **Avisar al equipo del cambio en `CLAUDE.md`** (linea de la spec de PERSONA_2): avisado en la descripcion
+      del PR #11 (etapa 1), con el resto de ficheros compartidos.
+- [x] Aviso a PERSONA_1: `configuracion.cargar()` en el arranque de `main.py`, `ingesta/tipos.py` y las fichas como
+      dict en `validacion.comparar`: en la descripcion del PR #11.
+- [x] **PR unico `docs/adr-007-y-alertas` (PR #4) fusionado en `main`**: ADR-007 aceptado, `SYS-003`, `SYS-005`,
+      `VAL-003` y el comentario de `resultado.py` (sin `SYS-004`, retirado en la revision).
 - [ ] **DEUDA ADR-007 (aceptado) - fecha limite: etapa 2, antes de `validacion/reglas.py` y de la
       recomendacion.** Hoy `nivel_confianza_por_campo` y `confianza_clasificacion` guardan la confianza del
       modelo como valor **provisional** y no se emiten `CLS-002` ni `VAL-002` (seccion 10). Hay que: calcular
@@ -251,6 +252,17 @@ se queda solo con `pagina_<n>` (seccion 4).
       y ensenarlo antes de resolver.
 - [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
       `orquestador` para evitar la importacion circular.
+- [ ] **Valor reservado `desconocido`** (ADR-009, PROPUESTO, rama `docs/adr-009-desconocido`): ver seccion 10.
+      PR pequeno antes de la etapa 2.
+- [ ] **Notas para la etapa 2** (revision de PERSONA_3 en el PR #11):
+      - (a) `procesar_documento` **no sustituye al stub** de la ingesta (`ingesta/motor_stub.py`) hasta que la
+        confianza la calcule el codigo (ADR-007): la UI la muestra como "Confianza verificada", y hoy es la del
+        modelo (provisional, siempre 0,9-1).
+      - (b) Anadir la **version del prompt de clasificacion** a `datos_auditoria` (hoy `version_prompt` solo es
+        el de la extraccion; si no hubo extraccion, el de la clasificacion).
+      - (c) Cuando llegue `openrouter.py`, formalizar con un ADR en `interfaces.py` (Contrato 3, congelado)
+        `extraer_con_vision`, `clasificar_con_vision` y `ultima_llamada`/`ultimas_llamadas`. Hoy son metodos de
+        `OllamaProvider` que el servicio usa solo si existen (`hasattr`/`getattr`), sin cambiar el contrato.
 - [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
       confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
 - [ ] **Reglas de coherencia (etapa 2, `validacion/reglas.py`)**, propuestas tras el bloque 3 de la evaluacion
@@ -293,8 +305,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Senal 5 de OCR pobre: confianza por palabra de Tesseract** (`image_to_data` en `orquestador/ocr.py`), para
       los errores sin senal (p. ej. `GALLE FICTICIA 123`). Despues de probar con los especimenes; calibrar con los
       fixtures normales, dificiles y los especimenes.
-- [ ] **Especimenes de PERSONA_3** (`fixtures/especimenes/`, fotos de movil de documentos ficticios impresos; en
-      `feat/interfaz`): esperar a que lleguen a `main` y hacer merge. Seran la prueba final con fotos reales: 5 fotos
+- [ ] **Especimenes de PERSONA_3** (`fixtures/especimenes/`, fotos de movil de documentos ficticios impresos): en
+      `main` desde el PR #10 y ya integrados en `feat/motor-ia`; pendiente de evaluarlos. Seran la prueba final con fotos reales: 5 fotos
       (pasaporte buena; credencial y comprobante buena y dificil), valores esperados = caso `sano` de `INDICE.md`
       con `--hoy 2026-09-30`; anadir el nivel `especimen` a `evaluar_fixtures.py`. Verificar antes que no tienen
       metadatos. **Aviso: sus fechas impresas no cambian; desde el 2026-12-14 el comprobante dara
@@ -313,17 +325,15 @@ se queda solo con `pagina_<n>` (seccion 4).
 
 | Entorno | Comando (desde la raiz del repo) | Notas |
 |---|---|---|
-| Contenedor del backend (recomendado) | `docker compose build backend` y despues `MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/scripts:/scripts:ro" backend python -m pytest -q` | Incluye PyMuPDF y Tesseract. `--no-deps` no levanta `db` ni `ollama`; `--rm` borra el contenedor al terminar. Hay que montar `scripts/`: varios tests de PERSONA_1 cargan `scripts/crear_usuario.py` de la raiz del repo. Reconstruir la imagen si cambia `requirements.txt`. Requiere `.env` y Docker Desktop en marcha |
+| Contenedor del backend (recomendado) | `docker compose build backend` y despues `MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/scripts:/scripts:ro" -v "<repo>/fixtures:/fixtures:ro" -v "<repo>/frontend:/frontend:ro" -v "<repo>/docs:/docs:ro" backend python -m pytest -q` | Incluye PyMuPDF y Tesseract. `--no-deps` no levanta `db` ni `ollama`; `--rm` borra el contenedor al terminar. Los tests buscan la raiz del repo en `/`: `scripts/` (p. ej. `crear_usuario.py` de PERSONA_1), `fixtures/` (integracion OCR y especimenes), `frontend/` (contrato del frontend y mocks) y `docs/` (`codigos_alertas.md`). Sin alguno, sus tests se saltan o fallan. Resultado el 2026-10-01: 670 pasan y 2 se saltan (requieren `TEST_POSTGRES_URL`). Reconstruir la imagen si cambia `requirements.txt`. Requiere `.env` y Docker Desktop en marcha |
 | venv local | `cd backend && .venv/Scripts/python -m pytest -q` | En Windows necesita el Visual C++ Redistributable x64 para PyMuPDF |
-| Contenedor + fixtures (integracion OCR) | `MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures:ro" -v "<repo>/scripts:/scripts:ro" backend python -m pytest -q` | `test_fixtures_ocr.py` busca `FIXTURES_DIR`, `/fixtures/generados` o `fixtures/generados` del repo; sin fixtures o sin Tesseract se salta |
+| Solo la integracion OCR | `MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures:ro" backend python -m pytest -q tests/test_fixtures_ocr.py` | `test_fixtures_ocr.py` busca `FIXTURES_DIR`, `/fixtures/generados` o `fixtures/generados` del repo; sin fixtures o sin Tesseract se salta. Solo usa los casos y el nivel conocidos (sano, vencido y domicilio_distinto en digital, escaneado y foto): no se rompe si se anaden fixtures |
 
-Generar los fixtures de PERSONA_3 sin anadir sus scripts a esta rama (desde la raiz del repo, en Git Bash):
+Generar los fixtures de PERSONA_3 (el script esta en `main` desde el PR #10; desde la raiz del repo, en Git Bash):
 
 ```
-mkdir -p <scratchpad>/fixtures_p3 fixtures/generados
-git show origin/feat/interfaz:scripts/generar_fixtures.py > <scratchpad>/fixtures_p3/generar_fixtures.py
 MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtures" \
-  -v "<scratchpad>/fixtures_p3:/scripts:ro" backend python /scripts/generar_fixtures.py --hoy AAAA-MM-DD
+  -v "<repo>/scripts:/scripts:ro" backend python /scripts/generar_fixtures.py --hoy AAAA-MM-DD
 ```
 
 El script calcula sus rutas desde su ubicacion: montado en `/scripts`, lee `/config` y escribe en
@@ -331,8 +341,8 @@ El script calcula sus rutas desde su ubicacion: montado en `/scripts`, lee `/con
 
 ## 9. OCR (`orquestador/ocr.py`, tarea 3)
 
-Implementado: `ocr.py` (`OCRProvider`, `TesseractOCR`), `mrz.py` y `preparador.py`. Resultado con los fixtures
-(`test_fixtures_ocr.py`, 2026-09-30): **151/153 campos**, por encima de la linea base (en `pdf_digital` se usa
+Implementado: `ocr.py` (`OCRProvider`, `TesseractOCR`), `mrz.py` y `preparador.py`. Resultado con los 27 fixtures
+de los casos conocidos en nivel normal (`test_fixtures_ocr.py`, 2026-09-30): **151/153 campos**, por encima de la linea base (en `pdf_digital` se usa
 la capa de texto). Los 2 que faltan son `sexo` de `pasaporte_vencido_escaneado` y `_foto`; la MRZ da el sexo en
 los 3 pasaportes vencidos. La lectura erronea de la MRZ de `pasaporte_vencido_escaneado` se detecta: fallan los
 digitos de `numero_documento` y `compuesto`. OCR: ~0,8 s por documento en el contenedor.
@@ -357,12 +367,13 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 |---|---|
 | Texto | `recortar_texto` (`MAX_CARACTERES_TEXTO`); si recorta, `SYS-003` (preventiva) |
 | Clasificacion | Prompt `clasificacion_v2` con todas las fichas como tipos posibles. Con `tipo_confirmado` no se clasifica: `tipo_documental_detectado` y `confianza_clasificacion` quedan `None` (la plataforma conserva el detectado de la version anterior) |
-| `CLS-001` (critica) | Hay tipo declarado y el detectado es distinto, incluido `desconocido` |
+| `CLS-001` (critica) | Hay tipo declarado y el detectado es distinto, incluido `desconocido`. Si el texto da `desconocido` y hay imagenes, se decide con la reclasificacion con vision (seccion 3) |
+| Valor reservado `desconocido` | `tipo_documental_detectado = "desconocido"` significa "clasificado, pero no encaja en ninguna ficha" (`DESCONOCIDO` en `proveedores/base.py`). **El contrato no lo recoge**: `resultado.py` solo dice `str \| None` y `endpoints.md` no lo menciona; `null` es otra cosa (no se clasifico: `tipo_confirmado` o error antes de clasificar). Riesgo para los consumidores: tratarlo como nombre de ficha (p. ej. el tipo efectivo `detectado or declarado` del expediente elige `desconocido` frente al declarado). Se documenta con el ADR-009 (PROPUESTO, rama `docs/adr-009-desconocido`) |
 | Ficha para extraer | `tipo_confirmado` > declarado > detectado (ADR-006, 2.5). Un tipo declarado o confirmado que no existe lanza `TipoNoEncontrado` (la ingesta lo valida antes) |
-| Tipo desconocido sin declarado ni confirmado | **No se extrae y no se emite alerta**: `completado` con datos vacios. Si en la etapa 2 hace falta, se pedira un `CLS-003` |
-| Extraccion | Prompt `extraccion_v2` con el esquema de la ficha; `version_prompt` `extraccion_<tipo>@v2` |
+| Tipo desconocido sin declarado ni confirmado | Se reclasifica con vision si hay imagenes; si da un tipo concreto, se extrae con esa ficha. Si sigue `desconocido` (o no hay imagenes): **no se extrae y no se emite alerta**, `completado` con datos vacios. Si en la etapa 2 hace falta, se pedira un `CLS-003` |
+| Extraccion | Prompt `extraccion_v3` con la lista de campos de la ficha (`campos_a_extraer`); `version_prompt` `extraccion_<tipo>@v3` |
 | Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza **1,0** si todos los digitos de control son correctos y **0,5** si alguno falla (provisional hasta ADR-007) |
-| Reintento con vision | Ver seccion 3: lo decide `_reintento_vision`; no se reintenta si salta `CLS-001` |
+| OCR pobre y vision | Ver seccion 3: reclasificacion con vision (`_reclasificar_con_vision`) y reintento (`_reintento_vision`); no se reintenta si salta `CLS-001` con un tipo concreto |
 | Respaldo | Si el principal lanza `ErrorProveedor` (incluido JSON invalido tras el reintento), se prueba el respaldo; si funciona, `SYS-005` (informativa), una sola vez por documento |
 | Sin respaldo o falla tambien | `estado_analisis=error` + `SYS-002` si el ultimo fallo fue JSON invalido, `SYS-001` si no (criticas). Si la clasificacion salio bien, se conserva |
 | `fecha_y_modelo_utilizado` | Proveedor, **modelo real** (`ultima_llamada.modelo`) y `version_prompt` de la extraccion; si no hubo extraccion, los de la clasificacion; `None` si no hubo ninguna llamada correcta |
@@ -418,14 +429,35 @@ MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -v "<repo>/fixtures:/fixtur
   python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf --tipo pasaporte
 ```
 
+## 13. Tiempo por documento
+
+Medido en la VM de pruebas (2 nucleos, sin GPU), evaluacion del 2026-10-01 (`pruebas_ollama/resultados/evaluacion/`),
+un documento de 1 pagina cada vez y un modelo cargado cada vez:
+
+| Documento | Media | Maximo medido | Por que |
+|---|---|---|---|
+| Normal (digital, escaneado o foto; ruta auto) | ~60 s (59,4 s) | 73 s | Texto (capa del PDF u OCR) + `gemma4:e2b`: clasificacion + extraccion |
+| Tipo declarado equivocado (`CLS-001`) | ~55 s | 56 s | Sin reintento con vision |
+| Dificil (ruta auto) | ~150 s | 244 s | Texto + reintento o extraccion con vision (`qwen2.5vl:3b`) |
+| Extremo (ruta auto) | ~156 s | 193 s | Reclasificacion y extraccion con vision |
+| Vision forzada (dificil y extremo) | ~155 s | 195 s | Clasificacion + extraccion con vision |
+
+Limites (timeouts de cada peticion, `proveedores/base.py`): texto **120 s**; vision **60 s + 150 s por imagen**
+(1 pagina: 210 s; lote de 4: 660 s). El reintento de correccion del JSON usa el de texto. Peor caso de un documento
+de 1 pagina con OCR pobre, sin reintentos de correccion: clasificacion con texto (120 s) + reclasificacion con vision
+(210 s) + extraccion con vision (210 s) = **540 s**; cada reintento de correccion suma hasta 120 s y el respaldo, si
+lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno en uno (PR #9): el tiempo de espera
+se suma. En la maquina con GPU hay que volver a medir.
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | este commit |
-| 2026-10-01 | `docs/motor_ia/EXPLICACION_MOTOR.md`: explicacion del motor para el equipo (flujo, modelos probados, historial de mejoras, reglas, resultados, pendientes). Regla: cada cambio de regla, de modelo o resultado de prueba anade una entrada a su historial en el mismo commit | este commit |
+| 2026-10-01 | Revision de PERSONA_3 en el PR #11: 42 fixtures (27 + 3 duplicados + 12 de dificultad); variables ya en `.env.example` (PR #5); prompts vigentes con `extraccion_v3`; PR #4 fusionado; pendientes cumplidos marcados (credencial y comprobante evaluados, avisos del PR #11, especimenes en `main`). Valor reservado `desconocido` (seccion 10) y ADR-009 PROPUESTO en `docs/adr-009-desconocido`. Notas para la etapa 2: stub hasta ADR-007, version del prompt de clasificacion en `datos_auditoria`, ADR para `extraer_con_vision`/`clasificar_con_vision`/`ultima_llamada` con `openrouter.py`. Seccion 13: tiempo por documento. `test_fixtures_ocr.py` filtra los casos y el nivel conocidos (no depende de 153). Comando de tests con `fixtures/`, `frontend/` y `docs/` montados | este commit |
+| 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | `a3e69a9` |
+| 2026-10-01 | `docs/motor_ia/EXPLICACION_MOTOR.md`: explicacion del motor para el equipo (flujo, modelos probados, historial de mejoras, reglas, resultados, pendientes). Regla: cada cambio de regla, de modelo o resultado de prueba anade una entrada a su historial en el mismo commit | `a3e69a9` |
 | 2026-10-01 | `extraccion_v3` sin la obligatoriedad en la lista de campos (`formatear_campos`, variable `campos_a_extraer`): la palabra "opcional" hacia que la vision dejara vacia `fecha_expedicion`; 4 pasaportes dificiles con vision forzada 21/28 -> 25/28. Bloque 3 repetido con la regla de OCR pobre: APRUEBA (dificil 31/34 y 2 incorrectos; extremo 28/34 y 6; tipo 6/6 y 6/6). Bloque 1 repetido: 153/153, 59,4 s. El bloque 4 no se repite: queda como referencia y el informe avisa de que mezcla v2 (8 casos) y v3 (4 pasaportes) | `459ef8f` |
 | 2026-10-01 | Regla de OCR pobre (seccion 3): cuatro senales (texto insuficiente, clasificacion `desconocido`, obligatorios vacios, formato invalido); reclasificacion con vision cuando el texto da `desconocido`, con `CLS-001` decidido segun la vision; extraccion directa con vision si la clasificacion ya detecto OCR pobre; motivos en `InfoLlamada.motivo`. Prompt `extraccion_v3` (asignar por etiqueta; corrige `fecha_expedicion` vacia en vision); observaciones visuales pasan a v4. Pendientes: confianza de Tesseract y especimenes | `903f09b` |
 | 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | `8058e7e` |

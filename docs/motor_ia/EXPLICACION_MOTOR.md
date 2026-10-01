@@ -184,6 +184,20 @@ Nota: el bloque 4 no se ha repetido entero; el informe avisa de que mezcla v2 (8
 
 Solo la B funciona en los dos: es la que se aplico.
 
+**Tiempo por documento** (1 pagina, en la maquina de pruebas sin GPU; medido en la evaluacion del 2026-10-01)
+
+| Documento | Media | Maximo medido |
+|---|---|---|
+| Normal (PDF digital, escaneado o foto) | ~60 s | 73 s |
+| Dificil (usa vision en 3 de 6) | ~150 s | 244 s |
+| Extremo (usa vision en 5 de 6) | ~156 s | 193 s |
+
+Limites: cada llamada al modelo de texto puede tardar como mucho **120 s**, y cada llamada de vision **60 s + 150 s
+por imagen** (210 s con 1 pagina). En el peor caso, un documento de 1 pagina con OCR malo hace tres llamadas
+(clasificar con texto, reclasificar con vision y extraer con vision) y puede llegar a **~9 minutos** (540 s) antes
+de dar error. Como los documentos se procesan de uno en uno, si hay varios en cola los tiempos se suman. En una
+maquina con GPU estos tiempos bajarian mucho, pero hay que medirlos.
+
 ## 6. Lo que falta y los riesgos
 
 | Tema | Situacion | Que hacer |
