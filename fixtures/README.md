@@ -91,6 +91,12 @@ Deja la tabla en `fixtures/generados/resultado_ocr.md`, agrupada por nivel. Refe
 Los fallos de los niveles control y normal (sexo "M" suelto y Z/2 en la MRZ de `pasaporte_vencido`)
 ocurren tambien en el control digital y se dejan a proposito porque son realistas.
 
+## Especimenes impresos
+`fixtures/especimenes/` tiene fotos de movil de los documentos del caso `sano` impresos (con
+`--hoy 2026-09-30`), sin metadatos. A diferencia de `generados/`, **si se sube a git**. Se preparan
+con `scripts/procesar_especimenes.py` y el verificador OCR las incluye como nivel `especimen`. Ver
+`fixtures/especimenes/README.md` (valores esperados y fechas a partir de las que dan alertas).
+
 ## Prohibido
 Nunca anadas aqui (ni en `generados/`, ni en el bucket S3, ni en capturas) documentos, nombres,
 CURP, domicilios ni fotos de personas reales. Solo `PERSONAS_FICTICIAS` del generador, sin escudos,

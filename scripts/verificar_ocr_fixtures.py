@@ -14,7 +14,8 @@ Que hace:
     exigiendo palabra completa. Las copias del caso duplicado no se procesan (son identicas a sano).
   - Incluye los "Fixtures de dificultad" de INDICE.md (niveles dificil y extremo del caso sano, con
     sus valores esperados) y agrupa el resultado por nivel: control (render del digital), normal,
-    dificil y extremo.
+    dificil y extremo. Las fotos de especimenes impresos de fixtures/especimenes/ (se suben a git)
+    entran como nivel "especimen", con los valores del caso sano.
   - Escribe la tabla en fixtures/generados/resultado_ocr.md (ignorado por git, como INDICE.md).
 
 Como ejecutarlo (PowerShell, desde la raiz del repo, con los fixtures ya generados). Se usa el
@@ -101,7 +102,22 @@ def parsear_indice(ruta: Path) -> dict[str, dict]:
     return documentos
 
 
-ORDEN_NIVELES = ("control", "normal", "dificil", "extremo")
+ORDEN_NIVELES = ("control", "normal", "dificil", "extremo", "especimen")
+
+
+def anadir_especimenes(documentos: dict[str, dict], directorio: Path) -> dict[str, dict]:
+    """Fotos de fixtures/especimenes/ ({tipo}_sano_especimen_{condicion}.jpg) con los valores del caso
+    sano: nivel "especimen", modalidad foto. Devuelve solo las anadidas."""
+    anadidos = {}
+    for ruta in sorted(directorio.glob("*.jpg")) if directorio.is_dir() else []:
+        if not (m := re.fullmatch(r"(\w+?)_(sano)_especimen_(\w+)", ruta.stem)):
+            continue
+        base = next((d for d in documentos.values() if d["caso"] == m[2] and d["tipo"] == m[1]), None)
+        if base is not None:
+            anadidos[ruta.name] = {**base, "modalidad": "foto", "nivel": "especimen", "ruta": ruta,
+                                   "condicion": m[3]}
+    documentos.update(anadidos)
+    return anadidos
 
 
 def nivel_de(doc: dict) -> str:
@@ -178,12 +194,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Comprueba con Tesseract la legibilidad de los fixtures")
     parser.add_argument("--fixtures", type=Path, default=dir_fixtures_por_defecto())
     parser.add_argument("--control", action="store_true", help="incluye el render de los PDF digitales")
+    parser.add_argument("--especimenes", type=Path, default=None,
+                        help="fotos de especimenes impresos (por defecto <fixtures>/../especimenes)")
     parser.add_argument("--salida", type=Path, default=None,
                         help="tabla en Markdown (por defecto <fixtures>/resultado_ocr.md)")
     args = parser.parse_args()
     import pytesseract
 
     documentos = parsear_indice(args.fixtures / "INDICE.md")
+    anadir_especimenes(documentos, args.especimenes or args.fixtures.parent / "especimenes")
     modalidades = ["escaneado", "foto"] + (["digital"] if args.control else [])
     archivos = sorted((a for a, d in documentos.items() if d["caso"] != "duplicado" and d["modalidad"] in modalidades),
                       key=lambda a: (ORDEN_NIVELES.index(nivel_de(documentos[a])), a))
@@ -193,7 +212,7 @@ def main() -> None:
     for archivo in archivos:
         doc = documentos[archivo]
         inicio = time.perf_counter()
-        crudo = leer_texto(args.fixtures / archivo)
+        crudo = leer_texto(doc.get("ruta") or args.fixtures / archivo)
         segundos = time.perf_counter() - inicio
         fallos, mrz_ok = comparar(doc, crudo)
         total = len(doc["campos"])

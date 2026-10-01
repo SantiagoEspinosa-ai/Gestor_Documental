@@ -102,3 +102,17 @@ def test_comparar_detecta_campos_y_mrz(indice):
     sin_sexo = "\n".join([v for c, v in doc["campos"].items() if c != "sexo"] + doc["mrz"])
     fallos, _ = vo.comparar(doc, sin_sexo)
     assert len(fallos) == 1 and fallos[0].startswith("sexo (M ~")
+
+
+def test_anadir_especimenes_como_nivel_especimen_con_valores_del_caso_sano(indice, tmp_path):
+    documentos = dict(indice)
+    for nombre in ("pasaporte_sano_especimen_buena.jpg", "comprobante_domicilio_sano_especimen_dificil.jpg",
+                   "otra_cosa.jpg", "factura_sano_especimen_buena.jpg"):
+        (tmp_path / nombre).write_bytes(b"")
+    anadidos = vo.anadir_especimenes(documentos, tmp_path)
+    assert sorted(anadidos) == ["comprobante_domicilio_sano_especimen_dificil.jpg", "pasaporte_sano_especimen_buena.jpg"]
+    doc = documentos["pasaporte_sano_especimen_buena.jpg"]
+    assert (doc["nivel"], doc["modalidad"], doc["condicion"]) == ("especimen", "foto", "buena")
+    assert doc["campos"] == indice["pasaporte_sano_digital.pdf"]["campos"] and doc["ruta"].parent == tmp_path
+    assert vo.anadir_especimenes(dict(indice), tmp_path / "no_existe") == {}
+    assert vo.ORDEN_NIVELES[-1] == "especimen"
