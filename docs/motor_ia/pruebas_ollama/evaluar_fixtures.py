@@ -147,7 +147,8 @@ def casos_del_bloque(bloque: int, indice: dict[str, dict]) -> list[dict]:
 
 def pendientes(casos: list[dict], salida: Path, repetir: bool, solo: str | None = None) -> list[dict]:
     if solo:
-        casos = [c for c in casos if c["id"] == solo]
+        solos = set(solo.split(","))
+        casos = [c for c in casos if c["id"] in solos]
     if repetir:
         return casos
     hechos = set()
@@ -267,6 +268,8 @@ def trabajar(args) -> None:
                               "tokens_entrada": i.tokens_entrada, "tokens_salida": i.tokens_salida,
                               "reintentos": i.reintentos, "lotes": i.lotes} for i in analisis.llamadas],
                 "reintento_vision": reintento,
+                "uso_vision": any(i.entrada == "vision" for i in analisis.llamadas),
+                "motivos_vision": [i.motivo for i in analisis.llamadas if i.entrada == "vision" and i.motivo],
                 "descarga_texto_antes_de_reintento": descargas["antes_de_reintento"] > descargas_previas,
                 "contrato_valido": True,
             })
@@ -508,15 +511,16 @@ def generar_informe(salida: Path) -> None:
                       f"{len(candidatos) - len(sin_reintento)}/{len(candidatos)} | todos | {veredicto} |")
 
     lineas += ["", "## Fixtures de dificultad: correctos, vacios e incorrectos", "",
-               "| Nivel | Ruta | Modalidad | Correctos | Vacios | Incorrectos | Reintentos con vision |",
-               "|---|---|---|---|---|---|---|"]
+               "| Nivel | Ruta | Modalidad | Correctos | Vacios | Incorrectos | Reintentos con vision | Usan vision |",
+               "|---|---|---|---|---|---|---|---|"]
     for nivel in NIVELES_DIFICULTAD:
         for ruta in ("auto", "vision"):
             for modalidad in ("escaneado", "foto"):
                 g = grupo(dificiles, ruta, modalidad, nivel=nivel)
                 if g:
                     lineas.append(f"| {nivel} | {ruta} | {modalidad} | {_pct(suma(g, 'aciertos'), suma(g, 'total_campos'))} | "
-                                  f"{suma(g, 'vacios')} | {suma(g, 'incorrectos')} | {sum(m.get('reintento_vision', False) for m in g)}/{len(g)} |")
+                                  f"{suma(g, 'vacios')} | {suma(g, 'incorrectos')} | {sum(m.get('reintento_vision', False) for m in g)}/{len(g)} | "
+                                  f"{sum(m.get('uso_vision', False) for m in g)}/{len(g)} |")
     con_reintento = [m for m in dificiles if m.get("reintento_vision") and m.get("antes_del_reintento")]
     lineas += ["", "Reintentos con vision (resultado con texto antes del reintento -> resultado final):", ""]
     if con_reintento:
@@ -543,7 +547,7 @@ def generar_informe(salida: Path) -> None:
                for m in cls] or ["| - | - | - | - |"]
 
     lineas += ["", "## Casos: tiempos, modelos, RAM y reintentos", "",
-               "| Caso | Nivel | Modalidad | Correctos | Vacios | Incorrectos | Tiempo | Llamadas | Reintento con vision | RAM libre minima |",
+               "| Caso | Nivel | Modalidad | Correctos | Vacios | Incorrectos | Tiempo | Llamadas | Vision (motivo) | RAM libre minima |",
                "|---|---|---|---|---|---|---|---|---|---|"]
     for m in sorted(medidas, key=lambda x: (x["nivel"], x["id"])):
         if m.get("excepcion"):
@@ -551,8 +555,7 @@ def generar_informe(salida: Path) -> None:
                           f"{m.get('segundos_total')} s | - | - | {ram.get('casos', {}).get(m['id'], '-')} |")
             continue
         llamadas = "; ".join(f"{l['modelo']} ({l['entrada']}) {l['segundos']} s" for l in m["llamadas"])
-        reintento = ("si" + (" (texto descargado antes)" if m.get("descarga_texto_antes_de_reintento") else "")) \
-            if m.get("reintento_vision") else "no"
+        reintento = "; ".join(m.get("motivos_vision") or []) or ("si (sin texto suficiente)" if m.get("uso_vision") else "no")
         vacio = m.get("clasificacion_equivocada")
         lineas.append(f"| `{m['id']}` | {m['nivel']} | {m['modalidad_fixture']} | "
                       f"{'-' if vacio else str(m['aciertos']) + '/' + str(m['total_campos'])} | {'-' if vacio else m['vacios']} | "
@@ -582,7 +585,7 @@ def main() -> None:
     p.add_argument("--bloque", type=int, choices=[1, 2, 3, 4], default=1)
     p.add_argument("--casos", help="casos de INDICE.md separados por comas (p. ej. sano,vencido)")
     p.add_argument("--repetir", action="store_true")
-    p.add_argument("--solo", help="id de un caso concreto (p. ej. cls__comprobante_domicilio_sano_escaneado__como_pasaporte)")
+    p.add_argument("--solo", help="ids de casos concretos separados por comas (p. ej. cls__comprobante_domicilio_sano_escaneado__como_pasaporte)")
     p.add_argument("--fixtures", default=str(FIXTURES_POR_DEFECTO))
     p.add_argument("--salida", default=str(SALIDA_POR_DEFECTO))
     args = p.parse_args()

@@ -79,21 +79,38 @@ extraccion con texto deja a `null` **la mitad o mas de los campos obligatorios**
 vision. Manda el resultado de vision; el de texto solo rellena los campos que la vision deja a `null`. Si el
 reintento falla, se conserva el resultado con texto. La clasificacion no se reintenta.
 
-**Lo decide el servicio, no el proveedor** (2026-10-01, hallazgo del bloque 1 de la evaluacion):
-`motor_ia/servicio.py` (`_reintento_vision`) conoce la clasificacion y **no reintenta si salta `CLS-001`**:
-con el tipo declarado equivocado se extrae con la ficha del declarado (ADR-006, 2.5), los obligatorios vacios
-se explican por el tipo y la vision no puede mejorarlos (en la evaluacion costaba ~200 s sin aportar nada). Con
-`tipo_confirmado` no hay clasificacion ni `CLS-001`, asi que si se reintenta. El proveedor solo expone
-`OllamaProvider.extraer_con_vision(doc, esquema, prompt, motivo)`; `extraer()` ya no reintenta. El servicio
-solo reintenta si la extraccion fue con texto (`entrada == "texto"`), el proveedor tiene
-`extraer_con_vision` y el documento tiene imagenes.
+**OCR pobre y paso a vision** (decidido el 2026-10-01 con los bloques 3 y 4 de la evaluacion; lo decide el
+servicio, `motor_ia/servicio.py`, que conoce la clasificacion). Un OCR es pobre si se da cualquiera de estas
+senales:
 
-Registro: cada llamada (`InfoLlamada`) lleva `entrada` (`texto` o `vision`) y `motivo`; con reintento hay dos
-llamadas (la de texto y la de `extraer_con_vision`) y el servicio registra las dos en `Analisis.llamadas`.
-Motivos: `reintento con vision: 3/4 campos obligatorios vacios con texto`; si no se reintenta por `CLS-001`,
-la llamada de texto lleva `sin reintento con vision (3/4 campos obligatorios vacios): el tipo declarado no
-coincide con el detectado (CLS-001)`; si el reintento falla, `...; fallo (...): se conserva el resultado con
-texto`. `fecha_y_modelo_utilizado.modelo` es el modelo del resultado que se usa (el de vision si el
+| Senal | Cuando | Que se hace |
+|---|---|---|
+| 1. Texto insuficiente | Antes del modelo: alguna pagina con menos de 30 caracteres | Vision directamente (regla de arriba) |
+| 2. Clasificacion `desconocido` | Tras clasificar con texto, si el documento tiene imagenes | **Se reclasifica con vision** (`clasificar_con_vision`) y `CLS-001` se decide con esa clasificacion. Si la vision confirma el declarado: sin `CLS-001` y extraccion **directa con vision**. Si da otro tipo concreto: `CLS-001` y extraccion con texto, sin reintento. Si tambien da `desconocido`: `CLS-001` (si hay declarado) y extraccion directa con vision con la ficha del declarado. Sin declarado, se extrae con la ficha que da la vision |
+| 3. Obligatorios vacios | Tras extraer con texto: la mitad o mas de los obligatorios a `null` | **Reintento de extraccion con vision** |
+| 4. Formato invalido | Tras extraer con texto: algun campo con valor que no cumple el `patron` de la ficha, no es una fecha valida o no es un anio de 4 cifras (`campos_con_formato_invalido`) | **Reintento de extraccion con vision** |
+
+- En el reintento manda la vision y el texto solo rellena los campos que la vision deja a `null`. Si el
+  reintento o la reclasificacion fallan, se conserva el resultado con texto.
+- **No se reintenta si salta `CLS-001` con un tipo concreto distinto del declarado** (hallazgo del bloque 1): se
+  extrajo con la ficha del declarado y los vacios o formatos invalidos se explican por el tipo. Con `tipo_confirmado`
+  no hay clasificacion ni `CLS-001`, asi que si se reintenta.
+- El proveedor solo expone `clasificar_con_vision(...)` y `extraer_con_vision(...)`; `clasificar()` y `extraer()`
+  no reintentan. El servicio solo actua si la llamada fue con texto (`entrada == "texto"`), el proveedor tiene el
+  metodo y el documento tiene imagenes.
+- Simulacion con los datos medidos (24 casos dificiles): dificil 30/34 correctos y 2 incorrectos; extremo 26/34 y
+  5; en nivel normal no cambia nada (el bloque 1 no tuvo vacios ni formatos invalidos). Sin cubrir: errores sin
+  senal (p. ej. `GALLE FICTICIA 123`); para eso, la confianza de Tesseract (pendiente).
+
+Registro: cada llamada (`InfoLlamada`) lleva `entrada` (`texto` o `vision`) y `motivo`, y el servicio registra
+todas en `Analisis.llamadas`. Motivos:
+`reclasificacion con vision: la clasificacion con texto dio desconocido`;
+`extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)`;
+`reintento con vision: 3/4 campos obligatorios vacios con texto`,
+`reintento con vision: formato invalido en curp con texto` o las dos senales separadas por `;`;
+si no se reintenta por `CLS-001`, la llamada de texto lleva `sin reintento con vision (<senales>): el tipo
+declarado no coincide con el detectado (CLS-001)`; si la vision falla, `...; fallo (...): se conserva el
+resultado con texto` (o la clasificacion con texto). `fecha_y_modelo_utilizado.modelo` es el modelo del resultado que se usa (el de vision si el
 reintento funciona; el de texto si no se reintenta o el reintento falla).
 
 Se decide sin ADR: `Enrutador.obtener(tarea, tipo)` (Contrato 3) devuelve el proveedor configurado y el
@@ -152,9 +169,10 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Version | Estado | Contenido | Donde |
 |---|---|---|---|
 | `clasificacion_v1`, `extraccion_v1` | en el repo (historial) | Version inicial. Falta una variable para el texto del documento | `prompts/` |
-| `clasificacion_v2`, `extraccion_v2` | **vigentes** (implementado) | Anaden `{{ contenido }}` (texto por pagina). `extraccion_v2`: fechas tal como aparecen, formato de evidencia, bajar la confianza si hay dudas y no inventar valores (cuerpo identico al borrador v2b validado). `clasificacion_v2`: `desconocido` si no encaja claramente | `prompts/` |
+| `clasificacion_v2`, `extraccion_v2` | `clasificacion_v2` **vigente**; `extraccion_v2` en el repo (historial) | Anaden `{{ contenido }}` (texto por pagina). `extraccion_v2`: fechas tal como aparecen, formato de evidencia, bajar la confianza si hay dudas y no inventar valores (cuerpo identico al borrador v2b validado). `clasificacion_v2`: `desconocido` si no encaja claramente | `prompts/` |
 | `correccion_json_v1` | vigente (implementado) | Instruccion del reintento cuando la respuesta no es valida; variable `{{ error }}` | `prompts/` |
-| `extraccion_v3` | pendiente (etapa 3, extra 2) | Pide `observaciones_visuales` (legibilidad, recortes, alteraciones) para las alertas `VIS-xxx`. El plan lo llamaba `extraccion_v2`; se renumera porque la v2 ya se usa | - |
+| `extraccion_v3` | **vigente** (2026-10-01) | La v2 mas una regla: asignar cada valor por su etiqueta (en espanol o en ingles: "Date of issue" = fecha de expedicion, etc.), no por su posicion, y no dejar vacio un campo cuya etiqueta aparece. Corrige que la vision dejara vacia `fecha_expedicion` en los 4 pasaportes dificiles | `prompts/` |
+| `extraccion_v4` | pendiente (etapa 3, extra 2) | Pide `observaciones_visuales` (legibilidad, recortes, alteraciones) para las alertas `VIS-xxx`. El plan lo llamaba `extraccion_v2`; se renumera porque la v2 y la v3 ya se usan (tambien en `docs/equipo/PERSONA_2_motor_ia.md`) | - |
 
 Reglas de `motor_ia/prompts.py`:
 
@@ -263,10 +281,17 @@ se queda solo con `pagina_<n>` (seccion 4).
       (~4,3 GB), y una maquina de 16 GB se queda sin RAM. Con la variable, descarga un modelo al cargar otro.
       En la evaluacion (`pruebas_ollama/evaluar_fixtures.py`) se descarga el de texto antes del reintento
       (`keep_alive: 0`) y queda anotado en el informe. Revisarlo en la maquina con GPU.
-- [ ] **Hallazgo del bloque 3 (fixtures dificiles), pendiente de decidir con los datos del bloque 4**: en `extremo`
-      la clasificacion con texto da `desconocido`, salta `CLS-001` y la regla "no reintentar con CLS-001" impide
-      el reintento con vision justo cuando el OCR es malo (pasaportes extremo con 7/7 y 6/7 vacios). Hay que
-      definir cuando un OCR es "pobre" y como encaja `CLS-001` (reclasificar con vision o ir directo a vision).
+- [x] **Hallazgo del bloque 3**: `CLS-001` bloqueaba el reintento cuando el texto daba `desconocido`. Resuelto con
+      la regla de OCR pobre (seccion 3): reclasificacion con vision y `CLS-001` decidido con ella.
+- [ ] **Senal 5 de OCR pobre: confianza por palabra de Tesseract** (`image_to_data` en `orquestador/ocr.py`), para
+      los errores sin senal (p. ej. `GALLE FICTICIA 123`). Despues de probar con los especimenes; calibrar con los
+      fixtures normales, dificiles y los especimenes.
+- [ ] **Especimenes de PERSONA_3** (`fixtures/especimenes/`, fotos de movil de documentos ficticios impresos; en
+      `feat/interfaz`): esperar a que lleguen a `main` y hacer merge. Seran la prueba final con fotos reales: 5 fotos
+      (pasaporte buena; credencial y comprobante buena y dificil), valores esperados = caso `sano` de `INDICE.md`
+      con `--hoy 2026-09-30`; anadir el nivel `especimen` a `evaluar_fixtures.py`. Verificar antes que no tienen
+      metadatos. **Aviso: sus fechas impresas no cambian; desde el 2026-12-14 el comprobante dara
+      `REG-antiguedad_maxima`** (critica) y dejara de equivaler al folio `sano`.
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
       cada cambio; en produccion sigue pendiente `OLLAMA_MAX_LOADED_MODELS=1`.
@@ -392,8 +417,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | este commit |
-| 2026-10-01 | Pendientes de la etapa 2: reglas de coherencia CURP <-> `fecha_nacimiento` y `fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`, con tipos de regla nuevos en las fichas (PR aparte, fichero compartido) y en el cargador | este commit |
+| 2026-10-01 | Regla de OCR pobre (seccion 3): cuatro senales (texto insuficiente, clasificacion `desconocido`, obligatorios vacios, formato invalido); reclasificacion con vision cuando el texto da `desconocido`, con `CLS-001` decidido segun la vision; extraccion directa con vision si la clasificacion ya detecto OCR pobre; motivos en `InfoLlamada.motivo`. Prompt `extraccion_v3` (asignar por etiqueta; corrige `fecha_expedicion` vacia en vision); observaciones visuales pasan a v4. Pendientes: confianza de Tesseract y especimenes | este commit |
+| 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | `8058e7e` |
+| 2026-10-01 | Pendientes de la etapa 2: reglas de coherencia CURP <-> `fecha_nacimiento` y `fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`, con tipos de regla nuevos en las fichas (PR aparte, fichero compartido) y en el cargador | `8058e7e` |
 | 2026-10-01 | Evaluacion, bloque 3 (fixtures dificiles de PERSONA_3, ruta auto, 12 casos): NO aprueba (dificil 19/34 correctos y 7/34 incorrectos; extremo 10/34 incorrectos; 0 reintentos con vision porque `CLS-001` los bloquea). 8 de los 17 incorrectos los detectarian las reglas de la etapa 2. `evaluar_fixtures.py`: niveles de dificultad, bloques 3 y 4, campos correcto/vacio/incorrecto, `docker stop` del contenedor si la RAM baja de 1 GB y descarga del otro modelo en cada cambio | `56cca57` |
 | 2026-10-01 | Evaluacion completa, bloque 1 (ruta auto, 30 casos): 153/153 campos, 27/27 tipos, `CLS-001` 3/3, sin errores ni abortos, 59 s de media (`pruebas_ollama/resultados/evaluacion/informe.md`). El reintento con vision pasa del proveedor al servicio y no se hace si salta `CLS-001` (el caso que tardaba 255 s baja a 80 s); el proveedor expone `extraer_con_vision`. Pendientes: `OLLAMA_MAX_LOADED_MODELS=1` en produccion y bloque 2 opcional. Script `evaluar_fixtures.py` | `a0c7675` |
 | 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | `d3e18b4` |

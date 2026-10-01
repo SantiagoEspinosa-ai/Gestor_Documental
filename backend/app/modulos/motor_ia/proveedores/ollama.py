@@ -84,6 +84,17 @@ class OllamaProvider:
             self._terminar(info)
         return postprocesar_clasificacion(respuesta, tipos_posibles)
 
+    def clasificar_con_vision(self, doc: DocumentoPreparado, tipos_posibles: list[str], prompt: str,
+                              motivo: str | None = None) -> ResultadoClasificacion:
+        """Clasificacion forzada con el modelo de vision (reclasificacion decidida por el servicio)."""
+        self.ultimas_llamadas = []
+        info = self._empezar(self.modelo_vision, "vision", motivo)
+        try:
+            respuesta = self._pedir(info, prompt, lotes_de_paginas(doc.paginas)[0], parsear_clasificacion)
+        finally:
+            self._terminar(info)
+        return postprocesar_clasificacion(respuesta, tipos_posibles)
+
     def extraer(self, doc: DocumentoPreparado, esquema_campos: dict[str, Any], prompt: str) -> ResultadoExtraccion:
         """Texto si hay texto suficiente; vision si no. No reintenta: lo decide el servicio."""
         self.ultimas_llamadas = []

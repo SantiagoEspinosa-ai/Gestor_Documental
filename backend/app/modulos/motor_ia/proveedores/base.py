@@ -267,6 +267,26 @@ def necesita_reintento_vision(resultado: ResultadoExtraccion, esquema_campos: Ma
     return total > 0 and vacios >= FRACCION_OBLIGATORIOS_VACIOS_REINTENTO * total
 
 
+def campos_con_formato_invalido(resultado: ResultadoExtraccion, esquema_campos: Mapping[str, Any]) -> list[str]:
+    """Campos con valor (no null) que no cumplen su formato: el `patron` de la ficha, una fecha valida
+    (tras postprocesar, las fechas validas ya estan en AAAA-MM-DD) o un anio de 4 cifras (ya entero).
+    Senal de OCR pobre (spec, seccion 3)."""
+    invalidos = []
+    for campo, definicion in esquema_campos.items():
+        valor = resultado.datos_extraidos.get(campo)
+        if valor is None:
+            continue
+        patron = definicion.get("patron") if isinstance(definicion, Mapping) else getattr(definicion, "patron", None)
+        tipo = _tipo_campo(definicion)
+        if patron and not re.fullmatch(patron, str(valor)):
+            invalidos.append(campo)
+        elif tipo == "fecha" and normalizar_fecha(str(valor)) != str(valor):
+            invalidos.append(campo)
+        elif tipo == "anio" and not (isinstance(valor, int) and not isinstance(valor, bool)):
+            invalidos.append(campo)
+    return invalidos
+
+
 def combinar_texto_y_vision(texto: ResultadoExtraccion, vision: ResultadoExtraccion) -> ResultadoExtraccion:
     """Tras el reintento con vision: manda la vision; el texto solo rellena los campos que la vision dejo a null."""
     datos, confianzas = dict(vision.datos_extraidos), dict(vision.nivel_confianza_por_campo)

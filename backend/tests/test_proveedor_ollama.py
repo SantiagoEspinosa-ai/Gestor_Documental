@@ -274,3 +274,14 @@ def test_extraer_con_vision_usa_el_modelo_de_vision_y_registra_el_motivo():
     assert r.datos_extraidos["fecha_vencimiento"] == "2031-07-25"
     assert [(i.entrada, i.motivo) for i in p.ultimas_llamadas] == [
         ("vision", "reintento con vision: 3/4 campos obligatorios vacios con texto")]
+
+
+def test_clasificar_con_vision_usa_el_modelo_de_vision_y_registra_el_motivo():
+    falso = OllamaFalso(respuesta('{"tipo_documental_detectado": "pasaporte", "confianza": 0.9}'))
+    p = proveedor(falso)
+    r = p.clasificar_con_vision(documento(Modalidad.imagen, n_paginas=6, texto=TEXTO_SUFICIENTE), TIPOS, "P",
+                                "reclasificacion con vision: la clasificacion con texto dio desconocido")
+    assert falso.chats[0]["model"] == "qwen2.5vl:3b" and len(falso.chats[0]["messages"][0]["images"]) == 4
+    assert r.tipo_documental_detectado == "pasaporte"
+    assert [(i.entrada, i.motivo) for i in p.ultimas_llamadas] == [
+        ("vision", "reclasificacion con vision: la clasificacion con texto dio desconocido")]

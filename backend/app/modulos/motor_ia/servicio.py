@@ -1,7 +1,7 @@
 """
 API publica de motor_ia (ADR-005): analiza un DocumentoPreparado y devuelve un ResultadoDocumento.
 Clasifica, elige la ficha (ADR-006, 2.5), extrae, completa el sexo desde la MRZ y usa el respaldo si
-el proveedor principal falla. Reglas deterministas, VAL-00x y recomendacion: etapa 2 (validacion).
+el proveedor principal falla. Con OCR pobre (spec, seccion 3) reclasifica o extrae con vision. Reglas deterministas, VAL-00x y recomendacion: etapa 2 (validacion).
 Decisiones: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 10.
 """
 from __future__ import annotations
@@ -28,6 +28,7 @@ from app.modulos.motor_ia.proveedores.base import (
     ErrorProveedor,
     ErrorRespuestaInvalida,
     InfoLlamada,
+    campos_con_formato_invalido,
     combinar_texto_y_vision,
     necesita_reintento_vision,
     obligatorios_vacios,
@@ -152,6 +153,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
     }
     fecha_modelo: tuple[str, str, str] | None = None  # (proveedor, version_prompt, modelo real)
 
+    ocr_pobre: str | None = None  # motivo si la clasificacion ya detecto un OCR pobre
     try:
         detectado = None
         if tipo_confirmado is None:
@@ -160,6 +162,11 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                                          contexto_rag=formatear_contexto_rag(doc.contexto_rag))
             clasificacion, proveedor = ctx.con_respaldo(
                 Tarea.clasificacion, None, lambda p: p.clasificar(doc_modelo, list(fichas), prompt))
+            # Senal 2 de OCR pobre: con texto da desconocido -> se reclasifica con vision y CLS-001 se decide con ella
+            reclasificada = _reclasificar_con_vision(ctx, proveedor, doc_modelo, list(fichas), prompt, clasificacion)
+            if reclasificada is not None:
+                clasificacion = reclasificada
+                ocr_pobre = "OCR pobre (la clasificacion con texto dio desconocido)"
             detectado = clasificacion.tipo_documental_detectado
             datos["tipo_documental_detectado"] = detectado
             datos["confianza_clasificacion"] = clasificacion.confianza  # provisional: del modelo (ADR-007, etapa 2)
@@ -174,10 +181,20 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             prompt, version = renderizar("extraccion", tipo_documental=ficha.nombre, contenido=contenido,
                                          esquema_campos=formatear_esquema(ficha))
             esquema = {n: c.model_dump(mode="json") for n, c in ficha.campos.items()}
-            extraccion, proveedor = ctx.con_respaldo(
-                Tarea.extraccion, ficha.nombre, lambda p: p.extraer(doc_modelo, esquema, prompt))
-            hay_cls_001 = any(a.codigo == "CLS-001" for a in ctx.alertas)
-            extraccion, modelo = _reintento_vision(ctx, proveedor, doc_modelo, esquema, prompt, extraccion, hay_cls_001)
+            # CLS-001 con un tipo concreto distinto del declarado: los vacios se explican por la ficha equivocada
+            cls_concreto = declarado is not None and detectado not in (None, declarado, DESCONOCIDO)
+            if ocr_pobre and not cls_concreto and any(p.imagen_png for p in doc_modelo.paginas):
+                motivo = f"extraccion con vision: {ocr_pobre}"
+                extraccion, proveedor = ctx.con_respaldo(
+                    Tarea.extraccion, ficha.nombre,
+                    lambda p: p.extraer_con_vision(doc_modelo, esquema, prompt, motivo)
+                    if hasattr(p, "extraer_con_vision") else p.extraer(doc_modelo, esquema, prompt))
+                modelo = _modelo_usado(proveedor)
+            else:
+                extraccion, proveedor = ctx.con_respaldo(
+                    Tarea.extraccion, ficha.nombre, lambda p: p.extraer(doc_modelo, esquema, prompt))
+                extraccion, modelo = _reintento_vision(ctx, proveedor, doc_modelo, esquema, prompt, extraccion,
+                                                       cls_concreto)
             fecha_modelo = (proveedor.nombre, version, modelo)
             valores = dict(extraccion.datos_extraidos)
             confianzas = dict(extraccion.nivel_confianza_por_campo)  # provisional: del modelo (ADR-007, etapa 2)
@@ -201,23 +218,51 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
     return Analisis(ResultadoDocumento(**datos), ctx.llamadas)
 
 
+def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, tipos: list[str],
+                            prompt: str, clasificacion):
+    """Si la clasificacion con texto da desconocido y hay imagenes, reclasifica con vision. Devuelve la nueva
+    clasificacion, o None si no aplica o la vision falla (se conserva la de texto)."""
+    info = getattr(proveedor, "ultima_llamada", None)
+    if (clasificacion.tipo_documental_detectado != DESCONOCIDO or info is None or info.entrada != "texto"
+            or not hasattr(proveedor, "clasificar_con_vision") or not any(p.imagen_png for p in doc.paginas)):
+        return None
+    motivo = "reclasificacion con vision: la clasificacion con texto dio desconocido"
+    try:
+        return proveedor.clasificar_con_vision(doc, tipos, prompt, motivo)
+    except ErrorProveedor as error:
+        logger.warning("clasificacion: fallo la reclasificacion con vision: %s", error)
+        fallida = getattr(proveedor, "ultima_llamada", None)
+        if fallida is not None and fallida is not info:
+            fallida.motivo = f"{motivo}; fallo ({error}): se conserva la clasificacion con texto"
+        return None
+    finally:
+        ctx.registrar(proveedor)
+
+
 def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, esquema: dict, prompt: str,
-                      extraccion: ResultadoExtraccion, hay_cls_001: bool) -> tuple[ResultadoExtraccion, str]:
+                      extraccion: ResultadoExtraccion, cls_concreto: bool) -> tuple[ResultadoExtraccion, str]:
     """Riesgo 2 del plan (OCR malo -> vision). Si la extraccion se hizo con texto y deja a null la mitad o mas
-    de los obligatorios, se repite con vision; manda la vision y el texto rellena sus nulos. No se reintenta
-    si salta CLS-001: los vacios se explican porque se extrajo con la ficha del tipo declarado. Si el
-    reintento falla, se conserva el texto. Devuelve (extraccion, modelo real usado)."""
+    de los obligatorios (senal 3) o algun campo con formato invalido (senal 4), se repite con vision; manda la
+    vision y el texto rellena sus nulos. No se reintenta si salta CLS-001 con un tipo concreto distinto del
+    declarado: los vacios se explican por la ficha equivocada. Si el reintento falla, se conserva el texto.
+    Devuelve (extraccion, modelo real usado)."""
     modelo = _modelo_usado(proveedor)
     info = getattr(proveedor, "ultima_llamada", None)
     if (info is None or info.entrada != "texto" or not hasattr(proveedor, "extraer_con_vision")
-            or not necesita_reintento_vision(extraccion, esquema) or not any(p.imagen_png for p in doc.paginas)):
+            or not any(p.imagen_png for p in doc.paginas)):
         return extraccion, modelo
     vacios, total = obligatorios_vacios(extraccion, esquema)
-    if hay_cls_001:
-        info.motivo = (f"sin reintento con vision ({vacios}/{total} campos obligatorios vacios): "
+    por_vacios = necesita_reintento_vision(extraccion, esquema)
+    formato = campos_con_formato_invalido(extraccion, esquema)
+    if not por_vacios and not formato:
+        return extraccion, modelo
+    senales = ([f"{vacios}/{total} campos obligatorios vacios"] if por_vacios else []) + \
+        ([f"formato invalido en {', '.join(formato)}"] if formato else [])
+    if cls_concreto:
+        info.motivo = (f"sin reintento con vision ({'; '.join(senales)}): "
                        "el tipo declarado no coincide con el detectado (CLS-001)")
         return extraccion, modelo
-    motivo = f"reintento con vision: {vacios}/{total} campos obligatorios vacios con texto"
+    motivo = "reintento con vision: " + "; ".join(senales) + " con texto"
     try:
         vision = proveedor.extraer_con_vision(doc, esquema, prompt, motivo)
     except ErrorProveedor as error:

@@ -98,7 +98,7 @@ def test_caso_normal():
     assert r.alertas_encontradas == [] and r.recomendacion is None
     assert r.fecha_y_modelo_utilizado.model_dump() == {
         "fecha_analisis": AHORA, "proveedor": "ollama", "modelo": "ollama-modelo-real-extraccion",
-        "version_prompt": "extraccion_pasaporte@v2"}
+        "version_prompt": "extraccion_pasaporte@v3"}
     assert enrutador.pedidos == [(Tarea.clasificacion, None), (Tarea.extraccion, "pasaporte")]
     assert [i.modelo for i in analisis.llamadas] == ["ollama-modelo-real-clasificacion", "ollama-modelo-real-extraccion"]
     clasificacion, extraccion = p.prompts
@@ -125,7 +125,7 @@ def test_tipo_confirmado_no_clasifica():
     assert [t for t, _ in p.prompts] == ["extraccion"]
     assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, None)
     assert codigos(r) == []
-    assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v2"
+    assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v3"
 
 
 def test_sin_declarado_extrae_con_el_detectado():
@@ -361,3 +361,109 @@ def test_si_el_reintento_falla_se_conserva_el_texto():
     assert r.estado_analisis is EstadoAnalisis.completado and r.datos_extraidos["nombre_completo"] == "ANA EJEMPLO PRUEBA"
     assert r.fecha_y_modelo_utilizado.modelo == "modelo-texto"
     assert "fallo (vision caida): se conserva el resultado con texto" in analisis.llamadas[-1].motivo
+
+
+# --- OCR pobre: reclasificacion con vision (senal 2) y reintento por formato invalido (senal 4) ---
+
+class ProveedorConReclasificacion(ProveedorConVision):
+    """Clasifica con texto como `tipo` y, si el servicio lo pide, con vision como `tipo_vision`."""
+
+    def __init__(self, *a, tipo_vision="pasaporte", falla_clasificar_vision=None, **k):
+        super().__init__(*a, **k)
+        self.tipo_vision, self.falla_clasificar_vision = tipo_vision, falla_clasificar_vision
+        self.reclasificaciones: list[str] = []
+
+    def clasificar_con_vision(self, doc, tipos_posibles, prompt, motivo=None):
+        self.reclasificaciones.append(motivo)
+        self._nueva("modelo-vision", "vision", motivo)
+        if self.falla_clasificar_vision:
+            raise self.falla_clasificar_vision
+        return ResultadoClasificacion(self.tipo_vision, 0.9, "vision")
+
+
+MOTIVO_RECLASIFICACION = "reclasificacion con vision: la clasificacion con texto dio desconocido"
+MOTIVO_EXTRACCION_VISION = "extraccion con vision: OCR pobre (la clasificacion con texto dio desconocido)"
+
+
+def motivos(analisis):
+    return [(i.entrada, i.motivo) for i in analisis.llamadas]
+
+
+def test_desconocido_con_texto_reclasifica_con_vision_y_extrae_con_vision():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", tipo_vision="pasaporte", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    r = analisis.resultado
+    assert p.reclasificaciones == [MOTIVO_RECLASIFICACION]
+    assert r.tipo_documental_detectado == "pasaporte" and codigos(r) == []      # la vision confirma: sin CLS-001
+    assert p.pedidos_vision == [MOTIVO_EXTRACCION_VISION]                        # extraccion directa con vision
+    assert [t for t, _ in p.prompts] == ["clasificacion"]                         # no se extrae con texto
+    assert r.datos_extraidos["numero_pasaporte"] == "X1234567P"
+    assert motivos(analisis) == [("texto", None), ("vision", MOTIVO_RECLASIFICACION),
+                                 ("vision", MOTIVO_EXTRACCION_VISION)]
+    assert r.fecha_y_modelo_utilizado.modelo == "modelo-vision"
+
+
+def test_la_vision_detecta_otro_tipo_concreto_cls_001_y_sin_reintento():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", tipo_vision="credencial_elector", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    r = analisis.resultado
+    assert r.tipo_documental_detectado == "credencial_elector"
+    assert codigos(r) == [("CLS-001", "critica", None)]
+    assert p.pedidos_vision == []                                                # ni extraccion con vision ni reintento
+    assert [t for t, _ in p.prompts] == ["clasificacion", "extraccion"]          # extrae con texto y la ficha declarada
+    assert "el tipo declarado no coincide con el detectado (CLS-001)" in analisis.llamadas[-1].motivo
+
+
+def test_la_vision_tambien_da_desconocido_cls_001_y_extrae_con_vision_la_ficha_declarada():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", tipo_vision="desconocido", datos=INCOMPLETOS)
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    assert codigos(analisis.resultado) == [("CLS-001", "critica", None)]
+    assert p.pedidos_vision == [MOTIVO_EXTRACCION_VISION]
+    assert analisis.resultado.datos_extraidos["numero_pasaporte"] == "X1234567P"
+
+
+def test_sin_declarado_la_vision_da_el_tipo_y_se_extrae_con_esa_ficha():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", tipo_vision="pasaporte", datos=INCOMPLETOS)
+    analisis, enrutador = ejecutar(p, doc=doc_con_imagenes(declarado=None))
+    assert enrutador.pedidos[-1] == (Tarea.extraccion, "pasaporte")
+    assert p.pedidos_vision == [MOTIVO_EXTRACCION_VISION] and codigos(analisis.resultado) == []
+
+
+def test_si_falla_la_reclasificacion_se_conserva_el_texto():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", datos=INCOMPLETOS,
+                                    falla_clasificar_vision=ErrorProveedor("vision caida"))
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    r = analisis.resultado
+    assert r.tipo_documental_detectado == "desconocido" and ("CLS-001", "critica", None) in codigos(r)
+    assert any("fallo (vision caida): se conserva la clasificacion con texto" in (i.motivo or "") for i in analisis.llamadas)
+    assert r.estado_analisis is EstadoAnalisis.completado
+
+
+def test_sin_imagenes_no_se_reclasifica():
+    p = ProveedorConReclasificacion("ollama", tipo="desconocido", datos=INCOMPLETOS)
+    ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte", con_imagenes=False))
+    assert p.reclasificaciones == []
+
+
+def test_reintento_por_formato_invalido():
+    p = ProveedorConVision("ollama", datos={**DATOS_PASAPORTE, "numero_pasaporte": "X00000015UTO9001011F"})
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes())
+    assert p.pedidos_vision == ["reintento con vision: formato invalido en numero_pasaporte con texto"]
+    assert analisis.resultado.datos_extraidos["numero_pasaporte"] == "X1234567P"
+
+
+def test_reintento_por_vacios_y_formato_a_la_vez():
+    datos = {**INCOMPLETOS, "fecha_expedicion": "3009/2021"}
+    p = ProveedorConVision("ollama", datos=datos)
+    ejecutar(p, doc=doc_con_imagenes())
+    assert p.pedidos_vision == ["reintento con vision: 3/4 campos obligatorios vacios; formato invalido en "
+                                "fecha_expedicion con texto"]
+
+
+def test_formato_invalido_con_cls_001_concreto_no_reintenta():
+    p = ProveedorConVision("ollama", tipo="comprobante_domicilio",
+                           datos={**DATOS_PASAPORTE, "numero_pasaporte": "X00000015UTO9001011F"})
+    analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
+    assert p.pedidos_vision == []
+    assert analisis.llamadas[-1].motivo == ("sin reintento con vision (formato invalido en numero_pasaporte): "
+                                            "el tipo declarado no coincide con el detectado (CLS-001)")

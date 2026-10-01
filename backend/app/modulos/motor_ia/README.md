@@ -53,10 +53,12 @@ python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf
   `respaldo`, o `None` si es el mismo que el principal o no esta disponible (aviso en el log).
 - **Regla de modelo** (decidida sin ADR): el enrutador devuelve el proveedor y el proveedor elige su
   modelo: el de texto, sin imagenes, si todas las paginas tienen al menos 30 caracteres de texto (capa del
-  PDF u OCR), y el de vision si alguna no llega (`OllamaProvider.modelo_para`, `usa_texto`). Si la
-  extraccion con texto deja vacia la mitad o mas de los campos obligatorios, el **servicio** reintenta con
-  vision (`OllamaProvider.extraer_con_vision`; riesgo 2 del plan), salvo si salta `CLS-001`. Las dos
-  llamadas quedan en `Analisis.llamadas` con `entrada` y `motivo`.
+  PDF u OCR), y el de vision si alguna no llega (`OllamaProvider.modelo_para`, `usa_texto`). Con **OCR
+  pobre** el **servicio** pasa a vision (riesgo 2 del plan; detalle en la seccion 3 de la spec): si la
+  clasificacion con texto da `desconocido`, reclasifica con vision (`clasificar_con_vision`), decide
+  `CLS-001` con esa clasificacion y extrae con vision; si la extraccion con texto deja vacia la mitad o mas
+  de los obligatorios o algun campo con formato invalido, reintenta con `extraer_con_vision`, salvo si salta
+  `CLS-001` con un tipo concreto. Todas las llamadas quedan en `Analisis.llamadas` con `entrada` y `motivo`.
   `Enrutador.obtener` no cambia, asi que el Contrato 3 tampoco.
 - **Barrera de privacidad** (ADR-003): un proveedor con `privado: false` solo se usa con
   `PERMITIR_PROVEEDORES_NO_PRIVADOS=true` (desarrollo con fixtures ficticios). Si es un principal y la
@@ -72,7 +74,7 @@ python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf
   Lee `PROMPTS_DIR/<id>_<version>.md` (por defecto `prompts/` de la raiz del repo), separa el
   frontmatter (`id`, `version`, `salida`) y renderiza con Jinja (`StrictUndefined`: si falta una
   variable, `ErrorPrompt`). Sin `version`, usa `VERSIONES_VIGENTES`.
-- `version_prompt` (va en `FechaYModelo.version_prompt`): `extraccion_pasaporte@v2`, o `clasificacion@v2`.
+- `version_prompt` (va en `FechaYModelo.version_prompt`): `extraccion_pasaporte@v3`, o `clasificacion@v2`.
 - `formatear_contenido`, `formatear_tipos`, `formatear_esquema` y `formatear_contexto_rag` dan el formato
   comun de las variables. El texto del documento se inserta como valor, nunca como plantilla.
 - Tests: `backend/tests/test_prompts.py`.

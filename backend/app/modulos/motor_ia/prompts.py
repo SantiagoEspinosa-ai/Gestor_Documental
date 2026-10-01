@@ -17,7 +17,7 @@ from app.modulos.configuracion.servicio import TipoDocumental
 from app.modulos.motor_ia.interfaces import Pagina
 
 # Version en uso de cada prompt. Cambiarla es una decision de configuracion: anotarla en la spec.
-VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v2", "correccion_json": "v1"}
+VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v3", "correccion_json": "v1"}
 
 # backend/app/modulos/motor_ia/prompts.py -> raiz del repo
 _RAIZ_REPO = Path(__file__).resolve().parents[4]
@@ -74,7 +74,7 @@ def cargar(id_prompt: str, version: str | None = None) -> Prompt:
 
 
 def version_prompt(prompt: Prompt, tipo_documental: str | None = None) -> str:
-    """Valor de `FechaYModelo.version_prompt`: `extraccion_pasaporte@v2`, o `clasificacion@v2` sin tipo."""
+    """Valor de `FechaYModelo.version_prompt`: `extraccion_pasaporte@v3`, o `clasificacion@v2` sin tipo."""
     nombre = f"{prompt.id}_{tipo_documental}" if tipo_documental else prompt.id
     return f"{nombre}@{prompt.version}"
 

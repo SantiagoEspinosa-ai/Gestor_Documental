@@ -290,3 +290,19 @@ def test_combinar_texto_y_vision():
     assert r.datos_extraidos == {"a": "A-vision", "b": "B-texto", "c": None}
     assert r.evidencia_por_campo == {"a": "pagina_1", "b": "pagina_1"}
     assert r.nivel_confianza_por_campo["b"] == 0.8 and r.observaciones_visuales == ["vision", "texto"]
+
+
+# --- Senal 4 de OCR pobre: formato invalido ---
+
+@pytest.mark.parametrize("tipo, datos, invalidos", [
+    ("pasaporte", {"numero_pasaporte": "X00000015UTO9001011F", "fecha_vencimiento": "2031-09-30"}, ["numero_pasaporte"]),
+    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, ["fecha_vencimiento"]),
+    ("pasaporte", {"numero_pasaporte": "2X0000001", "fecha_vencimiento": "2031-09-30"}, []),  # cumple el patron
+    ("credencial_elector", {"curp": "AEPA9O0101MDFXXX01", "vigencia": "2029"}, ["curp"]),
+    ("credencial_elector", {"curp": "AEPA900101MDFXXX01", "vigencia": "2021 - 2029"}, ["vigencia"]),
+    ("credencial_elector", {"curp": None, "vigencia": None}, []),                              # vacios: no son formato
+])
+def test_campos_con_formato_invalido(tipo, datos, invalidos):
+    from app.modulos.motor_ia.proveedores.base import campos_con_formato_invalido
+    r = postprocesar_extraccion(_respuesta(datos, {c: 0.9 for c in datos}), esquema(tipo), Modalidad.pdf_digital, [1])
+    assert campos_con_formato_invalido(r, esquema(tipo)) == invalidos
