@@ -1,6 +1,7 @@
 # PERSONA_1 - Estado y siguientes pasos (traspaso)
 
-Actualizado: 2026-09-30, al cerrar la etapa 1 en `feat/plataforma`. Sirve para retomar el trabajo en
+Actualizado: 2026-10-01. Etapa 1 CERRADA: el PR #3 (`feat/plataforma` -> `main`) se aprobo y fusiono
+el 2026-09-30. En curso: la etapa 2. Sirve para retomar el trabajo en
 otra maquina o en otro chat de Claude Code. La especificacion completa sigue en
 `docs/equipo/PERSONA_1_plataforma.md`; este fichero dice en que punto estamos y que toca ahora.
 
@@ -40,8 +41,10 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 | Corregir datos o confirmar la clasificacion de un documento en `error` | 409 `DOCUMENTO_CON_ERROR` (codigo nuevo: se anade a `codigos_error.md` en el mismo commit que lo use, etapa 2). Resolver sus alertas si se permite | pregunta 2 de PERSONA_3 |
 | `EXP-001` | Al crear el folio, una por cada tipo requerido que falte (bloqueante, en `alertas_expediente`, `campo` = tipo). Se recalcula al procesar un documento o confirmar su clasificacion; cuenta el tipo confirmado, si no el detectado, si no el declarado. Si el revisor la marco `aplica=false`, se conserva | pregunta 3 de PERSONA_3 |
 | `POST /folios` | 201 (ya implementado) | pregunta 4 de PERSONA_3 |
-| Alertas informativas | Propuesta de PERSONA_1, sin acordar: `VAL-004` (falta un campo opcional, la emite PERSONA_2) y `EXP-002` (tipo subido que el proceso no pide, la emite PERSONA_1). `VAL-003` ya es de PERSONA_2 (campo tomado de la MRZ, PR #4) | pendiente del equipo |
+| Alertas informativas | `VAL-003` (campo tomado de la MRZ, PR #4) y `VAL-004` (campo opcional vacio, PR #6) ACEPTADAS; las emite PERSONA_2. `EXP-002` (documento de un tipo que el proceso no pide; informativa, en el documento) ACEPTADA (opcion A) y emitida por la plataforma (`expediente.recalcular_exp002`) | PR #4, PR #6, PR #9 |
+| Privacidad de OpenRouter | `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` (PR #5 de PERSONA_2) cierra el riesgo de enviar documentos reales al proveedor gratuito | PR #5 |
 | `SYS-004` | Descartado (opcion A): la ingesta rechaza con 415 `FORMATO_NO_PERMITIDO` si el contenido no coincide con la extension | PR #4 |
+| ADR-008 | Aceptado (PR #7) y aplicado a los contratos (PR #8): `GET /auditoria` paginado (`PaginaAuditoria`) y `referencia_externa` en `ResumenFolio` | PR #7, PR #8 |
 
 ## Como retomar
 1. En la raiz del repo: `cp .env.example .env` y rellenarlo a mano (claves AWS por canal seguro,
@@ -58,27 +61,32 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ## Pendiente
 ### Cierre de la etapa 1
-- [ ] PR #3 de `feat/plataforma` a `main` (abierto; se revisa y fusiona el dia 5).
+- [x] PR #3 de `feat/plataforma` a `main`: aprobado y fusionado el 2026-09-30.
 - [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
       lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
 - [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
 
-### ADR-008 (aceptado el 2026-09-30), cuando el PR de contratos `docs/contratos-adr-008` este en `main`
-- [ ] `expediente.listar_folios`: rellenar `ResumenFolio.referencia_externa` desde
-      `folios.referencia_externa` (`null` si el folio se creo sin ella), con su test en `backend/tests/`.
-- [ ] `api/README.md`: quitar la nota de desviacion de `GET /auditoria` ("Pendiente de reflejar en
-      endpoints.md"); la paginacion ya es el contrato (ADR-008, punto 1).
+### ADR-008 (aceptado en el PR #7, aplicado a los contratos en el PR #8)
+- [x] `expediente.listar_folios` rellena `ResumenFolio.referencia_externa` desde `folios.referencia_externa`
+      (`null` si el folio se creo sin ella), con su test (93ac61b).
+- [x] `api/README.md`: quitada la nota de desviacion de `GET /auditoria`; la paginacion ya es el contrato (93ac61b).
 
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
-- Conectar el pipeline real (sustituye a `ingesta/procesamiento_stub.py`) y guardar `resultados`.
-- `EXP-001`: recalculo al procesar o confirmar la clasificacion (la creacion inicial va al crear el folio).
-- `modulos/validacion/comparaciones.py`: `ComparacionCampo` y `CMP-001` solo en `alertas_expediente`.
-- Recomendacion global.
-- Endpoints del revisor: corregir datos (`correcciones` en el resultado), confirmar clasificacion
-  (versionado y reproceso si cambia el tipo), resolver alertas por `alerta_id` (documento y
-  expediente) y decision del folio (409 `DECISION_BLOQUEADA`, `FOLIO_CERRADO`,
-  `DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`). Todo a auditoria.
+- [x] E2.1: `ingesta/procesamiento.py` con la interfaz acordada del motor (hoy `motor_stub.py`); cada
+      alerta del motor se guarda en `alertas` con `version_resultado` (migracion 0003). Acordado con PERSONA_2.
+- [ ] Cambiar el import de `motor_stub` por `orquestador.servicio.procesar_documento` cuando llegue a `main`.
+- [x] E2.3: `expediente.recalcular_exp001` al procesar cada documento (98196ea) y al confirmar la
+      clasificacion (a1ec2c5).
+- [x] E2.4: comparaciones entre documentos (`validacion/comparaciones.py` y `servicio.py`) y `CMP-001`
+      critica en `alertas_expediente`, sin valores en el mensaje (3ded622).
+- [x] E2.5: recomendacion global al vuelo (`expediente/recomendacion.py`); nunca `rechazar` (1162822).
+- [x] E2.6a: resolver alertas de documento y de expediente (d582fcc).
+- [x] E2.6b: migracion 0004 (`correcciones.version_resultado`), corregir datos (ADR-006 2.4) y confirmar
+      clasificacion con reproceso (ADR-006 2.5); codigo nuevo `DOCUMENTO_CON_ERROR` (ea08277, cd41b1e, a1ec2c5).
+- [x] E2.6c: decision del folio y cierre (ADR-006 2.2 y G), con UPDATE condicional contra decisiones
+      simultaneas (commit "feat(api): decision del folio y cierre").
+- [ ] Pull Request de `feat/plataforma` a `main` al cerrar la etapa 2.
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.

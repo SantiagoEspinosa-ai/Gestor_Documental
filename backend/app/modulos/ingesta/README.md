@@ -29,19 +29,65 @@ usan `GET /documentos/{id}` y el expediente. Con resultado: la version mayor, co
 `tipo_documental_confirmado` y `alertas_encontradas` sobrescritos desde la BD. Sin resultado: uno
 minimo con el estado de la fila y sus alertas (con `id`). La tabla `alertas` es la fuente de verdad
 de las alertas; en la etapa 2 las alertas del motor se guardan en ella al guardar el resultado.
+Encima del resultado vigente aplica las correcciones del revisor de ESA version, en orden: gana el
+ultimo valor, confianza 1.0, evidencia `correccion_revisor` y la lista en `correcciones` (ADR-006 2.4).
+Las correcciones de versiones anteriores no se aplican.
 
 `obtener_resultado(sesion, documento_id) -> ResultadoDocumento`: `construir_resultado` del documento;
 404 `DOCUMENTO_NO_ENCONTRADO` si no existe o el id no es un UUID.
 
+`obtener_documento(sesion, documento_id) -> Documento`: 404 si no existe o el id no es un UUID.
+`existe_tipo(tipo) -> bool`: si hay ficha para ese tipo.
+
 `url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.
+
+`procesar_documento(documento_id, tipo_confirmado=None)`: lo que lanza la API como BackgroundTask;
+delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).
 
 ## tipos.py
 Lee `formatos_permitidos` de `config/tipos/*.yaml`. Provisional hasta que `configuracion` de
 PERSONA_2 este en main.
 
-## procesamiento_stub.py
-`procesar_documento(documento_id)`: se lanza como BackgroundTask y abre su propia sesion.
-`pendiente -> procesando -> completado` con un `ResultadoDocumento` ficticio valido (proveedor y
-modelo `stub`, prompt `stub@v0`, alertas del documento con su `id`), guardado como nueva version en
-`resultados`, y auditoria `documento_procesado`. Si falla: estado `error`, sin relanzar.
-PERSONA_2 lo sustituye en la etapa 2 por el procesamiento real.
+## procesamiento.py
+`procesar(documento_id, tipo_confirmado=None)`: se lanza como BackgroundTask y abre su propia sesion.
+`pendiente -> procesando`, descarga el original de S3, llama al motor y guarda:
+- un `Resultado` nuevo (version = mayor + 1), sin sobrescribir los anteriores;
+- cada alerta del motor en la tabla `alertas` con `version_resultado` = esa version (asi tiene `id`);
+- `estado_analisis` = el que devuelva el motor (`completado` o `error`);
+- auditoria `documento_procesado` con `modelo` y `version_prompt` en sus columnas y el resto de
+  `datos_auditoria` (proveedor, respaldo_usado, confianzas_modelo, tiempos, tokens) en `detalle`.
+Si falla la descarga, el motor lanza o el resultado es de otro documento/folio: estado `error`, sin
+`Resultado` y sin relanzar. Al reprocesar solo se muestran las alertas del motor de la version nueva;
+las de plataforma (`DUP-001`, `EXP-001`, `CMP-001`, con `version_resultado` NULL) se conservan.
+Antes del commit llama a `expediente.servicio.recalcular_exp001` y `recalcular_cmp001` (en la misma
+transaccion). El import es diferido (`_expediente_servicio()`) para romper el ciclo
+expediente -> ingesta.servicio -> procesamiento -> expediente.
+
+## Interfaz acordada con el motor (PERSONA_2)
+`app.modulos.orquestador.servicio.procesar_documento(contenido: bytes, *, identificador: str,
+nombre_archivo: str, tipo_declarado: str | None, folio: str, referencia: ReferenciaArchivoOriginal,
+tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]`
+- No toca la BD ni S3: la plataforma le pasa los bytes.
+- `datos_auditoria`: modelo, version_prompt, proveedor, respaldo_usado, confianzas_modelo (ADR-007),
+  tiempos y tokens.
+- Errores: proveedor caido o sin respaldo -> resultado en `error` con `SYS-001`; JSON invalido tras el
+  reintento -> `error` con `SYS-002`; cualquier otra cosa -> excepcion.
+- Reparto: el motor hace las reglas del documento (VAL, REG, CLS) y su recomendacion; la plataforma,
+  `CMP-001`, el recalculo de `EXP-001` y la recomendacion global.
+
+Mientras ese modulo no este en `main`, `procesamiento.py` importa `motor_stub.procesar_documento`,
+con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas, y
+`{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
+
+## Fallos del procesamiento
+Si falla la descarga de S3 o el motor lanza una excepcion, el documento queda en `error`, sin
+`Resultado` y sin alerta `SYS-00x` (las `SYS-001`/`SYS-002` solo existen cuando el motor devuelve un
+resultado en `error`). En la UI se ve como documento en error; hay que volver a subirlo.
+
+## Documentos de uno en uno
+La llamada al motor va dentro de un `threading.BoundedSemaphore` de `MAX_PROCESAMIENTOS_SIMULTANEOS`
+(1 por defecto): con Ollama sin GPU cada documento tarda 60-250 s y varios a la vez agotan la RAM.
+Solo se limita `analizar`; la descarga de S3 y la escritura en BD van fuera. Mientras espera su turno,
+el documento sigue en `procesando`. Vale para un solo proceso uvicorn (las BackgroundTasks son hilos
+del mismo proceso); con varios workers haria falta una cola, fuera del MVP. Con Ollama, arrancarlo con
+`OLLAMA_MAX_LOADED_MODELS=1`.

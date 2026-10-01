@@ -1,5 +1,8 @@
-"""Tests de modulos/ingesta (servicio y stub de procesamiento). SQLite temporal y moto; datos ficticios."""
+"""Tests de modulos/ingesta (servicio, procesamiento y stub del motor). SQLite temporal y moto; datos ficticios."""
+import inspect
 import re
+import threading
+import time
 import uuid
 
 import boto3
@@ -15,10 +18,10 @@ from app.core.db import Base
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Auditoria, Documento, Proceso, Resultado
 from app.modulos.expediente import servicio as expediente
-from app.modulos.ingesta import procesamiento_stub
-from app.modulos.ingesta.procesamiento_stub import procesar_documento
-from app.modulos.ingesta.servicio import ingestar
-from app.schemas.resultado import ResultadoDocumento
+from app.modulos.ingesta import motor_stub, procesamiento
+from app.modulos.ingesta.procesamiento import procesar
+from app.modulos.ingesta.servicio import ingestar, obtener_resultado
+from app.schemas.resultado import Alerta, EstadoAnalisis, ReferenciaArchivoOriginal, ResultadoDocumento
 
 SECRETO = "clave-ficticia-de-test"
 BUCKET = "bucket-de-test"
@@ -195,44 +198,185 @@ def test_fallo_al_subir_no_deja_rastro(sesion, folio):
                          .where(Auditoria.accion == "documento_subido")) == 0
 
 
-# --- procesar_documento (stub) ---
+# --- procesamiento con la interfaz acordada del motor ---
 
-def test_procesar_documento_con_su_propia_sesion(sesion, s3, folio):
-    _subir(sesion, s3, folio)
-    doc = _subir(sesion, s3, folio)  # duplicado: lleva DUP-001
-    procesar_documento(doc.id)  # sin pasarle sesion
+@pytest.fixture
+def s3_en_procesamiento(s3, monkeypatch):
+    """procesar() descarga con get_almacenamiento(): en los tests, el S3 de moto."""
+    monkeypatch.setattr(procesamiento, "get_almacenamiento", lambda: s3)
+    return s3
 
+
+def _alerta(codigo: str, severidad: str = "preventiva") -> Alerta:
+    return Alerta(codigo=codigo, mensaje=f"Alerta ficticia {codigo}", severidad=severidad, confianza=0.9,
+                  campo="nombre_completo")
+
+
+def _motor_falso(monkeypatch, alertas=(), estado=EstadoAnalisis.completado, identificador=None, datos=None):
+    """Sustituye procesamiento.analizar por un motor que devuelve lo que se le diga."""
+    def analizar(contenido, **kwargs):
+        resultado, auditoria_stub = motor_stub.procesar_documento(contenido, **kwargs)
+        resultado = resultado.model_copy(update={
+            "alertas_encontradas": list(alertas), "estado_analisis": estado,
+            "identificador_unico_documento": identificador or kwargs["identificador"]})
+        return resultado, datos if datos is not None else auditoria_stub
+    monkeypatch.setattr(procesamiento, "analizar", analizar)
+
+
+def test_firma_del_motor_stub_es_la_acordada():
+    firma = inspect.signature(motor_stub.procesar_documento)
+    params = list(firma.parameters.values())
+    assert [p.name for p in params] == ["contenido", "identificador", "nombre_archivo", "tipo_declarado",
+                                        "folio", "referencia", "tipo_confirmado"]
+    assert params[0].kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert all(p.kind is inspect.Parameter.KEYWORD_ONLY for p in params[1:])
+    assert params[-1].default is None
+    assert all(p.default is inspect.Parameter.empty for p in params[:-1])
+
+
+def test_motor_stub_devuelve_resultado_sin_alertas():
+    ref = ReferenciaArchivoOriginal(nombre_archivo="a.pdf", ruta="r", hash="0" * 64)
+    resultado, datos = motor_stub.procesar_documento(PDF, identificador="id-1", nombre_archivo="a.pdf",
+                                                     tipo_declarado="pasaporte", folio="ONB-2026-000001",
+                                                     referencia=ref)
+    assert resultado.alertas_encontradas == []
+    assert (resultado.identificador_unico_documento, resultado.folio_solicitud) == ("id-1", "ONB-2026-000001")
+    assert datos == {"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}
+
+
+def test_procesar_con_su_propia_sesion_y_el_stub(sesion, s3_en_procesamiento, folio):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+    procesar(doc.id)  # sin pasarle sesion
     sesion.expire_all()
     assert sesion.get(Documento, doc.id).estado_analisis == "completado"
     fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id))
     assert fila.version == 1
     resultado = ResultadoDocumento.model_validate(fila.json)
-    assert resultado.estado_analisis.value == "completado"
     assert resultado.tipo_documental_detectado == "credencial_elector"
     assert resultado.referencia_archivo_original.hash == doc.hash_sha256
-    assert [a.codigo for a in resultado.alertas_encontradas] == ["DUP-001"]
-    assert uuid.UUID(resultado.alertas_encontradas[0].id)
-    registro = sesion.scalar(select(Auditoria).where(Auditoria.accion == "documento_procesado"))
-    assert (registro.documento_id, registro.modelo, registro.version_prompt) == (doc.id, "stub", "stub@v0")
 
 
-def test_procesar_dos_veces_crea_version_2(sesion, s3, folio):
-    doc = _subir(sesion, s3, folio)
-    procesar_documento(doc.id)
-    procesar_documento(doc.id)
-    versiones = sesion.scalars(select(Resultado.version).where(Resultado.documento_id == doc.id)
-                               .order_by(Resultado.version)).all()
-    assert versiones == [1, 2]
+def test_alertas_del_motor_con_version_e_id(sesion, s3_en_procesamiento, folio, monkeypatch):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+    _motor_falso(monkeypatch, alertas=[_alerta("VAL-001", "critica"), _alerta("REG-vigencia", "bloqueante")])
+    procesar(doc.id)
+
+    filas = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)
+                           .order_by(AlertaBD.codigo)).all()
+    assert [(a.codigo, a.version_resultado) for a in filas] == [("REG-vigencia", 1), ("VAL-001", 1)]
+    visibles = obtener_resultado(sesion, str(doc.id)).alertas_encontradas
+    assert {a.codigo for a in visibles} == {"VAL-001", "REG-vigencia"}
+    assert all(uuid.UUID(a.id) for a in visibles)
 
 
-def test_procesar_con_fallo_deja_estado_error(sesion, s3, folio, monkeypatch):
-    doc = _subir(sesion, s3, folio)
+def test_al_reprocesar_solo_se_ven_las_alertas_de_la_version_nueva(sesion, s3_en_procesamiento, folio,
+                                                                    monkeypatch):
+    _subir(sesion, s3_en_procesamiento, folio)
+    doc = _subir(sesion, s3_en_procesamiento, folio)  # duplicado: DUP-001 de plataforma
+    _motor_falso(monkeypatch, alertas=[_alerta("VAL-001")])
+    procesar(doc.id)
+    _motor_falso(monkeypatch, alertas=[_alerta("CLS-001"), _alerta("VAL-002")])
+    procesar(doc.id)
 
-    def rompe(*args):
-        raise RuntimeError("fallo forzado")
+    visibles = {a.codigo for a in obtener_resultado(sesion, str(doc.id)).alertas_encontradas}
+    assert visibles == {"DUP-001", "CLS-001", "VAL-002"}
+    # la de la version 1 sigue en BD, pero ya no se muestra
+    assert sesion.scalar(select(AlertaBD.version_resultado).where(AlertaBD.codigo == "VAL-001")) == 1
 
-    monkeypatch.setattr(procesamiento_stub, "_resultado_ficticio", rompe)
-    procesar_documento(doc.id)  # no relanza
+
+def test_motor_con_error_y_sys_001(sesion, s3_en_procesamiento, folio, monkeypatch):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+    _motor_falso(monkeypatch, alertas=[_alerta("SYS-001", "critica")], estado=EstadoAnalisis.error)
+    procesar(doc.id)
+    sesion.expire_all()
+    assert sesion.get(Documento, doc.id).estado_analisis == "error"
+    assert sesion.scalar(select(func.count()).select_from(Resultado)) == 1
+    resultado = obtener_resultado(sesion, str(doc.id))
+    assert resultado.estado_analisis == EstadoAnalisis.error
+    assert [a.codigo for a in resultado.alertas_encontradas] == ["SYS-001"]
+
+
+def _falla_y_no_guarda(sesion, doc):
+    procesar(doc.id)  # no relanza
     sesion.expire_all()
     assert sesion.get(Documento, doc.id).estado_analisis == "error"
     assert sesion.scalar(select(func.count()).select_from(Resultado)) == 0
+
+
+def test_motor_que_lanza(sesion, s3_en_procesamiento, folio, monkeypatch):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+
+    def rompe(contenido, **kwargs):
+        raise RuntimeError("fallo forzado")
+
+    monkeypatch.setattr(procesamiento, "analizar", rompe)
+    _falla_y_no_guarda(sesion, doc)
+
+
+def test_identificador_que_no_coincide(sesion, s3_en_procesamiento, folio, monkeypatch):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+    _motor_falso(monkeypatch, identificador=str(uuid.uuid4()))
+    _falla_y_no_guarda(sesion, doc)
+
+
+def test_descargar_falla(sesion, s3, folio, monkeypatch):
+    doc = _subir(sesion, s3, folio)
+
+    class SinOriginal:
+        def descargar(self, clave):
+            raise ErrorAlmacenamiento("No se pudo completar 'descargar' en el almacenamiento")
+
+    monkeypatch.setattr(procesamiento, "get_almacenamiento", lambda: SinOriginal())
+    _falla_y_no_guarda(sesion, doc)
+
+
+def test_auditoria_del_procesamiento(sesion, s3_en_procesamiento, folio, monkeypatch):
+    doc = _subir(sesion, s3_en_procesamiento, folio)
+    datos = {"proveedor": "ollama", "modelo": "modelo-ficticio", "version_prompt": "extraccion@v1",
+             "respaldo_usado": True, "confianzas_modelo": {"nombre_completo": 0.7},
+             "tiempos": {"total_ms": 1200}, "tokens": {"entrada": 10, "salida": 20},
+             "no_serializable": object()}
+    _motor_falso(monkeypatch, datos=datos)
+    procesar(doc.id)
+
+    registro = sesion.scalar(select(Auditoria).where(Auditoria.accion == "documento_procesado"))
+    assert (registro.modelo, registro.version_prompt) == ("modelo-ficticio", "extraccion@v1")
+    # sin modelo/version_prompt (van a sus columnas), sin lo no serializable y sin valores de campos
+    assert registro.detalle == {"proveedor": "ollama", "respaldo_usado": True,
+                                "confianzas_modelo": {"nombre_completo": 0.7},
+                                "tiempos": {"total_ms": 1200}, "tokens": {"entrada": 10, "salida": 20}}
+
+
+@pytest.mark.parametrize("maximo", [1, 2])
+def test_procesamientos_simultaneos_limitados(sesion, s3_en_procesamiento, folio, monkeypatch, maximo):
+    monkeypatch.setenv("MAX_PROCESAMIENTOS_SIMULTANEOS", str(maximo))
+    get_settings.cache_clear()
+    docs = [_subir(sesion, s3_en_procesamiento, folio, nombre=f"doc{i}.pdf", datos=PDF + str(i).encode())
+            for i in range(2)]
+    estado = {"dentro": 0, "maximo": 0}
+    candado = threading.Lock()
+
+    def motor_lento(contenido, **kwargs):
+        with candado:
+            estado["dentro"] += 1
+            estado["maximo"] = max(estado["maximo"], estado["dentro"])
+        time.sleep(0.3)
+        with candado:
+            estado["dentro"] -= 1
+        return motor_stub.procesar_documento(contenido, **kwargs)
+
+    monkeypatch.setattr(procesamiento, "analizar", motor_lento)
+    salida = threading.Barrier(2)
+
+    def lanzar(doc_id):
+        salida.wait()
+        procesar(doc_id)
+
+    hilos = [threading.Thread(target=lanzar, args=(d.id,)) for d in docs]
+    for h in hilos:
+        h.start()
+    for h in hilos:
+        h.join()
+    assert estado["maximo"] == maximo
+    sesion.expire_all()
+    assert all(sesion.get(Documento, d.id).estado_analisis == "completado" for d in docs)
