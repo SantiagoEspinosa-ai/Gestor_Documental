@@ -1,0 +1,423 @@
+[
+  {
+    "id": 1,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000004",
+    "documento_id": null,
+    "detalle": {},
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000001",
+    "detalle": {
+      "hash_sha256": "44a92b42e7d1e55944ea5a7d250abbc49fa0c79792cda02f87c77c3eb8c06d6c",
+      "tamano_bytes": 5950,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:01:00Z"
+  },
+  {
+    "id": 3,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000001",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:01:40Z"
+  },
+  {
+    "id": 4,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000002",
+    "detalle": {
+      "hash_sha256": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019",
+      "tamano_bytes": 4992,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:02:00Z"
+  },
+  {
+    "id": 5,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000002",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:02:40Z"
+  },
+  {
+    "id": 6,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000003",
+    "detalle": {
+      "hash_sha256": "b59751ccf862284e16643d0004d1d2e74f262036b2f55d8c1508774055ff184a",
+      "tamano_bytes": 5109,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-25T10:03:00Z"
+  },
+  {
+    "id": 7,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000003",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-25T10:03:40Z"
+  },
+  {
+    "id": 8,
+    "usuario": "revisor.demo",
+    "accion": "decision_tomada",
+    "folio": "ONB-2026-000004",
+    "documento_id": null,
+    "detalle": {
+      "decision": "aprobar"
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-26T12:30:00Z"
+  },
+  {
+    "id": 9,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000001",
+    "documento_id": null,
+    "detalle": {},
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:15:00Z"
+  },
+  {
+    "id": 10,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000001",
+    "detalle": {
+      "hash_sha256": "34e4b2f91a6b515f2759b3d807116c42755614b2d680164e798e8c9db56ba489",
+      "tamano_bytes": 293565,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:16:00Z"
+  },
+  {
+    "id": 11,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000001",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:16:40Z"
+  },
+  {
+    "id": 12,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000002",
+    "detalle": {
+      "hash_sha256": "22311aa31b84acd5fd808df72094bb0723531f91593dbc422f26d2ea17e4d86e",
+      "tamano_bytes": 101949,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:17:00Z"
+  },
+  {
+    "id": 13,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000002",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:17:40Z"
+  },
+  {
+    "id": 14,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000003",
+    "detalle": {
+      "hash_sha256": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2",
+      "tamano_bytes": 5111,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:18:00Z"
+  },
+  {
+    "id": 15,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000003",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:18:40Z"
+  },
+  {
+    "id": 16,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000004",
+    "detalle": {
+      "hash_sha256": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2",
+      "tamano_bytes": 5111,
+      "duplicado": true
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-28T09:19:00Z"
+  },
+  {
+    "id": 17,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000001",
+    "documento_id": "00000000-0000-4000-8000-000001000004",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-28T09:19:40Z"
+  },
+  {
+    "id": 18,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000002",
+    "documento_id": null,
+    "detalle": {},
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:40:00Z"
+  },
+  {
+    "id": 19,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "hash_sha256": "ce0e2ac91a272e9215b1d6114a9b8569a1212dde9d06e3ce728ad6afefdef398",
+      "tamano_bytes": 203958,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:41:00Z"
+  },
+  {
+    "id": 20,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-29T11:41:40Z"
+  },
+  {
+    "id": 21,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000002",
+    "detalle": {
+      "hash_sha256": "c0cef4f378646a6c23c4c2eb546c733fbb6b4f0a3f5b7078673f2b447b09adf5",
+      "tamano_bytes": 175194,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T11:42:00Z"
+  },
+  {
+    "id": 22,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000002",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-29T11:42:40Z"
+  },
+  {
+    "id": 23,
+    "usuario": "revisor.demo",
+    "accion": "dato_corregido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000001",
+    "detalle": {
+      "campos": [
+        "nombre_completo"
+      ]
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T12:05:00Z"
+  },
+  {
+    "id": 24,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000002",
+    "documento_id": "00000000-0000-4000-8000-000002000003",
+    "detalle": {
+      "hash_sha256": "8573f96ba1982a3fc848902d3be366a8c0f51cb2f96445e42a12bf09d9965b90",
+      "tamano_bytes": 5964,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-29T12:10:00Z"
+  },
+  {
+    "id": 25,
+    "usuario": "integrador.demo",
+    "accion": "folio_creado",
+    "folio": "ONB-2026-000003",
+    "documento_id": null,
+    "detalle": {},
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:05:00Z"
+  },
+  {
+    "id": 26,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000001",
+    "detalle": {
+      "hash_sha256": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019",
+      "tamano_bytes": 4992,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:06:00Z"
+  },
+  {
+    "id": 27,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000001",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-30T08:06:40Z"
+  },
+  {
+    "id": 28,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000002",
+    "detalle": {
+      "hash_sha256": "de8469e84785466615ab18fefb645b6d0e6edb16264b43cc18474dc80b567480",
+      "tamano_bytes": 140214,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:07:00Z"
+  },
+  {
+    "id": 29,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000002",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-30T08:07:40Z"
+  },
+  {
+    "id": 30,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000003",
+    "detalle": {
+      "hash_sha256": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c",
+      "tamano_bytes": 396262,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:08:00Z"
+  }
+]
