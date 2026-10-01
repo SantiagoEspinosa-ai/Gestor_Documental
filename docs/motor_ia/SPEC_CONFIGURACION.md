@@ -4,6 +4,8 @@ Documento vivo: cada decision de configuracion del motor IA se anota aqui, en el
 codigo que la aplica, con su entrada en el [registro de cambios](#registro-de-cambios).
 Ambito: `configuracion`, `orquestador`, `motor_ia` y `validacion/reglas.py`.
 Pruebas que justifican las decisiones: [pruebas_ollama.md](pruebas_ollama.md).
+Explicacion en lenguaje sencillo para el equipo y la presentacion, con el historial de mejoras:
+[EXPLICACION_MOTOR.md](EXPLICACION_MOTOR.md) (se actualiza en el mismo commit que esta spec).
 
 Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acordado, sin codigo aun),
 **pendiente** (por decidir o por hacer).
@@ -278,7 +280,10 @@ se queda solo con `pagina_<n>` (seccion 4).
       a texto con OCR (7/7).
 - [ ] **Mejorar la evidencia del prompt de extraccion** (etapa 2): en la ejecucion real, `gemma4:e2b` devolvio
       `pagina_1:seccion_central` en los 7 campos; es valida, pero no dice donde esta cada dato.
-- [ ] **Produccion: arrancar Ollama con `OLLAMA_MAX_LOADED_MODELS=1`** (configuracion del servidor, sin codigo):
+- [x] **Documentos de uno en uno y `OLLAMA_MAX_LOADED_MODELS=1`: resuelto por PERSONA_1 en el PR #9** (en `main`,
+      `eee95be`): la ingesta llama al motor dentro de un semaforo de `MAX_PROCESAMIENTOS_SIMULTANEOS` (1 por
+      defecto; `.env.example`) y su README pide arrancar Ollama con `OLLAMA_MAX_LOADED_MODELS=1`. PERSONA_2: anadir
+      `MAX_PROCESAMIENTOS_SIMULTANEOS=1` a su `.env`. Contexto original (configuracion del servidor, sin codigo):
       con el reintento con vision, Ollama tendria cargados a la vez `gemma4:e2b` (~3 GB) y `qwen2.5vl:3b`
       (~4,3 GB), y una maquina de 16 GB se queda sin RAM. Con la variable, descarga un modelo al cargar otro.
       En la evaluacion (`pruebas_ollama/evaluar_fixtures.py`) se descarga el de texto antes del reintento
@@ -296,7 +301,7 @@ se queda solo con `pagina_<n>` (seccion 4).
       `REG-antiguedad_maxima`** (critica) y dejara de equivaler al folio `sano`.
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
-      cada cambio; en produccion sigue pendiente `OLLAMA_MAX_LOADED_MODELS=1`.
+      cada cambio; en produccion, semaforo y `OLLAMA_MAX_LOADED_MODELS=1` del PR #9 de PERSONA_1.
 - [ ] **Opcional: bloque 2 de la evaluacion** (`pruebas_ollama/evaluar_fixtures.py lanzar --bloque 2`): vision
       forzada en los 18 escaneados y fotos, como referencia del respaldo (~40-45 min; criterio >= 40/51 por
       modalidad, no bloquea). El bloque 1 (ruta auto) aprobo todo el 2026-10-01.
@@ -419,7 +424,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | `extraccion_v3` sin la obligatoriedad en la lista de campos (`formatear_campos`, variable `campos_a_extraer`): la palabra "opcional" hacia que la vision dejara vacia `fecha_expedicion`; 4 pasaportes dificiles con vision forzada 21/28 -> 25/28. Bloque 3 repetido con la regla de OCR pobre: APRUEBA (dificil 31/34 y 2 incorrectos; extremo 28/34 y 6; tipo 6/6 y 6/6). Bloque 1 repetido: 153/153, 59,4 s. El bloque 4 no se repite: queda como referencia y el informe avisa de que mezcla v2 (8 casos) y v3 (4 pasaportes) | este commit |
+| 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | este commit |
+| 2026-10-01 | `docs/motor_ia/EXPLICACION_MOTOR.md`: explicacion del motor para el equipo (flujo, modelos probados, historial de mejoras, reglas, resultados, pendientes). Regla: cada cambio de regla, de modelo o resultado de prueba anade una entrada a su historial en el mismo commit | este commit |
+| 2026-10-01 | `extraccion_v3` sin la obligatoriedad en la lista de campos (`formatear_campos`, variable `campos_a_extraer`): la palabra "opcional" hacia que la vision dejara vacia `fecha_expedicion`; 4 pasaportes dificiles con vision forzada 21/28 -> 25/28. Bloque 3 repetido con la regla de OCR pobre: APRUEBA (dificil 31/34 y 2 incorrectos; extremo 28/34 y 6; tipo 6/6 y 6/6). Bloque 1 repetido: 153/153, 59,4 s. El bloque 4 no se repite: queda como referencia y el informe avisa de que mezcla v2 (8 casos) y v3 (4 pasaportes) | `459ef8f` |
 | 2026-10-01 | Regla de OCR pobre (seccion 3): cuatro senales (texto insuficiente, clasificacion `desconocido`, obligatorios vacios, formato invalido); reclasificacion con vision cuando el texto da `desconocido`, con `CLS-001` decidido segun la vision; extraccion directa con vision si la clasificacion ya detecto OCR pobre; motivos en `InfoLlamada.motivo`. Prompt `extraccion_v3` (asignar por etiqueta; corrige `fecha_expedicion` vacia en vision); observaciones visuales pasan a v4. Pendientes: confianza de Tesseract y especimenes | `903f09b` |
 | 2026-10-01 | Evaluacion, bloque 4 (vision forzada en los 12 fixtures dificiles): 60/68 correctos, 4 vacios y 4 incorrectos, frente a 28/68, 23 y 17 de la ruta auto; tipo correcto 12/12; ~130-195 s por caso; RAM libre minima 1,42 GB, un modelo cada vez. La vision deja vacia `fecha_expedicion` en los 4 pasaportes | `8058e7e` |
 | 2026-10-01 | Pendientes de la etapa 2: reglas de coherencia CURP <-> `fecha_nacimiento` y `fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`, con tipos de regla nuevos en las fichas (PR aparte, fichero compartido) y en el cargador | `8058e7e` |
