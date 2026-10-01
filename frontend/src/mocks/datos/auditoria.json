@@ -32,7 +32,8 @@
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000001",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -60,7 +61,8 @@
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000002",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -88,7 +90,8 @@
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000003",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -140,7 +143,8 @@
     "folio": "ONB-2026-000001",
     "documento_id": "00000000-0000-4000-8000-000001000001",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
@@ -168,7 +172,8 @@
     "folio": "ONB-2026-000001",
     "documento_id": "00000000-0000-4000-8000-000001000002",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
@@ -196,7 +201,8 @@
     "folio": "ONB-2026-000001",
     "documento_id": "00000000-0000-4000-8000-000001000003",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -224,7 +230,8 @@
     "folio": "ONB-2026-000001",
     "documento_id": "00000000-0000-4000-8000-000001000004",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -263,7 +270,8 @@
     "folio": "ONB-2026-000002",
     "documento_id": "00000000-0000-4000-8000-000002000001",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
@@ -291,7 +299,8 @@
     "folio": "ONB-2026-000002",
     "documento_id": "00000000-0000-4000-8000-000002000002",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
@@ -304,7 +313,9 @@
     "folio": "ONB-2026-000002",
     "documento_id": "00000000-0000-4000-8000-000002000001",
     "detalle": {
-      "campo": "nombre_completo"
+      "campos": [
+        "nombre_completo"
+      ]
     },
     "modelo": null,
     "version_prompt": null,
@@ -358,7 +369,8 @@
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000001",
     "detalle": {
-      "estado_analisis": "completado"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
     "version_prompt": "extraccion@v1",
@@ -386,10 +398,26 @@
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000002",
     "detalle": {
-      "estado_analisis": "error"
+      "proveedor": "ollama",
+      "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
     "version_prompt": "extraccion@v1",
     "creado_en": "2026-09-30T08:07:40Z"
+  },
+  {
+    "id": 30,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000003",
+    "detalle": {
+      "hash_sha256": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c",
+      "tamano_bytes": 396262,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:08:00Z"
   }
 ]

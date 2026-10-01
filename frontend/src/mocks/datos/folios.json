@@ -499,7 +499,7 @@
       {
         "id": "alr-000008",
         "codigo": "CMP-001",
-        "mensaje": "domicilio distinto entre credencial_elector y comprobante_domicilio",
+        "mensaje": "Los documentos no coinciden en domicilio",
         "severidad": "critica",
         "confianza": 1.0,
         "campo": "domicilio",
@@ -616,6 +616,31 @@
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000002.jpg",
           "hash": "de8469e84785466615ab18fefb645b6d0e6edb16264b43cc18474dc80b567480"
         }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000003",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000003000003",
+        "tipo_documental_declarado": "comprobante_domicilio",
+        "tipo_documental_detectado": null,
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": null,
+        "datos_extraidos": {},
+        "nivel_confianza_por_campo": {},
+        "evidencia_por_campo": {},
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [],
+        "correcciones": [],
+        "recomendacion": null,
+        "estado_analisis": "error",
+        "fecha_y_modelo_utilizado": null,
+        "referencia_archivo_original": {
+          "nombre_archivo": "comprobante_domicilio_sano_escaneado.pdf",
+          "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000003.pdf",
+          "hash": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c"
+        }
       }
     ],
     "comparaciones": [],
@@ -623,7 +648,7 @@
       {
         "id": "alr-000010",
         "codigo": "EXP-001",
-        "mensaje": "Falta comprobante_domicilio, requerido por el proceso onboarding",
+        "mensaje": "Falta el documento requerido: Comprobante de domicilio",
         "severidad": "bloqueante",
         "confianza": 1.0,
         "campo": "comprobante_domicilio",

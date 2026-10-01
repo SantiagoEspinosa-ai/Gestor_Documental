@@ -86,6 +86,19 @@ describe('vista de expediente', () => {
     expect(within(alertas).getByText('Preventiva (1)')).toBeTruthy()
   })
 
+  it('documento en error por fallo de S3 o del motor, sin SYS-00x: se explica sin codigo', async () => {
+    await entrarComo('revisor.demo')
+    montarExpediente('ONB-2026-000003')
+    const u = userEvent.setup()
+    await u.click(await screen.findByRole('button', { name: /comprobante_domicilio_sano_escaneado\.pdf/ }))
+    const error = screen.getByRole('alert')
+    expect(error.textContent).toContain('El análisis de este documento falló.')
+    expect(error.textContent).toContain('No se pudo procesar el archivo (fallo al leerlo o del motor de análisis)')
+    expect(error.textContent).not.toContain('SYS-')
+    // no cubre su tipo: la EXP-001 del comprobante sigue
+    expect(within(screen.getByRole('region', { name: 'Alertas del expediente' })).getByText('EXP-001')).toBeTruthy()
+  })
+
   it('documento en error: mensaje y SYS-001, sin opcion de reprocesar', async () => {
     await entrarComo('revisor.demo')
     montarExpediente('ONB-2026-000003')

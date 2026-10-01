@@ -3,7 +3,7 @@
 // enmascarar; aun asi, cualquier clave que no sea de la forma conocida de su accion se enmascara aqui
 // (si la API anade, por ejemplo, el valor corregido o un comentario, no sale completo en pantalla).
 import { ACCIONES_AUDITORIA, type AccionAuditoria, type EntradaAuditoria } from '../tipos/contrato'
-import { ETIQUETA_ACCION, ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS } from './etiquetas'
+import { ETIQUETA_ACCION, ETIQUETA_DECISION } from './etiquetas'
 
 /** nombre del tipo -> nombre_visible (de GET /tipos-documentales; si falta, el nombre legible) */
 export type NombresTipos = Record<string, string>
@@ -34,16 +34,35 @@ function tamano(bytes: number): string {
 }
 
 const texto = (v: unknown): v is string => typeof v === 'string' && v.length > 0
+/** Nombre de campo o de tipo tecnico (snake_case): no es un valor de la persona */
+const nombreTecnico = (v: unknown): v is string => typeof v === 'string' && /^[a-z][a-z0-9_]*$/.test(v)
+const numero = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const formatoNumero = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 2 })
+
+/** Numero, o {nombre: numero} (p. ej. tiempos o tokens por fase), como texto; null si no tiene esa forma */
+function numeros(valor: unknown, unidad = ''): string | null {
+  if (numero(valor)) return `${formatoNumero(valor)}${unidad}`
+  if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
+    const partes = Object.entries(valor)
+    if (partes.length && partes.every(([k, v]) => nombreTecnico(k) && numero(v))) {
+      return partes.map(([k, v]) => `${legible(k)} ${formatoNumero(v as number)}${unidad}`).join(' · ')
+    }
+  }
+  return null
+}
 
 /**
- * Frases del detalle. Para cada accion se formatean sus claves conocidas si tienen el tipo esperado;
- * el resto (o una clave conocida con otro tipo) sale como "clave: ****1234".
+ * Frases del detalle con la forma de la API del PR #9 (tabla de api/README.md). Para cada accion se
+ * formatean sus claves conocidas si tienen el tipo esperado; el resto (o una clave conocida con otro
+ * tipo) sale como "clave: ****1234". Nada de esto es sensible: nombres de campo o de tipo, codigos,
+ * huellas, tamanos, proveedor y tiempos (detalle nunca lleva valores de campos ni comentarios).
  */
 export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'detalle'>, tipos: NombresTipos = {}): string[] {
   const d = entrada.detalle ?? {}
   const frases: string[] = []
   const usadas = new Set<string>()
   const usar = (clave: string, frase: string) => { usadas.add(clave); frases.push(frase) }
+  const nombreTipo = (tipo: string) => tipos[tipo] ?? legible(tipo)
 
   switch (entrada.accion) {
     case 'login':
@@ -55,25 +74,39 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       if (typeof d.tamano_bytes === 'number') usar('tamano_bytes', tamano(d.tamano_bytes))
       if (typeof d.duplicado === 'boolean') usar('duplicado', d.duplicado ? 'Duplicado en el folio (DUP-001)' : 'No duplicado')
       break
-    case 'documento_procesado':
-      if (texto(d.estado_analisis) && d.estado_analisis in ETIQUETA_ESTADO_ANALISIS) {
-        usar('estado_analisis', `Resultado: ${ETIQUETA_ESTADO_ANALISIS[d.estado_analisis as keyof typeof ETIQUETA_ESTADO_ANALISIS]}`)
+    case 'documento_procesado': {
+      // Datos de auditoria del motor; modelo y version_prompt van en sus columnas
+      if (texto(d.proveedor)) usar('proveedor', `Proveedor: ${d.proveedor}`)
+      if (typeof d.respaldo_usado === 'boolean') {
+        usar('respaldo_usado', d.respaldo_usado ? 'Con el proveedor de respaldo' : 'Sin respaldo')
+      }
+      // ADR-007 punto 4: la confianza que da el modelo no se usa en la UI (solo queda en la auditoria)
+      if ('confianzas_modelo' in d) usadas.add('confianzas_modelo')
+      const tiempos = numeros(d.tiempos, ' s')
+      if (tiempos) usar('tiempos', `Tiempo: ${tiempos}`)
+      const tokens = numeros(d.tokens)
+      if (tokens) usar('tokens', `Tokens: ${tokens}`)
+      break
+    }
+    case 'dato_corregido':
+      if (Array.isArray(d.campos) && d.campos.length && d.campos.every(nombreTecnico)) {
+        usar('campos', `${d.campos.length === 1 ? 'Campo' : 'Campos'}: ${d.campos.map(legible).join(', ')}`)
       }
       break
-    case 'dato_corregido':
-      if (texto(d.campo)) usar('campo', `Campo: ${legible(d.campo)}`)
-      break
     case 'dato_revelado':
-      if (texto(d.campo)) usar('campo', `Campo mostrado: ${legible(d.campo)}`)
+      if (nombreTecnico(d.campo)) usar('campo', `Campo mostrado: ${legible(d.campo)}`)
       break
     case 'clasificacion_confirmada':
-      if (texto(d.tipo_documental)) usar('tipo_documental', `Tipo confirmado: ${tipos[d.tipo_documental] ?? legible(d.tipo_documental)}`)
+      if (nombreTecnico(d.tipo)) usar('tipo', `Tipo confirmado: ${nombreTipo(d.tipo)}`)
+      if (typeof d.reproceso === 'boolean') usar('reproceso', d.reproceso ? 'Se vuelve a analizar' : 'Sin volver a analizar')
       break
     case 'alerta_resuelta':
       if (texto(d.codigo)) {
         const revision = d.aplica === true ? 'aplica' : d.aplica === false ? 'falso positivo' : null
         usar('codigo', `Alerta ${d.codigo}${revision ? `: ${revision}` : ''}`)
         if (revision) usadas.add('aplica')
+        // alerta_id: identificador interno, ya identificada por el codigo y el documento de la fila
+        if (texto(d.alerta_id)) usadas.add('alerta_id')
       }
       break
     case 'decision_tomada':

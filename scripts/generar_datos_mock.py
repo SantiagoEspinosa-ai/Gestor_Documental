@@ -16,8 +16,10 @@ documentos de los mocks. Con otra fecha cambian los ficheros y ese DUP-001 no ap
 procesos y tipos_documentales se copian de config/.
 
 Los 4 folios cubren: alertas de las 4 severidades (una bloqueante), CMP-001 de domicilio en
-alertas_expediente, EXP-001 (campo = tipo que falta), una correccion, un documento en error
-(SYS-001), uno pendiente y un folio cerrado (aprobado). Tres alertas informativas, todas posibles con
+alertas_expediente, EXP-001 (campo = tipo que falta), una correccion, dos documentos en error (uno con
+SYS-001 y otro por fallo de S3 o del motor, sin SYS-00x ni documento_procesado), uno pendiente y un
+folio cerrado (aprobado). Comparaciones, recomendacion global, mensajes de CMP-001 y EXP-001 y detalle
+de la auditoria, como la API del PR #9. Tres alertas informativas, todas posibles con
 la configuracion por defecto: dos VAL-003 (nacionalidad y sexo tomados de la MRZ) en el pasaporte
 escaneado del folio 1 y VAL-004 (proveedor opcional no leido, null) en el comprobante del folio 2.
 Sin SYS-005: su unico respaldo es OpenRouter, que con PERMITIR_PROVEEDORES_NO_PRIVADOS=false no se usa
@@ -34,8 +36,10 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
 import shutil
 import tempfile
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -52,6 +56,9 @@ REVISOR, INTEGRADOR = "revisor.demo", "integrador.demo"  # usuarios de frontend/
 PROVEEDOR = "ollama"
 MODELO_POR_MODALIDAD = {"digital": "gemma4:e2b", "escaneado": "qwen2.5vl:3b", "foto": "qwen2.5vl:3b"}
 VERSION_PROMPT = "extraccion@v1"
+# detalle de documento_procesado: datos de auditoria del motor sin modelo ni version_prompt (van en sus
+# columnas), como la API del PR #9 (api/README.md)
+DETALLE_PROCESADO = {"proveedor": PROVEEDOR, "respaldo_usado": False}
 
 
 def _cargar_generador():
@@ -75,12 +82,36 @@ def confianza_campo(tipo: str, campo: str) -> float:
     return round(0.86 + (h % 13) / 100, 2)
 
 
-def bloquea(a: dict) -> bool:
-    return a["severidad"] == "bloqueante" and a["aplica"] is not False
-
-
 def pesa(a: dict) -> bool:
     return a["severidad"] in ("critica", "bloqueante") and a["aplica"] is not False
+
+
+# Comparaciones como validacion/comparaciones.py de la API (PR #9): mismos formatos de fecha y misma
+# normalizacion. Se copia la logica (no se importa backend/) para que el script siga siendo independiente.
+FORMATOS_FECHA = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%d.%m.%Y")
+
+
+def normalizar_texto(valor) -> str:
+    sin_acentos = "".join(c for c in unicodedata.normalize("NFKD", str(valor)) if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", sin_acentos).strip().upper()
+
+
+def normalizar_fecha(valor) -> str:
+    texto = str(valor).strip()
+    for formato in FORMATOS_FECHA:
+        try:
+            return datetime.strptime(texto, formato).date().isoformat()
+        except ValueError:
+            continue
+    return normalizar_texto(valor)
+
+
+def vacio(valor) -> bool:
+    return valor is None or (isinstance(valor, str) and not valor.strip())
+
+
+def tipo_efectivo(doc: dict) -> str | None:
+    return doc["tipo_documental_confirmado"] or doc["tipo_documental_detectado"] or doc["tipo_documental_declarado"]
 
 
 class DatosMock:
@@ -105,8 +136,10 @@ class DatosMock:
                                "version_prompt": version_prompt, "creado_en": iso(cuando)})
 
     def documento(self, folio, secuencia, n, caso, tipo, modalidad, subido, estado="completado", alertas_extra=(),
-                  confianzas=None, correcciones=(), vacios=()) -> dict:
-        """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004)."""
+                  confianzas=None, correcciones=(), vacios=(), fallo_plataforma=False) -> dict:
+        """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004).
+        `fallo_plataforma` (con estado="error"): fallo de S3 o excepcion del motor. Como la API, el documento
+        queda en error sin Resultado, sin SYS-00x y sin entrada documento_procesado en la auditoria."""
         gf = self.gf
         archivo = gf.nombre_archivo(tipo, caso, modalidad)
         shutil.copyfile(self.fixtures / archivo, self.originales / archivo)
@@ -131,8 +164,8 @@ class DatosMock:
         self.auditar(INTEGRADOR, "documento_subido", folio, uid,
                      {"hash_sha256": hash_, "tamano_bytes": len(datos), "duplicado": duplicado}, subido)
         if estado != "completado":
-            if estado == "error":
-                self.auditar(None, "documento_procesado", folio, uid, {"estado_analisis": "error"},
+            if estado == "error" and not fallo_plataforma:  # el motor devolvio un resultado en error (SYS-00x)
+                self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
                              subido + timedelta(seconds=40), MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT)
             return doc
         ficha = self.fichas[tipo]
@@ -172,35 +205,58 @@ class DatosMock:
             doc["evidencia_por_campo"][campo] = "correccion_revisor"
         bajas = any(v < ficha["confianza_minima_campo"] for v in doc["nivel_confianza_por_campo"].values())
         doc["recomendacion"] = "revision_manual" if bajas or any(pesa(a) for a in doc["alertas_encontradas"]) else "aprobar"
-        self.auditar(None, "documento_procesado", folio, uid, {"estado_analisis": "completado"},
+        self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
                      subido + timedelta(seconds=40), modelo, version_prompt)
-        for campo, _, cuando in correcciones:
-            self.auditar(REVISOR, "dato_corregido", folio, uid, {"campo": campo}, cuando)
+        for campo, _, cuando in correcciones:  # un PATCH por correccion: {campos: [...]}, como la API
+            self.auditar(REVISOR, "dato_corregido", folio, uid, {"campos": [campo]}, cuando)
         return doc
 
     def comparaciones(self, documentos) -> list[dict]:
-        por_campo: dict[str, dict] = {}
+        """Como validacion.comparar (PR #9): por campo, los documentos completados con valor de los tipos de
+        un par cuyos dos lados tienen valor; con menos de 2 no hay comparacion; los vacios no participan."""
+        relaciones: dict[str, set[frozenset]] = {}
+        for tipo, ficha in self.fichas.items():
+            for otro, campos in (ficha.get("comparaciones") or {}).items():
+                for campo in campos or []:
+                    relaciones.setdefault(campo, set()).add(frozenset((tipo, otro)))
         completos = [d for d in documentos if d["estado_analisis"] == "completado"]
-        for i, a in enumerate(completos):
-            for b in completos[i + 1:]:
-                ta, tb = a["tipo_documental_detectado"], b["tipo_documental_detectado"]
-                campos = (set(self.fichas[ta].get("comparaciones", {}).get(tb, []))
-                          | set(self.fichas[tb].get("comparaciones", {}).get(ta, [])))
-                for campo in campos:
-                    valores = por_campo.setdefault(campo, {})
-                    valores[a["identificador_unico_documento"]] = a["datos_extraidos"][campo]
-                    valores[b["identificador_unico_documento"]] = b["datos_extraidos"][campo]
-        return [{"campo": c, "coincide": len({self.gf.normalizar(v) for v in vals.values()}) == 1, "valores": vals}
-                for c, vals in sorted(por_campo.items())]
+        resultado = []
+        for campo, pares in sorted(relaciones.items()):
+            con_valor = [d for d in completos if tipo_efectivo(d) and not vacio(d["datos_extraidos"].get(campo))]
+            tipos_con_valor = {tipo_efectivo(d) for d in con_valor}
+            tipos = {t for par in pares if par <= tipos_con_valor for t in par}
+            participantes = [d for d in con_valor if tipo_efectivo(d) in tipos]
+            if len(participantes) < 2:
+                continue
+            tipo_campo = lambda d: self.fichas[tipo_efectivo(d)]["campos"].get(campo, {}).get("tipo")
+            normalizados = {normalizar_fecha(d["datos_extraidos"][campo]) if tipo_campo(d) == "fecha"
+                            else normalizar_texto(d["datos_extraidos"][campo]) for d in participantes}
+            resultado.append({"campo": campo, "coincide": len(normalizados) == 1,
+                              "valores": {d["identificador_unico_documento"]: d["datos_extraidos"][campo]
+                                          for d in participantes}})
+        return resultado
+
+    def recomendacion_global(self, documentos, alertas) -> str:
+        """Como expediente/recomendacion.py (PR #9); no usa la recomendacion por documento (es del motor)."""
+        if not documentos or any(d["estado_analisis"] != "completado" for d in documentos):
+            return "revision_manual"
+        if any(pesa(a) for a in alertas):
+            return "revision_manual"
+        for d in documentos:
+            ficha = self.fichas.get(tipo_efectivo(d))
+            if (ficha is None or d["confianza_clasificacion"] is None
+                    or d["confianza_clasificacion"] < ficha["confianza_minima_clasificacion"]
+                    or any(c < ficha["confianza_minima_campo"] for c in d["nivel_confianza_por_campo"].values())):
+                return "revision_manual"
+        return "aprobar"
 
     def expediente(self, folio, referencia, solicitado, documentos, alertas_expediente=(), decision=None,
                    resumen=False) -> dict:
         todas = [a for d in documentos for a in d["alertas_encontradas"]] + list(alertas_expediente)
-        revisar = any(bloquea(a) or pesa(a) for a in todas) or any(d["recomendacion"] != "aprobar" for d in documentos)
         exp = {"folio": folio, "proceso": "onboarding", "referencia_externa": referencia,
                "fecha_solicitud": iso(solicitado), "estado_general": "en_revision", "documentos": documentos,
                "comparaciones": self.comparaciones(documentos), "alertas_expediente": list(alertas_expediente),
-               "recomendacion_global": "revision_manual" if revisar else "aprobar", "decision_humana": None,
+               "recomendacion_global": self.recomendacion_global(documentos, todas), "decision_humana": None,
                "comentario_decision": None, "usuario_decision": None, "fecha_decision": None,
                "ruta_resumen_md": f"onboarding/2026/{folio[-6:]}/resumen.md" if resumen else None}
         if decision:
@@ -238,18 +294,21 @@ class DatosMock:
         d3 = self.documento(f, s, 3, "domicilio_distinto", "pasaporte", "digital", t0 + timedelta(minutes=30),
                             estado="pendiente")
         folios.append(self.expediente(f, "CLI-000102", t0, [d1, d2, d3], [
-            self.alerta("CMP-001", "domicilio distinto entre credencial_elector y comprobante_domicilio", "critica",
-                        "domicilio")]))
+            self.alerta("CMP-001", "Los documentos no coinciden en domicilio", "critica", "domicilio")]))
 
-        # 3. Ana, falta el comprobante: EXP-001 (campo = tipo que falta) y un documento en error (SYS-001)
+        # 3. Ana, falta el comprobante: EXP-001 (campo = tipo que falta) y dos documentos en error: uno con
+        # SYS-001 (el motor devolvio el error) y otro por un fallo de S3 o del motor, sin SYS-00x. El
+        # comprobante en error no cubre su tipo: EXP-001 sigue (solo cuentan los completados)
         f, s, t0 = "ONB-2026-000003", 3, momento(30, 8, 5)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1))
         d2 = self.documento(f, s, 2, "sano", "pasaporte", "foto", t0 + timedelta(minutes=2), estado="error",
                             alertas_extra=[self.alerta("SYS-001", "Fallo del proveedor principal y sin respaldo", "critica")])
-        folios.append(self.expediente(f, None, t0, [d1, d2], [
-            self.alerta("EXP-001", "Falta comprobante_domicilio, requerido por el proceso onboarding", "bloqueante",
-                        "comprobante_domicilio")]))
+        d3 = self.documento(f, s, 3, "sano", "comprobante_domicilio", "escaneado", t0 + timedelta(minutes=3),
+                            estado="error", fallo_plataforma=True)
+        folios.append(self.expediente(f, None, t0, [d1, d2, d3], [
+            self.alerta("EXP-001", f"Falta el documento requerido: {self.fichas['comprobante_domicilio']['nombre_visible']}",
+                        "bloqueante", "comprobante_domicilio")]))
 
         # 4. Ana, todo correcto: folio cerrado (aprobado) con resumen
         f, s, t0 = "ONB-2026-000004", 4, momento(25, 10, 0)

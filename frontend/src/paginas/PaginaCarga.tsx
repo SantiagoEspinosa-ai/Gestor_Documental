@@ -98,7 +98,11 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
   const nombreVisible = (tipo: string | null) => tipos.find((t) => t.nombre === tipo)?.nombre_visible ?? tipo ?? 'Sin tipo'
   const cerrado = expediente !== null && expediente.estado_general !== 'en_revision'
   const puedeSubir = rol !== null && ROLES_SUBIR.includes(rol) && expediente !== null && !cerrado
-  const faltan = expediente && proceso ? tiposRequeridosQueFaltan(expediente, proceso) : []
+  // Aviso de lo que falta: cuentan los subidos que se estan analizando o ya estan completados; uno en
+  // error no cubre su tipo (la API mantiene su EXP-001 y hay que volver a subirlo)
+  const faltan = expediente && proceso
+    ? tiposRequeridosQueFaltan({ documentos: expediente.documentos.filter((d) => d.estado_analisis !== 'error') }, proceso)
+    : []
   const aceptados = [...new Set(tipos.flatMap((t) => t.formatos_permitidos))].map((f) => `.${f}`).join(',')
 
   function anadir(archivos: FileList | File[] | null) {

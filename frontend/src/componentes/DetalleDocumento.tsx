@@ -52,6 +52,10 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
         <div role="alert" className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
           <p className="flex items-center gap-2 font-medium"><CircleX className="size-4" aria-hidden /> El análisis de este documento falló.</p>
           {fallos.map((a, i) => <p key={a.id ?? i} className="mt-1"><span className="font-mono">{a.codigo}</span>: {a.mensaje}</p>)}
+          {/* Fallo de S3 o excepcion del motor: la API lo deja en error sin resultado ni SYS-00x (ingesta/README.md) */}
+          {fallos.length === 0 && (
+            <p className="mt-1">No se pudo procesar el archivo (fallo al leerlo o del motor de análisis) y no hay más detalle.</p>
+          )}
           <p className="mt-1 text-red-800">Reprocesar un documento en error queda fuera del MVP: sube de nuevo el archivo si hace falta.</p>
         </div>
       )}

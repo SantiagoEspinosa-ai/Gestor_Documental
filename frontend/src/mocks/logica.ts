@@ -1,6 +1,8 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
-import type { Alerta, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental } from '../tipos/contrato'
+import type {
+  Alerta, ComparacionCampo, Recomendacion, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental,
+} from '../tipos/contrato'
 import {
   alertasQueBloquean, bloquea, enProceso, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
 } from '../utilidades/expediente'
@@ -52,18 +54,103 @@ export function nuevaAlerta(
   }
 }
 
+/**
+ * Bloqueantes que impiden aprobar (regla 2.2), sobre las alertas VISIBLES: las del expediente y las de
+ * cada documento, que solo son las de la version vigente del analisis (las del motor de una version
+ * anterior desaparecen al completar el reproceso, como en la API del PR #9). Las usan la lista de
+ * folios y la decision.
+ */
 export function bloqueantesSinResolver(folio: ResultadoExpediente): Alerta[] {
   return alertasQueBloquean(folio)
 }
 
+/**
+ * Recomendacion del documento: la da el motor al analizar y no se recalcula al corregir ni al resolver
+ * (PR #9, acordado entre PERSONA_1 y PERSONA_2). Aqui la "da" el analisis simulado al completar.
+ */
 function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void {
-  if (doc.estado_analisis !== 'completado') {
-    doc.recomendacion = null
-    return
-  }
   const minimo = ficha(estado, tipoExtraccion(doc))?.confianza_minima_campo ?? 0
   const bajas = Object.values(doc.nivel_confianza_por_campo).some((c) => c < minimo)
   doc.recomendacion = bajas || doc.alertas_encontradas.some(pesa) ? 'revision_manual' : 'aprobar'
+}
+
+/**
+ * Recomendacion global como la API (expediente/recomendacion.py, PR #9). La primera regla que se
+ * cumple pide revision_manual; si ninguna, aprobar (nunca rechazar):
+ * a) sin documentos, o alguno no completado (pendiente, procesando o error);
+ * b) alguna critica o bloqueante, de documento o de expediente, que no sea falso positivo;
+ * c) algun documento sin ficha para su tipo efectivo, sin confianza de clasificacion, o con ella o con
+ *    algun campo por debajo de los minimos de la ficha (un campo sin valor tiene confianza 0).
+ * No usa la recomendacion por documento.
+ */
+export function recomendacionGlobal(estado: EstadoMock, folio: ResultadoExpediente): Recomendacion {
+  const documentos = folio.documentos
+  if (!documentos.length || documentos.some((d) => d.estado_analisis !== 'completado')) return 'revision_manual'
+  if ([...folio.alertas_expediente, ...documentos.flatMap((d) => d.alertas_encontradas)].some(pesa)) return 'revision_manual'
+  for (const d of documentos) {
+    const f = ficha(estado, tipoEfectivo(d))
+    if (!f || d.confianza_clasificacion === null || d.confianza_clasificacion < f.confianza_minima_clasificacion) return 'revision_manual'
+    if (Object.values(d.nivel_confianza_por_campo).some((c) => c < f.confianza_minima_campo)) return 'revision_manual'
+  }
+  return 'aprobar'
+}
+
+const FORMATOS_FECHA: [RegExp, (m: RegExpExecArray) => [string, string, string]][] = [
+  [/^(\d{4})-(\d{1,2})-(\d{1,2})$/, (m) => [m[1], m[2], m[3]]],
+  [/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, (m) => [m[3], m[2], m[1]]],
+  [/^(\d{1,2})-(\d{1,2})-(\d{4})$/, (m) => [m[3], m[2], m[1]]],
+  [/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/, (m) => [m[1], m[2], m[3]]],
+  [/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/, (m) => [m[3], m[2], m[1]]],
+]
+
+/** Fecha en ISO si se lee en alguno de los formatos de la API; si no, el texto normalizado */
+export function normalizarFecha(valor: unknown): string {
+  const texto = String(valor).trim()
+  for (const [patron, partes] of FORMATOS_FECHA) {
+    const m = patron.exec(texto)
+    if (!m) continue
+    const [a, mes, dia] = partes(m).map(Number)
+    const fecha = new Date(Date.UTC(a, mes - 1, dia))
+    if (fecha.getUTCFullYear() === a && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia) {
+      return fecha.toISOString().slice(0, 10)
+    }
+  }
+  return normalizar(valor)
+}
+
+/**
+ * Comparaciones como validacion.comparar de la API (PR #9): por cada campo de `comparaciones` de las
+ * fichas (uniendo los dos sentidos), participan los documentos completados con valor de los tipos de
+ * un par cuyos dos lados tienen valor; con menos de 2, no hay comparacion. Los valores vacios no
+ * participan. Se normalizan mayusculas, acentos y espacios, y las fechas en varios formatos.
+ */
+export function compararCampos(estado: EstadoMock, documentos: ResultadoDocumento[]): ComparacionCampo[] {
+  const relaciones = new Map<string, Set<string>>() // campo -> pares "a|b" ordenados
+  for (const f of estado.tipos) {
+    for (const [otro, campos] of Object.entries(f.comparaciones ?? {})) {
+      for (const campo of campos ?? []) {
+        relaciones.set(campo, (relaciones.get(campo) ?? new Set()).add([f.nombre, otro].sort().join('|')))
+      }
+    }
+  }
+  const completos = documentos.filter((d) => d.estado_analisis === 'completado')
+  const resultado: ComparacionCampo[] = []
+  for (const campo of [...relaciones.keys()].sort()) {
+    const conValor = completos.filter((d) => tipoEfectivo(d) && !sinValor(d.datos_extraidos[campo]))
+    const tiposConValor = new Set(conValor.map(tipoEfectivo))
+    const tipos = new Set([...relaciones.get(campo)!].map((p) => p.split('|')).filter((par) => par.every((t) => tiposConValor.has(t))).flat())
+    const participantes = conValor.filter((d) => tipos.has(tipoEfectivo(d)!))
+    if (participantes.length < 2) continue
+    const normalizados = new Set(participantes.map((d) => {
+      const valor = d.datos_extraidos[campo]
+      return ficha(estado, tipoEfectivo(d))?.campos[campo]?.tipo === 'fecha' ? normalizarFecha(valor) : normalizar(valor)
+    }))
+    resultado.push({
+      campo, coincide: normalizados.size === 1,
+      valores: Object.fromEntries(participantes.map((d) => [d.identificador_unico_documento, d.datos_extraidos[campo]])),
+    })
+  }
+  return resultado
 }
 
 /**
@@ -80,13 +167,17 @@ export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoEx
   const proceso = estado.procesos.find((p) => p.nombre === folio.proceso)
   if (!proceso) return
 
-  const faltan = new Set(tiposRequeridosQueFaltan(folio, proceso))
+  // EXP-001 como la API: solo cuentan los documentos completados (uno pendiente, procesando o en error
+  // no cubre su tipo). El aviso de la pantalla de carga si cuenta todos los subidos.
+  const completados = { documentos: folio.documentos.filter((d) => d.estado_analisis === 'completado') }
+  const faltan = new Set(tiposRequeridosQueFaltan(completados, proceso))
   const esExp001 = (a: Alerta) => a.codigo === 'EXP-001'
-  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !esExp001(a) || a.aplica === false || faltan.has(a.campo ?? ''))
   const conExp001 = new Set(folio.alertas_expediente.filter(esExp001).map((a) => a.campo))
+  folio.alertas_expediente = folio.alertas_expediente.filter((a) => !esExp001(a) || a.aplica === false || faltan.has(a.campo ?? ''))
   faltan.forEach((tipo) => {
     if (!conExp001.has(tipo)) {
-      folio.alertas_expediente.push(nuevaAlerta(estado, 'EXP-001', `Falta ${tipo}, requerido por el proceso ${folio.proceso}`, 'bloqueante', tipo))
+      const nombre = ficha(estado, tipo)?.nombre_visible ?? tipo
+      folio.alertas_expediente.push(nuevaAlerta(estado, 'EXP-001', `Falta el documento requerido: ${nombre}`, 'bloqueante', tipo))
     }
   })
 
@@ -103,41 +194,27 @@ export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoEx
   recalcularExpediente(estado, folio)
 }
 
-/** Tras cada cambio: recomendaciones, comparaciones y CMP-001, conservando lo ya resuelto */
+/**
+ * Tras cada cambio: comparaciones, CMP-001 y recomendacion global. La recomendacion de cada documento
+ * no se toca (es del analisis).
+ * CMP-001 como la API (PR #9): una por campo que no coincide, con el mensaje "Los documentos no
+ * coinciden en {campo}" (nunca los valores). En los campos que ya coinciden o ya no se comparan se
+ * borran la sin revisar y la confirmada; solo se conserva el falso positivo (aplica=false).
+ */
 export function recalcularExpediente(estado: EstadoMock, folio: ResultadoExpediente): void {
-  folio.documentos.forEach((d) => recomendarDocumento(estado, d))
+  folio.comparaciones = compararCampos(estado, folio.documentos)
 
-  // Comparaciones entre documentos completados segun las fichas (una por campo)
-  const completos = folio.documentos.filter((d) => d.estado_analisis === 'completado')
-  const porCampo = new Map<string, Record<string, unknown>>()
-  completos.forEach((a, i) => completos.slice(i + 1).forEach((b) => {
-    const [ta, tb] = [tipoEfectivo(a), tipoEfectivo(b)]
-    const campos = new Set([...(ficha(estado, ta)?.comparaciones[tb ?? ''] ?? []), ...(ficha(estado, tb)?.comparaciones[ta ?? ''] ?? [])])
-    campos.forEach((campo) => {
-      if (!(campo in a.datos_extraidos) || !(campo in b.datos_extraidos)) return
-      const valores = porCampo.get(campo) ?? {}
-      valores[a.identificador_unico_documento] = a.datos_extraidos[campo]
-      valores[b.identificador_unico_documento] = b.datos_extraidos[campo]
-      porCampo.set(campo, valores)
-    })
-  }))
-  folio.comparaciones = [...porCampo.entries()].sort(([x], [y]) => x.localeCompare(y)).map(([campo, valores]) => ({
-    campo, valores, coincide: new Set(Object.values(valores).map(normalizar)).size === 1,
-  }))
-
-  // CMP-001: una por campo que no coincide (las ya existentes conservan su resolucion)
   const sinCoincidir = new Set(folio.comparaciones.filter((c) => !c.coincide).map((c) => c.campo))
-  folio.alertas_expediente = folio.alertas_expediente.filter((a) => a.codigo !== 'CMP-001' || sinCoincidir.has(a.campo ?? ''))
   const conAlerta = new Set(folio.alertas_expediente.filter((a) => a.codigo === 'CMP-001').map((a) => a.campo))
-  sinCoincidir.forEach((campo) => {
+  folio.alertas_expediente = folio.alertas_expediente.filter((a) =>
+    a.codigo !== 'CMP-001' || sinCoincidir.has(a.campo ?? '') || a.aplica === false)
+  ;[...sinCoincidir].sort().forEach((campo) => {
     if (!conAlerta.has(campo)) {
-      folio.alertas_expediente.push(nuevaAlerta(estado, 'CMP-001', `${campo} no coincide entre los documentos del folio`, 'critica', campo))
+      folio.alertas_expediente.push(nuevaAlerta(estado, 'CMP-001', `Los documentos no coinciden en ${campo}`, 'critica', campo))
     }
   })
 
-  const todas = [...folio.alertas_expediente, ...folio.documentos.flatMap((d) => d.alertas_encontradas)]
-  folio.recomendacion_global = folio.documentos.length === 0 ? null
-    : todas.some(pesa) || folio.documentos.some((d) => d.recomendacion !== 'aprobar') ? 'revision_manual' : 'aprobar'
+  folio.recomendacion_global = recomendacionGlobal(estado, folio)
 }
 
 export function resumenFolio(folio: ResultadoExpediente): ResumenFolio {
@@ -161,8 +238,11 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   if (!fichaExtraccion) return
   const fuente = proc.origen ?? plantilla(estado, proc.tipoContenido)
   const mismaFicha = proc.tipoExtraccion === proc.tipoContenido
-  // Se conservan las de plataforma (DUP-001, EXP-002: no son del motor) y las ya revisadas
-  const alertas = doc.alertas_encontradas.filter((a) => a.codigo === 'DUP-001' || a.codigo === 'EXP-002' || a.resuelta_por_revisor)
+  // Version nueva del analisis: solo sobreviven las alertas de plataforma (DUP-001, EXP-002). Las del motor
+  // de la version anterior dejan de verse aunque estuvieran revisadas, y las correcciones eran de esa
+  // version (como construir_resultado de la API)
+  const alertas = doc.alertas_encontradas.filter((a) => a.codigo === 'DUP-001' || a.codigo === 'EXP-002')
+  doc.correcciones = []
   doc.datos_extraidos = {}
   doc.nivel_confianza_por_campo = {}
   doc.evidencia_por_campo = {}
@@ -203,8 +283,10 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   const modelo = modeloDeAnalisis(doc, proc)
   doc.fecha_y_modelo_utilizado = { fecha_analisis: fechaIso(estado), proveedor: PROVEEDOR, modelo, version_prompt: VERSION_PROMPT }
   doc.estado_analisis = 'completado'
+  recomendarDocumento(estado, doc)
+  // detalle = datos de auditoria del motor sin modelo ni version_prompt (van en sus columnas), como la API
   auditar(estado, null, 'documento_procesado', folio.folio, doc.identificador_unico_documento,
-    { estado_analisis: 'completado' }, modelo, VERSION_PROMPT)
+    { proveedor: PROVEEDOR, respaldo_usado: false }, modelo, VERSION_PROMPT)
 }
 
 /** Avanza con el reloj el analisis de los documentos subidos en esta sesion */

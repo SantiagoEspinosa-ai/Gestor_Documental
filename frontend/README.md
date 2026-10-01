@@ -78,9 +78,40 @@ hace fallar el build si queda algun rastro.
     `public/mock-originales` (mismo SHA-256), se usan sus valores; si no, los de un documento sano del tipo;
   - mismo SHA-256 en el folio: `DUP-001`; tipo declarado distinto del detectado: `CLS-001`;
   - regla 2.2 en la decision; folio cerrado tras decidir (409 `FOLIO_CERRADO`);
-  - confirmar clasificacion (mismo tipo: resuelve `CLS-001`; otro: vuelve a `pendiente` y reprocesa);
-  - recomendaciones, comparaciones y `CMP-001` se recalculan tras cada cambio.
+  - confirmar clasificacion (ver abajo);
+  - comparaciones, `CMP-001` y recomendacion global se recalculan tras cada cambio.
+
   Los documentos de los datos iniciales no avanzan: el pendiente de `ONB-2026-000002` sigue pendiente.
+- **Alineado con la API de `main` tras el PR #9** (lo comprueban `handlers.test.ts` y los datos regenerados):
+  - `PATCH /documentos/{id}/datos` (igual que `_valor_corregido`):
+    - valida con la ficha de **extraccion** (confirmado > declarado > detectado);
+    - `null` solo en un campo `obligatorio: false`; `""` o solo espacios, 422 tambien en un opcional (la UI nunca los envia);
+    - `anio`: entero de 1000 a 9999 o texto de 4 cifras, guardado como entero (la API acepta `"0999"` y guarda `999`; ver "Pendientes");
+    - el resto, texto no vacio: `fecha` en `AAAA-MM-DD` y `patron` si la ficha lo tiene;
+    - 422 `campo desconocido: X` o `valor no valido para el campo X` (nombra el campo, nunca el valor), sin aplicar nada;
+    - una entrada `dato_corregido` por PATCH;
+  - `n_bloqueantes_sin_resolver` y la decision usan las alertas **visibles**: las del expediente y las de la version vigente de cada documento;
+  - confirmar clasificacion:
+    - con el mismo tipo, las `CLS-001` sin revisar pasan a falso positivo ("Resuelta al confirmar la clasificacion");
+    - con otro tipo, el documento vuelve a `pendiente` sin tocar `CLS-001` y, mientras tanto, se ve la version anterior;
+    - al completar, desaparecen las alertas del motor de esa version (aunque estuvieran revisadas) y sus correcciones, y solo quedan las de plataforma (`DUP-001`, `EXP-002`);
+  - `EXP-001`:
+    - solo cuentan los documentos `completado` (uno pendiente, procesando o en error no cubre su tipo);
+    - mensaje "Falta el documento requerido: {nombre_visible}";
+  - `CMP-001`:
+    - comparaciones como `validacion.comparar`: por campo, con todos los documentos completados con valor de los tipos relacionados; los vacios no participan; normaliza mayusculas, acentos, espacios y fechas en varios formatos;
+    - mensaje "Los documentos no coinciden en {campo}";
+  - `EXP-001`, `CMP-001` y `EXP-002`: cuando la condicion desaparece se borran la sin revisar y la confirmada; solo se conserva el falso positivo (`aplica=false`);
+  - recomendacion global (`expediente/recomendacion.py`): `revision_manual` si no hay documentos o alguno no esta completado, si hay una critica o bloqueante que no es falso positivo, o si algun documento no tiene ficha, confianza de clasificacion o confianzas por encima de los minimos; si no, `aprobar`. No usa la recomendacion del documento, que la da el analisis y no se recalcula al corregir ni al resolver;
+  - `detalle` de la auditoria (tabla de `api/README.md`):
+    - `documento_procesado`: `{proveedor, respaldo_usado}` (modelo y `version_prompt` en sus columnas);
+    - `dato_corregido`: `{campos}`;
+    - `clasificacion_confirmada`: `{tipo, reproceso}`;
+    - `alerta_resuelta`: `{alerta_id, codigo, aplica}`;
+  - documento en `error` por fallo de S3 o del motor (`ONB-2026-000003`, el comprobante):
+    - sin resultado, sin `SYS-00x` y sin entrada `documento_procesado`;
+    - la UI lo explica sin codigo;
+    - el aviso de tipos que faltan de la carga tampoco lo cuenta.
 - Comportamientos que el contrato no fijaba, acordados con PERSONA_1:
   - decidir con documentos `pendiente` o `procesando`: 409 `DOCUMENTO_EN_PROCESO`;
   - corregir datos o confirmar la clasificacion de un documento en `error`: 409 `DOCUMENTO_CON_ERROR`
@@ -88,9 +119,9 @@ hace fallar el build si queda algun rastro.
   - `EXP-001`: una por tipo requerido que falta, con `campo` = nombre del tipo. Se crean con el folio
     y se recalculan solo cuando un documento se procesa o se confirma (no al subirlo). Cuenta el
     **tipo efectivo** (`src/utilidades/expediente.ts`): confirmado; si no, detectado; si no, declarado.
-    Si el revisor la marco como falso positivo (`aplica=false`), se conserva. La pantalla de carga
-    usa `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta;
-  - `EXP-002` (definida por PERSONA_1 en el PR #9; la API la emite desde `5ddf7f2`):
+    La pantalla de carga usa `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta,
+    contando tambien los que se estan analizando (no los que acabaron en error);
+  - `EXP-002` (definida por PERSONA_1 en el PR #9):
     - va en `alertas_encontradas` **del documento**, no en `alertas_expediente`, y es informativa;
     - se crea una por documento `completado` cuyo tipo efectivo no esta ni en `tipos_requeridos` ni en `tipos_opcionales` (`tipoNoPrevisto`), con `campo` = tipo y mensaje "Tipo de documento no previsto en el proceso: {nombre_visible}";
     - se recalcula al procesar o confirmar. Si el tipo pasa a estar previsto, se borran la sin revisar y la confirmada, y solo se conserva el falso positivo (`aplica=false`);
@@ -112,18 +143,10 @@ hace fallar el build si queda algun rastro.
     de rango.
 - Campos sin valor: siempre `null`, nunca `""` ni solo espacios, con confianza 0 (ADR-007) y sin
   evidencia. La UI muestra `null` como "no detectado".
-- `PATCH /documentos/{id}/datos`, como lo decidio PERSONA_1 en el PR #10:
-  - sin valor (`null`, `""` o solo espacios) se acepta como `null` solo en un campo `obligatorio: false`; en uno obligatorio, 422 `PETICION_INVALIDA`;
-  - `anio`: entero de 4 cifras o texto `"AAAA"`, guardado como entero; otro formato, 422;
-  - el mensaje nombra el campo, nunca el valor, y se valida todo el cuerpo antes de aplicar nada.
-
-  La ficha con la que se valida y la forma del `detalle` de auditoria siguen pendientes del PR #9.
-- Codigos acordados que aun no estan en los catalogos de main (`CODIGOS_PENDIENTES_DE_MAIN` en
-  `src/tipos/codigos.ts`): `DOCUMENTO_CON_ERROR` (409) y la informativa `EXP-002` (documento de un
-  tipo que el proceso no pide, en las alertas del documento). Los dos entran en main con el PR #9. Los mocks ya los usan. Cuando entren en main se pasan a los oficiales
-  y se quitan de la lista; `backend/tests/test_contrato_frontend.py` falla para recordarlo.
-  `SECUENCIA_AGOTADA`, `VAL-003` (valor tomado de la MRZ), `VAL-004` (campo opcional ausente o null,
-  uno por campo), `SYS-003` y `SYS-005` ya son oficiales.
+- Codigos: todos los que usan el frontend y los mocks son oficiales. `DOCUMENTO_CON_ERROR` (409) y la
+  informativa `EXP-002` lo son desde el PR #9. `CODIGOS_PENDIENTES_DE_MAIN` (`src/tipos/codigos.ts`)
+  queda vacia: si se acuerda un codigo nuevo antes de que llegue a los catalogos de main, va ahi, y
+  `backend/tests/test_contrato_frontend.py` avisa cuando entra.
 - `/documentos/{id}/original`: URL a `public/mock-originales/` o, si se subio en la sesion, al propio
   fichero. Como la URL prefirmada real (caduca a los 300 s), cada peticion devuelve una nueva y la
   anterior deja de valer: la UI la pide cada vez que abre el visor.
@@ -207,7 +230,7 @@ hace fallar el build si queda algun rastro.
 ```
 npm test        # Vitest
 ```
-166 tests en 18 ficheros (2026-10-01):
+177 tests en 18 ficheros (2026-10-01):
 - Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler), flujos, datos y token
   (sigue valido tras reiniciar msw; uno retocado o inventado da `NO_AUTENTICADO`).
 - Componentes: `BarraConfianza`, `ListaAlertas` y `SoloRol`.
@@ -279,7 +302,8 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
 - `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
   (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
-  correccion, un documento en error (`SYS-001`), uno pendiente y un folio aprobado. Tres alertas
+  correccion, dos documentos en error en `ONB-2026-000003` (el pasaporte con `SYS-001` y el comprobante
+  por un fallo de S3 o del motor, sin `SYS-00x`), uno pendiente y un folio aprobado. Tres alertas
   informativas, todas posibles con la configuracion por defecto: dos `VAL-003` (`nacionalidad` y
   `sexo` tomados de la MRZ) en el pasaporte escaneado de `ONB-2026-000001` y `VAL-004` (`proveedor`
   sin leer, `null`) en el comprobante de `ONB-2026-000002`.
@@ -315,11 +339,12 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
 - Etapa 2: probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y reportar como
   issue cualquier desviacion del contrato, sin adaptar el frontend en silencio.
 - Etapa 2: e2e reales con los 4 casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales").
-- `DOCUMENTO_CON_ERROR` y `EXP-002` siguen en `CODIGOS_PENDIENTES_DE_MAIN` hasta que el PR #9 (que
-  los anade a los catalogos y los emite) este en main; entonces pasan a oficiales y la lista queda vacia.
-- Alinear el resto de los mocks con el PR #9: recomendacion global sin la del documento,
-  `CMP-001` conservando solo los falsos positivos, forma del `detalle` de auditoria y validacion de
-  fecha y `patron` en el PATCH.
+- Con PERSONA_1 (menor, no bloquea): la API acepta un `anio` `"0999"` y lo guarda como `999`, de 3
+  cifras. La UI no lo envia nunca (exige `[1-9]\d{3}`) y el mock hace lo mismo que la API mientras no
+  cambie.
+- Cuando el motor real de PERSONA_2 llegue a main, revisar la forma de `tiempos` y `tokens` en el
+  `detalle` de `documento_procesado`. La UI formatea un numero o `{nombre: numero}`; otra forma sale
+  enmascarada.
 - Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
   descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
   de ADR) y pantalla de configuracion de procesos.

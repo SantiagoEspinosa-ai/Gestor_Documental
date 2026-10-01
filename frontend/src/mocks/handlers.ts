@@ -11,7 +11,6 @@ import {
   resumenFolio,
   resumenMarkdown, tipoExtraccion,
 } from './logica'
-import { PATRON_ANIO, sinValor } from '../utilidades/valores'
 import { error, FalloApi, leerJson } from './respuestas'
 import { emitirToken, validarToken } from './token'
 import { USUARIOS_DEMO } from './usuarios'
@@ -58,22 +57,35 @@ function paginacion(q: URLSearchParams, tamanoPorDefecto: number): { pagina: num
   return { pagina, tamano }
 }
 
+/** Fecha AAAA-MM-DD existente (como datetime.strptime(valor, "%Y-%m-%d"), que admite mes y dia de 1 cifra) */
+function esFechaIso(valor: string): boolean {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(valor)
+  if (!m) return false
+  const [a, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const fecha = new Date(Date.UTC(a, mes - 1, dia))
+  return fecha.getUTCFullYear() === a && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia
+}
+
+const INVALIDO = Symbol('invalido')
+
 /**
- * Valor de un campo en PATCH /documentos/{id}/datos, como la API (decidido con PERSONA_1 en el PR #10):
- * sin valor (null, "" o solo espacios) -> null solo si el campo es opcional; en uno obligatorio, 422.
- * anio: entero de 4 cifras o texto "AAAA", guardado como entero; otro formato, 422. El mensaje nombra el
- * campo, nunca el valor. Texto y fecha se guardan como llegan.
+ * Valor de un campo en PATCH /documentos/{id}/datos, igual que _valor_corregido de la API (PR #9,
+ * a8de0bd):
+ * - null: solo en un campo `obligatorio: false` (vacia el campo);
+ * - anio: entero de 1000 a 9999 o texto de 4 cifras ("AAAA"), guardado como entero;
+ * - el resto: texto no vacio (sin recortar); fecha en AAAA-MM-DD; si la ficha tiene `patron`, cumplirlo.
+ * Un "" o solo espacios no es null: da 422 tambien en un opcional. La UI nunca lo envia.
  */
-function valorCorregido(campo: string, recibido: unknown, definicion: { tipo?: string; obligatorio?: boolean }): unknown {
-  if (sinValor(recibido)) {
-    if (definicion.obligatorio) throw new FalloApi('PETICION_INVALIDA', `\`${campo}\` es obligatorio: no se puede dejar sin valor`)
-    return null
-  }
+function valorCorregido(recibido: unknown, definicion: { tipo?: string; obligatorio?: boolean; patron?: string | null }): unknown {
+  if (recibido === null) return definicion.obligatorio ? INVALIDO : null
   if (definicion.tipo === 'anio') {
-    if (typeof recibido === 'number' && Number.isInteger(recibido) && PATRON_ANIO.test(String(recibido))) return recibido
-    if (typeof recibido === 'string' && PATRON_ANIO.test(recibido.trim())) return Number(recibido.trim())
-    throw new FalloApi('PETICION_INVALIDA', `\`${campo}\`: se esperaba un anio de 4 cifras (entero o "AAAA")`)
+    if (typeof recibido === 'number' && Number.isInteger(recibido) && recibido >= 1000 && recibido <= 9999) return recibido
+    if (typeof recibido === 'string' && /^\d{4}$/.test(recibido)) return Number(recibido)
+    return INVALIDO
   }
+  if (typeof recibido !== 'string' || !recibido.trim()) return INVALIDO
+  if (definicion.tipo === 'fecha' && !esFechaIso(recibido)) return INVALIDO
+  if (definicion.patron && !new RegExp(`^(?:${definicion.patron})$`).test(recibido)) return INVALIDO
   return recibido
 }
 
@@ -305,20 +317,26 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     exigirAbierto(folio)
     exigirAnalizado(doc)
     const cuerpo = await leerJson(request)
+    if (!Object.keys(cuerpo).length) throw new FalloApi('PETICION_INVALIDA', 'No hay campos que corregir')
+    // Ficha con la que se EXTRAJERON los datos (PR #9, 5efcdf4): confirmado > declarado > detectado
     const campos = ficha(estado, tipoExtraccion(doc))?.campos ?? {}
-    const desconocidos = Object.keys(cuerpo).filter((c) => !(c in campos))
-    if (!Object.keys(cuerpo).length || desconocidos.length) {
-      throw new FalloApi('PETICION_INVALIDA', `Campos no validos para ${tipoExtraccion(doc)}: ${desconocidos.join(', ') || '(ninguno)'}`)
+    // Como la API: el primer campo que falla da 422 nombrando el campo (nunca el valor), y no se aplica nada
+    const valores: [string, unknown][] = []
+    for (const [campo, recibido] of Object.entries(cuerpo)) {
+      if (!(campo in campos)) throw new FalloApi('PETICION_INVALIDA', `campo desconocido: ${campo}`)
+      const valor = valorCorregido(recibido, campos[campo])
+      if (valor === INVALIDO) throw new FalloApi('PETICION_INVALIDA', `valor no valido para el campo ${campo}`)
+      valores.push([campo, valor])
     }
-    // Se validan todos antes de aplicar ninguno: un 422 no deja la correccion a medias
-    const valores = Object.entries(cuerpo).map(([campo, recibido]) => [campo, valorCorregido(campo, recibido, campos[campo])] as const)
     for (const [campo, valor] of valores) {
       doc.correcciones.push({ campo, valor_anterior: doc.datos_extraidos[campo] ?? null, valor_nuevo: valor, usuario: usuario.usuario, fecha: fechaIso(estado) })
       doc.datos_extraidos[campo] = valor
       doc.nivel_confianza_por_campo[campo] = 1
       doc.evidencia_por_campo[campo] = 'correccion_revisor'
-      auditar(estado, usuario.usuario, 'dato_corregido', folio.folio, doc.identificador_unico_documento, { campo })
     }
+    // Una entrada por PATCH con los nombres de los campos (los valores son datos personales)
+    auditar(estado, usuario.usuario, 'dato_corregido', folio.folio, doc.identificador_unico_documento,
+      { campos: Object.keys(cuerpo).sort() })
     recalcularExpediente(estado, folio)
     return HttpResponse.json(doc)
   })
@@ -329,24 +347,20 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     exigirAnalizado(doc)
     const { tipo_documental: tipo } = await leerJson(request, ['tipo_documental'])
     if (typeof tipo !== 'string' || !ficha(estado, tipo)) throw new FalloApi('PETICION_INVALIDA', `tipo_documental no valido: ${String(tipo)}`)
-    const cls = doc.alertas_encontradas.filter((a) => a.codigo === 'CLS-001')
-    auditar(estado, usuario.usuario, 'clasificacion_confirmada', folio.folio, doc.identificador_unico_documento, { tipo_documental: tipo })
-    if (tipo === tipoExtraccion(doc)) {
-      // Mismo tipo con el que se extrajo: CLS-001 era un falso positivo
+    const reproceso = tipo !== tipoExtraccion(doc)
+    auditar(estado, usuario.usuario, 'clasificacion_confirmada', folio.folio, doc.identificador_unico_documento, { tipo, reproceso })
+    if (!reproceso) {
+      // Mismo tipo con el que se extrajo: las CLS-001 sin revisar eran un falso positivo (como la API)
       doc.tipo_documental_confirmado = tipo
-      cls.forEach((a) => resolverAlerta(estado, usuario, a, { aplica: false, comentario: 'Clasificacion confirmada por el revisor' }))
+      doc.alertas_encontradas.filter((a) => a.codigo === 'CLS-001' && a.aplica === null).forEach((a) =>
+        resolverAlerta(estado, usuario, a, { aplica: false, comentario: 'Resuelta al confirmar la clasificacion' }))
     } else {
-      // Tipo distinto: se guarda la version previa y se reprocesa con la ficha confirmada
+      // Tipo distinto: se reprocesa con la ficha confirmada. Como en la API, CLS-001 no se toca y, mientras
+      // esta pendiente, el documento sigue mostrando la version anterior; al completar, las alertas del
+      // motor de esa version y sus correcciones desaparecen (ver completar en logica.ts)
       estado.versionesPrevias.set(doc.identificador_unico_documento,
         [...(estado.versionesPrevias.get(doc.identificador_unico_documento) ?? []), structuredClone(doc)])
-      cls.forEach((a) => resolverAlerta(estado, usuario, a, { aplica: true, comentario: `Reclasificado como ${tipo}` }))
-      Object.assign(doc, {
-        tipo_documental_confirmado: tipo, estado_analisis: 'pendiente', datos_extraidos: {}, nivel_confianza_por_campo: {},
-        evidencia_por_campo: {}, reglas_cumplidas_e_incumplidas: { cumplidas: [], incumplidas: [] }, recomendacion: null,
-        fecha_y_modelo_utilizado: null,
-        // DUP-001 y EXP-002 son de plataforma: sobreviven al reproceso (EXP-002 se recalcula al completar)
-        alertas_encontradas: doc.alertas_encontradas.filter((a) => ['DUP-001', 'CLS-001', 'EXP-002'].includes(a.codigo)),
-      })
+      Object.assign(doc, { tipo_documental_confirmado: tipo, estado_analisis: 'pendiente' })
       const origen = [...estado.folios.values()].flatMap((f) => f.documentos).find((d) =>
         d !== doc && d.referencia_archivo_original.hash === doc.referencia_archivo_original.hash && d.estado_analisis === 'completado')
       estado.procesamientos.set(doc.identificador_unico_documento, {
@@ -364,7 +378,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const alerta = doc.alertas_encontradas.find((a) => a.id === params.alerta_id)
     if (!alerta) throw new FalloApi('ALERTA_NO_ENCONTRADA', `No existe la alerta ${params.alerta_id} en el documento`)
     resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
-    auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, doc.identificador_unico_documento, { codigo: alerta.codigo, aplica: alerta.aplica })
+    auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, doc.identificador_unico_documento,
+      { alerta_id: alerta.id, codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
     return HttpResponse.json(doc)
   })
@@ -375,7 +390,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const alerta = folio.alertas_expediente.find((a) => a.id === params.alerta_id)
     if (!alerta) throw new FalloApi('ALERTA_NO_ENCONTRADA', `No existe la alerta ${params.alerta_id} en el expediente`)
     resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
-    auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, null, { codigo: alerta.codigo, aplica: alerta.aplica })
+    auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, null, { alerta_id: alerta.id, codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
     return HttpResponse.json(folio)
   })

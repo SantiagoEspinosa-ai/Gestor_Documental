@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { crearEstado, type EstadoMock } from './estado'
 import { crearHandlers } from './handlers'
-import { MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
+import { compararCampos, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
 
 const API = 'http://localhost:8000/api/v1'
 const CONTRATO = new URL('../../../docs/contratos/endpoints.md', import.meta.url)
@@ -260,7 +260,7 @@ describe('subida de documentos', () => {
     expect(hecho.recomendacion).toBe('aprobar')
     exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
     expect(exp001(exp)).toEqual(['comprobante_domicilio'])
-    expect(exp.alertas_expediente[0].mensaje).toBe('Falta comprobante_domicilio, requerido por el proceso onboarding')
+    expect(exp.alertas_expediente[0].mensaje).toBe('Falta el documento requerido: Comprobante de domicilio') // como la API
   })
 
   it('el mismo archivo en el mismo folio devuelve 202 con DUP-001', async () => {
@@ -445,15 +445,125 @@ describe('acciones del revisor', () => {
     const b = await subir() // mismo SHA-256: DUP-001, pero sirve para el segundo camino
     t += MS_HASTA_COMPLETADO
     await doc(b)
+    const antes = await doc(b)
     const otro = await api<ResultadoDocumento>('POST', `/documentos/${b}/confirmar-clasificacion`, { token, cuerpo: { tipo_documental: 'credencial_elector' } })
     expect([otro.cuerpo.estado_analisis, otro.cuerpo.tipo_documental_confirmado]).toEqual(['pendiente', 'credencial_elector'])
     expect(estado.versionesPrevias.get(b)).toHaveLength(1)
+    // Como la API: CLS-001 no se toca y, mientras esta pendiente, se ve la version anterior
+    expect(otro.cuerpo.alertas_encontradas.find((x) => x.codigo === 'CLS-001')).toMatchObject({ aplica: null })
+    expect(otro.cuerpo.datos_extraidos).toEqual(antes.datos_extraidos)
     t += MS_HASTA_COMPLETADO
     const reprocesado = await doc(b)
     expect(reprocesado.estado_analisis).toBe('completado')
     expect(reprocesado.datos_extraidos.curp).toBe('AEPA900101MDFXXX01')
-    expect(reprocesado.alertas_encontradas.find((x) => x.codigo === 'CLS-001')).toMatchObject({ aplica: true })
+    // Version nueva: las alertas del motor de la anterior (CLS-001 incluida) ya no se ven; DUP-001 (plataforma), si
+    expect(codigos(reprocesado.alertas_encontradas)).not.toContain('CLS-001')
+    expect(codigos(reprocesado.alertas_encontradas)).toContain('DUP-001')
     expect(codigos(reprocesado.alertas_encontradas)).not.toContain('VAL-001')
+    expect(reprocesado.correcciones).toEqual([])
+    const auditoria = estado.auditoria.filter((e) => e.accion === 'clasificacion_confirmada').map((e) => e.detalle)
+    expect(auditoria).toEqual([{ tipo: 'pasaporte', reproceso: false }, { tipo: 'credencial_elector', reproceso: true }])
+  })
+})
+
+// ------------------------------------------------------------------ reglas de la API del PR #9
+
+describe('alineado con la API del PR #9', () => {
+  const folio = async (token: string, id: string) => (await api<ResultadoExpediente>('GET', `/folios/${id}`, { token })).cuerpo
+  const lista = async (token: string) => (await api<PaginaFolios>('GET', '/folios', { token })).cuerpo.elementos
+
+  it('recomendacion global: revision_manual en un folio vacio y con un documento sin completar; no usa la del documento', async () => {
+    const token = await entrar('revisor.demo')
+    const { folio: nuevo } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
+    expect((await folio(token, nuevo)).recomendacion_global).toBe('revision_manual') // antes, null
+    expect((await lista(token)).find((f) => f.folio === nuevo)?.recomendacion_global).toBe('revision_manual')
+    expect((await folio(token, 'ONB-2026-000002')).recomendacion_global).toBe('revision_manual') // tiene un pendiente
+    expect((await folio(token, 'ONB-2026-000004')).recomendacion_global).toBe('aprobar')
+
+    // La del documento la da el analisis y no se recalcula: corregir el campo con confianza baja no la cambia
+    const credencial = (await folio(token, 'ONB-2026-000001')).documentos[1]
+    expect([credencial.recomendacion, credencial.nivel_confianza_por_campo.clave_elector]).toEqual(['revision_manual', 0.62])
+    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${credencial.identificador_unico_documento}/datos`,
+      { token, cuerpo: { clave_elector: 'EJPRLU85061599H102' } })
+    expect([r.status, r.cuerpo.nivel_confianza_por_campo.clave_elector, r.cuerpo.recomendacion]).toEqual([200, 1, 'revision_manual'])
+  })
+
+  it.each([
+    [false, 'se conserva el falso positivo'],
+    [true, 'se borra la confirmada'],
+  ])('CMP-001 al volver a coincidir con aplica=%s: %s', async (aplica, _caso) => {
+    const token = await entrar('revisor.demo')
+    const f2 = await folio(token, 'ONB-2026-000002')
+    const [credencial, comprobante] = f2.documentos
+    const [cmp] = f2.alertas_expediente
+    expect([cmp.codigo, cmp.mensaje]).toEqual(['CMP-001', 'Los documentos no coinciden en domicilio']) // nunca los valores
+    await api('POST', `/folios/ONB-2026-000002/alertas/${cmp.id}/resolver`, { token, cuerpo: { aplica } })
+    await api('PATCH', `/documentos/${comprobante.identificador_unico_documento}/datos`,
+      { token, cuerpo: { domicilio: credencial.datos_extraidos.domicilio } })
+    const despues = await folio(token, 'ONB-2026-000002')
+    expect(despues.comparaciones.find((c) => c.campo === 'domicilio')?.coincide).toBe(true)
+    expect(despues.alertas_expediente).toEqual(aplica === false ? [expect.objectContaining({ id: cmp.id, aplica: false })] : [])
+  })
+
+  it('comparaciones como validacion.comparar: fechas en varios formatos y sin valores vacios', () => {
+    const doc = (id: string, tipo: string, datos: Record<string, unknown>) => ({
+      identificador_unico_documento: id, tipo_documental_declarado: tipo, tipo_documental_detectado: tipo,
+      tipo_documental_confirmado: null, estado_analisis: 'completado', datos_extraidos: datos,
+    }) as unknown as ResultadoDocumento
+    const docs = [
+      doc('cred', 'credencial_elector', { nombre_completo: 'Ana  Ejemplo Prueba', fecha_nacimiento: '1990-01-01', domicilio: null }),
+      doc('pas', 'pasaporte', { nombre_completo: 'ANA EJEMPLO PRUEBA', fecha_nacimiento: '01/01/1990' }),
+      doc('comp', 'comprobante_domicilio', { domicilio: 'Calle Ficticia 123' }),
+    ]
+    const comparaciones = compararCampos(estado, docs)
+    expect(comparaciones.map((c) => [c.campo, c.coincide, Object.keys(c.valores)])).toEqual([
+      // domicilio: la credencial no tiene valor, asi que el comprobante se queda solo y no se compara
+      ['fecha_nacimiento', true, ['cred', 'pas']], // misma fecha en dos formatos
+      ['nombre_completo', true, ['cred', 'pas']], // mayusculas y espacios normalizados
+    ])
+    expect(compararCampos(estado, [docs[0], { ...docs[1], estado_analisis: 'pendiente' } as ResultadoDocumento])).toEqual([])
+  })
+
+  it('las bloqueantes del listado son las de la version vigente: tras reprocesar desaparece la del analisis anterior', async () => {
+    const token = await entrar('revisor.demo')
+    const bloqueantes = async () => (await lista(token)).find((f) => f.folio === 'ONB-2026-000001')!.n_bloqueantes_sin_resolver
+    const pasaporte = (await folio(token, 'ONB-2026-000001')).documentos[0]
+    const reg = pasaporte.alertas_encontradas.find((a) => a.codigo === 'REG-vigencia_documento')!
+    await api('POST', `/documentos/${pasaporte.identificador_unico_documento}/alertas/${reg.id}/resolver`, { token, cuerpo: { aplica: true } })
+    expect(await bloqueantes()).toBe(1) // confirmada: sigue impidiendo aprobar
+    await api('POST', `/documentos/${pasaporte.identificador_unico_documento}/confirmar-clasificacion`,
+      { token, cuerpo: { tipo_documental: 'credencial_elector' } })
+    expect(await bloqueantes()).toBe(1) // pendiente: se sigue viendo la version anterior
+    t += MS_HASTA_COMPLETADO
+    expect(await bloqueantes()).toBe(0) // version nueva: la REG de la anterior ya no se ve
+    const decision = (await folio(token, 'ONB-2026-000001')).documentos[0].alertas_encontradas.map((a) => a.codigo)
+    expect(decision).not.toContain('REG-vigencia_documento')
+  })
+
+  it('documento en error por fallo de S3 o del motor: sin SYS-00x, sin datos y sin documento_procesado', async () => {
+    const token = await entrar('revisor.demo')
+    const f3 = await folio(token, 'ONB-2026-000003')
+    const errores = f3.documentos.filter((d) => d.estado_analisis === 'error')
+    expect(errores.map((d) => codigos(d.alertas_encontradas))).toEqual([['SYS-001'], []])
+    const sinCodigo = errores[1]
+    expect([sinCodigo.tipo_documental_detectado, sinCodigo.datos_extraidos, sinCodigo.fecha_y_modelo_utilizado, sinCodigo.recomendacion])
+      .toEqual([null, {}, null, null])
+    const acciones = estado.auditoria.filter((e) => e.documento_id === sinCodigo.identificador_unico_documento).map((e) => e.accion)
+    expect(acciones).toEqual(['documento_subido'])
+    expect(codigos(f3.alertas_expediente)).toEqual(['EXP-001']) // un documento en error no cubre su tipo
+    expect((await api('PATCH', `/documentos/${sinCodigo.identificador_unico_documento}/datos`, { token, cuerpo: { domicilio: 'x' } }))
+      .cuerpo.codigo).toBe('DOCUMENTO_CON_ERROR')
+  })
+
+  it('detalle de la auditoria con la forma de la API', async () => {
+    const token = await entrar('revisor.demo')
+    const porAccion = (accion: string) => estado.auditoria.filter((e) => e.accion === accion).map((e) => e.detalle)
+    expect(porAccion('documento_procesado').every((d) => JSON.stringify(d) === '{"proveedor":"ollama","respaldo_usado":false}')).toBe(true)
+    expect(porAccion('dato_corregido')).toEqual([{ campos: ['nombre_completo'] }])
+    const f1 = await folio(token, 'ONB-2026-000001')
+    const alerta = f1.documentos[0].alertas_encontradas[0]
+    await api('POST', `/documentos/${f1.documentos[0].identificador_unico_documento}/alertas/${alerta.id}/resolver`, { token, cuerpo: { aplica: false } })
+    expect(porAccion('alerta_resuelta').at(-1)).toEqual({ alerta_id: alerta.id, codigo: alerta.codigo, aplica: false })
   })
 })
 
@@ -541,15 +651,37 @@ describe('EXP-002: documento de un tipo que el proceso no pide', () => {
 // ------------------------------------------------------------------ campos sin valor
 
 describe('campos sin valor', () => {
-  it('PATCH de datos con "" o solo espacios deja el campo en null, nunca en ""', async () => {
+  it('PATCH de datos: un campo opcional se vacia con null; "" o solo espacios dan 422 (como la API), nunca se guarda ""', async () => {
     const token = await entrar('revisor.demo')
     const f1 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo
     const pasaporte = f1.documentos[0]
-    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${pasaporte.identificador_unico_documento}/datos`,
-      { token, cuerpo: { sexo: '   ', nacionalidad: '' } })
+    const ruta = `/documentos/${pasaporte.identificador_unico_documento}/datos`
+    for (const vacio of ['', '   ']) {
+      const r = await api('PATCH', ruta, { token, cuerpo: { nacionalidad: vacio } })
+      expect([r.status, r.cuerpo.mensaje]).toEqual([422, 'valor no valido para el campo nacionalidad'])
+    }
+    const r = await api<ResultadoDocumento>('PATCH', ruta, { token, cuerpo: { sexo: null, nacionalidad: null } })
     expect(r.status).toBe(200)
     expect([r.cuerpo.datos_extraidos.sexo, r.cuerpo.datos_extraidos.nacionalidad]).toEqual([null, null])
     expect(r.cuerpo.correcciones.slice(-2).map((c) => [c.campo, c.valor_nuevo])).toEqual([['sexo', null], ['nacionalidad', null]])
+    // Una entrada de auditoria por PATCH, con los campos ordenados
+    expect(estado.auditoria.filter((e) => e.accion === 'dato_corregido').at(-1)?.detalle).toEqual({ campos: ['nacionalidad', 'sexo'] })
+  })
+
+  it('PATCH de datos como la API: campo desconocido, fecha AAAA-MM-DD, patron y solo texto', async () => {
+    const token = await entrar('revisor.demo')
+    const pasaporte = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo.documentos[0]
+    const ruta = `/documentos/${pasaporte.identificador_unico_documento}/datos`
+    const patch = (cuerpo: Record<string, unknown>) => api<ResultadoDocumento & { codigo?: string; mensaje?: string }>('PATCH', ruta, { token, cuerpo })
+    expect((await patch({ curp: 'X' })).cuerpo).toMatchObject({ codigo: 'PETICION_INVALIDA', mensaje: 'campo desconocido: curp' })
+    for (const [cuerpo, campo] of [
+      [{ fecha_nacimiento: '01/01/1985' }, 'fecha_nacimiento'], [{ fecha_nacimiento: '1985-02-30' }, 'fecha_nacimiento'],
+      [{ numero_pasaporte: 'zx-1' }, 'numero_pasaporte'], [{ sexo: 1 }, 'sexo'], [{ nacionalidad: ['UTOPICA'] }, 'nacionalidad'],
+    ] as const) {
+      expect((await patch(cuerpo)).cuerpo.mensaje).toBe(`valor no valido para el campo ${campo}`)
+    }
+    const bien = await patch({ fecha_nacimiento: '1985-6-15', numero_pasaporte: 'ZX0000002' })
+    expect([bien.status, bien.cuerpo.datos_extraidos.fecha_nacimiento]).toEqual([200, '1985-6-15']) // strptime admite 1 cifra
   })
 
   it('PATCH de datos: null en un obligatorio da 422 y no cambia nada (tampoco los otros campos del cuerpo)', async () => {
@@ -574,14 +706,14 @@ describe('campos sin valor', () => {
     const token = await entrar('revisor.demo')
     const credencial = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000001', { token })).cuerpo.documentos[1]
     const ruta = `/documentos/${credencial.identificador_unico_documento}/datos`
-    for (const [enviado, guardado] of [[2030, 2030], ['2031', 2031], [' 2032 ', 2032]] as const) {
+    // Como _valor_corregido de la API: "0999" pasa (y se guarda 999); los espacios no se recortan
+    for (const [enviado, guardado] of [[2030, 2030], ['2031', 2031], ['0999', 999], ['2032', 2032]] as const) {
       const r = await api<ResultadoDocumento>('PATCH', ruta, { token, cuerpo: { vigencia: enviado } })
-      expect([JSON.stringify(enviado), r.status, r.cuerpo.datos_extraidos.vigencia]).toEqual([JSON.stringify(enviado), 200, guardado])
+      expect([JSON.stringify(enviado), r.status, r.cuerpo.datos_extraidos?.vigencia]).toEqual([JSON.stringify(enviado), 200, guardado])
     }
-    for (const malo of [30, 20300, 2030.5, '30', '0999', '20a9', 'AAAA', true, [2030]]) {
-      const r = await api('PATCH', ruta, { token, cuerpo: { vigencia: malo } })
-      expect([JSON.stringify(malo), r.status, r.cuerpo.codigo]).toEqual([JSON.stringify(malo), 422, 'PETICION_INVALIDA'])
-      expect(String(r.cuerpo.mensaje)).toContain('vigencia')
+    for (const malo of [30, 999, 20300, 2030.5, '30', ' 2032 ', '20a9', 'AAAA', true, [2030], null]) {
+      const r = await api('PATCH', ruta, { token, cuerpo: { vigencia: malo } }) // vigencia es obligatoria: null tambien da 422
+      expect([JSON.stringify(malo), r.status, r.cuerpo.mensaje]).toEqual([JSON.stringify(malo), 422, 'valor no valido para el campo vigencia'])
     }
     const despues = (await api<ResultadoDocumento>('GET', `/documentos/${credencial.identificador_unico_documento}`, { token })).cuerpo
     expect(despues.datos_extraidos.vigencia).toBe(2032)
