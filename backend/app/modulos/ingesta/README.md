@@ -78,3 +78,8 @@ tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]`
 Mientras ese modulo no este en `main`, `procesamiento.py` importa `motor_stub.procesar_documento`,
 con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas, y
 `{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
+
+## Fallos del procesamiento
+Si falla la descarga de S3 o el motor lanza una excepcion, el documento queda en `error`, sin
+`Resultado` y sin alerta `SYS-00x` (las `SYS-001`/`SYS-002` solo existen cuando el motor devuelve un
+resultado en `error`). En la UI se ve como documento en error; hay que volver a subirlo.

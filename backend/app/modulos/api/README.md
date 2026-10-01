@@ -134,3 +134,18 @@ Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token)
   409 `DOCUMENTO_EN_PROCESO` (algun documento `pendiente` o `procesando`, al aprobar y al rechazar);
   409 `DECISION_BLOQUEADA` (solo al aprobar: alguna bloqueante visible con `aplica` distinto de false);
   422 `PETICION_INVALIDA`. Un documento en `error` no bloquea la decision.
+
+## Detalle de la auditoria por accion
+`modelo` y `version_prompt` van en sus columnas; `detalle` nunca lleva valores de campos, comentarios
+ni contrasenas.
+
+| accion | detalle |
+|---|---|
+| `login` | `{resultado: "ok" \| "fallido"}` |
+| `folio_creado` | sin detalle (`{}`) |
+| `documento_subido` | `{hash_sha256, tamano_bytes, duplicado}` |
+| `documento_procesado` | `{proveedor, respaldo_usado, confianzas_modelo, tiempos, tokens, ...}` (lo serializable de `datos_auditoria` del motor) |
+| `dato_corregido` | `{campos: [nombres]}` |
+| `clasificacion_confirmada` | `{tipo, reproceso}` |
+| `alerta_resuelta` | `{alerta_id, codigo, aplica}` |
+| `decision_tomada` | `{decision}` |

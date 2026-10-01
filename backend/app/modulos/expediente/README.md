@@ -73,3 +73,8 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
   UPDATE condicional (`estado_general = 'en_revision'`): si otro revisor decidio entre medias, afecta a
   0 filas y da `FOLIO_CERRADO`. Audita `decision_tomada` sin el comentario. Pendiente (etapa 3): webhook
   `folio.estado_cambiado`.
+
+## Decision sobre la recomendacion por documento (revision del PR #9)
+La recomendacion global no usa `ResultadoDocumento.recomendacion`. Esa la da el motor de PERSONA_2 al
+analizar, y la plataforma no la recalcula al corregir datos o resolver alertas (acordado con
+PERSONA_2). Si se quiere recalcular, hay que hablarlo con ella.
