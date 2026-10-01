@@ -137,3 +137,4 @@ class ResumenFolio(BaseModel):  # ADR-006, 1.1: elemento de GET /folios
     n_documentos: int = 0
     n_bloqueantes_sin_resolver: int = 0
     fecha_solicitud: datetime | None = None  # = folios.creado_en (ADR-004)
+    referencia_externa: str | None = None  # ADR-008; = folios.referencia_externa (id opaco, ADR-004)

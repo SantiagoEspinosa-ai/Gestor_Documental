@@ -64,6 +64,12 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
 - [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
 
+### ADR-008 (aceptado el 2026-09-30), cuando el PR de contratos `docs/contratos-adr-008` este en `main`
+- [ ] `expediente.listar_folios`: rellenar `ResumenFolio.referencia_externa` desde
+      `folios.referencia_externa` (`null` si el folio se creo sin ella), con su test en `backend/tests/`.
+- [ ] `api/README.md`: quitar la nota de desviacion de `GET /auditoria` ("Pendiente de reflejar en
+      endpoints.md"); la paginacion ya es el contrato (ADR-008, punto 1).
+
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
 - Conectar el pipeline real (sustituye a `ingesta/procesamiento_stub.py`) y guardar `resultados`.
 - `EXP-001`: recalculo al procesar o confirmar la clasificacion (la creacion inicial va al crear el folio).
