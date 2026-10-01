@@ -3,7 +3,9 @@ clasificacion y decidir el folio. Solo rol revisor. La logica esta en `expedient
 """
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy.orm import Session
 
@@ -11,6 +13,7 @@ from app.core.db import get_sesion
 from app.core.modelos import Usuario
 from app.core.seguridad import requiere_rol
 from app.modulos.expediente import servicio as expediente
+from app.modulos.ingesta import servicio as ingesta
 from app.schemas.resultado import ResultadoDocumento, ResultadoExpediente
 
 router = APIRouter(prefix="/api/v1", tags=["revision"])
@@ -45,3 +48,21 @@ def corregir_datos(documento_id: str, cambios: dict[str, Any] = Body(...),
                    usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
     """Cuerpo `{campo: valor}`; los campos y valores los valida el servicio contra la ficha."""
     return expediente.corregir_datos(sesion, documento_id, cambios, usuario.usuario)
+
+
+class ConfirmarClasificacionEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tipo_documental: str = Field(min_length=1, max_length=50)
+
+
+@router.post("/documentos/{documento_id}/confirmar-clasificacion", response_model=ResultadoDocumento)
+def confirmar_clasificacion(documento_id: str, entrada: ConfirmarClasificacionEntrada,
+                            background_tasks: BackgroundTasks, sesion: Session = Depends(get_sesion),
+                            usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
+    resultado, reprocesar = expediente.confirmar_clasificacion(sesion, documento_id, entrada.tipo_documental,
+                                                               usuario.usuario)
+    if reprocesar:  # version N+1 con el tipo confirmado (ADR-006 2.5); la anterior se conserva
+        background_tasks.add_task(ingesta.procesar_documento, uuid.UUID(resultado.identificador_unico_documento),
+                                  tipo_confirmado=entrada.tipo_documental)
+    return resultado

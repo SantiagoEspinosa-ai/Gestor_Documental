@@ -61,3 +61,8 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
   (sin version nueva); recalcula `CMP-001`. Orden comun de las acciones sobre un documento: 404 ->
   `FOLIO_CERRADO` -> `DOCUMENTO_EN_PROCESO` / `DOCUMENTO_CON_ERROR`. Las comparaciones usan los datos
   ya corregidos.
+- `confirmar_clasificacion(sesion, documento_id, tipo, usuario) -> (ResultadoDocumento, reprocesar)`:
+  tipo usado para extraer = confirmado previo > declarado > detectado. Si coincide, resuelve las
+  `CLS-001` sin revisar; si no, el documento vuelve a `pendiente` y quien llama (el router) lanza
+  `ingesta.procesar_documento(..., tipo_confirmado=tipo)`. En los dos casos recalcula `EXP-001` y
+  `CMP-001` y audita `clasificacion_confirmada`.

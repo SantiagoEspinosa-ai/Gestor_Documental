@@ -55,7 +55,7 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
 
     Tipo presente: se borran sus EXP-001 sin revisar (`aplica` NULL); las revisadas se conservan.
     Tipo que falta: se crea su EXP-001 si no hay ninguna de ese campo.
-    TODO (E2.6): confirmar clasificacion tambien llama a recalcular_exp001.
+    Lo llaman el procesamiento de cada documento y confirmar_clasificacion.
     """
     sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama (estado, resultado)
     fila = sesion.get(Folio, folio)
@@ -361,3 +361,46 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
                         detalle={"campos": sorted(cambios)})
     sesion.commit()
     return ingesta.construir_resultado(sesion, doc)
+
+
+def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,
+                            usuario: str) -> tuple[ResultadoDocumento, bool]:
+    """POST /documentos/{id}/confirmar-clasificacion (ADR-006 2.5). Devuelve (resultado, reprocesar).
+
+    Mismo tipo con el que se extrajo: se guarda, las CLS-001 visibles sin revisar quedan resueltas y no
+    se reprocesa. Otro tipo: se guarda, el documento vuelve a `pendiente` y quien llama lanza el
+    reproceso con `tipo_confirmado` (el servicio no conoce BackgroundTasks).
+    """
+    doc = ingesta.obtener_documento(sesion, documento_id)
+    _exigir_documento_revisable(sesion, doc)
+    if not ingesta.existe_tipo(tipo):
+        raise ErrorApi(422, "PETICION_INVALIDA", "tipo_documental no existe")
+
+    vigente = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id)
+                            .order_by(Resultado.version.desc()).limit(1))
+    # Tipo con el que se extrajo (ADR-006 2.5): confirmado previo > declarado > detectado
+    extraido = (doc.tipo_documental_confirmado or doc.tipo_declarado
+                or ((vigente.json if vigente else {}) or {}).get("tipo_documental_detectado"))
+    doc.tipo_documental_confirmado = tipo
+    reprocesar = tipo != extraido
+
+    if reprocesar:
+        doc.estado_analisis = EstadoAnalisis.pendiente.value  # completado -> pendiente (endpoints.md)
+    else:
+        visibles = AlertaBD.version_resultado.is_(None)
+        if vigente is not None:
+            visibles = or_(visibles, AlertaBD.version_resultado == vigente.version)
+        for alerta in sesion.scalars(select(AlertaBD).where(
+                AlertaBD.documento_id == doc.id, AlertaBD.codigo == "CLS-001", AlertaBD.aplica.is_(None), visibles)):
+            alerta.aplica = False
+            alerta.comentario = "Resuelta al confirmar la clasificacion"
+            alerta.resuelta_por = usuario
+            alerta.resuelta_en = datetime.now(timezone.utc)
+            alerta.resuelta_por_revisor = True
+    # Un documento pendiente ya no cuenta para EXP-001 ni para las comparaciones
+    recalcular_exp001(sesion, doc.folio)
+    recalcular_cmp001(sesion, doc.folio)
+    auditoria.registrar(sesion, "clasificacion_confirmada", usuario=usuario, folio=doc.folio,
+                        documento_id=doc.id, detalle={"tipo": tipo, "reproceso": reprocesar})
+    sesion.commit()
+    return ingesta.construir_resultado(sesion, doc), reprocesar

@@ -112,3 +112,13 @@ Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token)
   nombres de los campos.
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`, `DOCUMENTO_EN_PROCESO`,
   `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA` (nombra el campo, nunca el valor).
+
+### POST /api/v1/documentos/{id}/confirmar-clasificacion (ADR-006 2.5)
+- Entrada: `{tipo_documental}` (tiene que existir su ficha).
+- Mismo tipo con el que se extrajo: guarda `tipo_documental_confirmado` y resuelve las `CLS-001`
+  visibles sin revisar (`aplica=false`). Otro tipo: guarda, pasa el documento a `pendiente` y lanza el
+  reproceso con `tipo_confirmado` en segundo plano (version N+1; la anterior se conserva).
+- Salida 200: `ResultadoDocumento` (en `pendiente` si se reprocesa). Audita `clasificacion_confirmada`
+  con `{tipo, reproceso}`.
+- Errores: 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`, `DOCUMENTO_EN_PROCESO`,
+  `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA`.
