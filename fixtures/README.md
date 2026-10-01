@@ -12,7 +12,9 @@ byte. Cada persona los genera en local.
 python scripts/generar_fixtures.py                    # --hoy = fecha de hoy
 python scripts/generar_fixtures.py --hoy 2026-09-30   # la de los mocks del frontend (DUP-001 contra ellos)
 ```
-Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos.
+Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 42
+ficheros e `INDICE.md`: 3 casos x 3 tipos x 3 modalidades (27), las 3 copias del caso `duplicado`
+(solo la credencial) y 12 de dificultad.
 
 ## Casos
 | Caso | Persona | Que tiene |
@@ -87,6 +89,7 @@ Deja la tabla en `fixtures/generados/resultado_ocr.md`, agrupada por nivel. Refe
 | normal | 18 | 100/102 (98 %) |
 | dificil | 6 | 24/34 (71 %) |
 | extremo | 6 | 5/34 (15 %) |
+| especimen (fotos reales de los impresos) | 5 | 23/27 (85 %) |
 
 Los fallos de los niveles control y normal (sexo "M" suelto y Z/2 en la MRZ de `pasaporte_vencido`)
 ocurren tambien en el control digital y se dejan a proposito porque son realistas.
@@ -96,6 +99,12 @@ ocurren tambien en el control digital y se dejan a proposito porque son realista
 `--hoy 2026-09-30`), sin metadatos. A diferencia de `generados/`, **si se sube a git**. Se preparan
 con `scripts/procesar_especimenes.py` y el verificador OCR las incluye como nivel `especimen`. Ver
 `fixtures/especimenes/README.md` (valores esperados y fechas a partir de las que dan alertas).
+
+## Pendientes
+- Especimenes: repetir o recortar las 4 fotos descartadas (`pasaporte` inclinada y dificil,
+  `credencial_elector` inclinada y `comprobante_domicilio` inclinada); ver
+  `fixtures/especimenes/README.md`.
+- Etapa 2: e2e reales con los folios de prueba de `INDICE.md` sobre `docker compose` y Ollama.
 
 ## Prohibido
 Nunca anadas aqui (ni en `generados/`, ni en el bucket S3, ni en capturas) documentos, nombres,

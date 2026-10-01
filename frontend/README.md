@@ -1,11 +1,13 @@
 # frontend (responsable: PERSONA_3)
 
-React 18 + Vite. Consume `docs/contratos/endpoints.md`. Hasta que la API exista, usar msw con
-respuestas construidas a partir del ejemplo de `ResultadoDocumento` en `backend/app/schemas/resultado.py`.
+React 18 + Vite. Consume el Contrato 2 (`docs/contratos/endpoints.md`) con los tipos del Contrato 1
+(`backend/app/schemas/resultado.py`). En desarrollo puede trabajar contra mocks de msw construidos
+desde esos contratos y alineados con la API de PERSONA_1 (PR #3); en la etapa 2 pasa a la API real
+cambiando solo `.env`.
 
-Pantallas MVP: login, lista de folios, carga de documentos, vista de expediente (diapositiva 8):
+Pantallas: login, lista de folios, carga de documentos, vista de expediente (diapositiva 8:
 documentos del folio, detalle, datos extraidos con confianza, alertas por severidad,
-comparaciones, acciones del revisor.
+comparaciones), acciones del revisor, resumen del expediente y auditoria (admin).
 
 ## Arranque
 Requisitos: Node ^20.19 o >=22.12 (Vite 8).
@@ -19,6 +21,13 @@ npm run lint              # oxlint
 ```
 Con Docker: servicio `frontend` de `docker-compose.yml` (este `Dockerfile`, Node 22).
 
+## Variables (`.env`, a partir de `.env.example`)
+Solo variables `VITE_*`: acaban en el codigo que recibe el navegador, asi que nunca llevan secretos.
+| Variable | Valor de ejemplo | Para que |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8000` | Base de la API; el cliente llama a `${VITE_API_URL}/api/v1` (`utilidades/entorno.ts`) |
+| `VITE_USAR_MOCKS` | `true` | `true`: msw responde la API en el navegador (solo con `npm run dev`). `false`: API real |
+
 ## Stack
 React 18 (el del stack del proyecto; por eso react-router 7, porque el 8 exige React 19),
 react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin librerias de componentes.
@@ -27,11 +36,14 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 | Carpeta | Contenido |
 |---|---|
 | `api/` | `cliente.ts` (HTTP), `sesion.ts` (token), `auth.ts` (login y `/auth/yo`), `folios.ts`, `revision.ts`, `auditoria.ts` |
-| `mocks/` | Handlers de msw (tarea 3); `mocks/datos/` con los JSON ficticios |
-| `paginas/` | Una pagina por ruta: login, folios, carga, expediente, auditoria |
-| `componentes/` | Sesion (`ProveedorSesion`, `RutaProtegida`), `Estructura` comun |
-| `tipos/` | `contrato.ts` (Contrato 1 exacto y peticiones/respuestas del 2), `codigos.ts` (errores y alertas oficiales) |
-| `utilidades/` | `entorno.ts` (variables `VITE_*`) |
+| `mocks/` | msw: `handlers.ts` (un handler por endpoint), `logica.ts` (simulacion), `estado.ts`, `token.ts` (token ficticio), `usuarios.ts`, `navegador.ts`; `mocks/datos/` con los JSON ficticios |
+| `paginas/` | Una pagina por ruta: login, folios, carga, expediente, auditoria, sin permiso y no encontrada |
+| `componentes/` | Sesion (`ProveedorSesion`, `RutaProtegida`, `SoloRol`), `Estructura` comun, expediente (`DetalleDocumento`, `VisorOriginal`, `BarraConfianza`, `ListaAlertas`, `AccionesRevisor`, `ResumenExpediente`), `FormularioNuevoFolio`, `Insignias`, `AvisoSondeoDetenido` |
+| `tipos/` | `contrato.ts` (Contrato 1 exacto y peticiones/respuestas del 2), `codigos.ts` (errores y alertas oficiales y pendientes de main) |
+| `utilidades/` | `entorno.ts` (variables `VITE_*`), `etiquetas.ts`, `mensajes.ts` (texto por codigo de error), `valores.ts`, `expediente.ts` (tipo efectivo, regla 2.2), `sondeo.ts`, `auditoria.ts` (detalle legible), `navegacion.ts` (vuelta tras el login) |
+| `pruebas/` | Ayudas de los tests de pantallas (`app.tsx`, `preparar.ts`, `Ubicacion.tsx`) |
+
+Fuera de `src/`: `e2e/` (Playwright), `scripts/comprobar-build-sin-mocks.mjs` y `public/mock-originales/`.
 
 ## Contrato del cliente HTTP (`src/api/cliente.ts`)
 - Entrada: `peticion<T>(ruta, {metodo, cuerpo | formulario, respuesta: 'json' | 'texto'})` contra
@@ -77,7 +89,7 @@ hace fallar el build si queda algun rastro.
     y se recalculan solo cuando un documento se procesa o se confirma (no al subirlo). Cuenta el
     **tipo efectivo** (`src/utilidades/expediente.ts`): confirmado; si no, detectado; si no, declarado.
     Si el revisor la marco como falso positivo (`aplica=false`), se conserva. La pantalla de carga
-    usara `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta;
+    usa `tiposRequeridosQueFaltan` con la misma regla para avisar de lo que falta;
   - `POST /folios`: 201.
 - Alineado con la API real de PERSONA_1 (PR #3):
   - subida: 415 `FORMATO_NO_PERMITIDO` si el contenido no corresponde a la extension (firma del
@@ -179,15 +191,23 @@ hace fallar el build si queda algun rastro.
 ```
 npm test        # Vitest
 ```
-- Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler) y flujos.
+155 tests en 18 ficheros (2026-10-01):
+- Mocks (Node): cobertura del contrato (falla si un endpoint no tiene handler), flujos, datos y token
+  (sigue valido tras reiniciar msw; uno retocado o inventado da `NO_AUTENTICADO`).
+- Componentes: `BarraConfianza`, `ListaAlertas` y `SoloRol`.
+- Utilidades: `expediente` (tipo efectivo, regla 2.2), `mensajes`, `valores`, `sondeo`, `auditoria`
+  (detalle por accion, enmascarado) y `navegacion` (rutas internas aceptadas y externas rechazadas).
 - Pantallas (jsdom + Testing Library + msw/node, `src/pruebas/app.tsx`): login con los 3 usuarios del
-  mock, errores, recuperacion de sesion, caducidad, control de roles, folios (orden, filtros,
-  paginacion, nuevo folio), carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del
-  sondeo) y auditoria (paginacion, tamano, filtro, detalle por accion sin valores completos, vacio,
-  403, 422 y roles). `usarServidorMock()` da tambien `consultas` (con la query) y `servidor` (para
-  sobrescribir un handler en un test con `servidor.use`); `reiniciarMocks` simula recargar la pagina
-  (msw con estado nuevo) y `<Ubicacion>` muestra la ruta completa del router. `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
-  Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
+  mock, errores, recuperacion de sesion (tambien tras "recargar" los mocks), caducidad, vuelta tras el
+  login con parametros y hash, control de roles, folios (orden, filtros, paginacion, nuevo folio),
+  carga (subida, sondeo, tipos que faltan, DUP-001, cerrado, parada del sondeo), expediente, acciones
+  del revisor, resumen y auditoria (paginacion, tamano, filtro, detalle por accion sin valores
+  completos, vacio, 403, 422 y roles).
+- Ayudas: `usarServidorMock()` da `estado`, `peticiones`, `consultas` (con la query) y `servidor`
+  (para sobrescribir un handler con `servidor.use`); `reiniciarMocks` simula recargar la pagina (msw
+  con estado nuevo) y `<Ubicacion>` (`src/pruebas/Ubicacion.tsx`) muestra la ruta completa del router.
+  `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de Vitest con
+  jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
 
 ### e2e con Playwright sobre los mocks (`e2e/`)
@@ -212,6 +232,8 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   `/auditoria?tamano_pagina=500`, tras el login como admin vuelve con los parametros y ve el 422;
   recargar mantiene la sesion y la URL completa; el revisor
   que entra por URL ve "Sin permiso").
+- 9 tests en 5 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
+  `nuevoFolio`, `subir`, `filaCarga` y `abrirFolio`.
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.
 
@@ -253,7 +275,7 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   (solo texto) y `qwen2.5vl:3b` para escaneados e imagenes. Un documento subido en la sesion toma el
   modelo del original con el mismo SHA-256; si no lo hay, el de su extension (PDF -> texto).
 - Confianza (ADR-007): la calcula el codigo comprobando el dato, no el modelo. La barra de la tabla
-  de datos usara `ETIQUETA_CONFIANZA` ("Confianza verificada") y `AYUDA_CONFIANZA`
+  de datos usa `ETIQUETA_CONFIANZA` ("Confianza verificada") y `AYUDA_CONFIANZA`
   (`src/utilidades/etiquetas.ts`).
 - `public/mock-originales/`: copias de los fixtures que usan los mocks (mismo SHA-256).
 - Se generan con `python scripts/generar_datos_mock.py` (no editar los JSON a mano). La fecha es
@@ -269,4 +291,16 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
 ## Sesion
 Token, rol e instante de caducidad (`Date.now() + expires_in * 1000`) en `sessionStorage`, con
 respaldo en memoria si el navegador lo bloquea. Al recargar se recupera con `GET /auth/yo`; al
-caducar se cierra sola aunque no haya peticiones.
+caducar se cierra sola aunque no haya peticiones. Sin sesion, cualquier ruta protegida lleva al login
+y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pantallas").
+
+## Pendientes
+- Etapa 2: probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y reportar como
+  issue cualquier desviacion del contrato, sin adaptar el frontend en silencio.
+- Etapa 2: e2e reales con los 4 casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales").
+- `DOCUMENTO_CON_ERROR` y `EXP-002` siguen en `CODIGOS_PENDIENTES_DE_MAIN`: los anade PERSONA_1 a los
+  catalogos de main junto con el codigo que los emite; entonces pasan a oficiales.
+- Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
+  descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
+  de ADR) y pantalla de configuracion de procesos.
+- Fuera del MVP: reprocesar un documento en `error` (ADR-006, I).

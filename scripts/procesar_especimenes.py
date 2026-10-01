@@ -16,8 +16,10 @@ Por cada foto `{tipo}_{condicion}.jpeg` (tambien .jpg, .JPG o .JPEG):
   - convierte a sRGB con el perfil ICC de la camara y luego lo descarta;
   - quita TODOS los metadatos (EXIF, GPS, modelo de camara, XMP, ICC, MPO): la imagen se rehace
     solo con los pixeles;
-  - reduce el lado largo a LADO_LARGO px y guarda en JPEG con calidad CALIDAD;
+  - reduce el lado largo a LADO_LARGO (2000) px y guarda en JPEG con calidad CALIDAD (85);
   - escribe {salida}/{tipo}_sano_especimen_{condicion}.jpg y comprueba que no queda ningun metadato.
+Valores esperados y fotos descartadas: fixtures/especimenes/README.md. Tests:
+backend/tests/test_especimenes.py.
 """
 from __future__ import annotations
 

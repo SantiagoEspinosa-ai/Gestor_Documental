@@ -35,6 +35,10 @@ INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio d
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
 seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
+En total, 42 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado y 12 de
+dificultad. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
+fixtures/especimenes/ (en git) y las prepara scripts/procesar_especimenes.py.
+
 Tras cambiar este generador, comprueba la legibilidad OCR con scripts/verificar_ocr_fixtures.py
 (Tesseract en el contenedor del backend; el comando esta en su docstring).
 

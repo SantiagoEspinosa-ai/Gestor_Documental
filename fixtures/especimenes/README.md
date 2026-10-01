@@ -42,8 +42,9 @@ Nombre: `{tipo}_sano_especimen_{condicion}.jpg`.
 
 Faltan `pasaporte` (inclinada y dificil), `credencial_elector` (inclinada) y
 `comprobante_domicilio` (inclinada). Esas fotos se descartaron en la revision porque salian otros
-objetos en el encuadre (un vaso, cables, el borde de un portatil, la sombra de un pie o ropa). Hay
-que repetirlas.
+objetos en el encuadre (un vaso, cables, el borde de un portatil, la sombra de un pie o ropa).
+**Pendiente:** repetirlas, o recortarlas para que solo quede el documento y volver a revisarlas antes
+de procesarlas. Las originales no estan en el repo.
 
 `backend/tests/test_especimenes.py` comprueba que ninguna foto tiene EXIF, GPS, XMP, ICC ni MPO,
 que el lado largo no pasa de 2000 px y que ninguna supera 2 MB.

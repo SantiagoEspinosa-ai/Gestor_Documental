@@ -7,8 +7,9 @@ Que hace:
   - *_foto.jpg: le pasa Tesseract directamente.
   - Con --control, tambien el render de los *_digital.pdf (sin ruido ni distorsion): separa lo que
     se pierde por el ruido de lo que se pierde por la maqueta o la fuente.
-  - Preprocesado minimo, el previsto para orquestador/ocr.py: escala de grises + autocontraste.
-    No importa nada del orquestador: es una comprobacion independiente de los fixtures.
+  - Preprocesado minimo, el mismo que TesseractOCR de orquestador/ocr.py (PERSONA_2): escala de
+    grises + autocontraste. No importa nada del orquestador: es una comprobacion independiente de los
+    fixtures, asi que si ocr.py cambia su preprocesado hay que cambiarlo tambien aqui.
   - Compara el texto con los valores esperados de fixtures/generados/INDICE.md (fechas en
     DD/MM/AAAA, como aparecen en el documento), normalizando mayusculas, acentos y espacios y
     exigiendo palabra completa. Las copias del caso duplicado no se procesan (son identicas a sano).
@@ -32,7 +33,8 @@ Como interpretar el resultado:
   - Referencia (2026-09-30): 150/153 campos. Los fallos (sexo "M" suelto y Z/2 en la MRZ de
     pasaporte_vencido) ocurren tambien en el control y se dejan a proposito: son casos realistas.
   - Referencia por nivel (2026-10-01, Tesseract del contenedor; objetivo entre parentesis):
-    normal 100/102 = 98 % (~100 %), dificil 24/34 = 71 % (50-80 %), extremo 5/34 = 15 % (< 30 %).
+    normal 100/102 = 98 % (~100 %), dificil 24/34 = 71 % (50-80 %), extremo 5/34 = 15 % (< 30 %);
+    especimen 23/27 = 85 % (el comprobante dificil, 0/4: el A4 ocupa poco del encuadre).
     Un nivel fuera de su rango tras cambiar el generador: ajusta PARAMETROS en generar_fixtures.py.
 """
 from __future__ import annotations
