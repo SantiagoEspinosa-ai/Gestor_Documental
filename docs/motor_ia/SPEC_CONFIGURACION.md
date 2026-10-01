@@ -247,6 +247,13 @@ se queda solo con `pagina_<n>` (seccion 4).
       (~4,3 GB), y una maquina de 16 GB se queda sin RAM. Con la variable, descarga un modelo al cargar otro.
       En la evaluacion (`pruebas_ollama/evaluar_fixtures.py`) se descarga el de texto antes del reintento
       (`keep_alive: 0`) y queda anotado en el informe. Revisarlo en la maquina con GPU.
+- [ ] **Hallazgo del bloque 3 (fixtures dificiles), pendiente de decidir con los datos del bloque 4**: en `extremo`
+      la clasificacion con texto da `desconocido`, salta `CLS-001` y la regla "no reintentar con CLS-001" impide
+      el reintento con vision justo cuando el OCR es malo (pasaportes extremo con 7/7 y 6/7 vacios). Hay que
+      definir cuando un OCR es "pobre" y como encaja `CLS-001` (reclasificar con vision o ir directo a vision).
+- [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
+      a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
+      cada cambio; en produccion sigue pendiente `OLLAMA_MAX_LOADED_MODELS=1`.
 - [ ] **Opcional: bloque 2 de la evaluacion** (`pruebas_ollama/evaluar_fixtures.py lanzar --bloque 2`): vision
       forzada en los 18 escaneados y fotos, como referencia del respaldo (~40-45 min; criterio >= 40/51 por
       modalidad, no bloquea). El bloque 1 (ruta auto) aprobo todo el 2026-10-01.
@@ -369,7 +376,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Evaluacion completa, bloque 1 (ruta auto, 30 casos): 153/153 campos, 27/27 tipos, `CLS-001` 3/3, sin errores ni abortos, 59 s de media (`pruebas_ollama/resultados/evaluacion/informe.md`). El reintento con vision pasa del proveedor al servicio y no se hace si salta `CLS-001` (el caso que tardaba 255 s baja a 80 s); el proveedor expone `extraer_con_vision`. Pendientes: `OLLAMA_MAX_LOADED_MODELS=1` en produccion y bloque 2 opcional. Script `evaluar_fixtures.py` | este commit |
+| 2026-10-01 | Evaluacion, bloque 3 (fixtures dificiles de PERSONA_3, ruta auto, 12 casos): NO aprueba (dificil 19/34 correctos y 7/34 incorrectos; extremo 10/34 incorrectos; 0 reintentos con vision porque `CLS-001` los bloquea). 8 de los 17 incorrectos los detectarian las reglas de la etapa 2. `evaluar_fixtures.py`: niveles de dificultad, bloques 3 y 4, campos correcto/vacio/incorrecto, `docker stop` del contenedor si la RAM baja de 1 GB y descarga del otro modelo en cada cambio | este commit |
+| 2026-10-01 | Evaluacion completa, bloque 1 (ruta auto, 30 casos): 153/153 campos, 27/27 tipos, `CLS-001` 3/3, sin errores ni abortos, 59 s de media (`pruebas_ollama/resultados/evaluacion/informe.md`). El reintento con vision pasa del proveedor al servicio y no se hace si salta `CLS-001` (el caso que tardaba 255 s baja a 80 s); el proveedor expone `extraer_con_vision`. Pendientes: `OLLAMA_MAX_LOADED_MODELS=1` en produccion y bloque 2 opcional. Script `evaluar_fixtures.py` | `a0c7675` |
 | 2026-10-01 | Merge de `origin/main` con los PR #5 (`.env.example`: modelos, `PROMPTS_DIR`, `PERMITIR_PROVEEDORES_NO_PRIVADOS`, `OLLAMA_BASE_URL` por defecto a `host.docker.internal`), #6 (`VAL-004` en el catalogo) y #7/#8 (ADR-008: `referencia_externa` en `ResumenFolio` y `/auditoria` paginada; no afecta al motor). Se quitan de pendientes el PR de `.env.example` y el alta de `VAL-004`. Regla de `validacion/servicio.py` compartido con PERSONA_1 en pendientes | `d3e18b4` |
 | 2026-10-01 | Regla del enrutador: texto si todas las paginas tienen >= 30 caracteres (capa del PDF u OCR), vision si alguna no llega. Reintento con vision si la extraccion con texto deja a `null` la mitad o mas de los obligatorios (riesgo 2 del plan), registrado en las llamadas (`entrada`, `motivo`). `NUM_CTX` fijo a 16384. `""` y textos solo con espacios a `null` (acordado con PERSONA_3). Medidas A/B en `pruebas_ollama.md` | `1a6b9f4` |
 | 2026-09-30 | `OLLAMA_BASE_URL` por defecto de `.env.example`: `http://host.docker.internal:11434` (revision de PERSONA_1; `ollama` es un perfil opcional desde el PR #3). El `.env` local de PERSONA_2 sigue con `localhost` | `5f6292d` |

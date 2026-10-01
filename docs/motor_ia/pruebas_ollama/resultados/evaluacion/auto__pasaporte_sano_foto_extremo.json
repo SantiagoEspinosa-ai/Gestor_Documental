@@ -1,0 +1,171 @@
+{
+  "medida": {
+    "id": "auto__pasaporte_sano_foto_extremo",
+    "ruta": "auto",
+    "archivo": "pasaporte_sano_foto_extremo.jpg",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "foto",
+    "nivel": "extremo",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 0.8,
+    "modalidad_detectada": "imagen",
+    "caracteres_texto": 130,
+    "segundos_total": 59.7,
+    "estado": "completado",
+    "tipo_detectado": "desconocido",
+    "confianza_clasificacion": 0.1,
+    "clasificacion_ok": false,
+    "alertas": [
+      "CLS-001"
+    ],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000001",
+        "extraido": "1093060ccceeeecccecoó",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_vencimiento": {
+        "esperado": "2031-09-30",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "sexo": {
+        "esperado": "F",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      }
+    },
+    "aciertos": 0,
+    "vacios": 6,
+    "incorrectos": 1,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 10.72,
+        "tokens_entrada": 484,
+        "tokens_salida": 51,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": "sin reintento con vision (3/4 campos obligatorios vacios): el tipo declarado no coincide con el detectado (CLS-001)",
+        "segundos": 48.18,
+        "tokens_entrada": 689,
+        "tokens_salida": 361,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true,
+    "antes_del_reintento": {
+      "aciertos": 0,
+      "vacios": 6,
+      "incorrectos": 1,
+      "obligatorios_vacios": 3
+    }
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "6c61699f-1cf2-46ad-baee-c5cb1d7071b8",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "desconocido",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.1,
+    "datos_extraidos": {
+      "nombre_completo": null,
+      "numero_pasaporte": "1093060ccceeeecccecoó",
+      "fecha_nacimiento": null,
+      "fecha_expedicion": null,
+      "fecha_vencimiento": null,
+      "nacionalidad": null,
+      "sexo": null
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 0.0,
+      "numero_pasaporte": 0.9,
+      "fecha_nacimiento": 0.0,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.0,
+      "nacionalidad": 0.0,
+      "sexo": 0.0
+    },
+    "evidencia_por_campo": {
+      "numero_pasaporte": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [
+      {
+        "id": null,
+        "codigo": "CLS-001",
+        "mensaje": "Tipo declarado 'pasaporte' distinto del detectado 'desconocido'",
+        "severidad": "critica",
+        "confianza": 1.0,
+        "campo": null,
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T17:09:01.891134Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_sano_foto_extremo.jpg",
+      "ruta": "local://pasaporte_sano_foto_extremo.jpg",
+      "hash": "e55298dad0e46e8eebeada8196ff3aee6c222ab8bd0408c1bffa094353111255"
+    }
+  }
+}

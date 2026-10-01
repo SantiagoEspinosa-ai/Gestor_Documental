@@ -1,0 +1,168 @@
+{
+  "medida": {
+    "id": "auto__credencial_elector_sano_escaneado_extremo",
+    "ruta": "auto",
+    "archivo": "credencial_elector_sano_escaneado_extremo.pdf",
+    "declarado": "credencial_elector",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "escaneado",
+    "nivel": "extremo",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
+    "segundos_preparar": 0.8,
+    "modalidad_detectada": "pdf_escaneado",
+    "caracteres_texto": 128,
+    "segundos_total": 57.8,
+    "estado": "completado",
+    "tipo_detectado": "desconocido",
+    "confianza_clasificacion": 0.3,
+    "clasificacion_ok": false,
+    "alertas": [
+      "CLS-001"
+    ],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "curp": {
+        "esperado": "AEPA900101MDFXXX01",
+        "extraido": "AEPA900 IOI MOF 100x0 1 ESPRANSOO1019904101",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "clave_elector": {
+        "esperado": "EJPRAN90010199M101",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "CALLE FICTICIA 122, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "vigencia": {
+        "esperado": "2029",
+        "extraido": 2029,
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 2,
+    "vacios": 1,
+    "incorrectos": 3,
+    "total_campos": 6,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 10.58,
+        "tokens_entrada": 469,
+        "tokens_salida": 59,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 46.4,
+        "tokens_entrada": 662,
+        "tokens_salida": 361,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true,
+    "antes_del_reintento": {
+      "aciertos": 2,
+      "vacios": 1,
+      "incorrectos": 3,
+      "obligatorios_vacios": 0
+    }
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "b9910305-a1b3-425b-b5e7-dfe883fa4386",
+    "tipo_documental_declarado": "credencial_elector",
+    "tipo_documental_detectado": "desconocido",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.3,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "curp": "AEPA900 IOI MOF 100x0 1 ESPRANSOO1019904101",
+      "clave_elector": null,
+      "fecha_nacimiento": "1990",
+      "domicilio": "CALLE FICTICIA 122, COLONIA DEMO, CIUDAD EJEMPLO",
+      "vigencia": 2029
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "curp": 1.0,
+      "clave_elector": 0.0,
+      "fecha_nacimiento": 0.0,
+      "domicilio": 1.0,
+      "vigencia": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_superior",
+      "curp": "pagina_1:seccion_superior",
+      "fecha_nacimiento": "pagina_1:seccion_superior",
+      "domicilio": "pagina_1:seccion_superior",
+      "vigencia": "pagina_1:seccion_superior"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [
+      {
+        "id": null,
+        "codigo": "CLS-001",
+        "mensaje": "Tipo declarado 'credencial_elector' distinto del detectado 'desconocido'",
+        "severidad": "critica",
+        "confianza": 1.0,
+        "campo": null,
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:59:56.364067Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_credencial_elector@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_sano_escaneado_extremo.pdf",
+      "ruta": "local://credencial_elector_sano_escaneado_extremo.pdf",
+      "hash": "8e8ddf461567bf8d4de3a63fb7cc8e5c0df7691154c84f02e3330061e0da6173"
+    }
+  }
+}

@@ -21,22 +21,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
           "extraido": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -65,7 +69,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_domicilio_distinto_escaneado",
@@ -88,22 +95,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
           "extraido": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -132,7 +143,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_domicilio_distinto_foto",
@@ -155,22 +169,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
           "extraido": "CALLE DISTINTA 789, COLONIA OTRA, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -199,7 +217,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_sano_digital",
@@ -222,22 +243,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -266,7 +291,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_sano_escaneado",
@@ -289,22 +317,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -333,7 +365,182 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__comprobante_domicilio_sano_escaneado_dificil",
+      "ruta": "auto",
+      "archivo": "comprobante_domicilio_sano_escaneado_dificil.pdf",
+      "declarado": "comprobante_domicilio",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "comprobante_domicilio",
+      "modalidad_fixture": "escaneado",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_titular",
+        "domicilio",
+        "fecha_emision"
+      ],
+      "segundos_preparar": 1.7,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 228,
+      "segundos_total": 70.1,
+      "estado": "completado",
+      "tipo_detectado": "comprobante_domicilio",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_titular": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "GALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "proveedor": {
+          "esperado": "SERVICIOS DE EJEMPLO S.A.",
+          "extraido": "SERVICIOS DE EJEMPLO S.A.",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_emision": {
+          "esperado": "2026-09-15",
+          "extraido": "2026-09-15",
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 3,
+      "vacios": 0,
+      "incorrectos": 1,
+      "total_campos": 4,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 29.83,
+          "tokens_entrada": 492,
+          "tokens_salida": 62,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 38.49,
+          "tokens_entrada": 666,
+          "tokens_salida": 275,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 3,
+        "vacios": 0,
+        "incorrectos": 1,
+        "obligatorios_vacios": 0
+      }
+    },
+    {
+      "id": "auto__comprobante_domicilio_sano_escaneado_extremo",
+      "ruta": "auto",
+      "archivo": "comprobante_domicilio_sano_escaneado_extremo.pdf",
+      "declarado": "comprobante_domicilio",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "comprobante_domicilio",
+      "modalidad_fixture": "escaneado",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_titular",
+        "domicilio",
+        "fecha_emision"
+      ],
+      "segundos_preparar": 1.3,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 107,
+      "segundos_total": 42.3,
+      "estado": "completado",
+      "tipo_detectado": "comprobante_domicilio",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_titular": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "orta11 Of PAODO moon YA TIO",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "Cormero de pense rosa 34",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "proveedor": {
+          "esperado": "SERVICIOS DE EJEMPLO S.A.",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_emision": {
+          "esperado": "2026-09-15",
+          "extraido": "2026-09-15",
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 1,
+      "vacios": 1,
+      "incorrectos": 2,
+      "total_campos": 4,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 11.26,
+          "tokens_entrada": 437,
+          "tokens_salida": 71,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 29.72,
+          "tokens_entrada": 611,
+          "tokens_salida": 216,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 1,
+        "vacios": 1,
+        "incorrectos": 2,
+        "obligatorios_vacios": 0
+      }
     },
     {
       "id": "auto__comprobante_domicilio_sano_foto",
@@ -356,22 +563,26 @@
         "nombre_titular": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -400,7 +611,184 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__comprobante_domicilio_sano_foto_dificil",
+      "ruta": "auto",
+      "archivo": "comprobante_domicilio_sano_foto_dificil.jpg",
+      "declarado": "comprobante_domicilio",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "comprobante_domicilio",
+      "modalidad_fixture": "foto",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_titular",
+        "domicilio",
+        "fecha_emision"
+      ],
+      "segundos_preparar": 1.3,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 207,
+      "segundos_total": 48.4,
+      "estado": "completado",
+      "tipo_detectado": "comprobante_domicilio",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_titular": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "correcto",
+          "ok": true
+        },
+        "proveedor": {
+          "esperado": "SERVICIOS DE EJEMPLO S.A.",
+          "extraido": "SERVICIOS DE EJEMPLO S.A.",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_emision": {
+          "esperado": "2026-09-15",
+          "extraido": "2026-09-15",
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 4,
+      "vacios": 0,
+      "incorrectos": 0,
+      "total_campos": 4,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 10.04,
+          "tokens_entrada": 484,
+          "tokens_salida": 57,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 37.08,
+          "tokens_entrada": 658,
+          "tokens_salida": 275,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 4,
+        "vacios": 0,
+        "incorrectos": 0,
+        "obligatorios_vacios": 0
+      }
+    },
+    {
+      "id": "auto__comprobante_domicilio_sano_foto_extremo",
+      "ruta": "auto",
+      "archivo": "comprobante_domicilio_sano_foto_extremo.jpg",
+      "declarado": "comprobante_domicilio",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "comprobante_domicilio",
+      "modalidad_fixture": "foto",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_titular",
+        "domicilio",
+        "fecha_emision"
+      ],
+      "segundos_preparar": 0.8,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 137,
+      "segundos_total": 44.8,
+      "estado": "completado",
+      "tipo_detectado": "desconocido",
+      "confianza_clasificacion": 0.1,
+      "clasificacion_ok": false,
+      "alertas": [
+        "CLS-001"
+      ],
+      "campos": {
+        "nombre_titular": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, SERVICIOS DE EJEMPLO SA.",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "proveedor": {
+          "esperado": "SERVICIOS DE EJEMPLO S.A.",
+          "extraido": "carat Oak PURO MP",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "fecha_emision": {
+          "esperado": "2026-09-15",
+          "extraido": "1509 2026",
+          "estado": "incorrecto",
+          "ok": false
+        }
+      },
+      "aciertos": 1,
+      "vacios": 0,
+      "incorrectos": 3,
+      "total_campos": 4,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 9.55,
+          "tokens_entrada": 458,
+          "tokens_salida": 55,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 34.47,
+          "tokens_entrada": 632,
+          "tokens_salida": 263,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 1,
+        "vacios": 0,
+        "incorrectos": 3,
+        "obligatorios_vacios": 0
+      }
     },
     {
       "id": "auto__comprobante_domicilio_vencido_digital",
@@ -423,22 +811,26 @@
         "nombre_titular": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -467,7 +859,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_vencido_escaneado",
@@ -490,22 +885,26 @@
         "nombre_titular": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -534,7 +933,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__comprobante_domicilio_vencido_foto",
@@ -557,22 +959,26 @@
         "nombre_titular": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "proveedor": {
           "esperado": "SERVICIOS DE EJEMPLO S.A.",
           "extraido": "SERVICIOS DE EJEMPLO S.A.",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_emision": {
           "esperado": "2026-09-15",
           "extraido": "2026-09-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 4,
@@ -601,7 +1007,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_domicilio_distinto_digital",
@@ -624,32 +1033,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -678,7 +1093,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_domicilio_distinto_escaneado",
@@ -701,32 +1119,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -755,7 +1179,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_domicilio_distinto_foto",
@@ -778,32 +1205,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -832,7 +1265,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_sano_digital",
@@ -855,32 +1291,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -909,7 +1351,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_sano_escaneado",
@@ -932,32 +1377,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -986,7 +1437,212 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__credencial_elector_sano_escaneado_dificil",
+      "ruta": "auto",
+      "archivo": "credencial_elector_sano_escaneado_dificil.pdf",
+      "declarado": "credencial_elector",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "credencial_elector",
+      "modalidad_fixture": "escaneado",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_completo",
+        "curp",
+        "fecha_nacimiento",
+        "domicilio",
+        "vigencia"
+      ],
+      "segundos_preparar": 0.9,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 158,
+      "segundos_total": 60.7,
+      "estado": "completado",
+      "tipo_detectado": "credencial_elector",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "curp": {
+          "esperado": "AEPA900101MDFXXX01",
+          "extraido": "AEPA9O0101MDFXXX01",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "clave_elector": {
+          "esperado": "EJPRAN90010199M101",
+          "extraido": "EJPRAN90010199M101",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "1990-01-01",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "correcto",
+          "ok": true
+        },
+        "vigencia": {
+          "esperado": "2029",
+          "extraido": 2029,
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 5,
+      "vacios": 0,
+      "incorrectos": 1,
+      "total_campos": 6,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 11.42,
+          "tokens_entrada": 479,
+          "tokens_salida": 69,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 48.4,
+          "tokens_entrada": 672,
+          "tokens_salida": 373,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 5,
+        "vacios": 0,
+        "incorrectos": 1,
+        "obligatorios_vacios": 0
+      }
+    },
+    {
+      "id": "auto__credencial_elector_sano_escaneado_extremo",
+      "ruta": "auto",
+      "archivo": "credencial_elector_sano_escaneado_extremo.pdf",
+      "declarado": "credencial_elector",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "credencial_elector",
+      "modalidad_fixture": "escaneado",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_completo",
+        "curp",
+        "fecha_nacimiento",
+        "domicilio",
+        "vigencia"
+      ],
+      "segundos_preparar": 0.8,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 128,
+      "segundos_total": 57.8,
+      "estado": "completado",
+      "tipo_detectado": "desconocido",
+      "confianza_clasificacion": 0.3,
+      "clasificacion_ok": false,
+      "alertas": [
+        "CLS-001"
+      ],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "curp": {
+          "esperado": "AEPA900101MDFXXX01",
+          "extraido": "AEPA900 IOI MOF 100x0 1 ESPRANSOO1019904101",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "clave_elector": {
+          "esperado": "EJPRAN90010199M101",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "1990",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 122, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "vigencia": {
+          "esperado": "2029",
+          "extraido": 2029,
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 2,
+      "vacios": 1,
+      "incorrectos": 3,
+      "total_campos": 6,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 10.58,
+          "tokens_entrada": 469,
+          "tokens_salida": 59,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 46.4,
+          "tokens_entrada": 662,
+          "tokens_salida": 361,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 2,
+        "vacios": 1,
+        "incorrectos": 3,
+        "obligatorios_vacios": 0
+      }
     },
     {
       "id": "auto__credencial_elector_sano_foto",
@@ -1009,32 +1665,38 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "AEPA900101MDFXXX01",
           "extraido": "AEPA900101MDFXXX01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "EJPRAN90010199M101",
           "extraido": "EJPRAN90010199M101",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
           "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -1063,7 +1725,210 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__credencial_elector_sano_foto_dificil",
+      "ruta": "auto",
+      "archivo": "credencial_elector_sano_foto_dificil.jpg",
+      "declarado": "credencial_elector",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "credencial_elector",
+      "modalidad_fixture": "foto",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_completo",
+        "curp",
+        "fecha_nacimiento",
+        "domicilio",
+        "vigencia"
+      ],
+      "segundos_preparar": 0.7,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 123,
+      "segundos_total": 62.4,
+      "estado": "completado",
+      "tipo_detectado": "credencial_elector",
+      "confianza_clasificacion": 1.0,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "curp": {
+          "esperado": "AEPA900101MDFXXX01",
+          "extraido": "AEPA900101MDFXXX01 EJPRAN90010199M101",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "clave_elector": {
+          "esperado": "EJPRAN90010199M101",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "1990-01-01",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "correcto",
+          "ok": true
+        },
+        "vigencia": {
+          "esperado": "2029",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        }
+      },
+      "aciertos": 3,
+      "vacios": 2,
+      "incorrectos": 1,
+      "total_campos": 6,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 11.53,
+          "tokens_entrada": 460,
+          "tokens_salida": 65,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 50.19,
+          "tokens_entrada": 653,
+          "tokens_salida": 351,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 3,
+        "vacios": 2,
+        "incorrectos": 1,
+        "obligatorios_vacios": 1
+      }
+    },
+    {
+      "id": "auto__credencial_elector_sano_foto_extremo",
+      "ruta": "auto",
+      "archivo": "credencial_elector_sano_foto_extremo.jpg",
+      "declarado": "credencial_elector",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "credencial_elector",
+      "modalidad_fixture": "foto",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_completo",
+        "curp",
+        "fecha_nacimiento",
+        "domicilio",
+        "vigencia"
+      ],
+      "segundos_preparar": 0.5,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 15,
+      "segundos_total": 238.5,
+      "estado": "completado",
+      "tipo_detectado": "credencial_elector",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "curp": {
+          "esperado": "AEPA900101MDFXXX01",
+          "extraido": "AEPA000101MDFXXX01",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "clave_elector": {
+          "esperado": "EJPRAN90010199M101",
+          "extraido": "EJPRAN90010199M101",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "1990-01-01",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "correcto",
+          "ok": true
+        },
+        "vigencia": {
+          "esperado": "2029",
+          "extraido": 2029,
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 5,
+      "vacios": 0,
+      "incorrectos": 1,
+      "total_campos": 6,
+      "llamadas": [
+        {
+          "modelo": "qwen2.5vl:3b",
+          "entrada": "vision",
+          "motivo": null,
+          "segundos": 102.17,
+          "tokens_entrada": 1474,
+          "tokens_salida": 65,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "qwen2.5vl:3b",
+          "entrada": "vision",
+          "motivo": null,
+          "segundos": 135.85,
+          "tokens_entrada": 1666,
+          "tokens_salida": 340,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 5,
+        "vacios": 0,
+        "incorrectos": 1,
+        "obligatorios_vacios": 0
+      }
     },
     {
       "id": "auto__credencial_elector_vencido_digital",
@@ -1086,32 +1951,38 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "DEPL850615HDFXXX02",
           "extraido": "DEPL850615HDFXXX02",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "DEPRLU85061599H102",
           "extraido": "DEPRLU85061599H102",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -1140,7 +2011,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_vencido_escaneado",
@@ -1163,32 +2037,38 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "DEPL850615HDFXXX02",
           "extraido": "DEPL850615HDFXXX02",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "DEPRLU85061599H102",
           "extraido": "DEPRLU85061599H102",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -1217,7 +2097,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__credencial_elector_vencido_foto",
@@ -1240,32 +2123,38 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "curp": {
           "esperado": "DEPL850615HDFXXX02",
           "extraido": "DEPL850615HDFXXX02",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "clave_elector": {
           "esperado": "DEPRLU85061599H102",
           "extraido": "DEPRLU85061599H102",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "domicilio": {
           "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
           "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "vigencia": {
           "esperado": "2029",
           "extraido": 2029,
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 6,
@@ -1294,7 +2183,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_domicilio_distinto_digital",
@@ -1317,37 +2209,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1376,7 +2275,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_domicilio_distinto_escaneado",
@@ -1399,37 +2301,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1458,7 +2367,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_domicilio_distinto_foto",
@@ -1481,37 +2393,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1540,7 +2459,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_sano_digital",
@@ -1563,37 +2485,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1622,7 +2551,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_sano_escaneado",
@@ -1645,37 +2577,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1704,7 +2643,222 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__pasaporte_sano_escaneado_dificil",
+      "ruta": "auto",
+      "archivo": "pasaporte_sano_escaneado_dificil.pdf",
+      "declarado": "pasaporte",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "pasaporte",
+      "modalidad_fixture": "escaneado",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_completo",
+        "numero_pasaporte",
+        "fecha_nacimiento",
+        "fecha_vencimiento"
+      ],
+      "segundos_preparar": 1.4,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 159,
+      "segundos_total": 75.7,
+      "estado": "completado",
+      "tipo_detectado": "pasaporte",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "numero_pasaporte": {
+          "esperado": "ZX0000001",
+          "extraido": "X00000015UTO9001011F3109306",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "2021-09-30",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "fecha_expedicion": {
+          "esperado": "2021-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_vencimiento": {
+          "esperado": "2031-09-30",
+          "extraido": "2031-09-30",
+          "estado": "correcto",
+          "ok": true
+        },
+        "nacionalidad": {
+          "esperado": "UTOPICA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "sexo": {
+          "esperado": "F",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        }
+      },
+      "aciertos": 2,
+      "vacios": 3,
+      "incorrectos": 2,
+      "total_campos": 7,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 27.86,
+          "tokens_entrada": 484,
+          "tokens_salida": 56,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 46.41,
+          "tokens_entrada": 689,
+          "tokens_salida": 352,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 2,
+        "vacios": 3,
+        "incorrectos": 2,
+        "obligatorios_vacios": 0
+      }
+    },
+    {
+      "id": "auto__pasaporte_sano_escaneado_extremo",
+      "ruta": "auto",
+      "archivo": "pasaporte_sano_escaneado_extremo.pdf",
+      "declarado": "pasaporte",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "pasaporte",
+      "modalidad_fixture": "escaneado",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_completo",
+        "numero_pasaporte",
+        "fecha_nacimiento",
+        "fecha_vencimiento"
+      ],
+      "segundos_preparar": 1.1,
+      "modalidad_detectada": "pdf_escaneado",
+      "caracteres_texto": 89,
+      "segundos_total": 51.1,
+      "estado": "completado",
+      "tipo_detectado": "desconocido",
+      "confianza_clasificacion": 0.1,
+      "clasificacion_ok": false,
+      "alertas": [
+        "CLS-001"
+      ],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "numero_pasaporte": {
+          "esperado": "ZX0000001",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_expedicion": {
+          "esperado": "2021-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_vencimiento": {
+          "esperado": "2031-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "nacionalidad": {
+          "esperado": "UTOPICA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "sexo": {
+          "esperado": "F",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        }
+      },
+      "aciertos": 0,
+      "vacios": 7,
+      "incorrectos": 0,
+      "total_campos": 7,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 9.28,
+          "tokens_entrada": 445,
+          "tokens_salida": 51,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": "sin reintento con vision (4/4 campos obligatorios vacios): el tipo declarado no coincide con el detectado (CLS-001)",
+          "segundos": 40.73,
+          "tokens_entrada": 650,
+          "tokens_salida": 306,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 0,
+        "vacios": 7,
+        "incorrectos": 0,
+        "obligatorios_vacios": 4
+      }
     },
     {
       "id": "auto__pasaporte_sano_foto",
@@ -1727,37 +2881,44 @@
         "nombre_completo": {
           "esperado": "ANA EJEMPLO PRUEBA",
           "extraido": "ANA EJEMPLO PRUEBA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000001",
           "extraido": "ZX0000001",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1990-01-01",
           "extraido": "1990-01-01",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2021-09-30",
           "extraido": "2021-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2031-09-30",
           "extraido": "2031-09-30",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "F",
           "extraido": "F",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1786,7 +2947,222 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
+    },
+    {
+      "id": "auto__pasaporte_sano_foto_dificil",
+      "ruta": "auto",
+      "archivo": "pasaporte_sano_foto_dificil.jpg",
+      "declarado": "pasaporte",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "pasaporte",
+      "modalidad_fixture": "foto",
+      "nivel": "dificil",
+      "obligatorios": [
+        "nombre_completo",
+        "numero_pasaporte",
+        "fecha_nacimiento",
+        "fecha_vencimiento"
+      ],
+      "segundos_preparar": 0.9,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 157,
+      "segundos_total": 58.3,
+      "estado": "completado",
+      "tipo_detectado": "pasaporte",
+      "confianza_clasificacion": 0.95,
+      "clasificacion_ok": true,
+      "alertas": [],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "numero_pasaporte": {
+          "esperado": "ZX0000001",
+          "extraido": "2X0000001",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": "1990-01-01",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_expedicion": {
+          "esperado": "2021-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_vencimiento": {
+          "esperado": "2031-09-30",
+          "extraido": "3009/2021",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "nacionalidad": {
+          "esperado": "UTOPICA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "sexo": {
+          "esperado": "F",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        }
+      },
+      "aciertos": 2,
+      "vacios": 3,
+      "incorrectos": 2,
+      "total_campos": 7,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 11.49,
+          "tokens_entrada": 503,
+          "tokens_salida": 64,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 45.97,
+          "tokens_entrada": 708,
+          "tokens_salida": 347,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 2,
+        "vacios": 3,
+        "incorrectos": 2,
+        "obligatorios_vacios": 0
+      }
+    },
+    {
+      "id": "auto__pasaporte_sano_foto_extremo",
+      "ruta": "auto",
+      "archivo": "pasaporte_sano_foto_extremo.jpg",
+      "declarado": "pasaporte",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "pasaporte",
+      "modalidad_fixture": "foto",
+      "nivel": "extremo",
+      "obligatorios": [
+        "nombre_completo",
+        "numero_pasaporte",
+        "fecha_nacimiento",
+        "fecha_vencimiento"
+      ],
+      "segundos_preparar": 0.8,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 130,
+      "segundos_total": 59.7,
+      "estado": "completado",
+      "tipo_detectado": "desconocido",
+      "confianza_clasificacion": 0.1,
+      "clasificacion_ok": false,
+      "alertas": [
+        "CLS-001"
+      ],
+      "campos": {
+        "nombre_completo": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "numero_pasaporte": {
+          "esperado": "ZX0000001",
+          "extraido": "1093060ccceeeecccecoó",
+          "estado": "incorrecto",
+          "ok": false
+        },
+        "fecha_nacimiento": {
+          "esperado": "1990-01-01",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_expedicion": {
+          "esperado": "2021-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "fecha_vencimiento": {
+          "esperado": "2031-09-30",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "nacionalidad": {
+          "esperado": "UTOPICA",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        },
+        "sexo": {
+          "esperado": "F",
+          "extraido": null,
+          "estado": "vacio",
+          "ok": false
+        }
+      },
+      "aciertos": 0,
+      "vacios": 6,
+      "incorrectos": 1,
+      "total_campos": 7,
+      "llamadas": [
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": null,
+          "segundos": 10.72,
+          "tokens_entrada": 484,
+          "tokens_salida": 51,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "gemma4:e2b",
+          "entrada": "texto",
+          "motivo": "sin reintento con vision (3/4 campos obligatorios vacios): el tipo declarado no coincide con el detectado (CLS-001)",
+          "segundos": 48.18,
+          "tokens_entrada": 689,
+          "tokens_salida": 361,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "antes_del_reintento": {
+        "aciertos": 0,
+        "vacios": 6,
+        "incorrectos": 1,
+        "obligatorios_vacios": 3
+      }
     },
     {
       "id": "auto__pasaporte_vencido_digital",
@@ -1809,37 +3185,44 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000002",
           "extraido": "ZX0000002",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2016-08-31",
           "extraido": "2016-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2026-08-31",
           "extraido": "2026-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "M",
           "extraido": "M",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1868,7 +3251,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_vencido_escaneado",
@@ -1891,37 +3277,44 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000002",
           "extraido": "ZX0000002",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2016-08-31",
           "extraido": "2016-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2026-08-31",
           "extraido": "2026-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "M",
           "extraido": "M",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -1950,7 +3343,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "auto__pasaporte_vencido_foto",
@@ -1973,37 +3369,44 @@
         "nombre_completo": {
           "esperado": "LUIS DEMO PRUEBAS",
           "extraido": "LUIS DEMO PRUEBAS",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "numero_pasaporte": {
           "esperado": "ZX0000002",
           "extraido": "ZX0000002",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_nacimiento": {
           "esperado": "1985-06-15",
           "extraido": "1985-06-15",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_expedicion": {
           "esperado": "2016-08-31",
           "extraido": "2016-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "fecha_vencimiento": {
           "esperado": "2026-08-31",
           "extraido": "2026-08-31",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "nacionalidad": {
           "esperado": "UTOPICA",
           "extraido": "UTOPICA",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         },
         "sexo": {
           "esperado": "M",
           "extraido": "M",
-          "ok": true
+          "ok": true,
+          "estado": "correcto"
         }
       },
       "aciertos": 7,
@@ -2032,7 +3435,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "cls__comprobante_domicilio_sano_escaneado__como_pasaporte",
@@ -2080,7 +3486,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "cls__credencial_elector_sano_digital__como_pasaporte",
@@ -2128,7 +3537,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     },
     {
       "id": "cls__pasaporte_sano_foto__como_credencial_elector",
@@ -2176,7 +3588,10 @@
       ],
       "reintento_vision": false,
       "descarga_texto_antes_de_reintento": false,
-      "contrato_valido": true
+      "contrato_valido": true,
+      "nivel": "normal",
+      "vacios": 0,
+      "incorrectos": 0
     }
   ],
   "ram": {
@@ -2210,12 +3625,24 @@
       "auto__pasaporte_vencido_foto": 3.74,
       "cls__credencial_elector_sano_digital__como_pasaporte": 3.74,
       "cls__pasaporte_sano_foto__como_credencial_elector": 3.7,
-      "cls__comprobante_domicilio_sano_escaneado__como_pasaporte": 4.39
+      "cls__comprobante_domicilio_sano_escaneado__como_pasaporte": 4.39,
+      "auto__comprobante_domicilio_sano_escaneado_dificil": 4.08,
+      "auto__comprobante_domicilio_sano_escaneado_extremo": 4.08,
+      "auto__comprobante_domicilio_sano_foto_dificil": 4.06,
+      "auto__comprobante_domicilio_sano_foto_extremo": 4.04,
+      "auto__credencial_elector_sano_escaneado_dificil": 4.01,
+      "auto__credencial_elector_sano_escaneado_extremo": 4.11,
+      "auto__credencial_elector_sano_foto_dificil": 3.85,
+      "auto__credencial_elector_sano_foto_extremo": 0.99
     },
     "bloques": {
       "1": {
         "ram_libre_min_gb": 4.39,
         "abortado_por_ram": false
+      },
+      "3": {
+        "ram_libre_min_gb": 0.99,
+        "abortado_por_ram": true
       }
     }
   }

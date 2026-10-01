@@ -1,0 +1,158 @@
+{
+  "medida": {
+    "id": "auto__pasaporte_sano_foto_dificil",
+    "ruta": "auto",
+    "archivo": "pasaporte_sano_foto_dificil.jpg",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "foto",
+    "nivel": "dificil",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 0.9,
+    "modalidad_detectada": "imagen",
+    "caracteres_texto": 157,
+    "segundos_total": 58.3,
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000001",
+        "extraido": "2X0000001",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "esperado": "2021-09-30",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_vencimiento": {
+        "esperado": "2031-09-30",
+        "extraido": "3009/2021",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "sexo": {
+        "esperado": "F",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      }
+    },
+    "aciertos": 2,
+    "vacios": 3,
+    "incorrectos": 2,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 11.49,
+        "tokens_entrada": 503,
+        "tokens_salida": 64,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 45.97,
+        "tokens_entrada": 708,
+        "tokens_salida": 347,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true,
+    "antes_del_reintento": {
+      "aciertos": 2,
+      "vacios": 3,
+      "incorrectos": 2,
+      "obligatorios_vacios": 0
+    }
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "bf1e32bf-582d-4b34-80e2-cb4636915d16",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "numero_pasaporte": "2X0000001",
+      "fecha_nacimiento": "1990-01-01",
+      "fecha_expedicion": null,
+      "fecha_vencimiento": "3009/2021",
+      "nacionalidad": null,
+      "sexo": null
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "numero_pasaporte": 1.0,
+      "fecha_nacimiento": 1.0,
+      "fecha_expedicion": 0.0,
+      "fecha_vencimiento": 0.0,
+      "nacionalidad": 0.0,
+      "sexo": 0.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_superior",
+      "numero_pasaporte": "pagina_1:seccion_superior",
+      "fecha_nacimiento": "pagina_1:seccion_superior",
+      "fecha_vencimiento": "pagina_1:seccion_superior"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T17:08:02.226977Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_sano_foto_dificil.jpg",
+      "ruta": "local://pasaporte_sano_foto_dificil.jpg",
+      "hash": "ede11fa53dac3efab6ccfcc07de4787f04d226ce8960ae4aa716c6d38e62951f"
+    }
+  }
+}

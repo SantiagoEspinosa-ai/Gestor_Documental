@@ -29,12 +29,24 @@
     "auto__pasaporte_vencido_foto": 3.74,
     "cls__credencial_elector_sano_digital__como_pasaporte": 3.74,
     "cls__pasaporte_sano_foto__como_credencial_elector": 3.7,
-    "cls__comprobante_domicilio_sano_escaneado__como_pasaporte": 4.39
+    "cls__comprobante_domicilio_sano_escaneado__como_pasaporte": 4.39,
+    "auto__comprobante_domicilio_sano_escaneado_dificil": 4.08,
+    "auto__comprobante_domicilio_sano_escaneado_extremo": 4.08,
+    "auto__comprobante_domicilio_sano_foto_dificil": 4.06,
+    "auto__comprobante_domicilio_sano_foto_extremo": 4.04,
+    "auto__credencial_elector_sano_escaneado_dificil": 4.01,
+    "auto__credencial_elector_sano_escaneado_extremo": 4.11,
+    "auto__credencial_elector_sano_foto_dificil": 3.85,
+    "auto__credencial_elector_sano_foto_extremo": 0.99
   },
   "bloques": {
     "1": {
       "ram_libre_min_gb": 4.39,
       "abortado_por_ram": false
+    },
+    "3": {
+      "ram_libre_min_gb": 0.99,
+      "abortado_por_ram": true
     }
   }
 }

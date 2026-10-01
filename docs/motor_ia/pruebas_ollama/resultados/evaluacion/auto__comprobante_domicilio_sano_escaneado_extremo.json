@@ -1,0 +1,132 @@
+{
+  "medida": {
+    "id": "auto__comprobante_domicilio_sano_escaneado_extremo",
+    "ruta": "auto",
+    "archivo": "comprobante_domicilio_sano_escaneado_extremo.pdf",
+    "declarado": "comprobante_domicilio",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "comprobante_domicilio",
+    "modalidad_fixture": "escaneado",
+    "nivel": "extremo",
+    "obligatorios": [
+      "nombre_titular",
+      "domicilio",
+      "fecha_emision"
+    ],
+    "segundos_preparar": 1.3,
+    "modalidad_detectada": "pdf_escaneado",
+    "caracteres_texto": 107,
+    "segundos_total": 42.3,
+    "estado": "completado",
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_titular": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "orta11 Of PAODO moon YA TIO",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "Cormero de pense rosa 34",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "proveedor": {
+        "esperado": "SERVICIOS DE EJEMPLO S.A.",
+        "extraido": null,
+        "estado": "vacio",
+        "ok": false
+      },
+      "fecha_emision": {
+        "esperado": "2026-09-15",
+        "extraido": "2026-09-15",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 1,
+    "vacios": 1,
+    "incorrectos": 2,
+    "total_campos": 4,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 11.26,
+        "tokens_entrada": 437,
+        "tokens_salida": 71,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 29.72,
+        "tokens_entrada": 611,
+        "tokens_salida": 216,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true,
+    "antes_del_reintento": {
+      "aciertos": 1,
+      "vacios": 1,
+      "incorrectos": 2,
+      "obligatorios_vacios": 0
+    }
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "23016462-42f6-48e0-86ff-12c4ffa2a434",
+    "tipo_documental_declarado": "comprobante_domicilio",
+    "tipo_documental_detectado": "comprobante_domicilio",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_titular": "orta11 Of PAODO moon YA TIO",
+      "domicilio": "Cormero de pense rosa 34",
+      "proveedor": null,
+      "fecha_emision": "2026-09-15"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_titular": 0.9,
+      "domicilio": 0.9,
+      "proveedor": 0.0,
+      "fecha_emision": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_titular": "pagina_1:seccion_central",
+      "domicilio": "pagina_1:seccion_central",
+      "fecha_emision": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T16:56:24.528101Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_comprobante_domicilio@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "comprobante_domicilio_sano_escaneado_extremo.pdf",
+      "ruta": "local://comprobante_domicilio_sano_escaneado_extremo.pdf",
+      "hash": "47befa46c5ed2fe6cfb6da488923dec5f12cbcebdca8054967dc0b46cc810825"
+    }
+  }
+}
