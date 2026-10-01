@@ -112,7 +112,7 @@ hace fallar el build si queda algun rastro.
     porque `ResumenFolio` aun no la tiene en `resultado.py` (pedirla con `GET /folios/{folio}` por fila
     costaba una peticion por folio). Vuelve cuando ese PR este en main. La carga de un folio si la
     muestra (viene en `ResultadoExpediente`).
-- Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): arrastrar o elegir varios archivos;
+- Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`, con enlace "Ver expediente"): arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
   hasta completado o error (ver "Sondeo"); `DUP-001` y errores de analisis visibles.
@@ -164,6 +164,24 @@ npm test        # Vitest
   sondeo). `src/pruebas/preparar.ts` usa el FormData y el File de Node en jsdom: la conversion de
   Vitest con jsdom 30 pierde el contenido y el nombre de los ficheros.
 Si `docs/contratos/endpoints.md` no esta (contenedor que solo monta `frontend/`), la cobertura se omite.
+
+### e2e con Playwright sobre los mocks (`e2e/`)
+```
+npx playwright install chromium   # una vez: solo Chromium
+npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con VITE_USAR_MOCKS=true
+```
+- `npm test` (Vitest) no los ejecuta: Vitest solo mira `src/**/*.test.*` y Playwright solo `e2e/**/*.e2e.ts`.
+- `playwright.config.ts` fija `VITE_USAR_MOCKS=true` en el proceso del servidor, que manda sobre
+  `frontend/.env`. Usa el puerto 5174 para no chocar con un `npm run dev` abierto.
+- El estado de los mocks vive en la memoria de la pagina: cada test empieza con los datos iniciales y
+  navega dentro de la app, sin recargar.
+- Casos: flujo del revisor (login, nuevo folio onboarding, subir credencial y comprobante del caso
+  sano, esperar completado, expediente, revisar alertas, aprobar con comentario y folio en solo
+  lectura); bloqueante de `ONB-2026-000001` ("Aplica" en `REG-vigencia_documento`, Aprobar
+  deshabilitado con el motivo, Rechazar con confirmacion); roles (admin sin acciones, integrador sin
+  lista de folios ni original); duplicado (`DUP-001` al subir dos veces y revisarlo como falso positivo).
+- Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
+  `npx playwright show-trace test-results/<test>/trace.zip`.
 
 ### e2e reales de la etapa 2 (contra el backend y Ollama, sin mocks)
 - `OLLAMA_BASE_URL` del backend, segun donde corren el backend y Ollama (`.env.example`):

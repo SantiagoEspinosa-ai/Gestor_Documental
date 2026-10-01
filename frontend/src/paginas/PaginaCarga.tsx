@@ -153,6 +153,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
       <div className="flex flex-wrap items-center gap-3">
         <h1 id="titulo-carga" className="text-xl font-semibold">Carga de documentos — <span className="font-mono">{expediente.folio}</span></h1>
         <InsigniaEstado estado={expediente.estado_general} />
+        <Link to={`/folios/${encodeURIComponent(expediente.folio)}`} className="text-sm text-blue-700 underline">Ver expediente</Link>
         <Link to="/folios" className="text-sm text-blue-700 underline">Volver a los folios</Link>
       </div>
       <p className="mt-1 text-sm text-slate-600">
