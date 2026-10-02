@@ -19,7 +19,7 @@ export const MENSAJES_ERROR: Record<CodigoError | CodigoLocal, string> = {
   DOCUMENTO_EN_PROCESO: 'El documento aún se está analizando.',
   FOLIO_CERRADO: 'El folio ya está decidido: solo lectura.',
   ARCHIVO_DEMASIADO_GRANDE: 'El archivo supera los 20 MB.',
-  FORMATO_NO_PERMITIDO: 'Formato de archivo no permitido para este tipo de documento.',
+  FORMATO_NO_PERMITIDO: 'El archivo no es válido: su formato o su contenido no corresponde a los formatos permitidos.',
   PETICION_INVALIDA: 'Los datos enviados no son válidos.',
   ERROR_INTERNO: 'Error interno del servidor. Inténtalo de nuevo más tarde.',
   DOCUMENTO_CON_ERROR: 'El documento terminó en error: no se puede corregir ni reclasificar.',

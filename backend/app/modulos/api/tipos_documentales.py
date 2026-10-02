@@ -12,20 +12,22 @@ router = APIRouter(prefix="/api/v1/tipos-documentales", tags=["tipos-documentale
 
 
 class CampoTipo(BaseModel):
-    tipo: str | None
+    tipo: str
     obligatorio: bool
-    patron: str | None = None  # solo aparece si la ficha lo define
+    # Opcional pero nunca null (`patron?: string` en contrato.ts): solo aparece si la ficha lo define. El
+    # None por defecto no se valida ni se envia (exclude_unset), y el openapi lo da como string no requerido
+    patron: str = None  # type: ignore[assignment]
 
 
 class TipoDocumental(BaseModel):
     nombre: str
-    nombre_visible: str | None
-    categoria: str | None
-    descripcion: str | None
+    nombre_visible: str
+    categoria: str
+    descripcion: str
     formatos_permitidos: list[str]
     campos: dict[str, CampoTipo]
-    confianza_minima_clasificacion: float | None
-    confianza_minima_campo: float | None
+    confianza_minima_clasificacion: float
+    confianza_minima_campo: float
     reglas: list[dict[str, Any]]
     comparaciones: dict[str, list[str]]
 

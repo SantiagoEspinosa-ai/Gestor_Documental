@@ -28,6 +28,9 @@ export function RutaProtegida({ roles }: { roles?: readonly Rol[] }) {
     )
   }
   if (estado.tipo === 'anonimo') {
+    // Tras "Cerrar sesion", sin ruta de vuelta: el siguiente usuario entra en /folios, no en la pagina del
+    // anterior (que quiza no puede ver). Sin sesion o con la sesion caducada, si se vuelve a ella
+    if (estado.porCierre) return <Navigate to="/login" replace />
     // Ruta completa (con search y hash): el login vuelve a ella si es interna (utilidades/navegacion.ts)
     return <Navigate to="/login" replace state={{ desde: rutaCompleta(ubicacion) }} />
   }

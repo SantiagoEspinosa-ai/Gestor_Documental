@@ -93,6 +93,34 @@ describe('sesión', () => {
     expect(sessionStorage.getItem('gestor_documental.sesion')).toBeNull()
   })
 
+  it('tras cerrar sesión, el siguiente usuario no vuelve a la página del anterior', async () => {
+    const pedida = '/auditoria?folio=ONB-2026-000004'
+    await entrarComo('admin.demo')
+    montar(pedida, <><App /><Ubicacion /></>)
+    expect(await screen.findByRole('heading', { name: 'Auditoría' })).toBeTruthy()
+    const u = userEvent.setup()
+    await u.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    await screen.findByLabelText('Usuario')
+    expect(screen.getByTestId('ubicacion').textContent).toBe('/login')
+
+    await escribirCredenciales('integrador.demo', 'demo-integrador')
+    await u.keyboard('{Enter}')
+    await waitFor(() => expect(screen.getByTestId('ubicacion').textContent).toBe('/folios'))
+    expect(await screen.findByRole('heading', { name: 'Folios' })).toBeTruthy()
+    expect(screen.queryByText(/Sin permiso/i)).toBeNull()
+  })
+
+  it('tras una sesión caducada (401) sí vuelve a la página que se estaba viendo', async () => {
+    const pedida = '/auditoria?folio=ONB-2026-000004'
+    await entrarComo('admin.demo')
+    mock.t += 3601 * 1000 // el servidor ya da el token por caducado
+    montar(pedida, <><App /><Ubicacion /></>)
+    expect(await screen.findByText(AVISO_SESION_CADUCADA)).toBeTruthy()
+    const u = await escribirCredenciales('admin.demo', 'demo-admin')
+    await u.keyboard('{Enter}')
+    await waitFor(() => expect(screen.getByTestId('ubicacion').textContent).toBe(pedida))
+  })
+
   it('tras entrar vuelve a la página que se pidió', async () => {
     montar('/folios/ONB-2026-000001')
     const u = await escribirCredenciales('revisor.demo', 'demo-revisor')

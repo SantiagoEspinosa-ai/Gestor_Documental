@@ -41,6 +41,8 @@ def calcular_recomendacion_global(documentos: list[DocumentoParaRecomendar], ale
        positivo) no cuenta. Las preventivas e informativas no cuentan nunca.
     c) Algun documento sin ficha para su tipo efectivo, sin `confianza_clasificacion`, o con ella o con
        algun campo por debajo de los minimos de la ficha (ADR-007: confianzas calculadas por el codigo).
+       Un tipo confirmado por el revisor llega con `confianza_clasificacion` 1.0, como un campo
+       corregido (ADR-006 2.4; acordado con PERSONA_2, D2): quien arma los documentos la sustituye.
     """
     if not documentos or any(d.estado != EstadoAnalisis.completado for d in documentos):
         return Recomendacion.revision_manual
