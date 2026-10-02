@@ -12,7 +12,7 @@ Actualizado: 2026-10-02.
 
 ## 1. Objetivo y alcance
 
-Equipo de 3 personas, 14 días (desde el 2026-09-29), todo el código escrito con Claude Code. Caso
+Equipo de 2 personas, 14 días (desde el 2026-09-29), todo el código escrito con Claude Code. Caso
 de uso inicial: **onboarding** (folios `ONB-AAAA-NNNNNN`) con tres tipos documentales: credencial de
 elector, pasaporte y comprobante de domicilio.
 
@@ -23,11 +23,15 @@ elector, pasaporte y comprobante de domicilio.
 | Reglas deterministas, comparaciones entre documentos y alertas por severidad | Multi-tenant completo |
 | Recomendación del expediente y decisión humana. La recomendación global nunca es `rechazar`; la decisión final es siempre humana. | Reprocesar documentos en `error` |
 | Originales en S3, resumen `.md` del expediente, API REST y webhooks | Cola de trabajos con varios procesos |
-| Memoria de folios (RAG) y base de conocimiento | Edición de procesos desde la UI |
+| Memoria de folios (RAG) y base de conocimiento | Edición de procesos: la pantalla de procesos es de solo lectura (`GET /procesos`, recorte R3) |
 
-Reparto: **PERSONA_1** plataforma (ingesta, API, expediente, core); **PERSONA_2** motor de IA
-(configuración, orquestador, motor_ia, reglas); **PERSONA_3** interfaz y calidad (frontend,
-fixtures, e2e, memoria de folios).
+Reparto: **PERSONA_1** plataforma (ingesta, API, expediente, core), frontend, e2e reales y demo;
+**PERSONA_2** motor de IA (configuración, orquestador, motor_ia, reglas), toda la carpeta
+`modulos/rag` (base de conocimiento y memoria de folios) y fixtures. PERSONA_3 dejó el equipo el
+2026-10-01; su traspaso está en [docs/equipo/PERSONA_3_estado.md](equipo/PERSONA_3_estado.md) (PR #13).
+
+Recortes R1–R9 aceptados en el PR #13 (el MVP no se recorta): ver la
+[sección 8 de docs/PLAN_PROYECTO.md](PLAN_PROYECTO.md#8-traspaso-de-persona_3-recortes-y-pr-2026-10-01-revisado-el-2026-10-02).
 
 ## 2. C4 nivel 1: contexto
 
@@ -109,7 +113,7 @@ flowchart TB
         motor["<b>motor_ia</b><br/>Clasifica y extrae<br/>con el enrutador<br/><i>PERSONA_2</i>"]
         validacion["<b>validacion</b><br/>Reglas y comparaciones<br/><i>PERSONA_2 · PERSONA_1</i>"]
         expediente["<b>expediente</b><br/>Folios, alertas,<br/>recomendación<br/><i>PERSONA_1</i>"]
-        rag["<b>rag</b><br/>Base de conocimiento<br/>y memoria de folios<br/><i>PERSONA_2 · PERSONA_3</i>"]
+        rag["<b>rag</b><br/>Base de conocimiento<br/>y memoria de folios<br/><i>PERSONA_2</i>"]
         configuracion["<b>configuracion</b><br/>Fichas YAML de<br/>tipos documentales<br/><i>PERSONA_2</i>"]
         core["<b>core</b><br/>Config, BD, auth,<br/>auditoría, S3<br/><i>PERSONA_1</i>"]
     end
@@ -186,7 +190,7 @@ de análisis simultáneos (1).
 | Validación humana | La IA solo recomienda. La recomendación global nunca es `rechazar`; la decisión final es siempre humana. Tras decidir, el folio queda cerrado para siempre |
 | Datos de prueba | Solo fixtures y especímenes ficticios, sin metadatos (EXIF/GPS eliminados) |
 
-Pendiente (etapa 3, ADR por redactar): enmascaramiento de datos sensibles en la API según el rol,
+Pendiente (etapa 3, ADR-010): enmascaramiento de datos sensibles en la API según el rol,
 con "mostrar" auditado, y filtro de enmascaramiento en los logs.
 
 ## 8. Requisitos no funcionales
@@ -251,7 +255,8 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | ADR-006 | Huecos del contrato para la UI del revisor: lista de folios, `id` de alerta, catálogo de errores, resolución de alertas, correcciones, reproceso, folio cerrado | Aceptado |
 | ADR-007 | La confianza de campo y de clasificación la calcula el código, no el modelo | Aceptado |
 | ADR-008 | Auditoría paginada y `referencia_externa` en la lista de folios | Aceptado |
-| (etapa 3) | Enmascaramiento en la API y forma de identificar a la persona en los antecedentes | Por redactar |
+| ADR-009 | Valor reservado `desconocido` en `tipo_documental_detectado`; un documento `desconocido` no cubre ningún requerido y genera EXP-002 informativa | Aceptado (PR #14 y #17) |
+| ADR-010 | Etapa 3: enmascaramiento en la API con "mostrar" auditado, edición de procesos y forma de los antecedentes | Reservado; borrador el día 7 (PERSONA_1) |
 
 ## 12. Riesgos y mejoras propuestas
 
@@ -288,14 +293,14 @@ ellas en vez de mantener su diagrama único, que mezcla niveles.
 ## 13. Estado actual del desarrollo
 
 A 2026-10-02. Cada persona trabaja en su rama y se integra en `main` por PR revisado por otra persona
-al cerrar cada etapa. Los PR #10, #11 y #12 están fusionados.
+al cerrar cada etapa. Los PR #10 a #16 están fusionados y el ADR-009 está aceptado en el #17.
 
 | Rama | Persona | Estado |
 | --- | --- | --- |
-| `main` | — | Contratos, catálogos, ADR-001 a ADR-008, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11) y este documento (PR #12) |
-| `feat/plataforma` | PERSONA_1 | Etapa 2 fusionada; probada de extremo a extremo (15/15) |
-| `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 fusionado |
-| `feat/interfaz` | PERSONA_3 | Frontend completo sobre mocks, fixtures y especímenes; PR #10 fusionado |
+| `main` | — | Contratos, catálogos, ADR-001 a ADR-009, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11), este documento (PR #12 y #15) y el traspaso de PERSONA_3 (PR #13) |
+| `feat/plataforma` | PERSONA_1 | Etapa 2 fusionada; probada de extremo a extremo (15/15). También el frontend heredado (H1–H8, H16, H17, H19) |
+| `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 fusionado. También `rag` y los fixtures heredados (H9–H15) |
+| `feat/interfaz` | — | Sin uso; su contenido está en `main` (PR #10) |
 
 **Siguiente:** conectar el motor real (`procesar_documento`, etapa 2 de
 PERSONA_2) y `configuracion` en la plataforma; hito de la etapa 2 (subir documentos por la web y
@@ -305,7 +310,7 @@ verlos clasificados, extraídos y validados); etapa 3 (resumen `.md`, webhooks, 
 
 - `docs/PLAN_PROYECTO.md`: plan, decisiones y etapas
 - `docs/arquitectura.md`: arquitectura de software (ADR-005)
-- `docs/adr/ADR-001` a `ADR-008`
+- `docs/adr/ADR-001` a `ADR-009`
 - `docs/contratos/endpoints.md`, `codigos_error.md`, `codigos_alertas.md`
 - `backend/app/schemas/resultado.py` y `backend/app/modulos/motor_ia/interfaces.py`
 - `docs/motor_ia/SPEC_CONFIGURACION.md` (PERSONA_2) y `docs/equipo/PERSONA_1_estado.md`
