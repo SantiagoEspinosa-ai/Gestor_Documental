@@ -68,7 +68,7 @@ ningun tipo ni ninguna forma de respuesta.
    | Caso | Alertas |
    |---|---|
    | Con tipo declarado | `CLS-001` (critica, motor) + `EXP-001` (bloqueante, expediente) si el declarado era un tipo requerido que ningun otro documento cubre + `EXP-002` (informativa, en el documento) |
-   | Sin tipo declarado ni confirmado | `EXP-002` (informativa). El motor no extrae: `completado` con datos vacios |
+   | Sin tipo declarado ni confirmado | `EXP-001` (bloqueante, expediente) si al folio le falta algun tipo requerido + `EXP-002` (informativa, en el documento). El motor no extrae: `completado` con datos vacios |
    | Con tipo confirmado | Ninguna de estas: no se clasifica (`tipo_documental_detectado = null`) |
 
 ## Alternativas
