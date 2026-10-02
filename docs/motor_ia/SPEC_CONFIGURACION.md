@@ -495,10 +495,17 @@ Calibracion (2026-10-02, `pruebas_ollama/calibrar_confianza.py`, sin modelo; inf
 - Normal: el unico campo por debajo es `sexo` de `pasaporte_vencido_escaneado`, que sale de una MRZ mal leida y
   no esta en la zona visual: queda sin verificar, como debe.
 - Dificil y extremo: con OCR malo casi nada se puede verificar en el texto -> `VAL-002` y `CLS-002` y
-  `revision_manual`. Es lo que pide el ADR-007 ("el dato no se ha podido verificar").
+  `revision_manual`. Es lo que pide el ADR-007 ("el dato no se ha podido verificar"). **Aceptado** (2026-10-02),
+  incluido el ruido de `CLS-002` (preventiva) en los dificiles.
+- Especimenes: los 4 con texto OCR suficiente, 23/23 campos y 4/4 tipos sobre el minimo (tambien el comprobante
+  "buena", 4/4 campos a 1,0). El comprobante "dificil" solo da 14 caracteres de OCR: va por vision, no hay texto
+  con el que verificar y sus 4 campos quedan sin verificar (`VAL-002`). Para la demo, usar los "buena".
 - **No detecta** los errores que el modelo copia del propio OCR (8 de 12 incorrectos, p. ej. `2X0000001`,
   `AMA EJEMPLO PRUEBA`, `GALLE FICTICIA 123`): estan en el texto. Para eso: reglas de coherencia (paso 2) y la
   confianza por palabra de Tesseract (pendiente). El modelo daba 0,9-1,0 a los 12 incorrectos.
+- **Objetivo pendiente**: marcar como dudosos al menos el 50 % de los campos incorrectos de los fixtures dificiles
+  y extremos (hoy 4/12). Queda para las reglas de coherencia (paso 2) y la confianza de Tesseract (senal 5); se
+  vuelve a medir con `calibrar_confianza.py` y `evaluar_fixtures.py` cuando esten.
 
 ## Registro de cambios
 
@@ -506,8 +513,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | Etapa 2, paso 1 (ADR-007): `motor_ia/confianza.py` (confianza de campo y de clasificacion por el codigo, MRZ con tope 0,5 salvo zona visual), `CLS-002`, `confianza_clasificacion = 1,0` con `tipo_confirmado` (D2), sin `CLS-002` con `desconocido` (D4), confianza del modelo en `Analisis.confianzas_modelo`. Cargador: `marcadores_clasificacion` y nombre reservado `desconocido` (ADR-009). Marcadores en las tres fichas. Calibracion sin modelo: normal 152/153 campos y 27/27 clasificaciones sobre el minimo (seccion 14) | este commit |
-| 2026-10-02 | Merge de `origin/main` con los PR #16 y #17: ADR-009 final (`EXP-001` tambien sin tipo declarado). Traspaso de PERSONA_3 (PR #13): `rag` completo y fixtures para PERSONA_2, tareas H9-H15 y recortes R4, R5, R6 y R8 en los pendientes | este commit |
+| 2026-10-02 | Calibracion de ADR-007 aceptada (ajuste de la MRZ y ruido de `CLS-002` en los dificiles). Objetivo pendiente: marcar >= 50 % de los incorrectos (hoy 4/12), con las reglas de coherencia y la confianza de Tesseract. Especimenes: el comprobante "buena" verifica 4/4; los 4 sin verificar son del "dificil" (14 caracteres de OCR) | este commit |
+| 2026-10-02 | Etapa 2, paso 1 (ADR-007): `motor_ia/confianza.py` (confianza de campo y de clasificacion por el codigo, MRZ con tope 0,5 salvo zona visual), `CLS-002`, `confianza_clasificacion = 1,0` con `tipo_confirmado` (D2), sin `CLS-002` con `desconocido` (D4), confianza del modelo en `Analisis.confianzas_modelo`. Cargador: `marcadores_clasificacion` y nombre reservado `desconocido` (ADR-009). Marcadores en las tres fichas. Calibracion sin modelo: normal 152/153 campos y 27/27 clasificaciones sobre el minimo (seccion 14) | `afd6c5f` |
+| 2026-10-02 | Merge de `origin/main` con los PR #16 y #17: ADR-009 final (`EXP-001` tambien sin tipo declarado). Traspaso de PERSONA_3 (PR #13): `rag` completo y fixtures para PERSONA_2, tareas H9-H15 y recortes R4, R5, R6 y R8 en los pendientes | `afd6c5f` |
 | 2026-10-02 | ADR-009 ACEPTADO (PERSONA_1 en la revision del PR #14 y PERSONA_2): `desconocido` reservado, no cubre ningun requerido y emite `EXP-002`; sin `CLS-003`. La version aceptada con `EXP-002` va en un PR nuevo desde `docs/adr-009-desconocido` (el PR #14 se fusiono antes) | `3e2bf3b` |
 | 2026-10-01 | Revision de PERSONA_3 en el PR #11: 42 fixtures (27 + 3 duplicados + 12 de dificultad); variables ya en `.env.example` (PR #5); prompts vigentes con `extraccion_v3`; PR #4 fusionado; pendientes cumplidos marcados (credencial y comprobante evaluados, avisos del PR #11, especimenes en `main`). Valor reservado `desconocido` (seccion 10) y ADR-009 PROPUESTO en `docs/adr-009-desconocido` (`4dc4906`). Notas para la etapa 2: stub hasta ADR-007, version del prompt de clasificacion en `datos_auditoria`, ADR para `extraer_con_vision`/`clasificar_con_vision`/`ultima_llamada` con `openrouter.py`. Seccion 13: tiempo por documento. `test_fixtures_ocr.py` filtra los casos y el nivel conocidos (no depende de 153). Comando de tests con `fixtures/`, `frontend/` y `docs/` montados | `7c84720` |
 | 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | `a3e69a9` |
