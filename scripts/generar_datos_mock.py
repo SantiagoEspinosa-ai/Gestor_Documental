@@ -49,6 +49,8 @@ RAIZ = Path(__file__).resolve().parent.parent
 DATOS = RAIZ / "frontend" / "src" / "mocks" / "datos"
 ORIGINALES = RAIZ / "frontend" / "public" / "mock-originales"
 HOY_MOCKS = date(2026, 9, 30)
+# ADR-009: valor reservado de tipo_documental_detectado (clasificado, pero sin ficha); nunca es una ficha
+TIPO_DESCONOCIDO = "desconocido"
 REVISOR, INTEGRADOR = "revisor.demo", "integrador.demo"  # usuarios de frontend/src/mocks/usuarios.ts
 # Modelos de .env.example y docs/motor_ia/pruebas_ollama.md (PERSONA_2): texto para pdf_digital y vision
 # para pdf_escaneado e imagen. Siempre Ollama: con PERMITIR_PROVEEDORES_NO_PRIVADOS=false (ADR-003) el
@@ -136,10 +138,13 @@ class DatosMock:
                                "version_prompt": version_prompt, "creado_en": iso(cuando)})
 
     def documento(self, folio, secuencia, n, caso, tipo, modalidad, subido, estado="completado", alertas_extra=(),
-                  confianzas=None, correcciones=(), vacios=(), fallo_plataforma=False) -> dict:
+                  confianzas=None, correcciones=(), vacios=(), fallo_plataforma=False, no_reconocido=False) -> dict:
         """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004).
         `fallo_plataforma` (con estado="error"): fallo de S3 o excepcion del motor. Como la API, el documento
-        queda en error sin Resultado, sin SYS-00x y sin entrada documento_procesado en la auditoria."""
+        queda en error sin Resultado, sin SYS-00x y sin entrada documento_procesado en la auditoria.
+        `no_reconocido`: subido sin tipo declarado y el motor no lo reconoce (ADR-009, punto 4): detectado
+        `desconocido`, sin datos ni alertas del motor y con la EXP-002 de la plataforma. `tipo` solo elige
+        el fichero ficticio."""
         gf = self.gf
         archivo = gf.nombre_archivo(tipo, caso, modalidad)
         shutil.copyfile(self.fixtures / archivo, self.originales / archivo)
@@ -151,7 +156,7 @@ class DatosMock:
         duplicado = hash_ in vistos
         vistos.add(hash_)
         doc = {"folio_solicitud": folio, "identificador_unico_documento": uid,
-               "tipo_documental_declarado": tipo, "tipo_documental_detectado": None,
+               "tipo_documental_declarado": None if no_reconocido else tipo, "tipo_documental_detectado": None,
                "tipo_documental_confirmado": None, "confianza_clasificacion": None,
                "datos_extraidos": {}, "nivel_confianza_por_campo": {}, "evidencia_por_campo": {},
                "reglas_cumplidas_e_incumplidas": {"cumplidas": [], "incumplidas": []},
@@ -167,6 +172,18 @@ class DatosMock:
             if estado == "error" and not fallo_plataforma:  # el motor devolvio un resultado en error (SYS-00x)
                 self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
                              subido + timedelta(seconds=40), MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT)
+            return doc
+        if no_reconocido:
+            modelo = MODELO_POR_MODALIDAD[modalidad]
+            doc.update({
+                "tipo_documental_detectado": TIPO_DESCONOCIDO, "recomendacion": "revision_manual",
+                "fecha_y_modelo_utilizado": {"fecha_analisis": iso(subido + timedelta(seconds=40)), "proveedor": PROVEEDOR,
+                                             "modelo": modelo, "version_prompt": VERSION_PROMPT}})
+            # Como expediente.recalcular_exp002: "desconocido" no es un tipo del proceso
+            doc["alertas_encontradas"] = [self.alerta("EXP-002", "Tipo de documento no reconocido", "informativa",
+                                                      TIPO_DESCONOCIDO)] + doc["alertas_encontradas"]
+            self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
+                         subido + timedelta(seconds=40), modelo, VERSION_PROMPT)
             return doc
         ficha = self.fichas[tipo]
         persona = gf.PERSONAS_FICTICIAS[gf.CASOS[caso]["persona"]]
@@ -298,7 +315,8 @@ class DatosMock:
 
         # 3. Ana, falta el comprobante: EXP-001 (campo = tipo que falta) y dos documentos en error: uno con
         # SYS-001 (el motor devolvio el error) y otro por un fallo de S3 o del motor, sin SYS-00x. El
-        # comprobante en error no cubre su tipo: EXP-001 sigue (solo cuentan los completados)
+        # comprobante en error no cubre su tipo: EXP-001 sigue (solo cuentan los completados). Y un documento
+        # sin tipo declarado que el motor no reconoce (ADR-009): EXP-002 y no cubre ningun requerido
         f, s, t0 = "ONB-2026-000003", 3, momento(30, 8, 5)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1))
@@ -306,7 +324,10 @@ class DatosMock:
                             alertas_extra=[self.alerta("SYS-001", "Fallo del proveedor principal y sin respaldo", "critica")])
         d3 = self.documento(f, s, 3, "sano", "comprobante_domicilio", "escaneado", t0 + timedelta(minutes=3),
                             estado="error", fallo_plataforma=True)
-        folios.append(self.expediente(f, None, t0, [d1, d2, d3], [
+        # Fichero que ningun otro documento de los datos usa: el clasificador de los mocks reutiliza el
+        # analisis de un documento con el mismo SHA-256, y no debe dar "desconocido" a otras subidas
+        d4 = self.documento(f, s, 4, "sano", "pasaporte", "escaneado", t0 + timedelta(minutes=4), no_reconocido=True)
+        folios.append(self.expediente(f, None, t0, [d1, d2, d3, d4], [
             self.alerta("EXP-001", f"Falta el documento requerido: {self.fichas['comprobante_domicilio']['nombre_visible']}",
                         "bloqueante", "comprobante_domicilio")]))
 

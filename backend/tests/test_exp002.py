@@ -18,7 +18,8 @@ from app.core.modelos import AlertaBD, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio as expediente
-from app.modulos.ingesta import procesamiento
+from app.modulos.configuracion import servicio as configuracion
+from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
 
 SECRETO = "clave-ficticia-de-test"
@@ -142,3 +143,20 @@ def test_falso_positivo_se_conserva(cliente, sesion, s3, folio):
     cliente.post(f"/api/v1/documentos/{doc.id}/confirmar-clasificacion", json={"tipo_documental": "credencial_elector"})
     alertas = _exp002(sesion, doc.id)
     assert [(a.id, a.aplica) for a in alertas] == [(alerta_id, False)]
+
+
+def test_desconocido_sin_declarado_lleva_exp002_no_reconocido_y_no_cubre_requeridos(sesion, s3, folio, monkeypatch):
+    # ADR-009, punto 4 (sin tipo declarado ni confirmado): EXP-002 en el documento + EXP-001 de los requeridos
+    def analizar(contenido, **kwargs):
+        resultado, datos = motor_stub.procesar_documento(contenido, **kwargs)
+        return resultado.model_copy(update={"tipo_documental_detectado": configuracion.NOMBRE_RESERVADO,
+                                            "datos_extraidos": {}}), datos
+    monkeypatch.setattr(procesamiento, "analizar", analizar)
+    doc = ingestar(sesion, s3, folio, "documento.pdf", b"%PDF-1.4 sin tipo", None, "x")
+    procesamiento.procesar(doc.id)
+
+    [alerta] = _exp002(sesion, doc.id)
+    assert (alerta.campo, alerta.mensaje, alerta.severidad) == \
+        ("desconocido", "Tipo de documento no reconocido", "informativa")
+    exp001 = sesion.scalars(select(AlertaBD.campo).where(AlertaBD.folio == folio, AlertaBD.codigo == "EXP-001"))
+    assert sorted(exp001) == ["comprobante_domicilio", "credencial_elector"]  # "desconocido" no cubre ninguno

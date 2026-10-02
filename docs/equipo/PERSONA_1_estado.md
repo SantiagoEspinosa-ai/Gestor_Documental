@@ -134,7 +134,8 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 2 (con el motor de PERSONA_2)
 - [ ] H3: mocks con `version_prompt` y evidencias reales (el PR #11 ya esta en `main`).
-- [ ] H4: "Tipo no reconocido" (tras el ADR-009 de `desconocido`, H9 de PERSONA_2, PR #14).
+- [x] H4: "Tipo no reconocido" (ADR-009): UI, aviso sin datos y mensaje de `EXP-002` "Tipo de documento no
+      reconocido" (rama `feat/plataforma-etapa3`).
 - [ ] H5: etiqueta de la confianza segun la decision sobre ADR-007 (H10: PERSONA_2 ha decidido no
       sustituir el stub hasta entonces; PENDIENTE de tu confirmacion).
 - [ ] H6 (completo): folios de `INDICE.md` con el motor real; 5 min por documento, 10 min por folio de 3.

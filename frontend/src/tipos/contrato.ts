@@ -25,6 +25,13 @@ export type EstadoGeneral = (typeof ESTADOS_GENERALES)[number]
 export const DECISIONES_HUMANAS = ['aprobar', 'rechazar'] as const
 export type DecisionHumana = (typeof DECISIONES_HUMANAS)[number]
 
+/**
+ * ADR-009: valor reservado de `tipo_documental_detectado`: se clasifico, pero no es ninguna ficha
+ * configurada (`null` = no se clasifico). Nunca es el nombre de una ficha: no se busca su ficha ni su
+ * umbral, y en el expediente no cubre ningun tipo requerido hasta que el revisor confirme el tipo.
+ */
+export const TIPO_DESCONOCIDO = 'desconocido'
+
 // ------------------------------------------------------------------ Contrato 1: modelos
 
 export interface Alerta {

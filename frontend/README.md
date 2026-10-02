@@ -183,6 +183,14 @@ hace fallar el build si queda algun rastro.
     `<BarraConfianza>` (umbral de la ficha; texto de ADR-007), formato segun el tipo del campo, `null`
     como "no detectado", evidencia y "Corregido por revisor (antes: X)"; reglas y modelo usado.
     Documento en error: mensaje y alerta `SYS-00x`, sin reprocesar (fuera del MVP).
+    Documento no reconocido (ADR-009, H4): un detectado `desconocido` (`TIPO_DESCONOCIDO` en
+    `tipos/contrato.ts`) sale como "Tipo no reconocido" en la clasificacion, en la lista del expediente y
+    en la tabla de la carga; nunca se busca su ficha ni su umbral (`fichaDeTipo` y `nombreTipo` de
+    `utilidades/expediente.ts`). Sin ficha para el tipo de extraccion y sin datos, en vez de una tabla
+    vacia se ve el aviso "No se han extraído datos: el tipo del documento no está reconocido. Confirma la
+    clasificación para analizarlo con la ficha correcta."; el revisor, con el folio abierto, tiene
+    "Confirmar clasificación". `desconocido` no cubre ningun requerido (como `_tipo_efectivo` del backend)
+    y lleva `EXP-002` "Tipo de documento no reconocido".
   - Derecha: resultado global, `<ListaAlertas>` del documento y del expediente agrupadas por
     severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
     icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
@@ -341,10 +349,14 @@ npm run test:e2e:real   # playwright.real.config.ts: Chromium, workers 1, http:/
 - `src/mocks/datos/*.json`: 4 folios ficticios coherentes con `fixtures/generados/INDICE.md`
   (`--hoy 2026-09-30`): alertas de las 4 severidades, `CMP-001` de domicilio, `EXP-001`, una
   correccion, dos documentos en error en `ONB-2026-000003` (el pasaporte con `SYS-001` y el comprobante
-  por un fallo de S3 o del motor, sin `SYS-00x`), uno pendiente y un folio aprobado. Tres alertas
-  informativas, todas posibles con la configuracion por defecto: dos `VAL-003` (`nacionalidad` y
-  `sexo` tomados de la MRZ) en el pasaporte escaneado de `ONB-2026-000001` y `VAL-004` (`proveedor`
-  sin leer, `null`) en el comprobante de `ONB-2026-000002`.
+  por un fallo de S3 o del motor, sin `SYS-00x`), uno pendiente y un folio aprobado. En
+  `ONB-2026-000003`, ademas, un documento subido sin tipo declarado que el motor no reconoce
+  (`tipo_documental_detectado: "desconocido"`, sin datos; opcion `no_reconocido` del generador, con un
+  fichero que ningun otro documento usa para que el clasificador de los mocks no lo reutilice). Cuatro
+  alertas informativas, todas posibles con la configuracion por defecto: dos `VAL-003` (`nacionalidad` y
+  `sexo` tomados de la MRZ) en el pasaporte escaneado de `ONB-2026-000001`, `VAL-004` (`proveedor`
+  sin leer, `null`) en el comprobante de `ONB-2026-000002` y `EXP-002` ("Tipo de documento no
+  reconocido") en el documento no reconocido de `ONB-2026-000003`.
 - Sin `SYS-005`: lo emite `motor_ia` cuando el principal falla y se usa el respaldo, y el unico
   respaldo de `config/modelos.yaml` es OpenRouter (`privado: false`), que con
   `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` no se usa nunca (ADR-003). Con esa configuracion, un fallo
@@ -390,4 +402,7 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   de ADR).
 - HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
   "Procesos" en "Pantallas").
+- HECHO (H4): `desconocido` como "Tipo no reconocido" y aviso si no hay ficha ni datos (ADR-009; ver
+  "Documento no reconocido" en "Pantallas"). Queda de H3: los mocks con `version_prompt` y evidencias
+  del motor real.
 - Fuera del MVP: reprocesar un documento en `error` (ADR-006, I).

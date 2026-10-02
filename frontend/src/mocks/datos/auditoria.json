@@ -419,5 +419,34 @@
     "modelo": null,
     "version_prompt": null,
     "creado_en": "2026-09-30T08:08:00Z"
+  },
+  {
+    "id": 31,
+    "usuario": "integrador.demo",
+    "accion": "documento_subido",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000004",
+    "detalle": {
+      "hash_sha256": "0b30d434cb47098788f021f943b201b2f1f5a8577a902dbc169d4775e091bacc",
+      "tamano_bytes": 299687,
+      "duplicado": false
+    },
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-30T08:09:00Z"
+  },
+  {
+    "id": 32,
+    "usuario": null,
+    "accion": "documento_procesado",
+    "folio": "ONB-2026-000003",
+    "documento_id": "00000000-0000-4000-8000-000003000004",
+    "detalle": {
+      "proveedor": "ollama",
+      "respaldo_usado": false
+    },
+    "modelo": "qwen2.5vl:3b",
+    "version_prompt": "extraccion@v1",
+    "creado_en": "2026-09-30T08:09:40Z"
   }
 ]

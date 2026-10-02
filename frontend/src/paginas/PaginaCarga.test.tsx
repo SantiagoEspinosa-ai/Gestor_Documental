@@ -85,6 +85,15 @@ describe('pantalla de carga', () => {
     expect(within(filaDocumento('pasaporte_sano_foto.jpg')).getByText(/El análisis falló \(SYS-001\)/)).toBeTruthy()
   })
 
+  it('un documento que el motor no reconoce sale como "Tipo no reconocido" y no cubre ningún requerido (ADR-009)', async () => {
+    await entrarComo('revisor.demo')
+    montarCarga('ONB-2026-000003')
+    await screen.findByRole('heading', { name: /ONB-2026-000003/ })
+    expect(within(filaDocumento('pasaporte_sano_escaneado.pdf')).getByText('Tipo no reconocido')).toBeTruthy()
+    expect(screen.queryByText('desconocido')).toBeNull()
+    expect(aviso()).toContain('Comprobante de domicilio')
+  })
+
   it('folio cerrado: solo lectura y sin subida', async () => {
     await entrarComo('revisor.demo')
     montarCarga('ONB-2026-000004')

@@ -13,6 +13,7 @@ from app.core import auditoria
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Proceso, Resultado, SecuenciaFolio
+from app.modulos.configuracion import servicio as configuracion
 from app.modulos.ingesta import servicio as ingesta
 from app.modulos.expediente.recomendacion import DocumentoParaRecomendar, calcular_recomendacion_global
 from app.modulos.validacion import servicio as validacion
@@ -87,6 +88,13 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
     sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
 
 
+def _mensaje_exp002(tipo: str) -> str:
+    # ADR-009: "desconocido" (detectado sin ficha) no es un tipo "no previsto", sino uno no reconocido
+    if tipo == configuracion.NOMBRE_RESERVADO:
+        return "Tipo de documento no reconocido"
+    return f"Tipo de documento no previsto en el proceso: {ingesta.nombre_visible_tipo(tipo)}"
+
+
 def recalcular_exp002(sesion: Session, folio: str) -> None:
     """EXP-002 (informativa, de plataforma, EN EL DOCUMENTO) por cada documento `completado` cuyo tipo
     EFECTIVO no esta ni en `tipos_requeridos` ni en `tipos_opcionales` del proceso. Sin commit; idempotente.
@@ -111,8 +119,7 @@ def recalcular_exp002(sesion: Session, folio: str) -> None:
         if no_previsto and not any(a.campo == no_previsto for a in existentes):
             sesion.add(AlertaBD(folio=folio, documento_id=doc.id, version_resultado=None, codigo="EXP-002",
                                 severidad=Severidad.informativa.value, confianza=1.0, campo=no_previsto,
-                                mensaje=f"Tipo de documento no previsto en el proceso: "
-                                        f"{ingesta.nombre_visible_tipo(no_previsto)}"))
+                                mensaje=_mensaje_exp002(no_previsto)))
     sesion.flush()  # para que una segunda llamada en la misma transaccion no duplique
 
 

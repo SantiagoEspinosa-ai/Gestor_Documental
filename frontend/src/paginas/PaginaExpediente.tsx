@@ -15,7 +15,7 @@ import { ListaAlertas } from '../componentes/ListaAlertas'
 import { ResumenExpediente } from '../componentes/ResumenExpediente'
 import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
-import { alertasQueBloquean, enProceso, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
+import { alertasQueBloquean, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
 import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
@@ -106,7 +106,8 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
   if (!expediente) return <p role="status" className="text-slate-600">Cargando el expediente…</p>
 
   const doc = expediente.documentos.find((d) => d.identificador_unico_documento === seleccionado) ?? expediente.documentos[0]
-  const nombreVisible = (tipo: string | null) => (tipo ? fichas.find((t) => t.nombre === tipo)?.nombre_visible ?? tipo : 'Sin tipo')
+  // "Tipo no reconocido" para `desconocido` (ADR-009); "Sin tipo" si no hay ninguno
+  const nombreVisible = (tipo: string | null) => nombreTipo(tipo, fichas, 'Sin tipo')
   const nombreDocumento = (id: string) => {
     const d = expediente.documentos.find((x) => x.identificador_unico_documento === id)
     return d ? `${nombreVisible(tipoEfectivo(d))} (${d.referencia_archivo_original.nombre_archivo})` : id

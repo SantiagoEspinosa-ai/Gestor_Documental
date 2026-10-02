@@ -2,7 +2,7 @@ import { CircleX, Clock, Pencil } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Correccion, ResultadoDocumento, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
-import { enProceso, tipoExtraccion } from '../utilidades/expediente'
+import { enProceso, fichaDeTipo, nombreTipo, tipoExtraccion } from '../utilidades/expediente'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 import { BarraConfianza } from './BarraConfianza'
 import { TextoRecomendacion } from './Insignias'
@@ -25,11 +25,14 @@ function ultimasCorrecciones(correcciones: Correccion[]): Map<string, Correccion
 }
 
 export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasificacion, celdaValor }: Props) {
-  const ficha = (tipo: string | null) => fichas.find((t) => t.nombre === tipo)
-  const nombreVisible = (tipo: string | null) => (tipo ? ficha(tipo)?.nombre_visible ?? tipo : '—')
+  // `desconocido` (ADR-009) nunca tiene ficha: "Tipo no reconocido", sin umbral ni campos
+  const ficha = (tipo: string | null) => fichaDeTipo(fichas, tipo)
+  const nombreVisible = (tipo: string | null) => nombreTipo(tipo, fichas, '—')
   const fichaExtraccion = ficha(tipoExtraccion(doc))
   const correcciones = ultimasCorrecciones(doc.correcciones)
   const campos = [...new Set([...Object.keys(fichaExtraccion?.campos ?? {}), ...Object.keys(doc.datos_extraidos)])]
+  // H4: sin ficha para el tipo de extraccion y sin datos, un aviso en vez de una tabla vacia
+  const sinDatosNiFicha = !fichaExtraccion && campos.length === 0
   const fallos = doc.alertas_encontradas.filter((a) => a.codigo.startsWith('SYS-') && a.severidad !== 'informativa')
   const nombre = doc.referencia_archivo_original.nombre_archivo
 
@@ -79,7 +82,13 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
         {accionesClasificacion}
       </section>
 
-      {doc.estado_analisis === 'completado' && (
+      {doc.estado_analisis === 'completado' && sinDatosNiFicha && (
+        <p role="status" className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          No se han extraído datos: el tipo del documento no está reconocido. Confirma la clasificación para
+          analizarlo con la ficha correcta.
+        </p>
+      )}
+      {doc.estado_analisis === 'completado' && !sinDatosNiFicha && (
         <section aria-label="Datos extraídos">
           <h3 className="text-sm font-semibold">Datos extraídos</h3>
           <table className="mt-1 w-full border-collapse bg-white text-sm">

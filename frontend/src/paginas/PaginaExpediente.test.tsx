@@ -23,6 +23,36 @@ const documento = (nombre: string) => screen.getByRole('button', { name: new Reg
 const peticiones = (texto: string) => mock.peticiones.filter((p) => p === texto).length
 const fila = (campo: string) => screen.getByRole('rowheader', { name: campo }).closest('tr')!
 
+describe('documento no reconocido (ADR-009, H4)', () => {
+  const NO_RECONOCIDO = 'pasaporte_sano_escaneado.pdf'
+
+  it('clasificación "Tipo no reconocido" y aviso en lugar de la tabla vacía; el revisor puede confirmar el tipo', async () => {
+    await entrarComo('revisor.demo')
+    montarExpediente('ONB-2026-000003')
+    await screen.findByRole('heading', { name: /Expediente ONB-2026-000003/ })
+    const boton = documento(NO_RECONOCIDO)
+    expect(boton.textContent).toContain('Tipo no reconocido') // lista de documentos
+    await userEvent.setup().click(boton)
+    const clasificacion = await screen.findByRole('region', { name: 'Clasificación' })
+    const detectado = within(clasificacion).getByText('Detectado').nextElementSibling!
+    expect(detectado.textContent).toBe('Tipo no reconocido')
+    expect(within(clasificacion).getByText('Declarado').nextElementSibling!.textContent).toBe('—')
+    expect(screen.getByText(/No se han extraído datos: el tipo del documento no está reconocido/)).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Datos extraídos' })).toBeNull()
+    expect(screen.queryByText('desconocido')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Confirmar clasificación' })).toBeTruthy()
+  })
+
+  it('el admin ve el aviso pero no puede confirmar la clasificación', async () => {
+    await entrarComo('admin.demo')
+    montarExpediente('ONB-2026-000003')
+    await screen.findByRole('heading', { name: /Expediente ONB-2026-000003/ })
+    await userEvent.setup().click(documento(NO_RECONOCIDO))
+    expect(await screen.findByText(/No se han extraído datos/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Confirmar clasificación' })).toBeNull()
+  })
+})
+
 describe('vista de expediente', () => {
   it('cabecera de un folio cerrado: referencia, fecha, proceso, estado, recomendacion y la decision', async () => {
     await entrarComo('revisor.demo')
