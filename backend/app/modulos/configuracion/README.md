@@ -22,6 +22,7 @@ Que se valida:
 - Ninguna ficha puede llamarse `desconocido` (`NOMBRE_RESERVADO`, ADR-009).
 - `marcadores_clasificacion` (opcional, ADR-007): expresiones regulares que compilan (con `FLAGS_MARCADORES`)
   y sin repetidos. Las usa `motor_ia/confianza.py` (etapa 2 del motor) en el texto normalizado del documento.
+  Son internos del motor: quedan fuera de `model_dump()` y de `GET /tipos-documentales` (Contrato 2 sin cambios).
 - Tipos de campo (`texto`, `fecha`, `anio`) y de regla validos; severidad del Contrato 1.
 - `patron` compila como expresion regular; una regla `patron` usa el patron de su campo.
 - Reglas `*_mas_dias` / `*_menos_dias` llevan `dias > 0`; ids de regla unicos; cada regla apunta a

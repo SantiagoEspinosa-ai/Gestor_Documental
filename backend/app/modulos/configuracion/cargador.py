@@ -104,8 +104,9 @@ class TipoDocumental(_Estricto):
     confianza_minima_campo: float = Field(..., ge=0, le=1)
     reglas: list[Regla] = []
     comparaciones: dict[str, list[str]] = {}
-    # ADR-007: expresiones regulares verificables en el texto; confianza de clasificacion = proporcion encontrada
-    marcadores_clasificacion: list[str] = []
+    # ADR-007: expresiones regulares verificables en el texto; confianza de clasificacion = proporcion encontrada.
+    # Internos del motor: fuera de model_dump(), para que GET /tipos-documentales (Contrato 2) no cambie.
+    marcadores_clasificacion: list[str] = Field(default=[], exclude=True)
 
     @field_validator("nombre")
     @classmethod

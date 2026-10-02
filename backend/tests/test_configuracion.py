@@ -262,3 +262,15 @@ def test_marcadores_repetidos(config):
 def test_las_fichas_reales_declaran_marcadores():
     for ficha in cargar().values():
         assert len(ficha.marcadores_clasificacion) >= 5, ficha.nombre
+
+
+def test_marcadores_fuera_de_model_dump_y_de_tipos_documentales():
+    # Son internos del motor: GET /tipos-documentales (Contrato 2) no los expone, tampoco cuando la API
+    # serialice las fichas con model_dump() de configuracion.servicio.listar() (ADR-006 1.5).
+    from app.modulos.api.tipos_documentales import TipoDocumental as RespuestaTipo
+    for ficha in cargar().values():
+        assert ficha.marcadores_clasificacion                       # el motor si los tiene
+        volcado = ficha.model_dump(mode="json")
+        assert "marcadores_clasificacion" not in volcado
+        respuesta = RespuestaTipo.model_validate(volcado).model_dump(exclude_unset=True)
+        assert "marcadores_clasificacion" not in respuesta
