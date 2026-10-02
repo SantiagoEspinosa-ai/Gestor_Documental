@@ -61,7 +61,8 @@ def test_carga_las_fichas_reales_del_repo():
     assert {"credencial_elector", "pasaporte", "comprobante_domicilio"} <= tipos.keys()
     pasaporte = servicio.obtener("pasaporte")
     assert pasaporte.campos["numero_pasaporte"].obligatorio
-    assert {r.id for r in pasaporte.reglas} == {"vigencia_documento", "vigencia_proxima", "formato_numero"}
+    # "contiene": las reglas de coherencia se anaden en un PR aparte de las fichas
+    assert {"vigencia_documento", "vigencia_proxima", "formato_numero"} <= {r.id for r in pasaporte.reglas}
     assert len(servicio.listar()) == len(tipos)
 
 
