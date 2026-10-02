@@ -1,6 +1,6 @@
 # ADR-009: Valor reservado "desconocido" en tipo_documental_detectado
 
-Fecha: 2026-10-01. Estado: PROPUESTO.
+Fecha: 2026-10-01. Estado: ACEPTADO (2026-10-02, PERSONA_1 en la revision del PR #14 y PERSONA_2).
 Propone: PERSONA_2 (a raiz de la revision de PERSONA_3 en el PR #11). Afecta a: Contrato 1
 (`backend/app/schemas/resultado.py`, comentario de `tipo_documental_detectado`) y Contrato 2
 (`docs/contratos/endpoints.md`, "Reglas"). Este ADR no cambia ninguno de los dos contratos: los
@@ -11,9 +11,9 @@ ningun tipo ni ninguna forma de respuesta.
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| 1 | Documentar `"desconocido"` como valor reservado de `tipo_documental_detectado` | PERSONA_2 (PR de contratos) | Pendiente |
-| 2 | Ninguna ficha puede llamarse `desconocido` (el cargador lo rechaza) | PERSONA_2 (`configuracion/cargador.py`) | Pendiente |
-| 3 | Los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido hasta que el revisor confirme el tipo y emite `EXP-002` | PERSONA_1 (expediente: solo el mensaje de `EXP-002`; UI) | Pendiente |
+| 1 | Documentar `"desconocido"` como valor reservado de `tipo_documental_detectado` | PERSONA_2 (PR de contratos) | Aceptada |
+| 2 | Ninguna ficha puede llamarse `desconocido` (el cargador lo rechaza) | PERSONA_2 (`configuracion/cargador.py`) | Aceptada |
+| 3 | Los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido hasta que el revisor confirme el tipo y emite `EXP-002` | PERSONA_1 (expediente: solo el mensaje de `EXP-002`; UI) | Aceptada |
 
 ## Contexto
 - El motor (`motor_ia`, etapa 1) devuelve `tipo_documental_detectado = "desconocido"` cuando clasifica
