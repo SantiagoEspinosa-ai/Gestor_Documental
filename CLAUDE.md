@@ -47,6 +47,7 @@ Cada persona empieza su sesion de Claude Code pegando su fichero de `docs/equipo
 - Tareas heredadas de PERSONA_3: seccion "Tareas heredadas de PERSONA_3" del prompt de cada una, y
   `docs/equipo/PERSONA_3_estado.md` (estado, acuerdos, reparto y recortes)
 Estado y siguientes pasos de PERSONA_1: `docs/equipo/PERSONA_1_estado.md`.
+Spec vigente de PERSONA_2: `docs/motor_ia/SPEC_CONFIGURACION.md`.
 Esos ficheros son la especificacion vigente de cada linea de trabajo; si cambia el plan, se
 actualizan ahi y se avisa al equipo.
 

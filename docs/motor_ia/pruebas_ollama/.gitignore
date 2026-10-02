@@ -1,0 +1,7 @@
+# Salidas locales de los scripts: solo se versionan resumen.json, imagenes y prompts_borrador.
+# Las respuestas crudas van a backend/tests/respuestas_modelo/ (tarea 7).
+resultados/*/respuestas/
+resultados/*/log.txt
+resultados/*/prompts_enviados.json
+resultados/*/prompt_enviado.txt
+__pycache__/

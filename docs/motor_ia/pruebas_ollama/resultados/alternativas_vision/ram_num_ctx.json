@@ -1,0 +1,24 @@
+[
+  {
+    "num_ctx": 16384,
+    "ram_libre_inicial_gb": 6.3,
+    "ram_libre_min_gb": 1.92,
+    "consumo_gb": 4.39,
+    "tamano_modelo_en_ollama_gb": 3.5,
+    "tokens_prompt": 1089,
+    "segundos": 81.7,
+    "abortado_por_ram": false,
+    "error": null
+  },
+  {
+    "num_ctx": 8192,
+    "ram_libre_inicial_gb": 6.49,
+    "ram_libre_min_gb": 2.22,
+    "consumo_gb": 4.27,
+    "tamano_modelo_en_ollama_gb": 3.21,
+    "tokens_prompt": 1089,
+    "segundos": 70.5,
+    "abortado_por_ram": false,
+    "error": null
+  }
+]

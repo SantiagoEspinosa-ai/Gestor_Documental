@@ -1,0 +1,21 @@
+{
+  "modelo": "qwen2.5vl:3b",
+  "num_ctx": 16384,
+  "escenarios": {
+    "1_pagina_sin_texto": {
+      "paginas": 1,
+      "caracteres_prompt": 1938,
+      "tokens_prompt": 2457,
+      "segundos": 132.7,
+      "error": null
+    },
+    "4_paginas_20000_caracteres": {
+      "paginas": 4,
+      "caracteres_prompt": 21974,
+      "tokens_prompt": 13476,
+      "segundos": 498.8,
+      "error": null
+    }
+  },
+  "ram_libre_min_gb": 3.13
+}

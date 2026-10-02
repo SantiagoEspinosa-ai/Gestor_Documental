@@ -1,0 +1,54 @@
+{
+  "folio_solicitud": "CLI-2026-000000",
+  "identificador_unico_documento": "6bbdeed7-75d7-493e-b970-37ebf3283eb0",
+  "tipo_documental_declarado": "pasaporte",
+  "tipo_documental_detectado": "pasaporte",
+  "tipo_documental_confirmado": null,
+  "confianza_clasificacion": 0.95,
+  "datos_extraidos": {
+    "nombre_completo": "ANA EJEMPLO PRUEBA",
+    "numero_pasaporte": "ZX0000001",
+    "fecha_nacimiento": "1990-01-01",
+    "fecha_expedicion": "2021-09-30",
+    "fecha_vencimiento": "2031-09-30",
+    "nacionalidad": "UTOPICA",
+    "sexo": "F"
+  },
+  "nivel_confianza_por_campo": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+  },
+  "evidencia_por_campo": {
+    "nombre_completo": "pagina_1:seccion_central",
+    "numero_pasaporte": "pagina_1:seccion_central",
+    "fecha_nacimiento": "pagina_1:seccion_central",
+    "fecha_expedicion": "pagina_1:seccion_central",
+    "fecha_vencimiento": "pagina_1:seccion_central",
+    "nacionalidad": "pagina_1:seccion_central",
+    "sexo": "pagina_1:seccion_central"
+  },
+  "reglas_cumplidas_e_incumplidas": {
+    "cumplidas": [],
+    "incumplidas": []
+  },
+  "alertas_encontradas": [],
+  "correcciones": [],
+  "recomendacion": null,
+  "estado_analisis": "completado",
+  "fecha_y_modelo_utilizado": {
+    "fecha_analisis": "2026-09-30T21:40:56.880191Z",
+    "proveedor": "ollama",
+    "modelo": "gemma4:e2b",
+    "version_prompt": "extraccion_pasaporte@v2"
+  },
+  "referencia_archivo_original": {
+    "nombre_archivo": "pasaporte_sano_digital.pdf",
+    "ruta": "local://pasaporte_sano_digital.pdf",
+    "hash": "44a92b42e7d1e55944ea5a7d250abbc49fa0c79792cda02f87c77c3eb8c06d6c"
+  }
+}

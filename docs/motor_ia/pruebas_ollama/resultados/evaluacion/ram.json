@@ -1,0 +1,72 @@
+{
+  "casos": {
+    "auto__comprobante_domicilio_domicilio_distinto_digital": 5.85,
+    "auto__comprobante_domicilio_domicilio_distinto_escaneado": 5.7,
+    "auto__comprobante_domicilio_domicilio_distinto_foto": 5.73,
+    "auto__comprobante_domicilio_sano_digital": 5.67,
+    "auto__comprobante_domicilio_sano_escaneado": 5.63,
+    "auto__comprobante_domicilio_sano_foto": 5.57,
+    "auto__comprobante_domicilio_vencido_digital": 5.54,
+    "auto__comprobante_domicilio_vencido_escaneado": 5.54,
+    "auto__comprobante_domicilio_vencido_foto": 5.49,
+    "auto__credencial_elector_domicilio_distinto_digital": 5.26,
+    "auto__credencial_elector_domicilio_distinto_escaneado": 5.46,
+    "auto__credencial_elector_domicilio_distinto_foto": 5.46,
+    "auto__credencial_elector_sano_digital": 5.46,
+    "auto__credencial_elector_sano_escaneado": 5.38,
+    "auto__credencial_elector_sano_foto": 5.35,
+    "auto__credencial_elector_vencido_digital": 5.61,
+    "auto__credencial_elector_vencido_escaneado": 5.21,
+    "auto__credencial_elector_vencido_foto": 5.53,
+    "auto__pasaporte_domicilio_distinto_digital": 5.31,
+    "auto__pasaporte_domicilio_distinto_escaneado": 5.18,
+    "auto__pasaporte_domicilio_distinto_foto": 5.34,
+    "auto__pasaporte_sano_digital": 5.36,
+    "auto__pasaporte_sano_escaneado": 5.34,
+    "auto__pasaporte_sano_foto": 5.29,
+    "auto__pasaporte_vencido_digital": 5.29,
+    "auto__pasaporte_vencido_escaneado": 5.27,
+    "auto__pasaporte_vencido_foto": 5.26,
+    "cls__credencial_elector_sano_digital__como_pasaporte": 5.23,
+    "cls__pasaporte_sano_foto__como_credencial_elector": 5.07,
+    "cls__comprobante_domicilio_sano_escaneado__como_pasaporte": 5.33,
+    "auto__comprobante_domicilio_sano_escaneado_dificil": 5.44,
+    "auto__comprobante_domicilio_sano_escaneado_extremo": 5.33,
+    "auto__comprobante_domicilio_sano_foto_dificil": 5.33,
+    "auto__comprobante_domicilio_sano_foto_extremo": 3.78,
+    "auto__credencial_elector_sano_escaneado_dificil": 3.71,
+    "auto__credencial_elector_sano_escaneado_extremo": 3.92,
+    "auto__credencial_elector_sano_foto_dificil": 3.96,
+    "auto__credencial_elector_sano_foto_extremo": 3.93,
+    "vision__comprobante_domicilio_sano_escaneado_dificil": 2.46,
+    "vision__comprobante_domicilio_sano_escaneado_extremo": 1.74,
+    "vision__comprobante_domicilio_sano_foto_dificil": 1.42,
+    "vision__comprobante_domicilio_sano_foto_extremo": 1.88,
+    "vision__credencial_elector_sano_escaneado_dificil": 3.4,
+    "vision__credencial_elector_sano_escaneado_extremo": 3.32,
+    "vision__credencial_elector_sano_foto_dificil": 3.22,
+    "vision__credencial_elector_sano_foto_extremo": 2.95,
+    "vision__pasaporte_sano_escaneado_dificil": 3.44,
+    "vision__pasaporte_sano_escaneado_extremo": 3.48,
+    "vision__pasaporte_sano_foto_dificil": 3.45,
+    "vision__pasaporte_sano_foto_extremo": 3.31,
+    "auto__pasaporte_sano_escaneado_dificil": 3.26,
+    "auto__pasaporte_sano_escaneado_extremo": 3.66,
+    "auto__pasaporte_sano_foto_dificil": 4.21,
+    "auto__pasaporte_sano_foto_extremo": 4.26
+  },
+  "bloques": {
+    "1": {
+      "ram_libre_min_gb": 5.07,
+      "abortado_por_ram": false
+    },
+    "3": {
+      "ram_libre_min_gb": 3.26,
+      "abortado_por_ram": false
+    },
+    "4": {
+      "ram_libre_min_gb": 3.31,
+      "abortado_por_ram": false
+    }
+  }
+}

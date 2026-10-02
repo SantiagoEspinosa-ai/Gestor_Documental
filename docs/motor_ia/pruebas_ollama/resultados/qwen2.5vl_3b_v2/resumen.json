@@ -1,0 +1,504 @@
+[
+  {
+    "escenario": "A",
+    "ejecucion": 1,
+    "tamano": "1200x850",
+    "segundos_total": 136.5,
+    "tokens_prompt": 1873,
+    "carga_s": 20.5,
+    "json_valido": true,
+    "aciertos": 5,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-09-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "Texto legible, sin cortes o alteraciones visibles."
+    ]
+  },
+  {
+    "escenario": "A",
+    "ejecucion": 2,
+    "tamano": "1200x850",
+    "segundos_total": 48.8,
+    "tokens_prompt": 1873,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 5,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2023-09-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "La imagen es clara y completa, sin cortes o alteraciones visibles."
+    ]
+  },
+  {
+    "escenario": "B",
+    "ejecucion": 1,
+    "tamano": "1244x912",
+    "segundos_total": 123.9,
+    "tokens_prompt": 2035,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 5,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-09-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "legibilidad: alta",
+      "recortes: no",
+      "alteraciones_visibles: no"
+    ]
+  },
+  {
+    "escenario": "B",
+    "ejecucion": 2,
+    "tamano": "1244x912",
+    "segundos_total": 37.5,
+    "tokens_prompt": 2035,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 5,
+    "fechas_iso": 3,
+    "evidencias_validas": 0,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-09-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "Texto legible, sin cortes o alteraciones visibles."
+    ]
+  },
+  {
+    "escenario": "B_1000px",
+    "ejecucion": 1,
+    "tamano": "1000x733",
+    "segundos_total": 100.6,
+    "tokens_prompt": 1647,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 6,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-05-09",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "Texto legible, sin cortes o alteraciones visibles."
+    ]
+  },
+  {
+    "escenario": "B_1000px",
+    "ejecucion": 2,
+    "tamano": "1000x733",
+    "segundos_total": 40.5,
+    "tokens_prompt": 1647,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 6,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-05-09",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "Texto legible, sin cortes o alteraciones visibles."
+    ]
+  },
+  {
+    "escenario": "B_800px",
+    "ejecucion": 1,
+    "tamano": "800x586",
+    "segundos_total": 106.5,
+    "tokens_prompt": 1647,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 6,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-05-09",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "legibilidad: alta",
+      "recortes: no",
+      "alteraciones_visibles: no"
+    ]
+  },
+  {
+    "escenario": "B_800px",
+    "ejecucion": 2,
+    "tamano": "800x586",
+    "segundos_total": 50.3,
+    "tokens_prompt": 1647,
+    "carga_s": 0.0,
+    "json_valido": true,
+    "aciertos": 6,
+    "fechas_iso": 3,
+    "evidencias_validas": 7,
+    "confianzas": [
+      0.9
+    ],
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-01",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_expedicion": {
+        "valor": "2024-10-05",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "fecha_vencimiento": {
+        "valor": "2034-05-09",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:seccion_superior"
+      }
+    },
+    "observaciones_visuales": [
+      "legibilidad: alta",
+      "recortes: no",
+      "alteraciones_visibles: no"
+    ]
+  }
+]
