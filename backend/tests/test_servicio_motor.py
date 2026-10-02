@@ -24,6 +24,11 @@ MRZ = "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nL898902C36UTO7408122F120415
 DATOS_PASAPORTE = {"nombre_completo": "ANA EJEMPLO PRUEBA", "numero_pasaporte": "X1234567P",
                    "fecha_nacimiento": "1990-01-01", "fecha_expedicion": "2024-05-10",
                    "fecha_vencimiento": "2034-05-09", "nacionalidad": "PAIS FICTICIO", "sexo": "F"}
+# Texto de un pasaporte ficticio con los 7 marcadores de la ficha y los valores de DATOS_PASAPORTE (ADR-007):
+# confianza de clasificacion 1,0 y de campo 1,0. La MRZ es corta a proposito: buscar_mrz no la toma.
+TEXTO_PASAPORTE = ("PASAPORTE\nNOMBRE COMPLETO\nANA EJEMPLO PRUEBA\nNUMERO PASAPORTE\nX1234567P\n"
+                   "FECHA NACIMIENTO\n01/01/1990\nFECHA EXPEDICION\n10/05/2024\nFECHA VENCIMIENTO\n09/05/2034\n"
+                   "NACIONALIDAD\nPAIS FICTICIO\nSEXO\nF\nP<UTOEJEMPLO<<ANA<<<<\nX1234567P0UTO9001011F3405099")
 
 
 class ProveedorFalso:
@@ -68,7 +73,7 @@ class EnrutadorFalso:
         return self._respaldo
 
 
-def documento(declarado="pasaporte", texto="PASAPORTE\nANA EJEMPLO PRUEBA", n_paginas=1):
+def documento(declarado="pasaporte", texto=TEXTO_PASAPORTE, n_paginas=1):
     paginas = [Pagina(i, texto=texto) for i in range(1, n_paginas + 1)]
     return DocumentoPreparado("00000000-0000-4000-8000-000000000001", Modalidad.pdf_digital, paginas, declarado)
 
@@ -94,7 +99,9 @@ def test_caso_normal():
     assert r.estado_analisis is EstadoAnalisis.completado
     assert (r.folio_solicitud, r.tipo_documental_declarado, r.tipo_documental_detectado) == (
         "CLI-2026-000000", "pasaporte", "pasaporte")
-    assert r.confianza_clasificacion == 0.93 and r.datos_extraidos["numero_pasaporte"] == "X1234567P"
+    assert r.confianza_clasificacion == 1.0 and r.datos_extraidos["numero_pasaporte"] == "X1234567P"
+    assert set(r.nivel_confianza_por_campo.values()) == {1.0}            # ADR-007: todos verificados en el texto
+    assert analisis.confianzas_modelo["clasificacion"] == 0.93           # la del modelo, solo a la auditoria
     assert r.alertas_encontradas == [] and r.recomendacion is None
     assert r.fecha_y_modelo_utilizado.model_dump() == {
         "fecha_analisis": AHORA, "proveedor": "ollama", "modelo": "ollama-modelo-real-extraccion",
@@ -112,7 +119,7 @@ def test_tipo_distinto_del_declarado_cls_001_y_extrae_con_el_declarado():
     p = ProveedorFalso("ollama", tipo="credencial_elector")
     analisis, enrutador = ejecutar(p)
     r = analisis.resultado
-    assert codigos(r) == [("CLS-001", "critica", None)]
+    assert codigos(r) == [("CLS-001", "critica", None), ("CLS-002", "preventiva", None)]
     assert r.alertas_encontradas[0].confianza == 1.0
     assert enrutador.pedidos[1] == (Tarea.extraccion, "pasaporte")
     assert set(r.datos_extraidos) == set(DATOS_PASAPORTE)
@@ -123,14 +130,16 @@ def test_tipo_confirmado_no_clasifica():
     analisis, enrutador = ejecutar(p, tipo_confirmado="pasaporte", doc=documento(declarado="credencial_elector"))
     r = analisis.resultado
     assert [t for t, _ in p.prompts] == ["extraccion"]
-    assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, None)
+    assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, 1.0)  # D2
     assert codigos(r) == []
     assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v3"
 
 
 def test_sin_declarado_extrae_con_el_detectado():
     p = ProveedorFalso("ollama", tipo="credencial_elector", datos={"curp": "AEPA900101MDFXXX01"})
-    analisis, enrutador = ejecutar(p, doc=documento(declarado=None))
+    texto = ("CREDENCIAL DE ELECTOR\nCURP\nAEPA900101MDFXXX01\nCLAVE ELECTOR\nEJPRAN90010199M101\n"
+             "FECHA NACIMIENTO\n01/01/1990\nDOMICILIO\nCALLE FICTICIA 123\nVIGENCIA\n2029")
+    analisis, enrutador = ejecutar(p, doc=documento(declarado=None, texto=texto))
     assert enrutador.pedidos[1] == (Tarea.extraccion, "credencial_elector")
     assert analisis.resultado.datos_extraidos["curp"] == "AEPA900101MDFXXX01"
     assert codigos(analisis.resultado) == []
@@ -142,6 +151,7 @@ def test_desconocido_sin_declarado_no_extrae_ni_alerta():
     r = analisis.resultado
     assert [t for t, _ in p.prompts] == ["clasificacion"]
     assert r.estado_analisis is EstadoAnalisis.completado and r.datos_extraidos == {} and r.alertas_encontradas == []
+    assert r.confianza_clasificacion == 0.0  # sin ficha; sin CLS-002, que con desconocido no se emite (D4)
     assert r.fecha_y_modelo_utilizado.version_prompt == "clasificacion@v2"
 
 
@@ -209,7 +219,7 @@ def test_json_invalido_sin_respaldo_sys_002():
 def test_texto_recortado_sys_003():
     p = ProveedorFalso("ollama")
     analisis, _ = ejecutar(p, doc=documento(texto="A" * 15000, n_paginas=2))
-    assert codigos(analisis.resultado) == [("SYS-003", "preventiva", None)]
+    assert codigos(analisis.resultado) == [("SYS-003", "preventiva", None), ("CLS-002", "preventiva", None)]
     assert "[texto recortado]" in p.prompts[0][1]
 
 
@@ -221,7 +231,7 @@ def test_sexo_desde_la_mrz_val_003():
                            doc=documento(texto="PASAPORTE\nANA EJEMPLO PRUEBA", n_paginas=1))
     assert analisis.resultado.datos_extraidos["sexo"] is None  # sin MRZ en el texto: no cambia
 
-    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, "PASAPORTE"), Pagina(2, f"otros datos\n{MRZ}")],
+    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, TEXTO_PASAPORTE), Pagina(2, f"otros datos\n{MRZ}")],
                              "pasaporte")
     analisis, _ = ejecutar(ProveedorFalso("ollama", datos=datos), doc=doc)
     r = analisis.resultado
@@ -232,13 +242,16 @@ def test_sexo_desde_la_mrz_val_003():
 
 def test_sexo_desde_la_mrz_con_digitos_fallidos():
     erronea = MRZ[:-1] + "9"  # digito compuesto incorrecto
-    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, erronea)], "pasaporte")
+    sin_sexo = TEXTO_PASAPORTE.replace("SEXO\nF\n", "")  # la zona visual no da el sexo: sale de la MRZ
+    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, f"{sin_sexo}\n{erronea}")], "pasaporte")
     analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": None}), doc=doc)
-    assert analisis.resultado.nivel_confianza_por_campo["sexo"] == 0.5
+    confianzas = analisis.resultado.nivel_confianza_por_campo
+    assert confianzas["sexo"] <= 0.5                                     # MRZ mal leida: sin verificar (ADR-007)
+    assert confianzas["fecha_vencimiento"] == 1.0                        # la zona visual si la confirma
 
 
 def test_sexo_leido_no_se_sustituye_por_la_mrz():
-    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, MRZ)], "pasaporte")
+    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, f"{TEXTO_PASAPORTE}\n{MRZ}")], "pasaporte")
     analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": "M"}), doc=doc)
     assert analisis.resultado.datos_extraidos["sexo"] == "M" and codigos(analisis.resultado) == []
 
@@ -304,7 +317,7 @@ class ProveedorConVision(ProveedorFalso):
 
 def doc_con_imagenes(declarado="pasaporte", con_imagenes=True):
     return DocumentoPreparado("id", Modalidad.imagen,
-                              [Pagina(1, texto="PASAPORTE DE MUESTRA ANA EJEMPLO PRUEBA",
+                              [Pagina(1, texto=TEXTO_PASAPORTE,
                                       imagen_png=b"png-ficticio" if con_imagenes else None)], declarado)
 
 
@@ -408,7 +421,8 @@ def test_la_vision_detecta_otro_tipo_concreto_cls_001_y_sin_reintento():
     analisis, _ = ejecutar(p, doc=doc_con_imagenes(declarado="pasaporte"))
     r = analisis.resultado
     assert r.tipo_documental_detectado == "credencial_elector"
-    assert codigos(r) == [("CLS-001", "critica", None)]
+    # el texto es de pasaporte: sin los marcadores de la credencial, tambien CLS-002 (ADR-007)
+    assert codigos(r) == [("CLS-001", "critica", None), ("CLS-002", "preventiva", None)]
     assert p.pedidos_vision == []                                                # ni extraccion con vision ni reintento
     assert [t for t, _ in p.prompts] == ["clasificacion", "extraccion"]          # extrae con texto y la ficha declarada
     assert "el tipo declarado no coincide con el detectado (CLS-001)" in analisis.llamadas[-1].motivo

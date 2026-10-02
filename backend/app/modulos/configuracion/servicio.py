@@ -6,6 +6,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.modulos.configuracion.cargador import (
+    FLAGS_MARCADORES,
+    NOMBRE_RESERVADO,
     Campo,
     ErrorConfiguracion,
     Regla,
@@ -18,7 +20,7 @@ from app.modulos.configuracion.cargador import (
 )
 
 __all__ = [
-    "Campo", "ErrorConfiguracion", "Regla", "TipoCampo", "TipoDocumental", "TipoNoEncontrado", "TipoRegla",
+    "FLAGS_MARCADORES", "NOMBRE_RESERVADO", "Campo", "ErrorConfiguracion", "Regla", "TipoCampo", "TipoDocumental", "TipoNoEncontrado", "TipoRegla",
     "cargar", "directorio_config", "listar", "obtener",
 ]
 

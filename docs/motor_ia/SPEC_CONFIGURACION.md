@@ -159,7 +159,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 | Campos y tipos | Solo se conservan los campos de la ficha (`qwen` anadio `tipo` y `pais_emisor`); un campo ausente queda `null` con confianza 0. **`""` y los textos solo con espacios (incluidos tabuladores, saltos de linea y espacio duro) pasan a `null`** con confianza 0 y sin evidencia, en cualquier tipo de campo, para que `VAL-001` y `VAL-004` los vean como ausentes (acordado con PERSONA_3). `anio` de 4 cifras -> entero; si no, texto original con confianza 0. Los valores que no son texto se convierten a texto | La regla `anio_mayor_o_igual_actual` compara numeros | `proveedores/base.py` | unitario |
 | Fecha no normalizable | Se conserva el texto original con confianza 0 (p. ej. `"mayo 2034"`). **Las reglas de fecha de la etapa 2 deben tratarlo como fecha invalida y generar una alerta, sin fallar** | Que el revisor vea el dato y no salte un falso `VAL-001` (obligatorio ausente) | `proveedores/base.py`; reglas en `validacion/reglas.py` (etapa 2) | unitario |
 | Clasificacion fuera de la lista | Un tipo que no esta entre los posibles pasa a `desconocido` con confianza 0; se ignoran mayusculas y espacios | El modelo puede inventar tipos | `proveedores/base.py` | unitario |
-| Confianza del modelo | **No se usa en las reglas.** ADR-007 **aceptado** (2026-09-30): `nivel_confianza_por_campo` y `confianza_clasificacion` las calcula el codigo y la del modelo va solo a la auditoria | Siempre 0,9 o 1, tambien en datos mal leidos o inventados | `motor_ia` y `validacion/reglas.py` (etapa 2) | unitario |
+| Confianza del modelo | **No se usa en las reglas.** ADR-007 **aceptado** (2026-09-30) e **implementado** (etapa 2): `nivel_confianza_por_campo` y `confianza_clasificacion` las calcula el codigo (seccion 14) y la del modelo va solo a la auditoria (`Analisis.confianzas_modelo`) | Siempre 0,9 o 1, tambien en datos mal leidos o inventados | `motor_ia/confianza.py`, `motor_ia/servicio.py` | `test_confianza.py`, `test_servicio_motor.py` |
 | Formato de salida | `format: "json"` + `limpiar_json` (quita las marcas de bloque de codigo y el texto de alrededor) + parseo estricto con Pydantic (claves obligatorias y tipos). Si no es valido: 1 reintento con `prompts/correccion_json_v1.md`, sin reenviar las imagenes; si vuelve a fallar, `ErrorRespuestaInvalida` -> `SYS-002` (existe en `codigos_alertas.md`: "JSON del modelo invalido tras el reintento de correccion", critica) | JSON valido en todas las pruebas, pero no esta garantizado | `proveedores/base.py`, `proveedores/ollama.py` | unitario con Ollama simulado |
 | Errores del proveedor | `ErrorProveedor`: timeout, conexion, HTTP 404 (modelo no descargado), 429, 5xx o respuesta sin contenido; el servicio decide si usa el respaldo. `ErrorRespuestaInvalida` es un subtipo | - | `proveedores/base.py`, `proveedores/ollama.py` | unitario |
 | Registro de la llamada | `OllamaProvider.ultima_llamada` (`InfoLlamada`): modelo real usado, segundos, tokens de entrada y salida, peticiones, reintentos y lotes. `modelo_para(doc)` da el modelo segun la modalidad | El atributo `modelo` del Protocol no distingue texto y vision; la auditoria necesita tiempos y tokens | `proveedores/ollama.py` | unitario |
@@ -212,7 +212,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
 | `/tipos-documentales` | `configuracion/servicio.py` serializa `TipoDocumental` para el router de PERSONA_1 | ADR-006, 1.5 | pendiente (ver seccion 7) |
-| RAG | PERSONA_2 hace `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`) y usa `rag/embeddings.py` de PERSONA_3 | ADR-006, coordinacion | pendiente (etapa 3) |
+| RAG | Toda la carpeta `modulos/rag` es de PERSONA_2 desde el traspaso de PERSONA_3 (PR #13): `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`), `rag/embeddings.py` (Ollama `nomic-embed-text`), `rag/memoria.py` y `buscar_antecedentes` (H14) | ADR-006, coordinacion, PR #13 | pendiente (etapa 3; la ruta critica de la etapa 2 va antes) |
 
 ## 7. Pendientes y riesgos
 
@@ -236,12 +236,10 @@ se queda solo con `pagina_<n>` (seccion 4).
       dict en `validacion.comparar`: en la descripcion del PR #11.
 - [x] **PR unico `docs/adr-007-y-alertas` (PR #4) fusionado en `main`**: ADR-007 aceptado, `SYS-003`, `SYS-005`,
       `VAL-003` y el comentario de `resultado.py` (sin `SYS-004`, retirado en la revision).
-- [ ] **DEUDA ADR-007 (aceptado) - fecha limite: etapa 2, antes de `validacion/reglas.py` y de la
-      recomendacion.** Hoy `nivel_confianza_por_campo` y `confianza_clasificacion` guardan la confianza del
-      modelo como valor **provisional** y no se emiten `CLS-002` ni `VAL-002` (seccion 10). Hay que: calcular
-      la confianza en el codigo (la del modelo, a la auditoria con `Analisis.llamadas`); `marcadores_clasificacion` en el cargador y, en un PR pequeno
-      aparte con aviso (ficheros compartidos), en `config/tipos/*.yaml`; numero de marcadores y calibracion con
-      los fixtures de PERSONA_3, sin cambiar los umbrales; confianza baja si fallan los digitos de la MRZ.
+- [x] **ADR-007 en el motor** (etapa 2, paso 1): confianza de campo y de clasificacion calculadas por el codigo,
+      `CLS-002`, marcadores en el cargador y en las fichas, MRZ y calibracion (seccion 14). Falta: `VAL-002` (paso 2,
+      `validacion/reglas.py`), la confianza del modelo en `datos_auditoria` (paso 4) y fusionar el PR pequeno de
+      `config/tipos/*.yaml` (con el cargador nuevo: el de `main` rechaza la clave `marcadores_clasificacion`).
 - [ ] **PyMuPDF no carga en el Windows de PERSONA_2**: falta el Microsoft Visual C++ Redistributable x64
       (`msvcp140.dll`). Mientras tanto, los tests se pasan en el contenedor del backend (seccion 8).
 - [x] `.env` local de PERSONA_2: `OLLAMA_BASE_URL=http://localhost:11434`. Hecho el 2026-09-30.
@@ -253,8 +251,8 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
       `orquestador` para evitar la importacion circular.
 - [x] **Valor reservado `desconocido`: ADR-009 ACEPTADO** (2026-10-02, PERSONA_1 en la revision del PR #14 y
-      PERSONA_2); ver seccion 10. El PR #14 se fusiono con el ADR aun en PROPUESTO y sin `EXP-002`: la version
-      aceptada, con `EXP-002`, va en un PR nuevo desde `docs/adr-009-desconocido` (`cdcd3e1`).
+      PERSONA_2); ver seccion 10. El PR #14 se fusiono con el ADR aun en PROPUESTO y sin `EXP-002`; la version
+      aceptada, con `EXP-002` y `EXP-001` tambien sin tipo declarado, esta en `main` desde el PR #17.
 - [ ] **Aplicar ADR-009** (PERSONA_2): PR de contratos con el comentario de `resultado.py` y la linea de
       `endpoints.md` (antes de la etapa 2), y en la etapa 2 el cargador rechaza una ficha llamada `desconocido`
       (con test). PERSONA_1: mensaje de `EXP-002` y UI.
@@ -309,7 +307,22 @@ se queda solo con `pagina_<n>` (seccion 4).
 - [ ] **Senal 5 de OCR pobre: confianza por palabra de Tesseract** (`image_to_data` en `orquestador/ocr.py`), para
       los errores sin senal (p. ej. `GALLE FICTICIA 123`). Despues de probar con los especimenes; calibrar con los
       fixtures normales, dificiles y los especimenes.
-- [ ] **Especimenes de PERSONA_3** (`fixtures/especimenes/`, fotos de movil de documentos ficticios impresos): en
+- [ ] **Traspaso de PERSONA_3** (dejo el equipo el 2026-10-01; PR #13, `docs/equipo/PERSONA_3_estado.md`,
+      `docs/PLAN_PROYECTO.md` seccion 8). Tareas heredadas por PERSONA_2:
+      - [x] H9: ADR-009 (`desconocido`), aceptado (PR #14 y #17).
+      - [x] H10: el stub no se sustituye hasta ADR-007 (decidido; ver "Notas para la etapa 2").
+      - [ ] H11: documentar el formato de `INDICE.md` en `fixtures/README.md` (o generar un `INDICE.json`);
+        `test_fixtures_ocr.py` ya filtra por los casos y el nivel conocidos.
+      - [x] H12: tiempo maximo por documento (seccion 13).
+      - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
+        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
+        y Pillow.
+      - [ ] H14: `rag` completo (etapa 3, dias 9-11).
+      - [ ] H15: `sensible: true` en los YAML y en el cargador (etapa 3).
+      Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
+      verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
+      opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
+- [ ] **Especimenes** (`fixtures/especimenes/`, de PERSONA_3; ahora los mantiene PERSONA_2), fotos de movil de documentos ficticios impresos: en
       `main` desde el PR #10 y ya integrados en `feat/motor-ia`; pendiente de evaluarlos. Seran la prueba final con fotos reales: 5 fotos
       (pasaporte buena; credencial y comprobante buena y dificil), valores esperados = caso `sano` de `INDICE.md`
       con `--hoy 2026-09-30`; anadir el nivel `especimen` a `evaluar_fixtures.py`. Verificar antes que no tienen
@@ -372,18 +385,18 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | Texto | `recortar_texto` (`MAX_CARACTERES_TEXTO`); si recorta, `SYS-003` (preventiva) |
 | Clasificacion | Prompt `clasificacion_v2` con todas las fichas como tipos posibles. Con `tipo_confirmado` no se clasifica: `tipo_documental_detectado` y `confianza_clasificacion` quedan `None` (la plataforma conserva el detectado de la version anterior) |
 | `CLS-001` (critica) | Hay tipo declarado y el detectado es distinto, incluido `desconocido`. Si el texto da `desconocido` y hay imagenes, se decide con la reclasificacion con vision (seccion 3) |
-| Valor reservado `desconocido` | `tipo_documental_detectado = "desconocido"` significa "clasificado, pero no encaja en ninguna ficha" (`DESCONOCIDO` en `proveedores/base.py`). **El contrato no lo recoge**: `resultado.py` solo dice `str \| None` y `endpoints.md` no lo menciona; `null` es otra cosa (no se clasifico: `tipo_confirmado` o error antes de clasificar). **ADR-009 ACEPTADO** (2026-10-02): valor reservado, distinto de `null`; ninguna ficha puede llamarse asi (el cargador lo rechazara); los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido (`_tipo_efectivo`) hasta que el revisor confirme el tipo, y emite `EXP-002` (no esta en `tipos_requeridos` ni en `tipos_opcionales`). Alertas: con declarado, `CLS-001` + `EXP-001` (si era requerido) + `EXP-002`; sin declarado ni confirmado, `EXP-002`. Sin codigos nuevos |
+| Valor reservado `desconocido` | `tipo_documental_detectado = "desconocido"` significa "clasificado, pero no encaja en ninguna ficha" (`DESCONOCIDO` en `proveedores/base.py`). **El contrato no lo recoge**: `resultado.py` solo dice `str \| None` y `endpoints.md` no lo menciona; `null` es otra cosa (no se clasifico: `tipo_confirmado` o error antes de clasificar). **ADR-009 ACEPTADO** (2026-10-02): valor reservado, distinto de `null`; ninguna ficha puede llamarse asi (el cargador lo rechazara); los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido (`_tipo_efectivo`) hasta que el revisor confirme el tipo, y emite `EXP-002` (no esta en `tipos_requeridos` ni en `tipos_opcionales`). Alertas de un documento `desconocido`: con declarado, `CLS-001` + `EXP-001` (si al folio le falta algun tipo requerido) + `EXP-002`; sin declarado ni confirmado, `EXP-001` (si al folio le falta algun requerido) + `EXP-002`; con tipo confirmado, ninguna (no se clasifica). Sin codigos nuevos (PR #14 y #17) |
 | Ficha para extraer | `tipo_confirmado` > declarado > detectado (ADR-006, 2.5). Un tipo declarado o confirmado que no existe lanza `TipoNoEncontrado` (la ingesta lo valida antes) |
 | Tipo desconocido sin declarado ni confirmado | Se reclasifica con vision si hay imagenes; si da un tipo concreto, se extrae con esa ficha. Si sigue `desconocido` (o no hay imagenes): **no se extrae y el motor no emite alerta**, `completado` con datos vacios. La senal para el revisor es `EXP-002` (informativa), que emite el expediente (ADR-009) |
 | Extraccion | Prompt `extraccion_v3` con la lista de campos de la ficha (`campos_a_extraer`); `version_prompt` `extraccion_<tipo>@v3` |
-| Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza **1,0** si todos los digitos de control son correctos y **0,5** si alguno falla (provisional hasta ADR-007) |
+| Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza calculada (seccion 14): 1,0 si los digitos de control cuadran; como mucho 0,5 si alguno falla |
 | OCR pobre y vision | Ver seccion 3: reclasificacion con vision (`_reclasificar_con_vision`) y reintento (`_reintento_vision`); no se reintenta si salta `CLS-001` con un tipo concreto |
 | Respaldo | Si el principal lanza `ErrorProveedor` (incluido JSON invalido tras el reintento), se prueba el respaldo; si funciona, `SYS-005` (informativa), una sola vez por documento |
 | Sin respaldo o falla tambien | `estado_analisis=error` + `SYS-002` si el ultimo fallo fue JSON invalido, `SYS-001` si no (criticas). Si la clasificacion salio bien, se conserva |
 | `fecha_y_modelo_utilizado` | Proveedor, **modelo real** (`ultima_llamada.modelo`) y `version_prompt` de la extraccion; si no hubo extraccion, los de la clasificacion; `None` si no hubo ninguna llamada correcta |
 | `Alerta.confianza` | **1,0** en las alertas deterministas (`CLS-001`, `SYS-00x`, `VAL-003`) |
 | Alertas repetidas | Nunca dos con el mismo (`codigo`, `campo`) en un documento (ADR-006, 1.3) |
-| Confianzas (**provisional**) | `confianza_clasificacion` y `nivel_confianza_por_campo` guardan la del modelo; **no se emiten `CLS-002` ni `VAL-002`**. Deuda ADR-007 con fecha limite: etapa 2, antes de `validacion/reglas.py` y de la recomendacion |
+| Confianzas (ADR-007) | Calculadas por el codigo (seccion 14); la del modelo, en `Analisis.confianzas_modelo`. `CLS-002` lo emite el motor; `VAL-002`, `validacion/reglas.py` (paso 2). Con `tipo_confirmado`, `confianza_clasificacion = 1,0` |
 | Fuera de esta tarea (etapa 2) | `reglas_cumplidas_e_incumplidas`, `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, `recomendacion` y `procesar_documento` |
 
 ## 11. Integracion con la plataforma (etapa 2)
@@ -453,13 +466,49 @@ de 1 pagina con OCR pobre, sin reintentos de correccion: clasificacion con texto
 lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno en uno (PR #9): el tiempo de espera
 se suma. En la maquina con GPU hay que volver a medir.
 
+## 14. Confianza calculada por el codigo (ADR-007, etapa 2)
+
+Implementado en `motor_ia/confianza.py` (funciones puras) y aplicado en `motor_ia/servicio.py`. La confianza que
+devuelve el modelo ya no llega a `ResultadoDocumento`: va a `Analisis.confianzas_modelo` (por campo y
+`"clasificacion"`) para la auditoria (`datos_auditoria`, paso 4).
+
+| Regla | Detalle |
+|---|---|
+| Campo | `0,6 x aparece + 0,4 x formato_valido`; campo `null` -> 0. `aparece`: 1 si el valor esta en el texto del documento (capa del PDF u OCR, sin recortar) tras normalizar (mayusculas, sin acentos, espacios colapsados); las fechas se comparan con las fechas del texto normalizadas (o con sus cifras sin separador, p. ej. `3009/2021`); un texto que no esta exacto vale su parecido con el mejor tramo del texto si es >= 0,85 (`SIMILITUD_MINIMA`). `formato_valido`: `patron` de la ficha, fecha ISO valida o anio de 4 cifras; texto sin patron, valido |
+| MRZ (pasaporte) | Cubre `numero_pasaporte`, `fecha_nacimiento`, `fecha_vencimiento` y `sexo`. Digitos de control correctos: el valor queda verificado (`aparece = 1`) si coincide con la MRZ y sin verificar (`aparece = 0`) si no. Digitos fallidos: tope de **0,5** (`TOPE_MRZ_FALLIDA`) **salvo que el valor este tal cual en la zona visual** (ajuste de la calibracion: el OCR leia mal la MRZ de `pasaporte_vencido_escaneado` y castigaba 3 campos bien leidos) |
+| Clasificacion | Proporcion de `marcadores_clasificacion` del tipo detectado que aparecen en el texto normalizado (`re.MULTILINE`). `desconocido` o ficha sin marcadores -> 0. Con `tipo_confirmado` -> **1,0** (D2, acordado con PERSONA_1) |
+| `CLS-002` (preventiva) | Confianza de clasificacion < `confianza_minima_clasificacion` del tipo detectado. **No se emite con `desconocido`** (ya avisa `CLS-001`; D4) |
+| Marcadores | En `config/tipos/*.yaml` (PR pequeno aparte, con aviso). Cuantos: el umbral tolera uno sin encontrar (pasaporte y credencial 7 -> 6/7 = 0,857 >= 0,85; comprobante 5 -> 4/5 = 0,80). Validados en el cargador (compilan, sin repetidos) |
+| Umbrales | Sin cambios (`confianza_minima_campo` y `confianza_minima_clasificacion` de las fichas) |
+| Campo corregido | 1,0 (ADR-006 2.4): lo aplica la plataforma, no el motor |
+
+Calibracion (2026-10-02, `pruebas_ollama/calibrar_confianza.py`, sin modelo; informe en
+`pruebas_ollama/resultados/calibracion/informe.md`):
+
+| Medida | Normal | Dificil | Extremo | Especimenes |
+|---|---|---|---|---|
+| A. Valores correctos (de `INDICE.md`) con confianza >= minimo | **152/153** | 30/34 | 13/34 | 23/27 |
+| A. Clasificacion del tipo correcto >= minimo | **27/27** | 2/6 | 0/6 | 4/5 |
+| B. Campos extraidos correctos >= minimo (ruta auto) | 152/153 | 28/31 | 11/28 | - |
+| B. Campos extraidos incorrectos < minimo (ruta auto y vision) | - | 0/3 | 4/9 | - |
+
+- Normal: el unico campo por debajo es `sexo` de `pasaporte_vencido_escaneado`, que sale de una MRZ mal leida y
+  no esta en la zona visual: queda sin verificar, como debe.
+- Dificil y extremo: con OCR malo casi nada se puede verificar en el texto -> `VAL-002` y `CLS-002` y
+  `revision_manual`. Es lo que pide el ADR-007 ("el dato no se ha podido verificar").
+- **No detecta** los errores que el modelo copia del propio OCR (8 de 12 incorrectos, p. ej. `2X0000001`,
+  `AMA EJEMPLO PRUEBA`, `GALLE FICTICIA 123`): estan en el texto. Para eso: reglas de coherencia (paso 2) y la
+  confianza por palabra de Tesseract (pendiente). El modelo daba 0,9-1,0 a los 12 incorrectos.
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | ADR-009 ACEPTADO (PERSONA_1 en la revision del PR #14 y PERSONA_2): `desconocido` reservado, no cubre ningun requerido y emite `EXP-002`; sin `CLS-003`. La version aceptada con `EXP-002` va en un PR nuevo desde `docs/adr-009-desconocido` (el PR #14 se fusiono antes) | este commit |
+| 2026-10-02 | Etapa 2, paso 1 (ADR-007): `motor_ia/confianza.py` (confianza de campo y de clasificacion por el codigo, MRZ con tope 0,5 salvo zona visual), `CLS-002`, `confianza_clasificacion = 1,0` con `tipo_confirmado` (D2), sin `CLS-002` con `desconocido` (D4), confianza del modelo en `Analisis.confianzas_modelo`. Cargador: `marcadores_clasificacion` y nombre reservado `desconocido` (ADR-009). Marcadores en las tres fichas. Calibracion sin modelo: normal 152/153 campos y 27/27 clasificaciones sobre el minimo (seccion 14) | este commit |
+| 2026-10-02 | Merge de `origin/main` con los PR #16 y #17: ADR-009 final (`EXP-001` tambien sin tipo declarado). Traspaso de PERSONA_3 (PR #13): `rag` completo y fixtures para PERSONA_2, tareas H9-H15 y recortes R4, R5, R6 y R8 en los pendientes | este commit |
+| 2026-10-02 | ADR-009 ACEPTADO (PERSONA_1 en la revision del PR #14 y PERSONA_2): `desconocido` reservado, no cubre ningun requerido y emite `EXP-002`; sin `CLS-003`. La version aceptada con `EXP-002` va en un PR nuevo desde `docs/adr-009-desconocido` (el PR #14 se fusiono antes) | `3e2bf3b` |
 | 2026-10-01 | Revision de PERSONA_3 en el PR #11: 42 fixtures (27 + 3 duplicados + 12 de dificultad); variables ya en `.env.example` (PR #5); prompts vigentes con `extraccion_v3`; PR #4 fusionado; pendientes cumplidos marcados (credencial y comprobante evaluados, avisos del PR #11, especimenes en `main`). Valor reservado `desconocido` (seccion 10) y ADR-009 PROPUESTO en `docs/adr-009-desconocido` (`4dc4906`). Notas para la etapa 2: stub hasta ADR-007, version del prompt de clasificacion en `datos_auditoria`, ADR para `extraer_con_vision`/`clasificar_con_vision`/`ultima_llamada` con `openrouter.py`. Seccion 13: tiempo por documento. `test_fixtures_ocr.py` filtra los casos y el nivel conocidos (no depende de 153). Comando de tests con `fixtures/`, `frontend/` y `docs/` montados | `7c84720` |
 | 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | `a3e69a9` |
 | 2026-10-01 | `docs/motor_ia/EXPLICACION_MOTOR.md`: explicacion del motor para el equipo (flujo, modelos probados, historial de mejoras, reglas, resultados, pendientes). Regla: cada cambio de regla, de modelo o resultado de prueba anade una entrada a su historial en el mismo commit | `a3e69a9` |

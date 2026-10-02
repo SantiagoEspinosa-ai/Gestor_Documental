@@ -17,6 +17,12 @@ from app.schemas.resultado import Severidad
 # backend/app/modulos/configuracion/cargador.py -> raiz del repo
 _RAIZ_REPO = Path(__file__).resolve().parents[4]
 
+# Valor reservado de tipo_documental_detectado (ADR-009): ninguna ficha puede llamarse asi.
+NOMBRE_RESERVADO = "desconocido"
+# Los marcadores de clasificacion (ADR-007) se buscan linea a linea en el texto normalizado
+# (mayusculas, sin acentos): ^ y $ son principio y fin de linea.
+FLAGS_MARCADORES = re.MULTILINE
+
 
 class ErrorConfiguracion(Exception):
     """Una o varias fichas YAML son invalidas. `errores` trae una linea por problema."""
@@ -98,6 +104,28 @@ class TipoDocumental(_Estricto):
     confianza_minima_campo: float = Field(..., ge=0, le=1)
     reglas: list[Regla] = []
     comparaciones: dict[str, list[str]] = {}
+    # ADR-007: expresiones regulares verificables en el texto; confianza de clasificacion = proporcion encontrada
+    marcadores_clasificacion: list[str] = []
+
+    @field_validator("nombre")
+    @classmethod
+    def _nombre_no_reservado(cls, nombre: str) -> str:
+        if nombre == NOMBRE_RESERVADO:
+            raise ValueError(f"el nombre '{NOMBRE_RESERVADO}' esta reservado para tipo_documental_detectado (ADR-009)")
+        return nombre
+
+    @field_validator("marcadores_clasificacion")
+    @classmethod
+    def _marcadores_compilan(cls, marcadores: list[str]) -> list[str]:
+        for i, marcador in enumerate(marcadores):
+            try:
+                re.compile(marcador, FLAGS_MARCADORES)
+            except re.error as e:
+                raise ValueError(f"marcador {i} ('{marcador}'): expresion regular invalida: {e}") from e
+        repetidos = sorted({m for m in marcadores if marcadores.count(m) > 1})
+        if repetidos:
+            raise ValueError(f"marcadores repetidos: {', '.join(repetidos)}")
+        return marcadores
 
     @field_validator("formatos_permitidos")
     @classmethod

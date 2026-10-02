@@ -11,8 +11,8 @@ Configuracion vigente (modelos, enrutador, reglas de vision y parseo, prompts):
 - Clasifica (salvo con `tipo_confirmado`), extrae con la ficha `tipo_confirmado` > declarado > detectado
   (ADR-006, 2.5), completa el sexo del pasaporte desde la MRZ y usa el respaldo si falla el principal.
   Alertas: `CLS-001`, `SYS-001`, `SYS-002`, `SYS-003`, `SYS-005` y `VAL-003`.
-- Confianzas: provisionalmente, las del modelo; `CLS-002`, `VAL-00x`, reglas y recomendacion llegan en la
-  etapa 2 (ADR-007). Detalle: spec, seccion 10.
+- Confianzas (ADR-007): las calcula el codigo en `confianza.py` (spec, seccion 14) y el servicio emite `CLS-002`;
+  la del modelo va a `Analisis.confianzas_modelo` (auditoria). `VAL-00x`, reglas y recomendacion: `validacion`.
 - Tests: `backend/tests/test_servicio_motor.py` (proveedores y enrutador falsos).
 
 Proveedores (cada uno en `proveedores/<nombre>.py`, implementan `ProveedorLLM`):

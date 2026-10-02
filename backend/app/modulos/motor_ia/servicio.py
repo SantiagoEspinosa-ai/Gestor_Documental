@@ -1,7 +1,9 @@
 """
 API publica de motor_ia (ADR-005): analiza un DocumentoPreparado y devuelve un ResultadoDocumento.
 Clasifica, elige la ficha (ADR-006, 2.5), extrae, completa el sexo desde la MRZ y usa el respaldo si
-el proveedor principal falla. Con OCR pobre (spec, seccion 3) reclasifica o extrae con vision. Reglas deterministas, VAL-00x y recomendacion: etapa 2 (validacion).
+el proveedor principal falla. Con OCR pobre (spec, seccion 3) reclasifica o extrae con vision. La confianza
+de campo y de clasificacion la calcula el codigo (ADR-007, `confianza.py`); la del modelo va a la auditoria.
+Reglas deterministas, VAL-00x y recomendacion: validacion.
 Decisiones: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 10.
 """
 from __future__ import annotations
@@ -13,6 +15,12 @@ from datetime import datetime, timezone
 from typing import TypeVar
 
 from app.modulos.configuracion import servicio as configuracion
+from app.modulos.motor_ia.confianza import (
+    VerificacionMrz,
+    confianza_clasificacion,
+    confianzas_de_campos,
+    texto_del_documento,
+)
 from app.modulos.motor_ia.enrutador import crear_enrutador
 from app.modulos.motor_ia.interfaces import DocumentoPreparado, Enrutador, ProveedorLLM, ResultadoExtraccion, Tarea
 from app.modulos.motor_ia.prompts import (
@@ -49,17 +57,18 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 CONFIANZA_ALERTA_DETERMINISTA = 1.0
-CONFIANZA_MRZ_DIGITOS_OK = 1.0          # provisional hasta aplicar ADR-007
-CONFIANZA_MRZ_DIGITOS_FALLIDOS = 0.5    # provisional hasta aplicar ADR-007
+CONFIANZA_TIPO_CONFIRMADO = 1.0  # D2 (etapa 2): el revisor confirmo el tipo, como un campo corregido (ADR-006 2.4)
 
 _enrutador_por_defecto: Enrutador | None = None
 
 
 @dataclass
 class Analisis:
-    """Resultado del analisis y registro de las llamadas a los modelos (auditoria, etapa 2)."""
+    """Resultado del analisis y, para la auditoria, las llamadas a los modelos y la confianza que dio el
+    modelo (ADR-007: no se usa en reglas; por campo y "clasificacion")."""
     resultado: ResultadoDocumento
     llamadas: list[InfoLlamada] = field(default_factory=list)
+    confianzas_modelo: dict[str, float] = field(default_factory=dict)
 
 
 class _FalloProveedor(Exception):
@@ -142,6 +151,8 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                    f"El texto del documento supera {MAX_CARACTERES_TEXTO} caracteres y se ha recortado; "
                    "los campos de las paginas finales pueden no haberse extraido")
     contenido = formatear_contenido(paginas)
+    texto = texto_del_documento(doc.paginas)  # para verificar valores y marcadores (ADR-007), sin recortar
+    confianzas_modelo: dict[str, float] = {}
 
     datos = {
         "folio_solicitud": folio,
@@ -170,11 +181,21 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                 ocr_pobre = "OCR pobre (la clasificacion con texto dio desconocido)"
             detectado = clasificacion.tipo_documental_detectado
             datos["tipo_documental_detectado"] = detectado
-            datos["confianza_clasificacion"] = clasificacion.confianza  # provisional: del modelo (ADR-007, etapa 2)
+            confianzas_modelo["clasificacion"] = clasificacion.confianza
+            ficha_detectada = fichas.get(detectado)
+            datos["confianza_clasificacion"] = confianza_clasificacion(ficha_detectada, texto)
             fecha_modelo = (proveedor.nombre, version, _modelo_usado(proveedor))
             if declarado is not None and detectado != declarado:
                 ctx.alerta("CLS-001", Severidad.critica,
                            f"Tipo declarado '{declarado}' distinto del detectado '{detectado}'")
+            # CLS-002 solo con un tipo concreto: con desconocido ya avisa CLS-001 (D4)
+            if (ficha_detectada is not None
+                    and datos["confianza_clasificacion"] < ficha_detectada.confianza_minima_clasificacion):
+                ctx.alerta("CLS-002", Severidad.preventiva,
+                           f"Confianza de clasificacion {datos['confianza_clasificacion']:.2f} menor que el minimo "
+                           f"{ficha_detectada.confianza_minima_clasificacion:.2f} de '{detectado}'")
+        else:
+            datos["confianza_clasificacion"] = CONFIANZA_TIPO_CONFIRMADO
 
         tipo = tipo_confirmado or declarado or (detectado if detectado != DESCONOCIDO else None)
         if tipo is not None:
@@ -199,10 +220,12 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                                                        cls_concreto)
             fecha_modelo = (proveedor.nombre, version, modelo)
             valores = dict(extraccion.datos_extraidos)
-            confianzas = dict(extraccion.nivel_confianza_por_campo)  # provisional: del modelo (ADR-007, etapa 2)
+            confianzas_modelo.update(extraccion.nivel_confianza_por_campo)
             evidencias = dict(extraccion.evidencia_por_campo)
+            mrz = _verificacion_mrz(doc) if ficha.nombre == "pasaporte" else None
             if ficha.nombre == "pasaporte" and "sexo" in ficha.campos and valores.get("sexo") is None:
-                _sexo_desde_mrz(doc, valores, confianzas, evidencias, ctx)
+                _sexo_desde_mrz(doc, valores, evidencias, ctx)
+            confianzas = confianzas_de_campos(valores, ficha, texto, mrz)
             datos.update(datos_extraidos=valores, nivel_confianza_por_campo=confianzas, evidencia_por_campo=evidencias)
     except _FalloProveedor as fallo:
         if isinstance(fallo.ultimo, ErrorRespuestaInvalida):
@@ -217,7 +240,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             fecha_analisis=ahora or datetime.now(timezone.utc), proveedor=nombre_proveedor,
             modelo=modelo, version_prompt=version)
     datos["alertas_encontradas"] = ctx.alertas
-    return Analisis(ResultadoDocumento(**datos), ctx.llamadas)
+    return Analisis(ResultadoDocumento(**datos), ctx.llamadas, confianzas_modelo)
 
 
 def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, tipos: list[str],
@@ -278,16 +301,24 @@ def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPre
     return combinar_texto_y_vision(extraccion, vision), _modelo_usado(proveedor)
 
 
-def _sexo_desde_mrz(doc: DocumentoPreparado, valores: dict, confianzas: dict, evidencias: dict, ctx: _Contexto) -> None:
-    """Sexo de la MRZ (posicion 21 de la linea 2) si la extraccion no lo trae. Confianza 1,0 si los
-    digitos de control son correctos y 0,5 si alguno falla (provisional hasta ADR-007)."""
+def _verificacion_mrz(doc: DocumentoPreparado) -> VerificacionMrz | None:
+    """La primera MRZ del documento, con sus valores y sus digitos de control (ADR-007)."""
+    for pagina in doc.paginas:
+        mrz = orquestador.buscar_mrz(pagina.texto)
+        if mrz is not None:
+            return VerificacionMrz(mrz.numero_documento, mrz.fecha_nacimiento, mrz.fecha_vencimiento, mrz.sexo,
+                                   orquestador.validar_digitos(mrz))
+    return None
+
+
+def _sexo_desde_mrz(doc: DocumentoPreparado, valores: dict, evidencias: dict, ctx: _Contexto) -> None:
+    """Sexo de la MRZ (posicion 21 de la linea 2) si la extraccion no lo trae. Su confianza la calcula
+    `confianza.py`: 1,0 si los digitos de control cuadran; como mucho 0,5 si alguno falla."""
     for pagina in doc.paginas:
         mrz = orquestador.buscar_mrz(pagina.texto)
         if mrz is None or mrz.sexo is None:
             continue
-        digitos_ok = all(orquestador.validar_digitos(mrz).values())
         valores["sexo"] = mrz.sexo
-        confianzas["sexo"] = CONFIANZA_MRZ_DIGITOS_OK if digitos_ok else CONFIANZA_MRZ_DIGITOS_FALLIDOS
         evidencias["sexo"] = f"pagina_{pagina.numero}"
         ctx.alerta("VAL-003", Severidad.informativa,
                    "El valor del campo se ha tomado de la MRZ porque no se leyo en la zona visual", campo="sexo")
