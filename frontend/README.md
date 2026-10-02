@@ -336,8 +336,9 @@ caducar se cierra sola aunque no haya peticiones. Sin sesion, cualquier ruta pro
 y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pantallas").
 
 ## Pendientes
-- Etapa 2: probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y reportar como
-  issue cualquier desviacion del contrato, sin adaptar el frontend en silencio.
+- HECHO (H1, 2026-10-02): probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y
+  reportar como issue cualquier desviacion del contrato. Sin desviaciones; detalle en
+  `docs/equipo/PERSONA_1_estado.md`, seccion "H1 (2026-10-02)".
 - Etapa 2: e2e reales con los 4 casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales").
 - Con PERSONA_1 (menor, no bloquea): la API acepta un `anio` `"0999"` y lo guarda como `999`, de 3
   cifras. La UI no lo envia nunca (exige `[1-9]\d{3}`) y el mock hace lo mismo que la API mientras no
