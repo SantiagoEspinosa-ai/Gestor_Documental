@@ -7,6 +7,7 @@ import { PaginaExpediente } from './paginas/PaginaExpediente'
 import { PaginaFolios } from './paginas/PaginaFolios'
 import { PaginaLogin } from './paginas/PaginaLogin'
 import { PaginaNoEncontrada } from './paginas/PaginaNoEncontrada'
+import { PaginaProcesos } from './paginas/PaginaProcesos'
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
           <Route path="/folios/:folio/carga" element={<PaginaCarga />} />
           <Route element={<RutaProtegida roles={['admin']} />}>
             <Route path="/auditoria" element={<PaginaAuditoria />} />
+            <Route path="/procesos" element={<PaginaProcesos />} />
           </Route>
         </Route>
       </Route>

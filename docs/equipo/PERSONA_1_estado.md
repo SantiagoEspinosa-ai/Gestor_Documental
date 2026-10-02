@@ -141,7 +141,7 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
       `anio` `"0999"` (las dos, del PR #9).
 
 ### Etapa 3
-- [ ] H8: pantalla de procesos en solo lectura.
+- [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
 - [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
 - [ ] H17: enmascaramiento en la UI con "mostrar" (tras H7 y `sensible: true` de PERSONA_2).
 
