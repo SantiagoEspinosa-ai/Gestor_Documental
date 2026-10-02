@@ -108,17 +108,9 @@ EQUIVALENTES = {
 # Esquemas sin interface en contrato.ts: los genera FastAPI o son multipart
 SIN_INTERFACE = {"HTTPValidationError", "ValidationError", "Body_subir_api_v1_folios__folio__documentos_post"}
 
-# Desviaciones conocidas de (c): {esquema: motivo}. Pendientes de decidir si cambia la API, el TS o el contrato
-DESVIACIONES_ESQUEMA: dict[str, str] = {
-    "Proceso": ("webhook_url y modelos son `str | None` en la API (webhook_url llega null a admin e integrador "
-                "si no hay webhook: procesos.yaml convierte '' en None) y `string` en ProcesoCompleto, que "
-                "documenta 'Vacio = sin webhook'"),
-    "TipoDocumental": ("nombre_visible, categoria, descripcion y las dos confianzas minimas son nullable en el "
-                       "modelo del router (api/tipos_documentales.py, de cuando se leia el YAML crudo) y no "
-                       "nullable en el TS; configuracion ya las exige, asi que nunca llegan null"),
-    "CampoTipo": ("tipo y patron son nullable en el modelo del router y no en CampoFicha; patron, ademas, se "
-                  "omite si no existe (exclude_unset) y nunca llega null"),
-}
+# Desviaciones conocidas de (c): {esquema: motivo}. Pendientes de decidir si cambia la API, el TS o el contrato.
+# Vacio: las de Proceso, TipoDocumental y CampoTipo se corrigieron tras el primer pase de H2
+DESVIACIONES_ESQUEMA: dict[str, str] = {}
 
 
 def _interfaces_ts() -> dict[str, dict[str, tuple[bool, bool]]]:

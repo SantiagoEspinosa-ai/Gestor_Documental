@@ -272,8 +272,10 @@ def test_tipos_documentales_y_procesos_iguales_que_config():
     assert _json("tipos_documentales") == [{k: f[k] for k in claves} for f in fichas]
     procesos = yaml.safe_load(_texto(RAIZ_REPO / "config" / "procesos.yaml"))["procesos"]
     assert {p["nombre"]: {k: v for k, v in p.items() if k != "nombre"} for p in _json("procesos")} == {
-        n: {k: p[k] for k in ("prefijo_folio", "tipos_requeridos", "tipos_opcionales", "permitir_antecedentes",
-                              "caducidad_antecedentes_dias", "webhook_url", "modelos")} for n, p in procesos.items()}
+        n: {**{k: p[k] for k in ("prefijo_folio", "tipos_requeridos", "tipos_opcionales", "permitir_antecedentes",
+                                 "caducidad_antecedentes_dias", "modelos")},
+            "webhook_url": p["webhook_url"] or None}  # como la API: vacio -> null
+        for n, p in procesos.items()}
 
 
 def test_auditoria_con_la_forma_del_contrato():
