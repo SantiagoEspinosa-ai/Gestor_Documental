@@ -116,8 +116,9 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
    - Folio que no existe: `404 FOLIO_NO_ENCONTRADO`, como el resto de rutas del folio.
 4. **Roles (C5).** Revisor y admin. El contrato hoy dice solo revisor; el admin lo necesita para
    auditar. El integrador: `403 SIN_PERMISO`.
-5. **Reparto.** Elegir los folios (C2) es una consulta sobre tablas de la plataforma (`folios`, con
-   `estado_general`, `decision_humana` y `fecha_decision`), asi que la hace PERSONA_1 en
+5. **Reparto.** Elegir los folios (C2) es una consulta sobre tablas de la plataforma (`folios`, columnas
+   `estado_general`, `decision` y `decision_fecha`; en el Contrato 1, `decision_humana` y
+   `fecha_decision`), asi que la hace PERSONA_1 en
    `expediente.servicio` (no en el router, por el ADR-005), y no se duplican esos datos en la memoria.
    PERSONA_2 solo expone `rag.servicio.fragmento_resumen(folio) -> str | None`, ya enmascarado, a
    partir de la memoria de folios (H14); mientras no exista, `fragmento_resumen` va a `null`. El router
