@@ -126,7 +126,7 @@ Aplicados en `resultado.py` y `endpoints.md` por el PR de contratos `docs/contra
 - Si algo del contrato no encaja, propon un ADR en `docs/adr/` en vez de cambiarlo.
 - Datos ficticios siempre; claves solo en `.env`.
 
-## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; PROPUESTA hasta aprobar su PR)
+## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; reparto ACEPTADO en el PR #13)
 PERSONA_3 pasa a otro proyecto. Heredas el frontend, los tests e2e, las pantallas de la etapa 3 y la
 demo. Se hacen en `feat/plataforma` (`feat/interfaz` queda sin uso: todo su contenido esta en `main`).
 Ids, dependencias y recortes: `docs/equipo/PERSONA_3_estado.md`. Antes de empezar, lee
@@ -136,11 +136,11 @@ Ids, dependencias y recortes: `docs/equipo/PERSONA_3_estado.md`. Antes de empeza
 |---|---|---|
 | H1 | Frontend contra tu API (`VITE_USAR_MOCKS=false` en `frontend/.env`). Cada desviacion del contrato, como issue; no adaptar la UI en silencio | 2 (ya, con el stub) |
 | H2 | Test que compare las rutas y metodos de `app.openapi()` con `endpoints.md` y revisar las formas frente a `frontend/src/tipos/contrato.ts` | 2 |
-| H3 | Mocks con el motor real (`version_prompt` `extraccion_{tipo}@v3`, evidencias `pagina_1:seccion_*`, documento `desconocido`, fecha no normalizable, `fecha_analisis` con microsegundos), regenerados con `scripts/generar_datos_mock.py` | 2, tras el PR #11 |
-| H4 | `desconocido` como "Tipo no reconocido" en `DetalleDocumento.tsx` y `PaginaCarga.tsx`; aviso si no hay ficha ni datos | 2, tras el ADR-009 de PERSONA_2 (H9, propuesto en `docs/adr-009-desconocido`) |
-| H5 | Etiqueta "Confianza verificada" solo si la confianza la calcula el codigo (ADR-007); si el motor real entra antes, "Confianza" de forma temporal. PERSONA_2 propone no sustituir el stub hasta ADR-007 (H10): confirmalo y la etiqueta no cambia | 2, segun H10 |
+| H3 | Mocks con el motor real (`version_prompt` `extraccion_{tipo}@v3`, evidencias `pagina_1:seccion_*`, documento `desconocido`, fecha no normalizable, `fecha_analisis` con microsegundos), regenerados con `scripts/generar_datos_mock.py` | 2 (el PR #11 ya esta en `main`) |
+| H4 | `desconocido` como "Tipo no reconocido" en `DetalleDocumento.tsx` y `PaginaCarga.tsx`; aviso si no hay ficha ni datos | 2, tras el ADR-009 de PERSONA_2 (H9, PR #14) |
+| H5 | Etiqueta "Confianza verificada" solo si la confianza la calcula el codigo (ADR-007); si el motor real entra antes, "Confianza" de forma temporal. PERSONA_2 ha decidido no sustituir el stub hasta ADR-007 (H10): PENDIENTE de que lo confirmes; si lo confirmas, la etiqueta no cambia | 2, segun H10 |
 | H6 | e2e reales: proyecto de Playwright aparte (`VITE_USAR_MOCKS=false`, `workers: 1`). Humo ya con el stub (login, folio, 3 tipos con `tipo_declarado`, completado, `EXP-001` desaparece, corregir, aprobar, `FOLIO_CERRADO`). Con el motor real, los folios de `INDICE.md` con fixtures normales: espera de 5 min por documento y `test.setTimeout` de 10 min por folio de 3; calentar Ollama antes | 2 (hito del dia 8) |
-| H7 | ADR de la etapa 3 (reserva el numero en el chat): enmascaramiento en la API con "mostrar" auditado, edicion de procesos y forma de `/antecedentes` (`referencia_persona` y respuesta si `permitir_antecedentes=false`). Revisa PERSONA_2 | borrador el dia 7 |
+| H7 | ADR-010 de la etapa 3 (el 009 es del PR #14; reserva el numero en el chat del equipo antes de redactarlo): enmascaramiento en la API con "mostrar" auditado, edicion de procesos y forma de `/antecedentes` (`referencia_persona` y respuesta si `permitir_antecedentes=false`). Revisa PERSONA_2 | borrador el dia 7 |
 | H8 | Pantalla de configuracion de procesos (admin) en solo lectura con `GET /procesos` | 3 |
 | H16 | Router `GET /folios/{folio}/antecedentes` (ya era tuyo) y pantalla "Antecedentes" en el expediente | 3, tras H7 y H14 |
 | H17 | Enmascaramiento en la UI: valor enmascarado de la API y boton "mostrar" que registra `dato_revelado` | 3, tras H7 y H15 |

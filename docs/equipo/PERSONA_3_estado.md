@@ -1,14 +1,14 @@
 # PERSONA_3 - Estado y traspaso (linea repartida)
 
-Actualizado: 2026-10-01 (dia 3 del plan). PERSONA_3 pasa a otro proyecto y su linea (frontend,
+Actualizado: 2026-10-02 (dia 4 del plan; revision del PR #13). PERSONA_3 pasa a otro proyecto y su linea (frontend,
 fixtures, tests e2e y memoria de folios) se reparte entre PERSONA_1 y PERSONA_2, sin persona nueva.
 La etapa 1 de la linea esta CERRADA y en `main` (PR #10). Este fichero dice que hay hecho, que se
 acordo, en que punto estan los PR abiertos y quien hereda cada tarea. Las tareas de cada persona estan
 tambien en su prompt (`PERSONA_1_plataforma.md` y `PERSONA_2_motor_ia.md`, seccion "Tareas heredadas
 de PERSONA_3"). La especificacion original sigue en `PERSONA_3_interfaz_calidad.md`.
 
-El reparto y los recortes de este fichero son una PROPUESTA hasta que PERSONA_1 y PERSONA_2 aprueben
-el PR del traspaso.
+El reparto y los recortes de este fichero estan ACEPTADOS por PERSONA_1 y PERSONA_2 en la revision del
+PR del traspaso (#13, 2026-10-02). Queda pendiente una confirmacion de PERSONA_1 (H10).
 
 ## Como retomar en una maquina nueva
 1. Requisitos: Git, Python 3.12, Node >= 22.22 (algunas dependencias del `package-lock.json` piden
@@ -141,37 +141,42 @@ Tests al cerrar el PR #10 (2026-10-01, `0ed30b8` con `main` integrado):
 | Tipo efectivo y tipo de extraccion | Efectivo (EXP-001, EXP-002, comparaciones, recomendacion): confirmado > detectado > declarado. Extraccion (PATCH de datos, reproceso): confirmado > declarado > detectado | ADR-006 2.5, PR #9 |
 | Recalculos | `EXP-001`, `CMP-001` y `EXP-002` solo conservan el falso positivo (`aplica=false`) cuando la condicion desaparece | PR #9 |
 | Recomendacion global | Nunca `rechazar` y no usa la del documento (esa la da el motor y no se recalcula) | `expediente/README.md` |
+| Recomendacion del documento | El motor tampoco recomienda `rechazar` por documento, igual que la global (propuesta de PERSONA_2, aceptada por PERSONA_1). La aplica PERSONA_2 en la etapa 2 con su propio PR, incluido el ajuste de `codigos_alertas.md` si hace falta | PR #15 y PR #13 |
 | PATCH de datos | `null` solo en opcionales; `anio` entero de 4 cifras o texto `"AAAA"`; fecha `AAAA-MM-DD` y `patron` | `api/README.md` |
-| `modulos/rag` | ADR-006 ("Coordinacion") daba `memoria.py` y `embeddings.py` a PERSONA_3. Con el traspaso pasan a PERSONA_2 (PROPUESTA). Se mantienen las reglas: `servicio.py` es la unica API, el router lo hace PERSONA_1 en `api` y la migracion se encadena en la historia de Alembic de PERSONA_1 avisando antes | ADR-006, este fichero |
+| `modulos/rag` | ADR-006 ("Coordinacion") daba `memoria.py` y `embeddings.py` a PERSONA_3. Con el traspaso pasan a PERSONA_2 (ACEPTADO en el PR #13). Se mantienen las reglas: `servicio.py` es la unica API, el router lo hace PERSONA_1 en `api` y la migracion se encadena en la historia de Alembic de PERSONA_1 avisando antes | ADR-006, este fichero |
 | Fixtures | `fixtures/generados/` e `INDICE.md` no se suben (`.gitignore`); se generan con `--hoy`. `--hoy 2026-09-30` es la fecha de los mocks y de los tests | `fixtures/README.md` |
 | `INDICE.md` | Es un contrato de hecho: lo leen `test_fixtures_ocr.py` y `evaluar_fixtures.py` de PERSONA_2. No cambiar su formato sin avisar | PR #11 |
 | Especimenes | Si se suben. Siempre sin metadatos (EXIF, GPS, XMP, ICC, MPO) y solo con el documento ficticio en el encuadre | `fixtures/especimenes/README.md` |
-| ADR nuevos | El numero se reserva en el chat del equipo antes de abrir la rama | - |
+| ADR nuevos | El numero se reserva en el chat del equipo antes de abrir la rama. Ocupados: ADR-001 a ADR-009 (el 009, en el PR #14); el siguiente libre es ADR-010 (H7) | - |
 
-## En curso (2026-10-01, comprobado por la API publica de GitHub y con git)
+## En curso (2026-10-02, comprobado por la API publica de GitHub y con git)
 - **PR #10** (`feat/interfaz` -> `main`): FUSIONADO (merge `17098b2`), aprobado por PERSONA_1 y
   PERSONA_2. La etapa 1 de la linea esta en `main`. `feat/interfaz` se conserva en `0ed30b8`, sin
   ningun commit ni diferencia respecto a `main` (`git log origin/main..feat/interfaz` vacio y
   `git diff` vacio). No hay que recuperar nada de ella.
-- **PR #11** (`feat/motor-ia` -> `main`, etapa 1 de PERSONA_2): aprobado por PERSONA_3 (revision) y
-  por PERSONA_1 (comentario), sin conflictos, PENDIENTE DE FUSIONAR. De la revision de PERSONA_3:
-  los puntos 1 (spec desfasada) y 2 (`desconocido`) conviene resolverlos antes de fusionar; del 3 al 8
-  son menores. Los que tocaban a PERSONA_3 estan en el reparto (H9 a H12); el resto son de PERSONA_2
-  (resumen en el anexo B). Despues de esa revision, PERSONA_2 subio `7c84720` y `96f7425` (head del
-  PR): spec al dia, tiempo por documento (seccion 13), `test_fixtures_ocr.py` solo con los casos y el
+- **PR #11** (`feat/motor-ia` -> `main`, etapa 1 de PERSONA_2): FUSIONADO el 2026-10-02 (merge
+  `0a31b1e`). Incluye los arreglos posteriores a la revision de PERSONA_3 (`7c84720` y `96f7425`):
+  spec al dia, tiempo por documento (seccion 13), `test_fixtures_ocr.py` solo con los casos y el
   nivel conocidos, y la decision de no sustituir el stub hasta ADR-007 (670 tests pasan y 2 se saltan
-  en el contenedor, segun la spec).
-- **ADR-009** (`desconocido` en `tipo_documental_detectado`): PROPUESTO por PERSONA_2 en la rama
-  `docs/adr-009-desconocido` (`4dc4906`), todavia sin PR. El ADR de la etapa 3 necesitara otro
-  numero (reservarlo en el chat).
+  en el contenedor, segun la spec). De la revision de PERSONA_3, lo que tocaba a PERSONA_3 esta en el
+  reparto (H9 a H12); el resto es de PERSONA_2 (anexo B).
 - **PR #12** (`feat/plataforma` -> `main`, PERSONA_1): `docs/arquitectura_solucion.md` con vistas C4.
-  Solo documentacion; no cambia contratos ni ADR. PERSONA_2 pidio tres ajustes. Sale de
-  `feat/plataforma`, asi que lo que PERSONA_1 suba a esa rama entra en ese PR hasta que se fusione.
+  FUSIONADO el 2026-10-02 (merge `285a467`), aprobado por PERSONA_3. Los ajustes de la revision entraron
+  despues con el **PR #15** (FUSIONADO, merge `4b218e9`): regla de las cuatro senales del OCR,
+  recomendacion del documento pendiente del motor y Textract como opcion futura con la barrera de
+  privacidad.
+- **PR #14** (`docs/adr-009-desconocido`, PERSONA_2): ADR-009, valor reservado `desconocido` en
+  `tipo_documental_detectado`. ABIERTO (H9).
+- **PR #13** (este traspaso): aprobado por PERSONA_1 y PERSONA_2 en comentarios. Para GitHub hace falta
+  la aprobacion con "Review changes -> Approve".
+- **Pendiente de PERSONA_1:** un PR pequeno, cuando se fusione el #13, para poner el reparto nuevo en
+  `docs/arquitectura_solucion.md` (en `main` aun dice "Equipo de 3 personas" y da `rag` a PERSONA_2 y
+  PERSONA_3).
 - **Issues:** ninguno en GitHub. Del PR #9 quedan dos notas sin issue, ahora de PERSONA_1: la API
   acepta un `anio` `"0999"` y lo guarda como `999` (la UI nunca lo envia), y revisar la forma de
   `tiempos` y `tokens` en el `detalle` de `documento_procesado` cuando llegue el motor real.
 
-## Reparto propuesto (PROPUESTA)
+## Reparto (ACEPTADO en el PR #13, 2026-10-02)
 Criterio: PERSONA_1 tiene la etapa 2 de la plataforma ya fusionada (PR #9) y es duena de la API, las
 claves AWS y la historia de migraciones, asi que hereda la UI, los e2e y la demo. PERSONA_2 va por la
 ruta critica de la etapa 2 (`procesar_documento`, ADR-007 y reglas), pero es quien consume los
@@ -182,52 +187,47 @@ porque `memoria.py` comparte con `conocimiento.py` el troceado, los embeddings y
 |---|---|---|---|---|
 | H1 | Frontend contra la API real (`VITE_USAR_MOCKS=false`); cada desviacion del contrato, como issue | PERSONA_1 | 2 (ya, con el stub) | Ninguna; los campos del motor, tras `procesar_documento` |
 | H2 | Comparar `endpoints.md` y `frontend/src/tipos/contrato.ts` con el `openapi.json` de FastAPI (test con `app.openapi()`: rutas, metodos y esquemas) | PERSONA_1 | 2 | Ninguna |
-| H3 | Mocks con el motor real: `version_prompt` `extraccion_{tipo}@v3`, evidencias `pagina_1:seccion_*`, un documento `desconocido`, una fecha no normalizable y `fecha_analisis` con microsegundos; regenerar con `generar_datos_mock.py` | PERSONA_1 | 2 | PR #11 en `main`; H9 para `desconocido` |
+| H3 | Mocks con el motor real: `version_prompt` `extraccion_{tipo}@v3`, evidencias `pagina_1:seccion_*`, un documento `desconocido`, una fecha no normalizable y `fecha_analisis` con microsegundos; regenerar con `generar_datos_mock.py` | PERSONA_1 | 2 | PR #11 en `main` (ya fusionado); H9 para `desconocido` |
 | H4 | UI: `desconocido` como "Tipo no reconocido" y aviso, en vez de tabla vacia, si no hay ficha ni datos | PERSONA_1 | 2 | H9 |
 | H5 | Etiqueta de la confianza: "Confianza verificada" solo si la calcula el codigo; si no, "Confianza". Con H10 decidido, se queda como esta salvo que se conecte el motor antes de ADR-007 | PERSONA_1 | 2 | H10 |
 | H6 | e2e reales: proyecto de Playwright aparte, `workers: 1`. Humo ya con el stub; con el motor real, los folios de `INDICE.md` con fixtures normales (maximo medido, 73 s). Espera de 5 min por documento y `test.setTimeout` de 10 min por folio de 3; calentar Ollama antes. El peor caso de la spec (540 s por documento con OCR pobre) no entra en los e2e | PERSONA_1 | 2 (hito del dia 8) | `procesar_documento` real; H12 |
-| H7 | ADR de la etapa 3: enmascaramiento en el backend con "mostrar" auditado, edicion de procesos y forma de `/antecedentes` (`referencia_persona`, respuesta si `permitir_antecedentes=false`) | PERSONA_1 redacta; PERSONA_2 revisa | Borrador el dia 7 | Numero reservado en el chat |
+| H7 | ADR-010 (etapa 3): enmascaramiento en el backend con "mostrar" auditado, edicion de procesos y forma de `/antecedentes` (`referencia_persona`, respuesta si `permitir_antecedentes=false`). Reservar el numero en el chat del equipo antes de redactarlo | PERSONA_1 redacta; PERSONA_2 revisa | Borrador el dia 7 | ADR-010 reservado en el chat |
 | H8 | Pantalla de configuracion de procesos (admin), en solo lectura con `GET /procesos` | PERSONA_1 | 3 | Ninguna (recorte R3) |
-| H9 | ADR para `desconocido` en `tipo_documental_detectado` (Contrato 1 y `endpoints.md`). EN CURSO: ADR-009 propuesto en `docs/adr-009-desconocido`; falta abrir el PR | PERSONA_2 redacta; PERSONA_1 revisa | 2 (dias 4-5) | Ninguna |
-| H10 | Decidir ADR-007 antes de sustituir `motor_stub.py`. DECIDIDO por PERSONA_2 (spec, `96f7425`): `procesar_documento` no sustituye al stub hasta que la confianza la calcule el codigo. Falta que PERSONA_1 lo confirme | PERSONA_2 decide; PERSONA_1 conecta | 2 | Ninguna |
+| H9 | ADR para `desconocido` en `tipo_documental_detectado` (Contrato 1 y `endpoints.md`). EN CURSO: ADR-009 en el PR #14, abierto | PERSONA_2 redacta; PERSONA_1 revisa | 2 (dias 4-5) | Ninguna |
+| H10 | Decidir ADR-007 antes de sustituir `motor_stub.py`. DECIDIDO por PERSONA_2 (spec, `96f7425`, y PR #13): `procesar_documento` no sustituye al stub hasta que la confianza la calcule el codigo. PENDIENTE de que PERSONA_1 lo confirme | PERSONA_2 decide; PERSONA_1 conecta | 2 | Ninguna |
 | H11 | Formato estable de `INDICE.md`. EN PARTE: `test_fixtures_ocr.py` ya filtra por los casos y el nivel conocidos (`7c84720`). Falta documentar el formato en `fixtures/README.md` (o generar un `INDICE.json`), porque el test sigue leyendo el Markdown | PERSONA_2 | 2 | Ninguna |
-| H12 | Tiempo maximo esperado por documento y por pagina escaneada. HECHO en la spec, seccion 13 (llega con el PR #11): ~60 s normal, 244 s maximo medido, 540 s peor caso de una pagina | PERSONA_2 | 2 | Ninguna; lo usa H6 |
+| H12 | Tiempo maximo esperado por documento y por pagina escaneada. HECHO en la spec, seccion 13 (en `main` con el PR #11): ~60 s normal, 244 s maximo medido, 540 s peor caso de una pagina | PERSONA_2 | 2 | Ninguna; lo usa H6 |
 | H13 | Mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py` (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF y Pillow | PERSONA_2 | 2-3 | Al cambiar reglas u OCR |
 | H14 | `rag/embeddings.py` (Ollama `nomic-embed-text`), `rag/memoria.py`, migracion de `memoria_folios`, `buscar_antecedentes` con permisos y caducidad, `rag/servicio.py` y `rag/README.md` | PERSONA_2 | 3 (dias 9-11) | H7; `resumen.md` de PERSONA_1 (se puede probar antes con un `.md` ficticio) |
 | H15 | `sensible: true` en los YAML y en el cargador | PERSONA_2 | 3 | H7 |
 | H16 | Router `GET /folios/{folio}/antecedentes` y pantalla "Antecedentes" en el expediente | PERSONA_1 | 3 (dias 10-11) | H7, H14 |
 | H17 | Enmascaramiento en la UI con "mostrar" auditado (`dato_revelado`) | PERSONA_1 | 3 | H7, H15 y el enmascaramiento de la API |
-| H18 | Repetir o recortar las 4 fotos de especimenes descartadas, solo si se rechaza R5 | PERSONA_2 | 3, solo si se rechaza R5 | Ninguna |
+| H18 | Repetir o recortar las 4 fotos de especimenes descartadas: NO SE HACE (R5 aceptado) | - | - | - |
 | H19 | Demo: guion (recibir -> procesar -> validar -> consolidar -> exponer + antecedentes), ensayo y `docker compose up` desde cero | PERSONA_1 lidera; PERSONA_2, motor y maquina de Ollama | 4 | Todo lo anterior |
 
-Para no bloquearse:
-- PERSONA_1 no espera al motor: los dias 4-6 hace H1, H2, el humo de H6 con el stub, H8 y el
-  borrador de H7.
-- PERSONA_2 cierra H9 (abrir el PR del ADR-009) antes que nada, porque desbloquea H3 y H4, y no
-  espera a `resumen.md` para H14:
-  la memoria indexa cualquier Markdown y se prueba con uno ficticio y embeddings simulados.
-- Orden de fusion propuesto: #11 -> #12 (con los ajustes) -> traspaso. Ninguno choca con los demas
-  (ver la descripcion del PR del traspaso).
+Para no bloquearse (prioridades que dio cada persona en el PR #13):
+- PERSONA_1: en la etapa 2, primero H1 y H2; el borrador del ADR-010 (H7), para el dia 7. No espera al
+  motor: el humo de H6 con el stub y H8 tambien pueden ir en los dias 4-6.
+- PERSONA_2: primero la ruta critica de la etapa 2 (ADR-007, reglas y `procesar_documento`) y H9 (PR
+  #14), que desbloquea H3 y H4. La memoria (H14) va en la etapa 3 y se prueba antes con un
+  `resumen.md` ficticio y embeddings simulados. Si no da tiempo, el primero en caer es el extra 2 (R4).
+- Orden de fusion: #11 y #12 ya estan en `main`; queda este traspaso (#13) y el ADR-009 (#14).
 - Cada PR lo sigue revisando la otra persona; con dos, cada una revisa todo lo de la otra.
 
-PREGUNTA PARA EL EQUIPO (se decide en la reunion; hasta entonces el reparto de arriba no cambia):
-con este reparto, PERSONA_2 lleva la ruta critica de la etapa 2 (`procesar_documento`, ADR-007 y
-reglas) y ademas toda la carpeta `rag`. Alternativa: que `rag/memoria.py` (H14) la haga PERSONA_1,
-que ya tiene las migraciones, el expediente que genera `resumen.md`, el router `/antecedentes` y la
-pantalla de antecedentes (H16), reutilizando `rag/embeddings.py` y el troceado de PERSONA_2.
+`rag/memoria.py` (H14): DECIDIDO en el PR #13, la hace PERSONA_2 (lo confirman PERSONA_1 y PERSONA_2).
 
-## Recortes propuestos (PROPUESTA: los decide el equipo; el MVP no se recorta)
-| Id | Recorte | Por que |
-|---|---|---|
-| R1 | Extra 4 (factura y comprobante de gasto): fuera | Dos YAML, casos nuevos en el generador, `INDICE.md` y `test_fixtures_ocr.py` que cambian; no aporta al MVP |
-| R2 | Extra 3 (administracion de tipos documentales): fuera | `GET /tipos-documentales` ya basta para la UI; editar tipos exige decidir la fuente de verdad de los YAML |
-| R3 | Edicion de procesos: solo lectura | ADR-006 (bloque 4) dice que excede el MVP y el PR #12 la deja fuera; el ADR de la etapa 3 solo lo deja escrito |
-| R4 | Extra 2 (`VIS-xxx`): solo si el dia 11 el hito y la memoria estan en verde | Es el primero que cae si PERSONA_2 va justa |
-| R5 | No repetir las 4 fotos de especimenes | Las 5 actuales cubren los 3 tipos y el caso dificil del comprobante (0/4 con OCR) |
-| R6 | `openrouter.py` al final de la etapa 3 y opcional en la demo | Con `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` no se usa nunca |
-| R7 | Antecedentes con la opcion a) de ADR-006: `referencia_externa` del folio | Sin HMAC de la CURP ni clave nueva; un folio sin referencia no tiene antecedentes |
-| R8 | Enmascaramiento minimo: CURP, numero de pasaporte y clave de elector | Menos campos `sensible`, menos pruebas; la parte de correcciones del extra 1 ya existe (tabla `correcciones`, PR #9) |
-| R9 | e2e reales: humo en cada cambio y los folios de `INDICE.md` solo antes de cada PR de etapa; los de dificultad, fuera | Con Ollama sin GPU, 14 documentos son unos 15 min por ejecucion |
+## Recortes (decididos en el PR #13, 2026-10-02; el MVP no se recorta)
+| Id | Recorte | Estado | Por que |
+|---|---|---|---|
+| R1 | Extra 4 (factura y comprobante de gasto): fuera | ACEPTADO | Dos YAML, casos nuevos en el generador, `INDICE.md` y `test_fixtures_ocr.py` que cambian; no aporta al MVP |
+| R2 | Extra 3 (administracion de tipos documentales): fuera | ACEPTADO | `GET /tipos-documentales` ya basta para la UI; editar tipos exige decidir la fuente de verdad de los YAML |
+| R3 | Edicion de procesos: solo lectura | ACEPTADO | ADR-006 (bloque 4) dice que excede el MVP y el PR #12 la deja fuera; el ADR-010 solo lo deja escrito |
+| R4 | Extra 2 (`VIS-xxx`): solo si el dia 11 el hito y la memoria estan en verde | ACEPTADO | Es el primero que cae si a PERSONA_2 no le da tiempo |
+| R5 | No repetir las 4 fotos de especimenes | ACEPTADO | Las 5 actuales cubren los 3 tipos y el caso dificil del comprobante (0/4 con OCR) |
+| R6 | `openrouter.py` al final de la etapa 3 y opcional en la demo | ACEPTADO | Con `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` no se usa nunca |
+| R7 | Antecedentes con la opcion a) de ADR-006: `referencia_externa` del folio | ACEPTADO | Sin HMAC de la CURP ni clave nueva; un folio sin referencia no tiene antecedentes |
+| R8 | Enmascaramiento minimo: CURP, numero de pasaporte y clave de elector | ACEPTADO | Menos campos `sensible`, menos pruebas; la parte de correcciones del extra 1 ya existe (tabla `correcciones`, PR #9) |
+| R9 | e2e reales: humo en cada cambio y los folios de `INDICE.md` solo antes de cada PR de etapa; los de dificultad, fuera | ACEPTADO | Con Ollama sin GPU, 14 documentos son unos 15 min por ejecucion |
 
 ## Riesgos y avisos
 - **Hashes de los fixtures:** dependen de PyMuPDF 1.28.2 y Pillow 12.3.0. `requirements.txt` usa
