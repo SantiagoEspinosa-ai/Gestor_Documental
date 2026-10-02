@@ -60,7 +60,8 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const salir = useCallback(() => {
     borrarSesion()
     setAviso(null)
-    setEstado({ tipo: 'anonimo' })
+    // Cierre voluntario: sin ruta de vuelta (RutaProtegida). Al caducar (401) si se conserva
+    setEstado({ tipo: 'anonimo', porCierre: true })
   }, [])
 
   const reintentar = useCallback(() => {

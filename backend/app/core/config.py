@@ -5,11 +5,11 @@ y Tesseract las leen los adaptadores de PERSONA_2 y aqui se ignoran.
 """
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # backend/app/core/config.py -> raiz del repo
 RAIZ_REPO = Path(__file__).resolve().parents[3]
@@ -53,6 +53,19 @@ class Settings(BaseSettings):
 
     # Zona horaria del negocio: decide el anio del folio (no UTC)
     zona_horaria: str = "America/Mexico_City"
+
+    # Origenes del navegador que pueden llamar a la API (CORS). En .env, separados por comas
+    cors_origenes: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
+
+    @field_validator("cors_origenes", mode="before")
+    @classmethod
+    def _cors_origenes_separados_por_comas(cls, valor):
+        if isinstance(valor, str):
+            valor = [origen.strip() for origen in valor.split(",")]
+        origenes = [origen for origen in valor if origen]
+        if "*" in origenes:
+            raise ValueError("CORS_ORIGENES no admite el comodin '*': indica los origenes uno a uno")
+        return origenes
 
     @field_validator("zona_horaria")
     @classmethod

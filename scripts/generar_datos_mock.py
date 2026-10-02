@@ -335,7 +335,9 @@ def generar(datos: Path = DATOS, originales: Path = ORIGINALES) -> None:
     procesos_yaml = yaml.safe_load((RAIZ / "config" / "procesos.yaml").read_text(encoding="utf-8"))["procesos"]
     claves_proceso = ("prefijo_folio", "tipos_requeridos", "tipos_opcionales", "permitir_antecedentes",
                       "caducidad_antecedentes_dias", "webhook_url", "modelos")
-    procesos = [{"nombre": nombre, **{k: p[k] for k in claves_proceso}} for nombre, p in procesos_yaml.items()]
+    # Como la API: un webhook_url vacio en procesos.yaml llega como null (core/procesos.py)
+    procesos = [{"nombre": nombre, **{k: p[k] for k in claves_proceso}, "webhook_url": p["webhook_url"] or None}
+                for nombre, p in procesos_yaml.items()]
     claves_ficha = ("nombre", "nombre_visible", "categoria", "descripcion", "formatos_permitidos", "campos",
                     "confianza_minima_clasificacion", "confianza_minima_campo", "reglas", "comparaciones")
     tipos = [{k: ficha[k] for k in claves_ficha} for ficha in constructor.fichas.values()]

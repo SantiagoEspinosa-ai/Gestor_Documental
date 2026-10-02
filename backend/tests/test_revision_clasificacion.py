@@ -142,7 +142,8 @@ def test_confirmar_otro_tipo_reprocesa(cliente, sesion, s3, folio):
     # TestClient ya ha ejecutado la BackgroundTask: version 2 con el tipo confirmado
     despues = cliente.get(f"/api/v1/documentos/{doc.id}", headers=_cab()).json()
     assert despues["estado_analisis"] == "completado"
-    assert despues["tipo_documental_detectado"] == despues["tipo_documental_confirmado"] == "comprobante_domicilio"
+    assert despues["tipo_documental_confirmado"] == "comprobante_domicilio"
+    assert despues["tipo_documental_detectado"] is None  # ADR-009: con tipo confirmado no se clasifica
     assert despues["correcciones"] == []  # las de la v1 no se aplican sobre la v2
     assert sorted(sesion.scalars(select(Resultado.version).where(Resultado.documento_id == doc.id))) == [1, 2]
     assert _exp001(sesion, folio) == ["credencial_elector"]  # la del tipo anterior reaparece

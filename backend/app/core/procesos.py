@@ -43,8 +43,12 @@ class ProcesoConfig(BaseModel):
         return valor or None
 
 
-def leer_procesos(config_dir: Path) -> list[ProcesoConfig]:
-    """Lee y valida procesos.yaml. Lanza ErrorProcesos con todos los errores a la vez."""
+def leer_procesos(config_dir: Path, tipos_existentes: set[str]) -> list[ProcesoConfig]:
+    """Lee y valida procesos.yaml. Lanza ErrorProcesos con todos los errores a la vez.
+
+    `tipos_existentes`: nombres de las fichas cargadas. Los pasa quien llama (main.py, desde
+    `configuracion.servicio`), porque core no importa modulos (ADR-005).
+    """
     ruta = config_dir / FICHERO
     try:
         datos = yaml.safe_load(ruta.read_text(encoding="utf-8"))
@@ -52,9 +56,6 @@ def leer_procesos(config_dir: Path) -> list[ProcesoConfig]:
         raise ErrorProcesos([f"{FICHERO}: no se puede leer: {e}"]) from e
     if not isinstance(datos, dict) or not isinstance(datos.get("procesos"), dict):
         raise ErrorProcesos([f"{FICHERO}: falta el diccionario 'procesos'"])
-
-    # TODO: cambiar por configuracion.listar() cuando el modulo de PERSONA_2 este en main
-    tipos_existentes = {p.stem for p in (config_dir / "tipos").glob("*.yaml")}
 
     errores: list[str] = []
     procesos: list[ProcesoConfig] = []

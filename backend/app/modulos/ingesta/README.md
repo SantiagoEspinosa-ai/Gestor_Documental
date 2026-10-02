@@ -45,8 +45,11 @@ Las correcciones de versiones anteriores no se aplican.
 delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).
 
 ## tipos.py
-Lee `formatos_permitidos` de `config/tipos/*.yaml`. Provisional hasta que `configuracion` de
-PERSONA_2 este en main.
+Fichas desde `configuracion.servicio` (PERSONA_2: `obtener`, `listar`, `TipoNoEncontrado`), sin leer
+YAML; las carga y valida el lifespan de `main.py`. `listar_fichas()` arma a mano la forma
+`TipoDocumental` de `endpoints.md` (mismas claves, orden por nombre), para que un campo nuevo del
+modelo de `configuracion` no cambie el contrato. `nombre_visible` nunca lanza: sin ficha, el nombre
+tecnico.
 
 ## procesamiento.py
 `procesar(documento_id, tipo_confirmado=None)`: se lanza como BackgroundTask y abre su propia sesion.
@@ -76,7 +79,8 @@ tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]`
   `CMP-001`, el recalculo de `EXP-001` y la recomendacion global.
 
 Mientras ese modulo no este en `main`, `procesamiento.py` importa `motor_stub.procesar_documento`,
-con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas, y
+con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas (con `tipo_confirmado`,
+`tipo_documental_detectado` y `confianza_clasificacion` a null, como el motor real; ADR-009), y
 `{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
 
 ## Fallos del procesamiento

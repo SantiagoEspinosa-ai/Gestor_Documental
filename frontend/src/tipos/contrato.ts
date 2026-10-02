@@ -176,9 +176,10 @@ export interface ProcesoCompleto {
   tipos_opcionales: string[]
   permitir_antecedentes: boolean
   caducidad_antecedentes_dias: number
-  /** Vacio = sin webhook */
-  webhook_url: string
-  modelos: string
+  /** null = sin webhook / sin modelos propios (campos sin valor: siempre null, nunca "") */
+  webhook_url: string | null
+  /** null = sin webhook / sin modelos propios (campos sin valor: siempre null, nunca "") */
+  modelos: string | null
 }
 
 /** GET /procesos para el revisor: sin webhook_url ni modelos */
