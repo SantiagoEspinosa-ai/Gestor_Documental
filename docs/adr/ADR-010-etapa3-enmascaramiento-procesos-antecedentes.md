@@ -2,7 +2,8 @@
 
 Fecha: 2026-10-02. Estado: PROPUESTO.
 Propone: PERSONA_1 (tarea H7 del traspaso, PR #13). Revisa: PERSONA_2.
-Cierra los huecos 4 y 8 del ADR-006 (aplazados a la etapa 3) y aplica los recortes aceptados R3, R7 y
+Cierra los huecos 3, 4 y 8 del ADR-006 (edicion de procesos, enmascaramiento y `/antecedentes`,
+aplazados a la etapa 3) y aplica los recortes aceptados R3, R7 y
 R8 (`docs/PLAN_PROYECTO.md`, seccion 8). Afecta al Contrato 2 (`docs/contratos/endpoints.md`) y a las
 fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la interfaz del motor.
 
@@ -123,6 +124,7 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 | A3-b: el integrador recibe los datos completos | Es el sistema que consume el resultado, pero una API o un webhook con CURP en claro amplia la exposicion. Si un cliente lo necesita, se decide con su contrato de tratamiento de datos, fuera del MVP |
 | A3-c: solo enmascarar en la UI | Rechazada en el ADR-006: la API seguiria devolviendo el valor |
 | A4-b: `GET /documentos/{id}/datos/{campo}` | Un `GET` con efecto (auditoria) puede repetirse por cachés o precargas y dejar entradas falsas |
+| A4-c: `POST /documentos/{id}/datos/{campo}/revelar` (la propuesta del ADR-006, hueco 4) | Equivalente; se prefiere el campo en el cuerpo para validarlo como el resto de peticiones (422 `PETICION_INVALIDA`) y no meter nombres de campo en la ruta ni en los logs de acceso |
 | A5-b: enmascarar solo `datos_extraidos` | El valor se escaparia por la evidencia (MRZ), las comparaciones, las correcciones y el webhook |
 | A6-b: lista `campos_enmascarados` en cada `ResultadoDocumento` | Cambia el Contrato 1, que esta congelado; la ficha ya es la fuente de los campos |
 | C3-b: `403` si el proceso no permite antecedentes | La UI tendria que distinguir este 403 del de rol; exige un codigo de error nuevo |
@@ -141,7 +143,9 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 - **Cuando se acepte**: un PR de contratos con la linea de `endpoints.md` para `POST
   /documentos/{id}/revelar`, la forma de `GET /folios/{folio}/antecedentes` (y el rol admin), `sensible`
   en `CampoFicha` y la nota de enmascaramiento en "Reglas"; la accion de auditoria `dato_revelado` ya
-  esta prevista en `endpoints.md` (ADR-006 1.5) y en `core/modelos.py`.
+  esta prevista en `endpoints.md` (ADR-006 1.5); en el codigo hay que anadirla a
+  `ACCIONES_AUDITORIA` (`core/modelos.py`), que `core/auditoria.registrar` valida. Sin migracion: la
+  columna no tiene CHECK en BD.
 - **Etapa 3, dias 9-11**: H15 (PERSONA_2) antes que el enmascaramiento de la API; despues H17 y la
   pantalla de antecedentes (H16) cuando `buscar_antecedentes` este en `main`.
 - El xfail de `antecedentes` en `tests/test_openapi_contrato.py` se quita cuando el router exista.
