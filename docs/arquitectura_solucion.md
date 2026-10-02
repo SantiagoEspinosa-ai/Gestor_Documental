@@ -297,7 +297,7 @@ al cerrar cada etapa. Los PR #10 a #16 están fusionados y el ADR-009 está acep
 
 | Rama | Persona | Estado |
 | --- | --- | --- |
-| `main` | — | Contratos, catálogos, ADR-001 a ADR-008, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11), este documento (PR #12 y #15) y el traspaso de PERSONA_3 (PR #13) |
+| `main` | — | Contratos, catálogos, ADR-001 a ADR-009, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11), este documento (PR #12 y #15) y el traspaso de PERSONA_3 (PR #13) |
 | `feat/plataforma` | PERSONA_1 | Etapa 2 fusionada; probada de extremo a extremo (15/15). También el frontend heredado (H1–H8, H16, H17, H19) |
 | `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 fusionado. También `rag` y los fixtures heredados (H9–H15) |
 | `feat/interfaz` | — | Sin uso; su contenido está en `main` (PR #10) |
