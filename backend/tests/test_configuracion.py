@@ -272,5 +272,7 @@ def test_marcadores_fuera_de_model_dump_y_de_tipos_documentales():
         assert ficha.marcadores_clasificacion                       # el motor si los tiene
         volcado = ficha.model_dump(mode="json")
         assert "marcadores_clasificacion" not in volcado
-        respuesta = RespuestaTipo.model_validate(volcado).model_dump(exclude_unset=True)
+        # exclude_none: desde el PR #19 la API no admite `patron: null` (en contrato.ts es `patron?: string`)
+        respuesta = RespuestaTipo.model_validate(ficha.model_dump(mode="json", exclude_none=True)).model_dump(
+            exclude_unset=True)
         assert "marcadores_clasificacion" not in respuesta
