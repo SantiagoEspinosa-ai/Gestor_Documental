@@ -22,16 +22,17 @@ Python 3.12 + FastAPI, SQLAlchemy 2 + Alembic, PostgreSQL 16 + pgvector, boto3 (
 Tesseract via pytesseract, PyMuPDF, Ollama, React 18 + Vite. BackgroundTasks para procesamiento.
 
 ## Modulos y responsables
-- ingesta, api, expediente, auth: PERSONA_1
-- orquestador, motor_ia: PERSONA_2
-- frontend, fixtures, tests e2e, rag: PERSONA_3
+- ingesta, api, expediente, auth y, desde el 2026-10-01, frontend, tests e2e y demo: PERSONA_1
+- orquestador, motor_ia y, desde el 2026-10-01, fixtures y rag (memoria, embeddings y conocimiento): PERSONA_2
+- PERSONA_3 paso a otro proyecto el 2026-10-01 y su linea se repartio entre las dos (traspaso en
+  `docs/equipo/PERSONA_3_estado.md`)
 
 ## Ramas y flujo de trabajo
 | Rama | Persona | Modulos |
 |---|---|---|
-| `feat/plataforma` | PERSONA_1 | ingesta, core, api, expediente |
-| `feat/motor-ia` | PERSONA_2 | configuracion, orquestador, motor_ia, validacion |
-| `feat/interfaz` | PERSONA_3 | frontend, fixtures, tests e2e, rag |
+| `feat/plataforma` | PERSONA_1 | ingesta, core, api, expediente, frontend, tests e2e |
+| `feat/motor-ia` | PERSONA_2 | configuracion, orquestador, motor_ia, validacion, rag, fixtures |
+| `feat/interfaz` | (sin uso desde el 2026-10-01) | Todo su contenido esta en `main` (PR #10); no se hace commit en ella |
 
 1. Cada persona trabaja y hace commit solo en su rama. Nadie hace commit directo en `main`.
 2. Al empezar el dia: `git fetch` y `git merge origin/main` en tu rama para traer lo integrado.
@@ -43,7 +44,8 @@ Tesseract via pytesseract, PyMuPDF, Ollama, React 18 + Vite. BackgroundTasks par
 Cada persona empieza su sesion de Claude Code pegando su fichero de `docs/equipo/`:
 - PERSONA_1 -> `docs/equipo/PERSONA_1_plataforma.md`
 - PERSONA_2 -> `docs/equipo/PERSONA_2_motor_ia.md`
-- PERSONA_3 -> `docs/equipo/PERSONA_3_interfaz_calidad.md`
+- Tareas heredadas de PERSONA_3: seccion "Tareas heredadas de PERSONA_3" del prompt de cada una, y
+  `docs/equipo/PERSONA_3_estado.md` (estado, acuerdos, reparto y recortes)
 Estado y siguientes pasos de PERSONA_1: `docs/equipo/PERSONA_1_estado.md`.
 Spec vigente de PERSONA_2: `docs/motor_ia/SPEC_CONFIGURACION.md`.
 Esos ficheros son la especificacion vigente de cada linea de trabajo; si cambia el plan, se
