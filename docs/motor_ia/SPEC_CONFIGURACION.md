@@ -252,8 +252,12 @@ se queda solo con `pagina_<n>` (seccion 4).
       y ensenarlo antes de resolver.
 - [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
       `orquestador` para evitar la importacion circular.
-- [ ] **Valor reservado `desconocido`** (ADR-009, PROPUESTO, rama `docs/adr-009-desconocido`): ver seccion 10.
-      PR pequeno antes de la etapa 2.
+- [x] **Valor reservado `desconocido`: ADR-009 ACEPTADO** (2026-10-02, PERSONA_1 en la revision del PR #14 y
+      PERSONA_2); ver seccion 10. El PR #14 se fusiono con el ADR aun en PROPUESTO y sin `EXP-002`: la version
+      aceptada, con `EXP-002`, va en un PR nuevo desde `docs/adr-009-desconocido` (`cdcd3e1`).
+- [ ] **Aplicar ADR-009** (PERSONA_2): PR de contratos con el comentario de `resultado.py` y la linea de
+      `endpoints.md` (antes de la etapa 2), y en la etapa 2 el cargador rechaza una ficha llamada `desconocido`
+      (con test). PERSONA_1: mensaje de `EXP-002` y UI.
 - [ ] **Notas para la etapa 2** (revision de PERSONA_3 en el PR #11):
       - (a) `procesar_documento` **no sustituye al stub** de la ingesta (`ingesta/motor_stub.py`) hasta que la
         confianza la calcule el codigo (ADR-007): la UI la muestra como "Confianza verificada", y hoy es la del
@@ -263,8 +267,8 @@ se queda solo con `pagina_<n>` (seccion 4).
       - (c) Cuando llegue `openrouter.py`, formalizar con un ADR en `interfaces.py` (Contrato 3, congelado)
         `extraer_con_vision`, `clasificar_con_vision` y `ultima_llamada`/`ultimas_llamadas`. Hoy son metodos de
         `OllamaProvider` que el servicio usa solo si existen (`hasattr`/`getattr`), sin cambiar el contrato.
-- [ ] Si en la etapa 2 hace falta, pedir a PERSONA_3 un `CLS-003` para "tipo desconocido sin declarado ni
-      confirmado" (hoy no se extrae y no se emite alerta; seccion 10).
+- [x] ~~`CLS-003` para "tipo desconocido sin declarado ni confirmado"~~: no hace falta. El ADR-009 reutiliza
+      `EXP-002` (informativa, del expediente), que ya sale en ese caso (seccion 10).
 - [ ] **Reglas de coherencia (etapa 2, `validacion/reglas.py`)**, propuestas tras el bloque 3 de la evaluacion
       para detectar valores incorrectos que no rompen el patron ni la fecha (errores silenciosos):
       - **CURP <-> `fecha_nacimiento`** (credencial de elector): las posiciones 5 a 10 de la CURP son la fecha de
@@ -368,9 +372,9 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | Texto | `recortar_texto` (`MAX_CARACTERES_TEXTO`); si recorta, `SYS-003` (preventiva) |
 | Clasificacion | Prompt `clasificacion_v2` con todas las fichas como tipos posibles. Con `tipo_confirmado` no se clasifica: `tipo_documental_detectado` y `confianza_clasificacion` quedan `None` (la plataforma conserva el detectado de la version anterior) |
 | `CLS-001` (critica) | Hay tipo declarado y el detectado es distinto, incluido `desconocido`. Si el texto da `desconocido` y hay imagenes, se decide con la reclasificacion con vision (seccion 3) |
-| Valor reservado `desconocido` | `tipo_documental_detectado = "desconocido"` significa "clasificado, pero no encaja en ninguna ficha" (`DESCONOCIDO` en `proveedores/base.py`). **El contrato no lo recoge**: `resultado.py` solo dice `str \| None` y `endpoints.md` no lo menciona; `null` es otra cosa (no se clasifico: `tipo_confirmado` o error antes de clasificar). Riesgo para los consumidores: tratarlo como nombre de ficha. En el expediente ya no cubre ningun tipo requerido (`_tipo_efectivo`: salta `EXP-001` hasta que el revisor confirme el tipo), pero es implicito. Se documenta con el ADR-009 (PROPUESTO, rama `docs/adr-009-desconocido`, `4dc4906`): valor reservado, ninguna ficha puede llamarse asi (el cargador lo rechazara) y no cubre ningun requerido |
+| Valor reservado `desconocido` | `tipo_documental_detectado = "desconocido"` significa "clasificado, pero no encaja en ninguna ficha" (`DESCONOCIDO` en `proveedores/base.py`). **El contrato no lo recoge**: `resultado.py` solo dice `str \| None` y `endpoints.md` no lo menciona; `null` es otra cosa (no se clasifico: `tipo_confirmado` o error antes de clasificar). **ADR-009 ACEPTADO** (2026-10-02): valor reservado, distinto de `null`; ninguna ficha puede llamarse asi (el cargador lo rechazara); los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido (`_tipo_efectivo`) hasta que el revisor confirme el tipo, y emite `EXP-002` (no esta en `tipos_requeridos` ni en `tipos_opcionales`). Alertas: con declarado, `CLS-001` + `EXP-001` (si era requerido) + `EXP-002`; sin declarado ni confirmado, `EXP-002`. Sin codigos nuevos |
 | Ficha para extraer | `tipo_confirmado` > declarado > detectado (ADR-006, 2.5). Un tipo declarado o confirmado que no existe lanza `TipoNoEncontrado` (la ingesta lo valida antes) |
-| Tipo desconocido sin declarado ni confirmado | Se reclasifica con vision si hay imagenes; si da un tipo concreto, se extrae con esa ficha. Si sigue `desconocido` (o no hay imagenes): **no se extrae y no se emite alerta**, `completado` con datos vacios. Si en la etapa 2 hace falta, se pedira un `CLS-003` |
+| Tipo desconocido sin declarado ni confirmado | Se reclasifica con vision si hay imagenes; si da un tipo concreto, se extrae con esa ficha. Si sigue `desconocido` (o no hay imagenes): **no se extrae y el motor no emite alerta**, `completado` con datos vacios. La senal para el revisor es `EXP-002` (informativa), que emite el expediente (ADR-009) |
 | Extraccion | Prompt `extraccion_v3` con la lista de campos de la ficha (`campos_a_extraer`); `version_prompt` `extraccion_<tipo>@v3` |
 | Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza **1,0** si todos los digitos de control son correctos y **0,5** si alguno falla (provisional hasta ADR-007) |
 | OCR pobre y vision | Ver seccion 3: reclasificacion con vision (`_reclasificar_con_vision`) y reintento (`_reintento_vision`); no se reintenta si salta `CLS-001` con un tipo concreto |
@@ -455,7 +459,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-01 | Revision de PERSONA_3 en el PR #11: 42 fixtures (27 + 3 duplicados + 12 de dificultad); variables ya en `.env.example` (PR #5); prompts vigentes con `extraccion_v3`; PR #4 fusionado; pendientes cumplidos marcados (credencial y comprobante evaluados, avisos del PR #11, especimenes en `main`). Valor reservado `desconocido` (seccion 10) y ADR-009 PROPUESTO en `docs/adr-009-desconocido` (`4dc4906`). Notas para la etapa 2: stub hasta ADR-007, version del prompt de clasificacion en `datos_auditoria`, ADR para `extraer_con_vision`/`clasificar_con_vision`/`ultima_llamada` con `openrouter.py`. Seccion 13: tiempo por documento. `test_fixtures_ocr.py` filtra los casos y el nivel conocidos (no depende de 153). Comando de tests con `fixtures/`, `frontend/` y `docs/` montados | este commit |
+| 2026-10-02 | ADR-009 ACEPTADO (PERSONA_1 en la revision del PR #14 y PERSONA_2): `desconocido` reservado, no cubre ningun requerido y emite `EXP-002`; sin `CLS-003`. La version aceptada con `EXP-002` va en un PR nuevo desde `docs/adr-009-desconocido` (el PR #14 se fusiono antes) | este commit |
+| 2026-10-01 | Revision de PERSONA_3 en el PR #11: 42 fixtures (27 + 3 duplicados + 12 de dificultad); variables ya en `.env.example` (PR #5); prompts vigentes con `extraccion_v3`; PR #4 fusionado; pendientes cumplidos marcados (credencial y comprobante evaluados, avisos del PR #11, especimenes en `main`). Valor reservado `desconocido` (seccion 10) y ADR-009 PROPUESTO en `docs/adr-009-desconocido` (`4dc4906`). Notas para la etapa 2: stub hasta ADR-007, version del prompt de clasificacion en `datos_auditoria`, ADR para `extraer_con_vision`/`clasificar_con_vision`/`ultima_llamada` con `openrouter.py`. Seccion 13: tiempo por documento. `test_fixtures_ocr.py` filtra los casos y el nivel conocidos (no depende de 153). Comando de tests con `fixtures/`, `frontend/` y `docs/` montados | `7c84720` |
 | 2026-10-01 | Pendiente "documentos de uno en uno" y `OLLAMA_MAX_LOADED_MODELS=1` resuelto por PERSONA_1 (PR #9: semaforo `MAX_PROCESAMIENTOS_SIMULTANEOS=1`) | `a3e69a9` |
 | 2026-10-01 | `docs/motor_ia/EXPLICACION_MOTOR.md`: explicacion del motor para el equipo (flujo, modelos probados, historial de mejoras, reglas, resultados, pendientes). Regla: cada cambio de regla, de modelo o resultado de prueba anade una entrada a su historial en el mismo commit | `a3e69a9` |
 | 2026-10-01 | `extraccion_v3` sin la obligatoriedad en la lista de campos (`formatear_campos`, variable `campos_a_extraer`): la palabra "opcional" hacia que la vision dejara vacia `fecha_expedicion`; 4 pasaportes dificiles con vision forzada 21/28 -> 25/28. Bloque 3 repetido con la regla de OCR pobre: APRUEBA (dificil 31/34 y 2 incorrectos; extremo 28/34 y 6; tipo 6/6 y 6/6). Bloque 1 repetido: 153/153, 59,4 s. El bloque 4 no se repite: queda como referencia y el informe avisa de que mezcla v2 (8 casos) y v3 (4 pasaportes) | `459ef8f` |
