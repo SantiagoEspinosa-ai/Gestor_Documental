@@ -18,10 +18,10 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 | A5 | Tambien se enmascaran evidencias, comparaciones, "antes" de las correcciones, webhooks, `resumen.md` y logs | PERSONA_1 (API, resumen, webhooks); PERSONA_2 (logs del motor) | Pendiente |
 | A6 | `sensible` sale en `CampoFicha` de `GET /tipos-documentales` | PERSONA_2 (cargador) y PERSONA_1 (router y UI) | Pendiente |
 | B | Procesos: solo lectura (R3); la edicion queda fuera del MVP | Hecho (H8, PR #20) | Pendiente |
-| C1 | Antecedentes por `referencia_externa` del folio (R7) | PERSONA_2 (H14) | Pendiente |
-| C2 | Mismo proceso y misma referencia, folios cerrados, dentro de la caducidad, sin el actual, maximo 10 | PERSONA_2 (H14) | Pendiente |
+| C1 | Antecedentes por `referencia_externa` del folio (R7) | PERSONA_1 (`expediente.servicio`, H16) | Pendiente |
+| C2 | Mismo proceso y misma referencia, folios cerrados, dentro de la caducidad, sin el actual, maximo 10 | PERSONA_1 (consulta en `expediente.servicio`, H16) | Pendiente |
 | C3 | Sin permiso del proceso o sin referencia: 200 con `permitido: false` y lista vacia | PERSONA_1 (router, H16) | Pendiente |
-| C4 | Forma de cada antecedente | PERSONA_1 (router) y PERSONA_2 (busqueda) | Pendiente |
+| C4 | Forma de cada antecedente; `fragmento_resumen` de la memoria | PERSONA_1 (router) y PERSONA_2 (`rag.servicio.fragmento_resumen`, H14) | Pendiente |
 | C5 | Roles: revisor y admin | PERSONA_1 | Pendiente |
 
 ## Contexto
@@ -62,8 +62,11 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 5. **Donde mas aparece el valor (A5).** Se enmascara en todos estos sitios, no solo en
    `datos_extraidos`:
    - `evidencia_por_campo`: la evidencia de un campo sensible se sustituye por su mascara. Ademas, en la
-     evidencia de cualquier campo del mismo documento se enmascara cada aparicion literal de un valor
-     sensible (la linea MRZ del pasaporte contiene el numero de pasaporte).
+     evidencia de cualquier campo del mismo documento se enmascara cada aparicion literal del valor
+     sensible, tanto del extraido como del corregido: si el OCR leyo mal un caracter y el revisor lo
+     corrigio, la evidencia conserva el valor mal leido. En el pasaporte, la linea 2 de la MRZ se tapa
+     entera dentro de cualquier evidencia, porque contiene el numero de pasaporte aunque no coincida
+     letra a letra con el valor (revision de PERSONA_2 en el PR #21).
    - Comparaciones (`comparaciones` del expediente y mensajes de `CMP-001`): valores enmascarados.
    - Correcciones ("Corregido por revisor (antes: X)"): el valor anterior, enmascarado.
    - Respuesta de `PATCH /documentos/{id}/datos`: enmascarada, aunque el revisor acabe de escribirlo.
@@ -71,7 +74,8 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
    - `resumen.md` y lo que la memoria indexe a partir de el: enmascarados (decision ya tomada para la
      etapa 3).
    - Logs de la plataforma y del motor: nunca valores de `datos_extraidos`; como mucho el nombre del
-     campo.
+     campo. PERSONA_2 confirma que los logs del motor ya no llevan valores y que `datos_auditoria` no
+     incluye datos del documento; lo cubre con un test en H15.
    - Prompts: no se enmascaran, porque el motor necesita el texto para extraer y Ollama es local. La
      barrera de privacidad del ADR-003 (`PERMITIR_PROVEEDORES_NO_PRIVADOS=false`) impide que salgan a
      un proveedor no privado.
@@ -112,10 +116,14 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
    - Folio que no existe: `404 FOLIO_NO_ENCONTRADO`, como el resto de rutas del folio.
 4. **Roles (C5).** Revisor y admin. El contrato hoy dice solo revisor; el admin lo necesita para
    auditar. El integrador: `403 SIN_PERMISO`.
-5. **Reparto.** PERSONA_2 implementa `rag.servicio.buscar_antecedentes(referencia_externa, proceso, *,
-   desde, excluir_folio, limite=10)` sobre la memoria de folios (H14). PERSONA_1 hace el router, que
-   decide `permitido` y `motivo` antes de llamar a la busqueda, y la pantalla "Antecedentes" en el
-   expediente (H16).
+5. **Reparto.** Elegir los folios (C2) es una consulta sobre tablas de la plataforma (`folios`, con
+   `estado_general`, `decision_humana` y `fecha_decision`), asi que la hace PERSONA_1 en
+   `expediente.servicio` (no en el router, por el ADR-005), y no se duplican esos datos en la memoria.
+   PERSONA_2 solo expone `rag.servicio.fragmento_resumen(folio) -> str | None`, ya enmascarado, a
+   partir de la memoria de folios (H14); mientras no exista, `fragmento_resumen` va a `null`. El router
+   (PERSONA_1) decide `permitido` y `motivo`, llama a `expediente.servicio` y anade el fragmento. La
+   pantalla "Antecedentes" en el expediente es de PERSONA_1 (H16). Cambio respecto al borrador, tras la
+   revision de PERSONA_2 en el PR #21.
 
 ## Alternativas
 
@@ -128,6 +136,7 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 | A5-b: enmascarar solo `datos_extraidos` | El valor se escaparia por la evidencia (MRZ), las comparaciones, las correcciones y el webhook |
 | A6-b: lista `campos_enmascarados` en cada `ResultadoDocumento` | Cambia el Contrato 1, que esta congelado; la ficha ya es la fuente de los campos |
 | C3-b: `403` si el proceso no permite antecedentes | La UI tendria que distinguir este 403 del de rol; exige un codigo de error nuevo |
+| C2-c: que la memoria (`rag`) elija los folios con `buscar_antecedentes` | Duplicaria en la memoria datos que ya estan en `folios` (estado, decision, fecha) y haria depender la lista de H14; descartada en la revision del PR #21 |
 | C2-b: incluir folios abiertos | No tienen `resumen.md` ni decision, y la memoria no los indexa |
 | C1-b: HMAC de la CURP | Identifica mejor a la persona, pero exige guardar y comparar un derivado de un dato sensible; descartado en R7 |
 
@@ -135,9 +144,9 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 
 | Persona | Que cambia |
 |---|---|
-| PERSONA_1 (plataforma) | Enmascarar en todas las respuestas, comparaciones, correcciones, webhooks y `resumen.md`; `POST /documentos/{id}/revelar` con `dato_revelado`; router de antecedentes; `sensible` en `CampoFicha` (router) |
+| PERSONA_1 (plataforma) | Enmascarar en todas las respuestas, comparaciones, correcciones, webhooks y `resumen.md`; `POST /documentos/{id}/revelar` con `dato_revelado`; consulta de antecedentes en `expediente.servicio` y su router; `sensible` en `CampoFicha` (router) |
 | PERSONA_1 (interfaz) | Boton "mostrar" en campos sensibles para revisor y admin (H17); pantalla de antecedentes (H16); `contrato.ts` y mocks regenerados con `scripts/generar_datos_mock.py` |
-| PERSONA_2 (motor y configuracion) | `sensible: true` en las tres fichas y en el cargador (H15); `buscar_antecedentes` y memoria de folios sobre el `resumen.md` enmascarado (H14); logs del motor sin valores |
+| PERSONA_2 (motor y configuracion) | `sensible: true` en las tres fichas y en el cargador (H15); `rag.servicio.fragmento_resumen(folio)` y memoria de folios sobre el `resumen.md` enmascarado (H14); logs del motor sin valores (ya cumplido; test en H15) |
 
 ## Aplicacion
 - **Cuando se acepte**: un PR de contratos con la linea de `endpoints.md` para `POST
@@ -146,8 +155,11 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
   esta prevista en `endpoints.md` (ADR-006 1.5); en el codigo hay que anadirla a
   `ACCIONES_AUDITORIA` (`core/modelos.py`), que `core/auditoria.registrar` valida. Sin migracion: la
   columna no tiene CHECK en BD.
-- **Etapa 3, dias 9-11**: H15 (PERSONA_2) antes que el enmascaramiento de la API; despues H17 y la
-  pantalla de antecedentes (H16) cuando `buscar_antecedentes` este en `main`.
+- **Orden**: primero el PR de reglas de coherencia de PERSONA_2 (toca el cargador, los YAML,
+  `contrato.ts` e `ingesta/tipos.py`); despues H15 (`sensible: true`), no en paralelo, porque comparten
+  ficheros; despues el enmascaramiento de la API y H17 (PERSONA_1).
+- **Antecedentes (H16)**: la consulta y el router no esperan a la memoria; `fragmento_resumen` va a
+  `null` hasta que `rag.servicio.fragmento_resumen` este en `main`.
 - El xfail de `antecedentes` en `tests/test_openapi_contrato.py` se quita cuando el router exista.
 
 ## Consecuencias
