@@ -295,7 +295,7 @@ al cerrar cada etapa. Los PR #10, #11 y #12 están fusionados.
 | `main` | — | Contratos, catálogos, ADR-001 a ADR-008, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11) y este documento (PR #12) |
 | `feat/plataforma` | PERSONA_1 | Etapa 2 fusionada; probada de extremo a extremo (15/15) |
 | `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 fusionado |
-| `feat/interfaz` | PERSONA_3 | Frontend completo sobre mocks, fixtures y especímenes; PR #10 en revisión |
+| `feat/interfaz` | PERSONA_3 | Frontend completo sobre mocks, fixtures y especímenes; PR #10 fusionado |
 
 **Siguiente:** conectar el motor real (`procesar_documento`, etapa 2 de
 PERSONA_2) y `configuracion` en la plataforma; hito de la etapa 2 (subir documentos por la web y
