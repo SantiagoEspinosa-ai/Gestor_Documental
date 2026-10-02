@@ -225,7 +225,8 @@ def _recomendar(documentos: list[ResultadoDocumento], alertas_expediente: list[A
     para_recomendar = [DocumentoParaRecomendar(
         estado=d.estado_analisis,
         tipo=d.tipo_documental_confirmado or d.tipo_documental_detectado or d.tipo_documental_declarado,
-        confianza_clasificacion=d.confianza_clasificacion,
+        # Tipo confirmado por el revisor: vale 1.0, como un campo corregido (ADR-006 2.4; acordado con PERSONA_2, D2)
+        confianza_clasificacion=1.0 if d.tipo_documental_confirmado else d.confianza_clasificacion,
         confianza_por_campo=d.nivel_confianza_por_campo) for d in documentos]
     alertas = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
     return calcular_recomendacion_global(para_recomendar, alertas, fichas)
