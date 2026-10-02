@@ -12,11 +12,11 @@ from functools import lru_cache
 
 from sqlalchemy import func, select
 
-from app.core import auditoria
+from app.core import auditoria, webhooks
 from app.core.almacenamiento import get_almacenamiento
 from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
-from app.core.modelos import AlertaBD, Documento, Resultado
+from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado
 # TODO: sustituir por: from app.modulos.orquestador.servicio import procesar_documento as analizar (PERSONA_2)
 from app.modulos.ingesta.motor_stub import procesar_documento as analizar
 from app.schemas.resultado import EstadoAnalisis, ReferenciaArchivoOriginal
@@ -60,6 +60,25 @@ def _expediente_servicio():
     return servicio
 
 
+def _notificar(sesion, documento_id: uuid.UUID) -> None:
+    """Webhook documento.completado o documento.error, DESPUES del commit y en segundo plano (core/webhooks.py).
+    Solo si el proceso del folio tiene `webhook_url`. Nunca lanza: un fallo no cambia el documento."""
+    try:
+        doc = sesion.get(Documento, documento_id)
+        if doc is None or doc.estado_analisis not in (EstadoAnalisis.completado.value, EstadoAnalisis.error.value):
+            return
+        proceso = sesion.get(Proceso, sesion.get(Folio, doc.folio).proceso)
+        if not proceso.webhook_url:
+            return
+        # El mismo armado que GET /documentos/{id}; import diferido: servicio importa este modulo
+        from app.modulos.ingesta import servicio
+        evento = "documento.completado" if doc.estado_analisis == EstadoAnalisis.completado.value else "documento.error"
+        webhooks.enviar_en_segundo_plano(proceso.webhook_url, evento, doc.folio,
+                                         servicio.construir_resultado(sesion, doc), identificador=str(doc.id))
+    except Exception:  # noqa: BLE001
+        log.exception("No se pudo preparar el webhook del documento %s", documento_id)
+
+
 def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
     with SesionLocal(bind=get_engine()) as sesion:
         doc = sesion.get(Documento, documento_id)
@@ -87,6 +106,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
         except Exception:
             log.exception("Fallo al procesar el documento %s", documento_id)
             _marcar_error(sesion, documento_id)
+            _notificar(sesion, documento_id)  # documento.error, ya con el estado guardado
             return
 
         try:
@@ -109,6 +129,8 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
         except Exception:
             log.exception("Fallo al guardar el resultado del documento %s", documento_id)
             _marcar_error(sesion, documento_id)
+        # Tras el commit (o tras marcar el error): completado o error segun lo guardado
+        _notificar(sesion, documento_id)
 
 
 def _marcar_error(sesion, documento_id: uuid.UUID) -> None:

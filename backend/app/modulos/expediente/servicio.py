@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as insert_postgresql
 from sqlalchemy.dialects.sqlite import insert as insert_sqlite
 from sqlalchemy.orm import Session
 
-from app.core import auditoria
+from app.core import auditoria, webhooks
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Proceso, Resultado, SecuenciaFolio
@@ -512,5 +512,8 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
                         detalle={"decision": decision.value})
     sesion.commit()
     sesion.expire(fila)  # el UPDATE no paso por el ORM: releer el folio
-    # TODO (etapa 3): webhook folio.estado_cambiado
-    return obtener_expediente(sesion, folio)
+    resultado = obtener_expediente(sesion, folio)
+    # Webhook folio.estado_cambiado tras el commit y en segundo plano: un fallo no cambia la decision
+    webhooks.enviar_en_segundo_plano(sesion.get(Proceso, fila.proceso).webhook_url, "folio.estado_cambiado",
+                                     folio, resultado)
+    return resultado

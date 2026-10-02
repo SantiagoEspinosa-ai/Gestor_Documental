@@ -91,6 +91,11 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
+- [x] Webhooks firmados con HMAC-SHA256 y 3 intentos (`core/webhooks.py`, rama `feat/plataforma-etapa3`):
+      `documento.completado`, `documento.error` y `folio.estado_cambiado`. El enmascaramiento de `datos`
+      queda pendiente del ADR-010 y H15 (`enmascarar_para_webhook`).
+- [ ] Resumen `.md` del expediente.
+- [ ] Enmascaramiento en la API, en los logs y "mostrar" auditado (ADR-010, tras H15).
 
 ## H1 (2026-10-02)
 UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
