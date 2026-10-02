@@ -267,26 +267,18 @@ se queda solo con `pagina_<n>` (seccion 4).
         `OllamaProvider` que el servicio usa solo si existen (`hasattr`/`getattr`), sin cambiar el contrato.
 - [x] ~~`CLS-003` para "tipo desconocido sin declarado ni confirmado"~~: no hace falta. El ADR-009 reutiliza
       `EXP-002` (informativa, del expediente), que ya sale en ese caso (seccion 10).
-- [ ] **Reglas de coherencia (etapa 2, `validacion/reglas.py`)**, propuestas tras el bloque 3 de la evaluacion
-      para detectar valores incorrectos que no rompen el patron ni la fecha (errores silenciosos):
-      - **CURP <-> `fecha_nacimiento`** (credencial de elector): las posiciones 5 a 10 de la CURP son la fecha de
-        nacimiento en `AAMMDD` (el siglo lo da la posicion 17: digito antes de 2000, letra despues). Si no
-        coinciden, alerta. Habria detectado `AEPA000101...` frente a `1990-01-01` (extremo).
-      - **`fecha_nacimiento` < `fecha_expedicion` < `fecha_vencimiento`** (pasaporte; en otras fichas, las que
-        tengan): si no se cumple el orden, alerta. Habria detectado `fecha_nacimiento = 2021-09-30` (dificil,
-        era la de expedicion). Los campos vacios o con fecha invalida no se comparan (ya tienen su alerta).
-      - Necesitan **tipos de regla nuevos** en `config/tipos/*.yaml` (p. ej. `coherencia_curp_fecha` con
-        `campo` y `campo_relacionado`, y `fechas_ordenadas` con una lista `campos`). Las fichas son un
-        **fichero compartido: PR pequeno aparte y con aviso**. Tambien hay que ampliar el cargador
-        (`configuracion/cargador.py`: `TipoRegla` y los campos nuevos de `Regla`, con sus validaciones y tests).
-        Severidad propuesta: `critica` (la fija cada ficha); codigo `REG-{id}` como las demas reglas.
-      - Con estas reglas y las de patron y fecha invalida, de los 17 incorrectos del bloque 3 quedarian
-        silenciosos 3 en `dificil` y 6 en `extremo`, todos de texto libre (domicilio, nombre, proveedor) o de
-        numero de pasaporte con la MRZ ilegible.
-- [ ] Reglas de fecha (etapa 2): una fecha no normalizable llega como texto con confianza 0; tratarla
-      como fecha invalida y generar una alerta, sin fallar.
-- [ ] `VAL-004` (etapa 2): ya esta en el catalogo (PR #6). `validacion/reglas.py` la emitira, informativa y con
-      `campo`, cuando un campo `obligatorio: false` venga vacio (`""` y solo espacios ya llegan como `null`).
+- [x] **`validacion/reglas.py`** (etapa 2, paso 2): `evaluar_reglas` con `VAL-001`, `VAL-002`, `VAL-004`, los tipos de
+      regla de los YAML y las fechas no normalizables (incumplen sus reglas, sin fallar). Seccion 15.
+- [ ] **Reglas de coherencia en las fichas** (PR pequeno de `config/tipos/*.yaml`, con aviso): los tipos
+      `curp_coincide_con_fecha` y `fecha_anterior_a_campo` ya estan en el cargador, en `reglas.py` y en el evaluador de
+      `generar_fixtures.py` (H13), pero **ninguna ficha los usa todavia**. Anadirlos a los YAML obliga a regenerar los
+      mocks del frontend (`frontend/src/mocks/datos/folios.json` y `tipos_documentales.json`, con
+      `scripts/generar_datos_mock.py`): el frontend es de PERSONA_1 desde el traspaso. Pendiente de decidir con ella.
+      Reglas propuestas (severidad `critica`): credencial `curp_coincide_nacimiento` (`curp` con `fecha_nacimiento`);
+      pasaporte `nacimiento_antes_de_expedicion`, `expedicion_antes_de_vencimiento` y `nacimiento_antes_de_vencimiento`
+      (la tercera cubre la expedicion vacia). Medido con los resultados de la evaluacion (sin modelo): no suben los
+      incorrectos marcados (4/12 con y sin ellas). Las dos CURP mal leidas ya llevaban `VAL-002`, y el error
+      "nacimiento = expedicion" del bloque 3 desaparecio con `extraccion_v3`. Siguen detectando ese tipo de error (tests).
 - [ ] `NUM_CTX` con documentos reales: el margen medido es del 13 %; revisarlo si hay paginas mas altas que
       A4 (p. ej. oficio) o texto que tokenice peor que el de relleno usado en la medida.
 - [x] **Vision con los fixtures escaneado y foto**: ejecutada el 2026-10-01 con `analizar()` (alternativa B,
@@ -397,7 +389,7 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | `Alerta.confianza` | **1,0** en las alertas deterministas (`CLS-001`, `SYS-00x`, `VAL-003`) |
 | Alertas repetidas | Nunca dos con el mismo (`codigo`, `campo`) en un documento (ADR-006, 1.3) |
 | Confianzas (ADR-007) | Calculadas por el codigo (seccion 14); la del modelo, en `Analisis.confianzas_modelo`. `CLS-002` lo emite el motor; `VAL-002`, `validacion/reglas.py` (paso 2). Con `tipo_confirmado`, `confianza_clasificacion = 1,0` |
-| Fuera de esta tarea (etapa 2) | `reglas_cumplidas_e_incumplidas`, `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, `recomendacion` y `procesar_documento` |
+| Fuera de esta tarea (etapa 2) | `reglas_cumplidas_e_incumplidas`, `VAL-001`, `VAL-002`, `VAL-004` y `REG-*` (en `validacion/reglas.py`, seccion 15), `recomendacion` y `procesar_documento` |
 
 ## 11. Integracion con la plataforma (etapa 2)
 
@@ -511,13 +503,39 @@ Calibracion (2026-10-02, `pruebas_ollama/calibrar_confianza.py`, sin modelo; inf
   y extremos (hoy 4/12). Queda para las reglas de coherencia (paso 2) y la confianza de Tesseract (senal 5); se
   vuelve a medir con `calibrar_confianza.py` y `evaluar_fixtures.py` cuando esten.
 
+## 15. Reglas del documento (`validacion/reglas.py`, etapa 2)
+
+API publica: `validacion.servicio.evaluar_reglas(datos_extraidos, confianzas, ficha, *, hoy) -> (list[Alerta], Reglas)`
+(firma aceptada por PERSONA_1, seccion 11). `validacion/servicio.py` es compartido: solo se anadio el bloque de
+PERSONA_2 al final (import y `__all__ +=`), sin tocar lo de PERSONA_1.
+
+| Regla | Detalle |
+|---|---|
+| `VAL-001` (critica) | Campo `obligatorio: true` ausente, `null`, `""` o solo espacios |
+| `VAL-004` (informativa) | Campo `obligatorio: false` vacio |
+| `VAL-002` (preventiva) | Campo **con valor** y confianza < `confianza_minima_campo` (D4); sin confianza cuenta como 0 |
+| `REG-{id}` (severidad de la ficha) | Regla incumplida; `campo` = el de la regla; `mensaje` = el de la ficha |
+| Campo vacio | Sus reglas no se evaluan ni se listan (D8), salvo las de tipo `obligatorio` |
+| `patron` | `fullmatch` del patron del campo |
+| `fecha_posterior_a_hoy` / `_mas_dias` / `fecha_no_anterior_a_hoy_menos_dias` | fecha > hoy / > hoy + dias / >= hoy - dias. Una fecha que no es ISO valida incumple (y lleva `VAL-002` por su confianza 0) |
+| `anio_mayor_o_igual_actual` | anio (entero o texto de 4 cifras) >= `hoy.year`; otro valor incumple |
+| `obligatorio`, `confianza_minima` | Como `VAL-001` y `VAL-002`, pero con su `REG-{id}` |
+| `curp_coincide_con_fecha` (nuevo) | Posiciones 5-10 de la CURP = `campo_relacionado` en `AAMMDD` y posicion 17 digito si nacio antes de 2000, letra si despues. No se evalua si la CURP no tiene el formato o la fecha no es valida |
+| `fecha_anterior_a_campo` (nuevo) | `campo` < `campo_relacionado`. No se evalua si alguna no es una fecha valida |
+| Cada regla tal cual | Un pasaporte vencido incumple `vigencia_documento` y `vigencia_proxima` (D9) |
+| Alertas | Confianza 1,0, sin `id`, una por (`codigo`, `campo`). Orden: VAL por el orden de los campos y REG por el de las reglas. Nunca `VAL-003`, `CLS`, `SYS`, `DUP`, `EXP` ni `CMP` |
+| Ficha | `TipoDocumental` o dict; un dict invalido -> `ErrorConfiguracion` |
+| Cargador | `Regla.campo_relacionado` (obligatorio en las de coherencia y prohibido en las demas; campo existente y de tipo `texto`+`fecha` o `fecha`+`fecha`) |
+| Tests | `test_reglas.py` (fronteras de cada tipo, D8, D9, coherencia con los dos fallos reales del bloque 3), `test_configuracion.py`, `test_generar_fixtures.py` |
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | `marcadores_clasificacion` fuera de `model_dump()` (`Field(exclude=True)`): son internos del motor y `GET /tipos-documentales` (Contrato 2) no cambia, tampoco cuando la API use `configuracion.servicio.listar()`. Mismo cambio en `chore/marcadores-clasificacion` (`3ce49c4`) | este commit |
+| 2026-10-02 | Etapa 2, paso 2: `validacion/reglas.py` (`evaluar_reglas`: `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, fechas no normalizables), expuesta en `validacion/servicio.py` (solo el bloque de PERSONA_2). Tipos de regla de coherencia `curp_coincide_con_fecha` y `fecha_anterior_a_campo` en el cargador (`campo_relacionado`), en `reglas.py` y en `generar_fixtures.py` (H13); las fichas aun no los usan (los mocks del frontend se regeneran). Medido: 4/12 incorrectos marcados, con y sin coherencia (seccion 7) | este commit |
+| 2026-10-02 | `marcadores_clasificacion` fuera de `model_dump()` (`Field(exclude=True)`): son internos del motor y `GET /tipos-documentales` (Contrato 2) no cambia, tampoco cuando la API use `configuracion.servicio.listar()`. Mismo cambio en `chore/marcadores-clasificacion` (`3ce49c4`) | `52aaa39` |
 | 2026-10-02 | Seccion 11: firma de `evaluar_reglas` aceptada por PERSONA_1 (ficha como `TipoDocumental`, `Reglas` devuelto, `VAL-003` borrada al corregir), D1 (nunca `rechazar`) y D2. "Hoy" de las reglas con `ZONA_HORARIA` (por defecto `America/Mexico_City`) en `orquestador/reloj.py`, sin `core.config`; test cerca de medianoche. Rama `chore/marcadores-clasificacion` (`8d8bfca`) con el cargador y los marcadores para `main` | `72b3d85` |
 | 2026-10-02 | Calibracion de ADR-007 aceptada (ajuste de la MRZ y ruido de `CLS-002` en los dificiles). Objetivo pendiente: marcar >= 50 % de los incorrectos (hoy 4/12), con las reglas de coherencia y la confianza de Tesseract. Especimenes: el comprobante "buena" verifica 4/4; los 4 sin verificar son del "dificil" (14 caracteres de OCR) | `a3787b2` |
 | 2026-10-02 | Etapa 2, paso 1 (ADR-007): `motor_ia/confianza.py` (confianza de campo y de clasificacion por el codigo, MRZ con tope 0,5 salvo zona visual), `CLS-002`, `confianza_clasificacion = 1,0` con `tipo_confirmado` (D2), sin `CLS-002` con `desconocido` (D4), confianza del modelo en `Analisis.confianzas_modelo`. Cargador: `marcadores_clasificacion` y nombre reservado `desconocido` (ADR-009). Marcadores en las tres fichas. Calibracion sin modelo: normal 152/153 campos y 27/27 clasificaciones sobre el minimo (seccion 14) | `afd6c5f` |

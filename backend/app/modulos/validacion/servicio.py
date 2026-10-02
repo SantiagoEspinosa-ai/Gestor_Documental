@@ -18,3 +18,9 @@ def comparar(documentos: list[DocumentoComparable], fichas: list[dict] | dict[st
     """
     por_nombre = fichas if isinstance(fichas, dict) else {f["nombre"]: f for f in fichas}
     return _comparar(documentos, por_nombre)
+
+
+# --- PERSONA_2: reglas del documento (reglas.py). Firma acordada: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 11 ---
+from app.modulos.validacion.reglas import evaluar_reglas  # noqa: E402
+
+__all__ += ["evaluar_reglas"]
