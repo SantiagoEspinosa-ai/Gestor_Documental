@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:real": "playwright test --config playwright.real.config.ts"
   },
   "dependencies": {
     "lucide-react": "^1.49.0",

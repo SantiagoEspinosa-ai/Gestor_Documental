@@ -126,7 +126,8 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 2 (sin esperar al motor)
 - [x] H1: UI contra la API real con el stub; issue por cada desviacion del contrato. Ver "H1 (2026-10-02)".
 - [x] H2: test de rutas de `app.openapi()` frente a `endpoints.md` (`tests/test_openapi_contrato.py`).
-- [ ] H6 (humo): proyecto de Playwright aparte contra `docker compose`, con el stub.
+- [x] H6 (humo): humo con stub HECHO; motor real pendiente. Proyecto aparte `playwright.real.config.ts`
+      (`npm run test:e2e:real`, carpeta `frontend/e2e-real/`), contra el backend y Vite locales.
 - [ ] H7: borrador del ADR-010 de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`)
       el dia 7; reservar antes el numero en el chat del equipo.
 - Prioridad acordada en el PR #13: H1 y H2 primero; H7 para el dia 7.
