@@ -13,7 +13,7 @@ ningun tipo ni ninguna forma de respuesta.
 |---|---|---|---|
 | 1 | Documentar `"desconocido"` como valor reservado de `tipo_documental_detectado` | PERSONA_2 (PR de contratos) | Pendiente |
 | 2 | Ninguna ficha puede llamarse `desconocido` (el cargador lo rechaza) | PERSONA_2 (`configuracion/cargador.py`) | Pendiente |
-| 3 | Los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido hasta que el revisor confirme el tipo | PERSONA_1 (sin cambios de codigo) y PERSONA_3 (UI) | Pendiente |
+| 3 | Los consumidores no lo tratan como nombre de ficha; en el expediente no cubre ningun tipo requerido hasta que el revisor confirme el tipo | PERSONA_1 (sin cambios de codigo en el expediente; UI) | Pendiente |
 
 ## Contexto
 - El motor (`motor_ia`, etapa 1) devuelve `tipo_documental_detectado = "desconocido"` cuando clasifica
@@ -78,12 +78,12 @@ ningun tipo ni ninguna forma de respuesta.
 |---|---|
 | PERSONA_1 (plataforma) | Sin cambios de codigo: `_tipo_efectivo` ya hace que `desconocido` no cubra ningun requerido, y la ingesta valida el tipo declarado y el confirmado contra las fichas. Revisar que ningun codigo nuevo busque la ficha del detectado sin comprobarlo |
 | PERSONA_2 (motor IA) | Comentario en `resultado.py` y linea en `endpoints.md` (PR de contratos). El cargador rechaza una ficha llamada `desconocido`, con su test. El motor no cambia |
-| PERSONA_3 (interfaz) | `DetalleDocumento.tsx`: muestra "Tipo no reconocido" para `"desconocido"` y no busca su ficha. Si hace falta, se anade un caso a los mocks |
+| PERSONA_1 (interfaz, desde el traspaso del PR #13) | `DetalleDocumento.tsx`: muestra "Tipo no reconocido" para `"desconocido"` y no busca su ficha. En los mocks, un documento con `tipo_documental_detectado: "desconocido"` |
 
 ## Aplicacion
 - **Cuando se acepte**: un PR de contratos con el comentario de `resultado.py` y la linea de
   `endpoints.md`, antes de la etapa 2.
-- **Etapa 2**: el cambio del cargador (PERSONA_2) y el de la UI (PERSONA_3), cada uno en su rama.
+- **Etapa 2**: el cambio del cargador (PERSONA_2) y el de la UI (PERSONA_1), cada uno en su rama.
 
 ## Consecuencias
 - Los tres valores de `tipo_documental_detectado` quedan documentados, y cada consumidor sabe que
