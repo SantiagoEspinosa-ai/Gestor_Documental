@@ -112,7 +112,7 @@ def test_firma_sobre_los_mismos_bytes_y_cuerpo_del_contrato(entorno, monkeypatch
     assert set(cuerpo) == CLAVES_DOCUMENTO
     assert (cuerpo["evento"], cuerpo["folio"]) == ("documento.completado", "TST-2026-000001")
     assert set(cuerpo["datos"]) == set(ResultadoDocumento.model_fields)  # serializado como en la API
-    assert entorno == [1]  # una espera antes del primer y unico intento
+    assert entorno == []  # primer intento inmediato: sin espera
 
 
 def test_folio_estado_cambiado_sin_identificador(entorno, monkeypatch):
@@ -121,20 +121,21 @@ def test_folio_estado_cambiado_sin_identificador(entorno, monkeypatch):
     assert set(r.cuerpos()[0]) == CLAVES_FOLIO
 
 
-def test_500_500_200_son_3_intentos_y_exito(entorno, monkeypatch):
+def test_500_500_200_son_3_llamadas_y_exito(entorno, monkeypatch):
     r = receptor(monkeypatch, 500, 500, 200)
     assert entregar() is True
     assert len(r.peticiones) == 3
+    assert entorno == [1, 5]
+
+
+def test_siempre_500_son_4_intentos_y_nada_mas(entorno, monkeypatch):
+    r = receptor(monkeypatch, 500)
+    assert entregar() is False
+    assert len(r.peticiones) == 4  # el primero y 3 reintentos
     assert entorno == [1, 5, 25]
 
 
-def test_3_fallos_son_3_intentos_y_nada_mas(entorno, monkeypatch):
-    r = receptor(monkeypatch, 500)
-    assert entregar() is False
-    assert len(r.peticiones) == 3
-
-
-def test_sin_respuesta_cuenta_como_fallo(entorno, monkeypatch):
+def test_sin_respuesta_cuenta_como_fallo_4_intentos(entorno, monkeypatch):
     llamadas = []
 
     def caido(peticion):
@@ -142,13 +143,13 @@ def test_sin_respuesta_cuenta_como_fallo(entorno, monkeypatch):
         raise httpx.ConnectTimeout("sin respuesta")
     monkeypatch.setattr(webhooks, "_transporte", httpx.MockTransport(caido))
     assert entregar() is False
-    assert len(llamadas) == 3
+    assert len(llamadas) == 4
 
 
 def test_un_302_no_se_sigue_y_es_un_fallo(entorno, monkeypatch):
     r = receptor(monkeypatch, 302)
     assert entregar() is False
-    assert len(r.peticiones) == 3
+    assert len(r.peticiones) == 4
     assert {p.url.host for p in r.peticiones} == {"receptor.ejemplo.test"}  # nunca va a la Location
 
 
@@ -277,10 +278,10 @@ def test_documento_error_cuando_el_motor_falla(sesion, s3, monkeypatch):
     assert (cuerpo["evento"], cuerpo["datos"]["estado_analisis"]) == ("documento.error", "error")
 
 
-def test_tres_fallos_del_webhook_no_cambian_el_documento(sesion, s3, monkeypatch):
+def test_fallos_del_webhook_no_cambian_el_documento(sesion, s3, monkeypatch):
     r = receptor(monkeypatch, 500)
     _, doc = _subir_y_procesar(sesion, s3)
-    assert len(r.peticiones) == 3
+    assert len(r.peticiones) == 4
     sesion.expire_all()
     assert sesion.get(Documento, doc.id).estado_analisis == "completado"
 

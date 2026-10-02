@@ -1,4 +1,4 @@
-"""Webhooks de salida (Contrato 2, "Webhook (salida)"): POST firmado con HMAC-SHA256 y 3 intentos.
+"""Webhooks de salida (Contrato 2, "Webhook (salida)"): POST firmado con HMAC-SHA256 y 3 reintentos.
 
 Cuerpo: `{evento, fecha, folio, identificador_unico_documento?, datos}`; `datos` es un ResultadoDocumento
 (documento.*) o un ResultadoExpediente (folio.estado_cambiado), serializado como en la API. Cabecera
@@ -26,8 +26,8 @@ from app.core.config import get_settings
 log = logging.getLogger(__name__)
 
 EVENTOS = ("documento.completado", "documento.error", "folio.estado_cambiado")
-# Espera antes de cada uno de los 3 intentos (segundos)
-ESPERAS_S = (1, 5, 25)
+# Primer intento inmediato y, si falla, 3 reintentos con esta espera antes de cada uno (segundos): 4 como maximo
+ESPERAS_REINTENTO_S = (1, 5, 25)
 TIMEOUT_S = 5
 _MARCADOR_EJEMPLO = "CAMBIA_ESTO"  # valor de .env.example
 
@@ -81,7 +81,7 @@ def _motivo_para_no_enviar(url: str) -> str | None:
 
 
 def entregar(url: str, evento: str, folio: str, datos: BaseModel, identificador: str | None = None) -> bool:
-    """Envia el evento con hasta 3 intentos; True si alguno responde 2xx. Los fallos de red o de destino no
+    """Envia el evento: primer intento inmediato y hasta 3 reintentos (1, 5 y 25 s); True si alguno da 2xx. Los fallos de red o de destino no
     lanzan; solo un evento fuera del contrato (error de programacion)."""
     if evento not in EVENTOS:
         raise ValueError(f"evento desconocido: {evento}")
@@ -94,8 +94,9 @@ def entregar(url: str, evento: str, folio: str, datos: BaseModel, identificador:
                  "X-Firma": firmar(cuerpo, get_settings().webhook_secret_hmac.get_secret_value())}
     # Sin seguir redirecciones (un 3xx es un fallo) y verificando el certificado
     with httpx.Client(timeout=TIMEOUT_S, follow_redirects=False, verify=True, transport=_transporte) as cliente:
-        for intento, espera in enumerate(ESPERAS_S, start=1):
-            _esperar(espera)
+        for intento, espera in enumerate((0, *ESPERAS_REINTENTO_S), start=1):
+            if espera:
+                _esperar(espera)
             try:
                 estado = cliente.post(url, content=cuerpo, headers=cabeceras).status_code
             except httpx.HTTPError as e:
@@ -107,7 +108,7 @@ def entregar(url: str, evento: str, folio: str, datos: BaseModel, identificador:
                          evento, folio, _host(url), intento, estado)
                 return True
             log.warning("Webhook %s del folio %s, intento %d a %s: HTTP %d", evento, folio, intento, _host(url), estado)
-    log.error("Webhook %s del folio %s no entregado a %s tras %d intentos", evento, folio, _host(url), len(ESPERAS_S))
+    log.error("Webhook %s del folio %s no entregado a %s tras %d intentos", evento, folio, _host(url), 1 + len(ESPERAS_REINTENTO_S))
     return False
 
 
