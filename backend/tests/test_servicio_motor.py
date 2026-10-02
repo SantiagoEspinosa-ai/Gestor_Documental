@@ -130,7 +130,8 @@ def test_tipo_confirmado_no_clasifica():
     analisis, enrutador = ejecutar(p, tipo_confirmado="pasaporte", doc=documento(declarado="credencial_elector"))
     r = analisis.resultado
     assert [t for t, _ in p.prompts] == ["extraccion"]
-    assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, 1.0)  # D2
+    # ADR-009 y stub del PR #19: sin clasificacion, detectado y confianza None; el 1,0 lo pone la plataforma (D2)
+    assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, None)
     assert codigos(r) == []
     assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v3"
 

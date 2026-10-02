@@ -19,7 +19,8 @@ def recomendar_documento(resultado: ResultadoDocumento,
                          ficha: TipoDocumental | Mapping[str, Any] | None) -> Recomendacion:
     """`aprobar` si el analisis esta `completado`, no hay alertas criticas ni bloqueantes (salvo las marcadas
     como falso positivo, `aplica=False`) y las confianzas estan sobre el minimo de la ficha: la de clasificacion
-    y la de cada campo con valor (los vacios ya llevan VAL-001/VAL-004). Si no, `revision_manual`.
+    y la de cada campo con valor (los vacios ya llevan VAL-001/VAL-004). Si no, `revision_manual`. Con tipo
+    confirmado, la confianza de clasificacion `None` cuenta como 1,0 (D2).
     `ficha`: la del tipo con el que se extrajo; sin ficha (p. ej. `desconocido` sin tipo declarado), revision."""
     if resultado.estado_analisis is not EstadoAnalisis.completado or ficha is None:
         return Recomendacion.revision_manual
@@ -27,6 +28,8 @@ def recomendar_documento(resultado: ResultadoDocumento,
     if any(a.severidad in _FRENAN and a.aplica is not False for a in resultado.alertas_encontradas):
         return Recomendacion.revision_manual
     clasificacion = resultado.confianza_clasificacion
+    if clasificacion is None and resultado.tipo_documental_confirmado:
+        clasificacion = 1.0  # tipo confirmado por el revisor: el motor no clasifica y deja None (ADR-009, D2)
     if clasificacion is None or clasificacion < ficha.confianza_minima_clasificacion:
         return Recomendacion.revision_manual
     for campo in ficha.campos:

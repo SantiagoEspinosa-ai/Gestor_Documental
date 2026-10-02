@@ -57,7 +57,6 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 CONFIANZA_ALERTA_DETERMINISTA = 1.0
-CONFIANZA_TIPO_CONFIRMADO = 1.0  # D2 (etapa 2): el revisor confirmo el tipo, como un campo corregido (ADR-006 2.4)
 
 _enrutador_por_defecto: Enrutador | None = None
 
@@ -194,8 +193,8 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                 ctx.alerta("CLS-002", Severidad.preventiva,
                            f"Confianza de clasificacion {datos['confianza_clasificacion']:.2f} menor que el minimo "
                            f"{ficha_detectada.confianza_minima_clasificacion:.2f} de '{detectado}'")
-        else:
-            datos["confianza_clasificacion"] = CONFIANZA_TIPO_CONFIRMADO
+        # Con tipo_confirmado no se clasifica: detectado y confianza_clasificacion quedan None (ADR-009, como el
+        # stub de la ingesta); el 1,0 lo pone la plataforma (D2).
 
         tipo = tipo_confirmado or declarado or (detectado if detectado != DESCONOCIDO else None)
         if tipo is not None:

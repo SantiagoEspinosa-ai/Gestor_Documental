@@ -96,6 +96,16 @@ def test_nunca_recomienda_rechazar_d1(ficha):
     assert recomendar(r, ficha) is Recomendacion.revision_manual
 
 
+def test_tipo_confirmado_con_confianza_de_clasificacion_null_aprobar(ficha):
+    # el motor no clasifica con tipo confirmado y deja None (ADR-009, stub del PR #19): no frena (D2)
+    r = resultado(tipo_documental_confirmado="pasaporte", tipo_documental_detectado=None, confianza_clasificacion=None)
+    assert recomendar(r, ficha) is Recomendacion.aprobar
+
+
+def test_confianza_de_clasificacion_null_sin_tipo_confirmado_revision(ficha):
+    assert recomendar(resultado(confianza_clasificacion=None), ficha) is Recomendacion.revision_manual
+
+
 def test_tipo_confirmado_con_confianza_1_aprobar(ficha):
     r = resultado(tipo_documental_confirmado="pasaporte", tipo_documental_detectado=None, confianza_clasificacion=1.0)
     assert recomendar(r, ficha) is Recomendacion.aprobar
