@@ -1,4 +1,4 @@
-import { FileText, FolderOpen, Lock, LogOut, ScrollText, UserRound, X } from 'lucide-react'
+import { FileText, FolderOpen, Lock, LogOut, ScrollText, Settings, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import { alFolioCerrado } from '../api/cliente'
@@ -6,7 +6,7 @@ import { ETIQUETA_ROL } from '../utilidades/etiquetas'
 import { useSesion } from './contextoSesion'
 import { SoloRol } from './SoloRol'
 
-const ROLES_AUDITORIA = ['admin'] as const // GET /auditoria
+const ROLES_AUDITORIA = ['admin'] as const // GET /auditoria; tambien la pantalla de procesos (H8)
 const claseEnlace = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1 rounded px-2 py-1 text-sm hover:bg-slate-700 ${isActive ? 'bg-slate-700' : ''}`
 
@@ -34,6 +34,9 @@ export function Estructura() {
             <SoloRol roles={ROLES_AUDITORIA}>
               <NavLink to="/auditoria" className={claseEnlace}>
                 <ScrollText className="size-4" aria-hidden /> Auditoría
+              </NavLink>
+              <NavLink to="/procesos" className={claseEnlace}>
+                <Settings className="size-4" aria-hidden /> Procesos
               </NavLink>
             </SoloRol>
           </nav>
