@@ -1,62 +1,68 @@
-"""Lectura minima de las fichas de `config/tipos/*.yaml` que necesita la ingesta.
+"""Fichas de tipos documentales que necesita la ingesta, desde `configuracion.servicio` (PERSONA_2).
 
-TODO: sustituir por configuracion.servicio.obtener()/listar() de PERSONA_2 cuando su modulo este en main.
+Las fichas se cargan y validan una vez (`configuracion.servicio.cargar()` en el arranque de la app);
+este modulo no lee YAML.
 """
-from pathlib import Path
-
-import yaml
-
-from app.core.config import get_settings
-
-
-def _fichas() -> dict[str, dict]:
-    carpeta: Path = get_settings().config_dir / "tipos"
-    return {p.stem: yaml.safe_load(p.read_text(encoding="utf-8")) or {} for p in carpeta.glob("*.yaml")}
+from app.modulos.configuracion import servicio as configuracion
 
 
 def existe_tipo(tipo: str) -> bool:
-    return tipo in _fichas()
+    try:
+        configuracion.obtener(tipo)
+    except configuracion.TipoNoEncontrado:
+        return False
+    return True
 
 
 def formatos_permitidos(tipo: str | None) -> set[str]:
     """Extensiones (minusculas, sin punto) del tipo dado, o de todos los tipos si es None."""
-    fichas = _fichas()
-    elegidas = [fichas[tipo]] if tipo else fichas.values()
-    return {str(f).lower().lstrip(".") for ficha in elegidas for f in ficha.get("formatos_permitidos", [])}
+    elegidas = [configuracion.obtener(tipo)] if tipo else configuracion.listar()
+    return {f for ficha in elegidas for f in ficha.formatos_permitidos}
 
 
-def _campo(definicion: dict) -> dict:
-    campo = {"tipo": definicion.get("tipo"), "obligatorio": bool(definicion.get("obligatorio", False))}
-    if definicion.get("patron"):
-        campo["patron"] = definicion["patron"]
-    return campo
+def _campo(campo: configuracion.Campo) -> dict:
+    datos = {"tipo": campo.tipo.value, "obligatorio": campo.obligatorio}
+    if campo.patron:
+        datos["patron"] = campo.patron
+    return datos
+
+
+def _regla(regla: configuracion.Regla) -> dict:
+    # Mismo orden de claves que las fichas YAML (dias, si lo hay, tras campo)
+    datos = {"id": regla.id, "tipo": regla.tipo.value, "campo": regla.campo}
+    if regla.dias is not None:
+        datos["dias"] = regla.dias
+    datos["severidad"] = regla.severidad.value
+    datos["mensaje"] = regla.mensaje
+    return datos
 
 
 def listar_fichas() -> list[dict]:
     """Fichas con la forma `TipoDocumental` de endpoints.md, ordenadas por nombre.
 
-    TODO: sustituir por configuracion.servicio.listar() de PERSONA_2 cuando su modulo este en main.
+    El dict se arma a mano y no con `model_dump`: una clave de mas en el modelo de `configuracion`
+    (p. ej. `caracteristicas_esperadas`) cambiaria el contrato.
     """
     return [
         {
-            "nombre": ficha.get("nombre", nombre),
-            "nombre_visible": ficha.get("nombre_visible"),
-            "categoria": ficha.get("categoria"),
-            "descripcion": ficha.get("descripcion"),
-            "formatos_permitidos": [str(f).lower().lstrip(".") for f in ficha.get("formatos_permitidos", [])],
-            "campos": {c: _campo(d or {}) for c, d in (ficha.get("campos") or {}).items()},
-            "confianza_minima_clasificacion": ficha.get("confianza_minima_clasificacion"),
-            "confianza_minima_campo": ficha.get("confianza_minima_campo"),
-            "reglas": ficha.get("reglas") or [],
-            "comparaciones": ficha.get("comparaciones") or {},
+            "nombre": ficha.nombre,
+            "nombre_visible": ficha.nombre_visible,
+            "categoria": ficha.categoria,
+            "descripcion": ficha.descripcion,
+            "formatos_permitidos": list(ficha.formatos_permitidos),  # el modelo ya los deja en minusculas y sin punto
+            "campos": {nombre: _campo(campo) for nombre, campo in ficha.campos.items()},
+            "confianza_minima_clasificacion": ficha.confianza_minima_clasificacion,
+            "confianza_minima_campo": ficha.confianza_minima_campo,
+            "reglas": [_regla(r) for r in ficha.reglas],
+            "comparaciones": {otro: list(campos) for otro, campos in ficha.comparaciones.items()},
         }
-        for nombre, ficha in sorted(_fichas().items())
+        for ficha in sorted(configuracion.listar(), key=lambda f: f.nombre)
     ]
 
 
 def nombre_visible(tipo: str) -> str:
     """Nombre legible del tipo; si no hay ficha o no lo define, el nombre tecnico."""
     try:
-        return _fichas().get(tipo, {}).get("nombre_visible") or tipo
+        return configuracion.obtener(tipo).nombre_visible or tipo
     except Exception:  # noqa: BLE001  una ficha ilegible no debe impedir crear el folio
         return tipo

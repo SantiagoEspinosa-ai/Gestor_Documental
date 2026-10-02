@@ -3,10 +3,11 @@
 Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ningun modulo (ADR-005).
 
 ## Ficheros
-- `config.py`: `Settings` (pydantic-settings) y `get_settings()`. Lee el entorno y el `.env` de la raiz.
+- `config.py`: `Settings` (pydantic-settings) y `get_settings()`. Lee el entorno y el `.env` de la raiz. `CORS_ORIGENES`: origenes separados por comas (por defecto `http://localhost:5173`); con `*` no arranca.
+- `cors.py`: `CorsDesdeSettings`, el `CORSMiddleware` de Starlette con `CORS_ORIGENES`, los metodos del contrato (`GET`, `POST`, `PATCH` y `OPTIONS`), cabeceras `Authorization` y `Content-Type` y sin credenciales (el token va en la cabecera, no en cookies). Se construye con los Settings de la primera peticion.
 - `db.py`: `Base` de SQLAlchemy 2, `get_engine()` perezoso y dependencia `get_sesion()` de FastAPI.
 - `modelos.py`: tablas de la plataforma. Migraciones en `backend/alembic/` (`alembic upgrade head`).
-- `procesos.py`: valida `config/procesos.yaml` (`leer_procesos`) y lo vuelca a la tabla `procesos` al arrancar (`sincronizar_procesos`, upsert sin borrar).
+- `procesos.py`: valida `config/procesos.yaml` (`leer_procesos(config_dir, tipos_existentes)`; los tipos los pasa `main.py` desde `configuracion.servicio`, porque core no importa modulos) y lo vuelca a la tabla `procesos` al arrancar (`sincronizar_procesos`, upsert sin borrar).
 - `errores.py`: `ErrorApi(http, codigo, mensaje, headers)` y manejadores globales (`registrar_manejadores`): todo error sale como `{codigo, mensaje}` (ADR-006 1.4); 422 sin valores de campo, 500 sin detalles internos.
 - `auditoria.py`: `registrar(sesion, accion, ...)` valida la accion contra `ACCIONES_AUDITORIA` y hace `add` sin commit; `listar(sesion, folio, pagina, tamano_pagina)` para `GET /auditoria`.
 - `seguridad.py`: hash bcrypt, `crear_token` JWT y dependencias `usuario_actual` y `requiere_rol(*roles)`. Usuarios con `scripts/crear_usuario.py`.

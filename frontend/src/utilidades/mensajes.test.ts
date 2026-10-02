@@ -16,6 +16,11 @@ describe('mensajes de error', () => {
       .toBe('Los datos enviados no son válidos. Falta `proceso`')
   })
 
+  it('el 415 de la API cubre la extensión y el contenido (firma que no coincide)', () => {
+    expect(mensajeDeError(new ErrorApi(415, 'FORMATO_NO_PERMITIDO', 'El contenido del archivo no corresponde a su extension')))
+      .toBe('El archivo no es válido: su formato o su contenido no corresponde a los formatos permitidos.')
+  })
+
   it('código desconocido: el mensaje de la API; otro error: genérico', () => {
     expect(mensajeDeError(new ErrorApi(418, 'CODIGO_NUEVO', 'Mensaje de la API'))).toBe('Mensaje de la API')
     expect(mensajeDeError(new Error('x'))).toBe('Ha ocurrido un error inesperado.')

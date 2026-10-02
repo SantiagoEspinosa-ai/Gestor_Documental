@@ -46,7 +46,10 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
    Decision del usuario: una critica o bloqueante marcada `aplica=false` (falso positivo) no cuenta.
    Las preventivas e informativas no cuentan nunca.
 3. Algun documento sin ficha para su tipo efectivo, sin `confianza_clasificacion`, o con ella o con
-   algun campo por debajo de los minimos de su ficha (un campo corregido vale 1.0, ADR-006 2.4).
+   algun campo por debajo de los minimos de su ficha (un campo corregido vale 1.0, ADR-006 2.4). Un
+   documento con `tipo_documental_confirmado` cuenta con `confianza_clasificacion` 1.0, como un campo
+   corregido (acordado con PERSONA_2, D2): cubre confirmar el mismo tipo (sin reproceso, se queda la
+   confianza del modelo) y confirmar otro (el motor la devuelve vacia). Lo aplica `servicio._recomendar`.
 4. Si no, `aprobar`. Nunca `rechazar`: la decision final es humana (regla 9 de CLAUDE.md).
 
 ## Revision (E2.6)

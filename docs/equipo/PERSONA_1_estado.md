@@ -62,8 +62,9 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ## Pendiente
 ### Cierre de la etapa 1
 - [x] PR #3 de `feat/plataforma` a `main`: aprobado y fusionado el 2026-09-30.
-- [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
-      lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
+- [x] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
+      lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`
+      (etapa 2, paso 0; `GET /tipos-documentales` devuelve el mismo JSON).
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
 - [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
 
@@ -91,13 +92,40 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
 
+## H1 (2026-10-02)
+UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
+
+- Entorno: backend en el equipo (`uvicorn`, `backend/.venv`) con el motor stub (H10), S3 real
+  (us-east-2), PostgreSQL de `docker compose` y el frontend con `npm run dev` y `VITE_USAR_MOCKS=false`.
+  Usuarios de prueba `h1.admin`, `h1.revisor` y `h1.integrador` (contrasenas aleatorias, fuera del repo).
+- Comprobado: login; lista de folios; folio nuevo con `EXP-001`; carga con subida a S3; sondeo del
+  estado; 415 `FORMATO_NO_PERMITIDO`; `DUP-001`; alerta marcada como falso positivo; confirmar otro
+  tipo con reproceso; correccion de datos; decision y folio cerrado; auditoria; roles integrador y admin
+  en la UI y en la API; CORS desde `http://localhost:5173`.
+- Corregido (commit "fix(h1): ..."):
+  1. `motor_stub`: con `tipo_confirmado`, `tipo_documental_detectado` y `confianza_clasificacion` a
+     null (ADR-009), como el motor real. Manda el confirmado (tipo efectivo) y cuenta 1.0 (D2).
+  2. Frontend: tras "Cerrar sesion" no se guarda la ruta de vuelta; el siguiente usuario entra en
+     `/folios` (antes, un integrador caia en "Sin permiso" en la `/auditoria` del admin anterior). Tras
+     una sesion caducada (401) la vuelta se mantiene.
+  3. Frontend: el mensaje del 415 de la API cubre el formato y el contenido ("El archivo no es valido:
+     su formato o su contenido no corresponde a los formatos permitidos."). La validacion de la
+     extension en la pantalla de carga conserva su propio mensaje.
+- Anotado, sin cambio:
+  - Los folios antiguos `ONB-2026-000001` y `000002` de la BD de desarrollo no tienen `EXP-001`: son
+    anteriores a E2.3. Solo afecta a datos de dev.
+  - Con el stub, un documento con campos vacios recomienda `aprobar`, porque el stub no emite
+    `VAL-001`. La demo no se hace con el stub.
+  - Visor del original: comprobado en Chrome por PERSONA_1. El navegador integrado no muestra PDF; S3
+    responde 200 application/pdf, sin Content-Disposition.
+
 ## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; reparto ACEPTADO en el PR #13)
 Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_estado.md`. Rama:
 `feat/plataforma`. El punto "Entregar las claves AWS a PERSONA_3" de arriba ya no hace falta.
 
 ### Etapa 2 (sin esperar al motor)
-- [ ] H1: UI contra la API real con el stub; issue por cada desviacion del contrato.
-- [ ] H2: test de rutas de `app.openapi()` frente a `endpoints.md`.
+- [x] H1: UI contra la API real con el stub; issue por cada desviacion del contrato. Ver "H1 (2026-10-02)".
+- [x] H2: test de rutas de `app.openapi()` frente a `endpoints.md` (`tests/test_openapi_contrato.py`).
 - [ ] H6 (humo): proyecto de Playwright aparte contra `docker compose`, con el stub.
 - [ ] H7: borrador del ADR-010 de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`)
       el dia 7; reservar antes el numero en el chat del equipo.
