@@ -8,7 +8,7 @@ están repartidas entre los ADR, `docs/arquitectura.md` y `docs/PLAN_PROYECTO.md
 ninguno: si algo de aquí contradice un ADR o un contrato, prevalecen ellos. Las vistas siguen el
 modelo C4 (contexto, contenedores y componentes).
 
-Actualizado: 2026-10-01.
+Actualizado: 2026-10-02.
 
 ## 1. Objetivo y alcance
 
@@ -21,7 +21,7 @@ elector, pasaporte y comprobante de domicilio.
 | Carga por web y por API, folio por solicitud | Conectores a terceros |
 | Clasificación, extracción y validación con IA, OCR y visión | Aprendizaje automático con las correcciones |
 | Reglas deterministas, comparaciones entre documentos y alertas por severidad | Multi-tenant completo |
-| Recomendación del expediente (nunca rechaza sola) y decisión humana | Reprocesar documentos en `error` |
+| Recomendación del expediente y decisión humana. La recomendación global nunca es `rechazar`; la decisión final es siempre humana. | Reprocesar documentos en `error` |
 | Originales en S3, resumen `.md` del expediente, API REST y webhooks | Cola de trabajos con varios procesos |
 | Memoria de folios (RAG) y base de conocimiento | Edición de procesos desde la UI |
 
@@ -115,7 +115,7 @@ flowchart TB
     end
 
     alm["<b>Almacenamiento → S3</b><br/>AlmacenamientoS3 (boto3)<br/>originales nunca se sobrescriben"]
-    ocr["<b>OCRProvider → Tesseract</b><br/>TesseractOCR (pytesseract)<br/>Textract: respaldo propuesto"]
+    ocr["<b>OCRProvider → Tesseract</b><br/>TesseractOCR (pytesseract)<br/>Textract: opción futura, tras la demo"]
     llm["<b>ProveedorLLM → Ollama</b><br/>OllamaProvider (principal)<br/>OpenRouter solo si se permite"]
 
     api --> modulos
@@ -129,12 +129,21 @@ flowchart TB
 Cada documento entra por la ingesta, se analiza en segundo plano (uno a la vez) y se valida con
 reglas deterministas y comparaciones entre documentos. El revisor corrige, resuelve alertas o
 confirma otro tipo (que reprocesa el documento como versión nueva) y decide; tras la decisión el
-folio queda cerrado. La recomendación nunca es `rechazar`: como mucho pide revisión manual.
+folio queda cerrado.
+
+En el análisis, el motor usa el modelo de texto si hay texto suficiente (la capa de texto del PDF o
+el OCR) y pasa a visión ante cualquiera de las cuatro señales de OCR pobre: texto insuficiente
+(alguna página con menos de 30 letras), clasificación desconocida, la mitad o más de los campos
+obligatorios vacíos, o algún campo con formato imposible. El detalle está en
+[docs/motor_ia/EXPLICACION_MOTOR.md](motor_ia/EXPLICACION_MOTOR.md).
+
+La recomendación global nunca es `rechazar`; la decisión final es siempre humana. Como mucho pide
+revisión manual. La recomendación por documento la define el motor (PERSONA_2) en la etapa 2.
 
 ```mermaid
 flowchart LR
     recibir["<b>1 · Recibir</b><br/>Valida tamaño, formato y firma<br/>SHA-256 y duplicados (DUP-001)<br/>Original a S3 · pendiente"]
-    procesar["<b>2 · Procesar</b><br/>Uno a la vez, en segundo plano<br/>OCR o visión según modalidad<br/>Clasifica y extrae (motor IA)"]
+    procesar["<b>2 · Procesar</b><br/>Uno a la vez, en segundo plano<br/>Texto (PDF u OCR) si basta;<br/>visión si el OCR es pobre<br/>Clasifica y extrae (motor IA)"]
     validar["<b>3 · Validar</b><br/>Reglas del YAML y confianza<br/>Comparaciones (CMP-001)<br/>EXP-001 y recomendación"]
     revisar["<b>4 · Revisar</b><br/>Corrige datos (confianza 1,0)<br/>Resuelve alertas<br/>Confirma el tipo documental"]
     decidir["<b>5 · Decidir (humano)</b><br/>Aprobar o rechazar<br/>Bloqueante abierta → 409<br/>El folio queda cerrado"]
@@ -174,7 +183,7 @@ de análisis simultáneos (1).
 | Trazabilidad | Auditoría de cada acción (login, folio, subida, procesamiento con modelo y versión de prompt, correcciones, alertas, clasificación, decisión) |
 | Minimización de datos | Ni la auditoría, ni los mensajes de error, ni las alertas guardan valores personales; los comentarios libres no se auditan |
 | Privacidad frente a la IA | Ollama local como principal: los datos no salen. OpenRouter gratuito solo con datos ficticios y bloqueado por defecto |
-| Validación humana | La IA solo recomienda; nunca rechaza; tras decidir, el folio queda cerrado para siempre |
+| Validación humana | La IA solo recomienda. La recomendación global nunca es `rechazar`; la decisión final es siempre humana. Tras decidir, el folio queda cerrado para siempre |
 | Datos de prueba | Solo fixtures y especímenes ficticios, sin metadatos (EXIF/GPS eliminados) |
 
 Pendiente (etapa 3, ADR por redactar): enmascaramiento de datos sensibles en la API según el rol,
@@ -190,7 +199,7 @@ con "mostrar" auditado, y filtro de enmascaramiento en los logs.
 | Decisión concurrente | Solo un revisor gana | Actualización condicional del folio; probado con 2 hilos |
 | Tamaño de archivo | Máximo 20 MB | Lectura limitada antes de cargar en memoria (`413`) |
 | Paginación | Folios 20, auditoría 50 (máx. 100) | Contrato 2 y ADR-008 |
-| Calidad | ~290 tests automáticos de la plataforma en verde con SQLite y PostgreSQL; e2e del flujo del revisor 15/15 | Tests en cada commit; pruebas reales contra el bucket |
+| Calidad | e2e contra la API 15/15; frontend con Vitest 177 y Playwright 10 sobre mocks; pytest del backend en `main` 400 pasados y 2 omitidos. Cifras de la revisión del PR #12 (2026-10-02, antes del #11) | Tests en cada commit; pruebas reales contra el bucket |
 | Límites conocidos | Un solo proceso de servidor | Con varios procesos haría falta una cola (fuera del MVP) |
 
 ## 9. Integración y contratos
@@ -204,8 +213,8 @@ Tres contratos congelados que solo cambian con un ADR y aviso al equipo:
 3. **Contrato 3, `backend/app/modulos/motor_ia/interfaces.py`:** interfaz interna del motor
    (`ProveedorLLM`, `Enrutador`).
 
-Además, la interfaz plataforma–motor acordada entre PERSONA_1 y PERSONA_2 (sección 11 de
-`docs/motor_ia/SPEC_CONFIGURACION.md`):
+Además, la interfaz plataforma–motor acordada entre PERSONA_1 y PERSONA_2 ([sección 11 de
+`docs/motor_ia/SPEC_CONFIGURACION.md`](motor_ia/SPEC_CONFIGURACION.md#11-integracion-con-la-plataforma-etapa-2)):
 `procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia, tipo_confirmado=None) -> (ResultadoDocumento, datos_auditoria)`.
 El motor no toca la base de datos ni S3.
 
@@ -225,7 +234,7 @@ El proyecto no tiene presupuesto para IA (ADR-003): todo lo que puede ser local,
 | Ollama, Tesseract, PostgreSQL, FastAPI, React | Sin coste | Software libre en máquinas del equipo |
 | Amazon S3 | Muy bajo con datos de prueba | Almacenamiento y peticiones; único servicio de pago hoy |
 | OpenRouter | Sin coste | Solo modelos gratuitos (`:free`) y bloqueado por defecto |
-| Amazon Textract (si se adopta) | Por página procesada | Solo como respaldo en imágenes difíciles; necesita ADR y presupuesto (sección 12) |
+| Amazon Textract (opción futura) | Por página procesada | Solo después de la demo; necesita su propio ADR y presupuesto (sección 12) |
 | Claude Code | Suscripción de empresa existente | Herramienta de desarrollo, no forma parte del producto |
 
 ## 11. Decisiones de arquitectura
@@ -249,22 +258,27 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | Riesgo | Impacto | Mitigación |
 | --- | --- | --- |
 | Ollama sin GPU | Cada documento tarda 1–4 min | Modelos pequeños, un análisis a la vez, procesamiento en segundo plano |
-| OCR con fotos de móvil | Tesseract lee el 85 % de los campos de los especímenes, pero 0/4 en el comprobante difícil | El motor pasa a visión cuando el OCR es pobre; propuesta de Textract como respaldo (abajo) |
+| OCR con fotos de móvil | Tesseract lee el 85 % de los campos de los especímenes, pero 0/4 en el comprobante difícil | El motor pasa a visión cuando el OCR es pobre; Textract queda como opción futura (abajo) |
 | Confianza del modelo poco fiable | Alertas de confianza que nunca saltarían | ADR-007: la confianza la calcula el código |
 | Un solo proceso de servidor | El semáforo no coordina varios procesos | Suficiente para el MVP; cola de trabajos si se escala |
 | Especímenes con fechas fijas | Desde el 2026-12-14 el comprobante da una alerta crítica de antigüedad | Reimprimir y fotografiar si se usan después de esa fecha |
 | Cambios de contrato a mitad de proyecto | Romperían el trabajo de los demás | Contratos congelados, cambios solo por ADR y PR revisado |
 
-### Propuesta: Amazon Textract como respaldo del OCR
+### Opción futura: Amazon Textract como respaldo del OCR
 
-- **Encaje:** el OCR está detrás de la interfaz `OCRProvider.extraer_texto(imagen) -> str`. Un
-  adaptador `TextractOCR` son unas 15–20 líneas con `boto3`, sin tocar el resto (ADR-005).
-- **Uso recomendado:** no sustituir Tesseract. Usar Textract solo cuando Tesseract lea poco (fotos
-  difíciles), para mejorar la extracción con poco coste.
-- **A favor:** mejor lectura de fotos reales; los documentos ya están en S3, en la misma cuenta de AWS.
-- **Antes de adoptarlo:** coste por página (el proyecto no tiene presupuesto de IA), permiso IAM nuevo
-  (`textract:DetectDocumentText`, que la organización podría bloquear) y su modo de identidad
-  (AnalyzeID) no reconoce la credencial de elector mexicana. Requiere un ADR.
+Queda como opción para después de la demo, no para el MVP.
+
+- **Hoy no hace falta:** la visión ya cubre el OCR pobre. En los fixtures difíciles y extremos, con
+  la regla de las cuatro señales, el motor acierta 31/34 campos en difícil y 28/34 en extremo
+  (sección 5 de [docs/motor_ia/EXPLICACION_MOTOR.md](motor_ia/EXPLICACION_MOTOR.md) y
+  `docs/motor_ia/pruebas_ollama/resultados/evaluacion/informe.md`).
+- **Necesitaría su propio ADR:** toca el puerto `OCRProvider` (`extraer_texto(imagen) -> str`, un
+  adaptador `TextractOCR` nuevo), tiene coste por página (el proyecto no tiene presupuesto de IA) y
+  envía los documentos a un servicio de AWS para analizarlos.
+- **Privacidad:** tendría que pasar por la misma barrera que OpenRouter
+  (`PERMITIR_PROVEEDORES_NO_PRIVADOS`): bloqueado por defecto y solo con datos ficticios.
+- **Otros límites:** permiso IAM nuevo (`textract:DetectDocumentText`, que la organización podría
+  bloquear) y su modo de identidad (AnalyzeID) no reconoce la credencial de elector mexicana.
 
 ### Propuesta: documentación en C4
 
@@ -273,17 +287,17 @@ ellas en vez de mantener su diagrama único, que mezcla niveles.
 
 ## 13. Estado actual del desarrollo
 
-A 2026-10-01. Cada persona trabaja en su rama y se integra en `main` por PR revisado por otra persona
-al cerrar cada etapa.
+A 2026-10-02. Cada persona trabaja en su rama y se integra en `main` por PR revisado por otra persona
+al cerrar cada etapa. Los PR #10, #11 y #12 están fusionados.
 
 | Rama | Persona | Estado |
 | --- | --- | --- |
-| `main` | — | Contratos, catálogos, ADR-001 a ADR-008 y las etapas 1 y 2 de la plataforma (PR #3 y #9) |
+| `main` | — | Contratos, catálogos, ADR-001 a ADR-008, las etapas 1 y 2 de la plataforma (PR #3 y #9), el frontend (PR #10), la etapa 1 del motor (PR #11) y este documento (PR #12) |
 | `feat/plataforma` | PERSONA_1 | Etapa 2 fusionada; probada de extremo a extremo (15/15) |
-| `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 en revisión |
-| `feat/interfaz` | PERSONA_3 | Frontend completo sobre mocks, fixtures y especímenes; PR #10 en revisión |
+| `feat/motor-ia` | PERSONA_2 | Etapa 1 del motor (configuración, OCR, MRZ, preparador, Ollama, enrutador, servicio y CLI); PR #11 fusionado |
+| `feat/interfaz` | PERSONA_3 | Frontend completo sobre mocks, fixtures y especímenes; PR #10 fusionado |
 
-**Siguiente:** fusionar los PR #10 y #11; conectar el motor real (`procesar_documento`, etapa 2 de
+**Siguiente:** conectar el motor real (`procesar_documento`, etapa 2 de
 PERSONA_2) y `configuracion` en la plataforma; hito de la etapa 2 (subir documentos por la web y
 verlos clasificados, extraídos y validados); etapa 3 (resumen `.md`, webhooks, RAG, enmascaramiento).
 
