@@ -224,3 +224,41 @@ def test_se_informan_todos_los_errores_a_la_vez(config):
     assert len(exc.value.errores) == 2
     assert any(e.startswith("tipo_a.yaml") for e in exc.value.errores)
     assert any(e.startswith("tipo_b.yaml") for e in exc.value.errores)
+
+
+# --- ADR-009: nombre reservado ---
+
+def test_ninguna_ficha_puede_llamarse_desconocido(config):
+    assert "reservado" in errores_de(config, ficha_base("desconocido"))
+
+
+def test_nombre_reservado_coincide_con_el_del_motor():
+    from app.modulos.motor_ia.proveedores.base import DESCONOCIDO
+    assert servicio.NOMBRE_RESERVADO == DESCONOCIDO
+
+
+# --- ADR-007: marcadores de clasificacion ---
+
+def test_marcadores_opcionales_y_validos(config):
+    sin = config(ficha_base("tipo_a"))
+    assert sin["tipo_a"].marcadores_clasificacion == []
+    ficha = ficha_base("tipo_b")
+    ficha["marcadores_clasificacion"] = [r"^P<[A-Z<]{3}", r"FECHA\s*(DE\s*)?EXPEDICION"]
+    assert config(ficha)["tipo_b"].marcadores_clasificacion == ficha["marcadores_clasificacion"]
+
+
+def test_marcador_con_expresion_regular_invalida(config):
+    ficha = ficha_base()
+    ficha["marcadores_clasificacion"] = ["VALIDO", "(sin cerrar"]
+    assert "marcador 1" in errores_de(config, ficha)
+
+
+def test_marcadores_repetidos(config):
+    ficha = ficha_base()
+    ficha["marcadores_clasificacion"] = ["CURP", "CURP"]
+    assert "marcadores repetidos" in errores_de(config, ficha)
+
+
+def test_las_fichas_reales_declaran_marcadores():
+    for ficha in cargar().values():
+        assert len(ficha.marcadores_clasificacion) >= 5, ficha.nombre

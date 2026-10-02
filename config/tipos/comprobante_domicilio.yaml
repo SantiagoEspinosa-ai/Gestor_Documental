@@ -13,6 +13,14 @@ campos:
   domicilio:      {tipo: texto, obligatorio: true}
   proveedor:      {tipo: texto, obligatorio: false}
   fecha_emision:  {tipo: fecha, obligatorio: true}
+# ADR-007: marcadores verificables en el texto (mayusculas, sin acentos, linea a linea);
+# confianza de clasificacion = proporcion encontrada. Cuantos: el umbral tolera uno sin encontrar.
+marcadores_clasificacion:
+  - 'COMPROBANTE\s*(DE\s*)?DOMICILIO|\bRECIBO\b|ESTADO\s*DE\s*CUENTA'
+  - 'FECHA\s*(DE\s*)?EMISION|\bPERIODO\b'
+  - '\bDOMICILIO\b'
+  - '\bTOTAL\b|\bIMPORTE\b'
+  - '\bTITULAR\b'
 confianza_minima_clasificacion: 0.80
 confianza_minima_campo: 0.75
 reglas:
