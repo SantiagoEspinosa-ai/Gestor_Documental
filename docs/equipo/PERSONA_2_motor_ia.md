@@ -90,7 +90,7 @@ evidencia por campo, usando Ollama.
   en pgvector; `rag.buscar(consulta, k)` -> fragmentos que el servicio inyecta en `contexto_rag`.
   Reparto de `modulos/rag` (ADR-006, "Coordinacion"): `conocimiento.py` tuyo, `memoria.py` y
   `embeddings.py` de PERSONA_3 (lo reutilizas), `servicio.py` y `README.md` comunes.
-- Extra: `prompts/extraccion_v2.md` pidiendo `observaciones_visuales` (legibilidad, paginas
+- Extra: `prompts/extraccion_v4.md` (la v2 y la v3 ya se usan; ver la spec) pidiendo `observaciones_visuales` (legibilidad, paginas
   recortadas, alteraciones) y convertirlas en alertas `VIS-xxx`.
 - Probar el respaldo OpenRouter con los fixtures (modelos `:free` solo con datos ficticios).
 
@@ -99,3 +99,42 @@ evidencia por campo, usando Ollama.
 - Prompts solo en `prompts/`, versionados; el codigo nunca contiene prompts largos.
 - Nunca claves en codigo ni en tests. Nunca datos reales: usa `fixtures/generados`.
 - Commits `feat(motor_ia): ...`. Cada modulo con README de entrada/salida.
+
+## Tareas heredadas de PERSONA_3 (traspaso del 2026-10-01; reparto ACEPTADO en el PR #13)
+PERSONA_3 pasa a otro proyecto. Heredas los fixtures y toda la carpeta `modulos/rag`: lo que el
+apartado "Etapa 3" de arriba da a PERSONA_3 (`memoria.py` y `embeddings.py`) pasa a ser tuyo. Se hace
+en `feat/motor-ia`. Ids, dependencias y recortes: `docs/equipo/PERSONA_3_estado.md`.
+
+| Id | Tarea | Etapa |
+|---|---|---|
+| H9 | ADR para el valor reservado `desconocido` en `tipo_documental_detectado` (Contrato 1 y `endpoints.md`). EN CURSO: ADR-009 en el PR #14. Revisa PERSONA_1, que adapta la UI (H4) | 2 (dias 4-5) |
+| H10 | Decidir con PERSONA_1 si `procesar_documento` sustituye a `motor_stub.py` antes de calcular la confianza (ADR-007). DECIDIDO en tu spec (`96f7425`) y confirmado en el PR #13: no lo sustituye hasta entonces; PENDIENTE de que PERSONA_1 lo confirme | 2 |
+| H11 | Formato estable de `INDICE.md`. EN PARTE: `test_fixtures_ocr.py` ya filtra por casos y nivel (`7c84720`); falta documentar el formato en `fixtures/README.md` (o generar `INDICE.json` al lado) | 2 |
+| H12 | Tiempo maximo esperado por documento y por pagina escaneada en tu spec. HECHO (seccion 13, en `main` con el PR #11) | 2 |
+| H13 | Mantener `scripts/generar_fixtures.py` (su evaluador de reglas debe conocer los tipos nuevos, como `coherencia_curp_fecha` y `fechas_ordenadas`), `scripts/verificar_ocr_fixtures.py` (mismo preprocesado que `orquestador/ocr.py`) y `scripts/procesar_especimenes.py`; quitar del docstring del generador el pendiente de `ejemplos_referencia`; PR pequeno para fijar `pymupdf==1.28.2` y `pillow==12.3.0` | 2-3 |
+| H14 | `rag/embeddings.py` (Ollama `nomic-embed-text`, compartido con `conocimiento.py`), `rag/memoria.py` (trocear e indexar `resumen.md`, tabla `memoria_folios` con su migracion), `buscar_antecedentes(referencia_persona, proceso)` con `permitir_antecedentes` y caducidad, `rag/servicio.py` y `rag/README.md` | 3 (dias 9-11) |
+| H15 | `sensible: true` en los YAML y en el cargador, segun el ADR-010 de la etapa 3 (H7, de PERSONA_1) | 3 |
+| H18 | Repetir o recortar las 4 fotos de especimenes descartadas: NO SE HACE (R5 aceptado) | - |
+
+Prioridad acordada en el PR #13: primero la ruta critica de la etapa 2 (ADR-007, reglas y
+`procesar_documento`); la memoria (H14) en la etapa 3, probada antes con un `resumen.md` ficticio. Si
+no da tiempo, el primero en caer es el extra 2 (R4). Tambien acordado: el motor no recomienda `rechazar`
+por documento; lo aplicas en la etapa 2 con tu propio PR (y `codigos_alertas.md`, si hace falta).
+
+Ficheros de partida: `fixtures/README.md`, `fixtures/especimenes/README.md`, los tres scripts de
+fixtures, `backend/tests/test_generar_fixtures.py`, `test_especimenes.py`,
+`test_verificar_ocr_fixtures.py`, `test_versiones_fixtures.py` y `sha256_fixtures_existentes.txt`,
+ADR-006 ("Bloque 4" y "Coordinacion") y el anexo de `PERSONA_3_estado.md`.
+
+Acuerdos que hay que respetar:
+- Solo personas ficticias de `PERSONAS_FICTICIAS`, sin escudos, logotipos ni organismos reales. Los
+  especimenes, sin metadatos y solo con el documento en el encuadre.
+- `fixtures/generados/` e `INDICE.md` no se suben. Con el mismo `--hoy` los ficheros salen identicos
+  byte a byte; cambiar el nivel `normal` rompe `DUP-001` frente a los mocks y obliga a regenerar
+  `sha256_fixtures_existentes.txt`, `frontend/public/mock-originales` y los mocks (avisar a
+  PERSONA_1).
+- Un caso o un tipo nuevo en el generador cambia `INDICE.md`: avisar antes.
+- `rag/servicio.py` es la unica API del modulo; el router de `/antecedentes` es de PERSONA_1. La
+  migracion de `memoria_folios` se encadena en su historia de Alembic: avisa antes de crearla.
+- La memoria nunca guarda la CURP en claro; la forma de `referencia_persona` la fija el ADR de la
+  etapa 3.

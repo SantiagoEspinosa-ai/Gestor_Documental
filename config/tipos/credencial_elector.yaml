@@ -7,7 +7,7 @@ caracteristicas_esperadas:
   - Clave de elector y CURP
   - Domicilio y vigencia (anio)
 formatos_permitidos: [pdf, jpg, jpeg, png]
-ejemplos_referencia: [fixtures/credencial_ejemplo_foto.jpg]
+ejemplos_referencia: [fixtures/generados/credencial_elector_sano_foto.jpg]
 campos:
   nombre_completo:  {tipo: texto, obligatorio: true}
   curp:             {tipo: texto, obligatorio: true, patron: "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"}

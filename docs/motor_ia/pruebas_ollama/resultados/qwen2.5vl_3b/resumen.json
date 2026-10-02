@@ -1,0 +1,230 @@
+[
+  {
+    "n": 1,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "frio",
+    "segundos_total": 86.3,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 73.1,
+    "tokens_prompt": 1604,
+    "generacion_s": 10.8,
+    "tokens_generados": 73,
+    "ram_libre_min_gb": 3.52,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "pasaporte",
+    "confianza": 0.95,
+    "acierto": true
+  },
+  {
+    "n": 2,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 11.9,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.2,
+    "tokens_prompt": 1604,
+    "generacion_s": 9.3,
+    "tokens_generados": 73,
+    "ram_libre_min_gb": 3.52,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "pasaporte",
+    "confianza": 0.95,
+    "acierto": true
+  },
+  {
+    "n": 3,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 53.6,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 3.3,
+    "tokens_prompt": 1596,
+    "generacion_s": 47.9,
+    "tokens_generados": 381,
+    "ram_libre_min_gb": 3.52,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_2[:sección]"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_3[:sección]"
+      },
+      "fecha_nacimiento": {
+        "valor": "01/01/1990",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_4[:sección]"
+      },
+      "fecha_expedicion": {
+        "valor": "10/05/2024",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_5[:sección]"
+      },
+      "fecha_vencimiento": {
+        "valor": "09/05/2034",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_6[:sección]"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_7[:sección]"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_8[:sección]"
+      }
+    },
+    "aciertos": 4,
+    "observaciones_visuales": [
+      "La foto está claramente visible en la parte superior izquierda del documento.",
+      "El texto es legible en la mayoría de los campos, excepto para la fecha de vencimiento, que es parcialmente oculta."
+    ]
+  },
+  {
+    "n": 4,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "repeticion",
+    "segundos_total": 40.7,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.1,
+    "tokens_prompt": 1596,
+    "generacion_s": 38.2,
+    "tokens_generados": 360,
+    "ram_libre_min_gb": 3.52,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_2[:sección]"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_3[:sección]"
+      },
+      "fecha_nacimiento": {
+        "valor": "01/01/1990",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_4[:sección]"
+      },
+      "fecha_expedicion": {
+        "valor": "10/05/2024",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_5[:sección]"
+      },
+      "fecha_vencimiento": {
+        "valor": "09/05/2034",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "sección_6[:sección]"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_7[:sección]"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "sección_8[:sección]"
+      }
+    },
+    "aciertos": 4,
+    "observaciones_visuales": [
+      "legibilidad_baja",
+      "recorte_en_la_imagen",
+      "alteraciones_visibles_en_la_fecha_vencimiento"
+    ]
+  },
+  {
+    "n": 5,
+    "tarea": "extraccion",
+    "variante": "B",
+    "nota": "foto degradada",
+    "segundos_total": 125.5,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 80.2,
+    "tokens_prompt": 1758,
+    "generacion_s": 42.9,
+    "tokens_generados": 301,
+    "ram_libre_min_gb": 3.52,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      },
+      "fecha_nacimiento": {
+        "valor": "01/01/1990",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      },
+      "fecha_expedicion": {
+        "valor": "10/05/2024",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      },
+      "fecha_vencimiento": {
+        "valor": "09/05/2034",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 0,
+        "evidencia": "FOTO"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "FOTO"
+      }
+    },
+    "aciertos": 4,
+    "observaciones_visuales": [
+      "FOTO"
+    ]
+  }
+]

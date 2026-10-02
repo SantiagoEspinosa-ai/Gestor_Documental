@@ -7,7 +7,7 @@ caracteristicas_esperadas:
   - Nombre del titular y domicilio completo
   - Fecha de emision o periodo
 formatos_permitidos: [pdf, jpg, jpeg, png]
-ejemplos_referencia: [fixtures/comprobante_ejemplo_digital.pdf, fixtures/comprobante_ejemplo_escaneado.pdf]
+ejemplos_referencia: [fixtures/generados/comprobante_domicilio_sano_digital.pdf, fixtures/generados/comprobante_domicilio_sano_escaneado.pdf]
 campos:
   nombre_titular: {tipo: texto, obligatorio: true}
   domicilio:      {tipo: texto, obligatorio: true}

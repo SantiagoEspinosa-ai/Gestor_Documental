@@ -1,0 +1,230 @@
+[
+  {
+    "n": 1,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "frio",
+    "segundos_total": 50.7,
+    "carga_s": 27.1,
+    "lectura_prompt_s": 16.3,
+    "tokens_prompt": 742,
+    "generacion_s": 5.0,
+    "tokens_generados": 64,
+    "ram_libre_min_gb": 4.8,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "desconocido",
+    "confianza": 0.1,
+    "acierto": false
+  },
+  {
+    "n": 2,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 7.7,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.2,
+    "tokens_prompt": 742,
+    "generacion_s": 5.3,
+    "tokens_generados": 68,
+    "ram_libre_min_gb": 4.8,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "desconocido",
+    "confianza": 0.1,
+    "acierto": false
+  },
+  {
+    "n": 3,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 49.8,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 15.9,
+    "tokens_prompt": 740,
+    "generacion_s": 31.5,
+    "tokens_generados": 400,
+    "ram_libre_min_gb": 4.8,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "MIGUEL ANGEL CARLOS",
+        "ok": false,
+        "confianza": 0.95,
+        "evidencia": "pagina_1:1"
+      },
+      "numero_pasaporte": {
+        "valor": "P123456789",
+        "ok": false,
+        "confianza": 0.98,
+        "evidencia": "pagina_1:2"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-15",
+        "ok": false,
+        "confianza": 0.97,
+        "evidencia": "pagina_1:3"
+      },
+      "fecha_expedicion": {
+        "valor": "2020-01-15",
+        "ok": false,
+        "confianza": 0.95,
+        "evidencia": "pagina_1:4"
+      },
+      "fecha_vencimiento": {
+        "valor": "2025-01-15",
+        "ok": false,
+        "confianza": 0.98,
+        "evidencia": "pagina_1:5"
+      },
+      "nacionalidad": {
+        "valor": "México",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:6"
+      },
+      "sexo": {
+        "valor": "Masculino",
+        "ok": false,
+        "confianza": 0.85,
+        "evidencia": "pagina_1:7"
+      }
+    },
+    "aciertos": 0,
+    "observaciones_visuales": [
+      "El documento es un pasaporte con formato estándar.",
+      "La información es legible."
+    ]
+  },
+  {
+    "n": 4,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "repeticion",
+    "segundos_total": 34.4,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.2,
+    "tokens_prompt": 740,
+    "generacion_s": 31.9,
+    "tokens_generados": 398,
+    "ram_libre_min_gb": 4.8,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "MIGUEL ANGEL CARLOS",
+        "ok": false,
+        "confianza": 0.95,
+        "evidencia": "pagina_1:1"
+      },
+      "numero_pasaporte": {
+        "valor": "P123456789",
+        "ok": false,
+        "confianza": 0.98,
+        "evidencia": "pagina_1:2"
+      },
+      "fecha_nacimiento": {
+        "valor": "1990-01-15",
+        "ok": false,
+        "confianza": 0.97,
+        "evidencia": "pagina_1:3"
+      },
+      "fecha_expedicion": {
+        "valor": "2023-01-15",
+        "ok": false,
+        "confianza": 0.95,
+        "evidencia": "pagina_1:4"
+      },
+      "fecha_vencimiento": {
+        "valor": "2028-01-15",
+        "ok": false,
+        "confianza": 0.98,
+        "evidencia": "pagina_1:5"
+      },
+      "nacionalidad": {
+        "valor": "México",
+        "ok": false,
+        "confianza": 0.9,
+        "evidencia": "pagina_1:6"
+      },
+      "sexo": {
+        "valor": "M",
+        "ok": false,
+        "confianza": 0.95,
+        "evidencia": "pagina_1:7"
+      }
+    },
+    "aciertos": 0,
+    "observaciones_visuales": [
+      "El documento es un pasaporte con formato estándar.",
+      "La información es legible."
+    ]
+  },
+  {
+    "n": 5,
+    "tarea": "extraccion",
+    "variante": "B",
+    "nota": "foto degradada",
+    "segundos_total": 48.3,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 17.7,
+    "tokens_prompt": 784,
+    "generacion_s": 28.3,
+    "tokens_generados": 341,
+    "ram_libre_min_gb": 4.8,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "numero_pasaporte": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "fecha_nacimiento": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "fecha_expedicion": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "fecha_vencimiento": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "nacionalidad": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      },
+      "sexo": {
+        "valor": null,
+        "ok": false,
+        "confianza": 0.0,
+        "evidencia": "null"
+      }
+    },
+    "aciertos": 0,
+    "observaciones_visuales": [
+      "El documento es un formulario de datos con múltiples líneas de campos, no un pasaporte estándar.",
+      "No se encontraron campos típicos de pasaporte (nombre, número de pasaporte, fechas) en el formato esperado."
+    ]
+  }
+]

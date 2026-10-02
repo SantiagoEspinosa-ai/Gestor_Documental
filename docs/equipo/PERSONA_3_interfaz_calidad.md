@@ -1,5 +1,12 @@
 # Prompt de arranque - PERSONA_3 (Frontend, fixtures, tests e2e, memoria de folios)
 
+> **AVISO (2026-10-01): esta linea se ha repartido.** PERSONA_3 pasa a otro proyecto. Frontend, tests
+> e2e, pantallas y demo pasan a PERSONA_1; fixtures y `modulos/rag` (memoria de folios y embeddings),
+> a PERSONA_2. Estado, acuerdos y reparto: `docs/equipo/PERSONA_3_estado.md`. Las tareas de cada una
+> estan en la seccion "Tareas heredadas de PERSONA_3" de `PERSONA_1_plataforma.md` y
+> `PERSONA_2_motor_ia.md`. Este prompt se conserva como especificacion original de la linea; no lo
+> uses para arrancar una sesion nueva.
+
 Copia todo este bloque como primer mensaje en Claude Code dentro del repo.
 
 ---

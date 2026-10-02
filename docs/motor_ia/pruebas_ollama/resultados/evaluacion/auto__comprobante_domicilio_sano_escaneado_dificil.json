@@ -1,0 +1,129 @@
+{
+  "medida": {
+    "id": "auto__comprobante_domicilio_sano_escaneado_dificil",
+    "ruta": "auto",
+    "archivo": "comprobante_domicilio_sano_escaneado_dificil.pdf",
+    "declarado": "comprobante_domicilio",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "comprobante_domicilio",
+    "modalidad_fixture": "escaneado",
+    "nivel": "dificil",
+    "obligatorios": [
+      "nombre_titular",
+      "domicilio",
+      "fecha_emision"
+    ],
+    "segundos_preparar": 1.7,
+    "modalidad_detectada": "pdf_escaneado",
+    "caracteres_texto": 228,
+    "segundos_total": 67.6,
+    "estado": "completado",
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_titular": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "GALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "incorrecto",
+        "ok": false
+      },
+      "proveedor": {
+        "esperado": "SERVICIOS DE EJEMPLO S.A.",
+        "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_emision": {
+        "esperado": "2026-09-15",
+        "extraido": "2026-09-15",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 3,
+    "vacios": 0,
+    "incorrectos": 1,
+    "total_campos": 4,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 28.41,
+        "tokens_entrada": 492,
+        "tokens_salida": 62,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 37.46,
+        "tokens_entrada": 792,
+        "tokens_salida": 275,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "4fa84d35-0886-47e8-86e3-47e660a16ffc",
+    "tipo_documental_declarado": "comprobante_domicilio",
+    "tipo_documental_detectado": "comprobante_domicilio",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_titular": "ANA EJEMPLO PRUEBA",
+      "domicilio": "GALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+      "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+      "fecha_emision": "2026-09-15"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_titular": 1.0,
+      "domicilio": 1.0,
+      "proveedor": 1.0,
+      "fecha_emision": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_titular": "pagina_1:seccion_superior",
+      "domicilio": "pagina_1:seccion_superior",
+      "proveedor": "pagina_1:seccion_superior",
+      "fecha_emision": "pagina_1:seccion_superior"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T18:51:47.652129Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "comprobante_domicilio_sano_escaneado_dificil.pdf",
+      "ruta": "local://comprobante_domicilio_sano_escaneado_dificil.pdf",
+      "hash": "ea2741eb54b3592f0c32ddabc75626dedaafecfe096aadeb3d96be1cf0d7115e"
+    }
+  }
+}

@@ -13,6 +13,7 @@ config/modelos.yaml  Enrutador de modelos por tarea
 prompts/        Prompts versionados (nunca incrustados en codigo)
 docs/adr/       Decisiones de arquitectura
 docs/arquitectura.md  Arquitectura: monolito modular con puertos y adaptadores (ADR-005)
+docs/arquitectura_solucion.md  Arquitectura de solucion: vistas C4, despliegue, seguridad, costes y riesgos
 docs/contratos/ Contrato 2: endpoints
 scripts/        generar_fixtures.py y utilidades
 fixtures/       Documentos ficticios de prueba (nunca datos reales)

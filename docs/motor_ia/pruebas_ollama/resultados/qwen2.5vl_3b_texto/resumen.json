@@ -1,0 +1,168 @@
+[
+  {
+    "n": 1,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "frio",
+    "segundos_total": 16.0,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 4.8,
+    "tokens_prompt": 533,
+    "generacion_s": 8.6,
+    "tokens_generados": 67,
+    "ram_libre_min_gb": 4.46,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "pasaporte",
+    "confianza": 0.95,
+    "acierto": true
+  },
+  {
+    "n": 2,
+    "tarea": "clasificacion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 11.4,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.2,
+    "tokens_prompt": 533,
+    "generacion_s": 8.9,
+    "tokens_generados": 69,
+    "ram_libre_min_gb": 4.46,
+    "json_valido": true,
+    "claves_ok": true,
+    "tipo_detectado": "pasaporte",
+    "confianza": 0.95,
+    "acierto": true
+  },
+  {
+    "n": 3,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "caliente",
+    "segundos_total": 39.4,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 4.0,
+    "tokens_prompt": 525,
+    "generacion_s": 32.9,
+    "tokens_generados": 333,
+    "ram_libre_min_gb": 4.46,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "p<XXXEJEMPLO<PRUEBA<<ANA<<<<<<<<<<<<<<<<<<<<"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "X1234567P0XXX9001017F3405097<<<<<<<<<<<<<<<<"
+      },
+      "fecha_nacimiento": {
+        "valor": "01/01/1990",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "01/01/1990"
+      },
+      "fecha_expedicion": {
+        "valor": null,
+        "ok": false,
+        "confianza": null,
+        "evidencia": null
+      },
+      "fecha_vencimiento": {
+        "valor": "09/05/2034",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "09/05/2034"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "PAIS FICTICIO"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "F"
+      }
+    },
+    "aciertos": 4,
+    "observaciones_visuales": [
+      "legibilidad: buena",
+      "recortes: no",
+      "alteraciones visibles: no"
+    ]
+  },
+  {
+    "n": 4,
+    "tarea": "extraccion",
+    "variante": "A",
+    "nota": "repeticion",
+    "segundos_total": 35.5,
+    "carga_s": 0.0,
+    "lectura_prompt_s": 0.1,
+    "tokens_prompt": 525,
+    "generacion_s": 33.0,
+    "tokens_generados": 333,
+    "ram_libre_min_gb": 4.46,
+    "json_valido": true,
+    "claves_ok": true,
+    "campos": {
+      "nombre_completo": {
+        "valor": "ANA EJEMPLO PRUEBA",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "p<XXXEJEMPLO<PRUEBA<<ANA<<<<<<<<<<<<<<<<<<<<"
+      },
+      "numero_pasaporte": {
+        "valor": "X1234567P",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "X1234567P0XXX9001017F3405097<<<<<<<<<<<<<<<<"
+      },
+      "fecha_nacimiento": {
+        "valor": "01/01/1990",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "01/01/1990"
+      },
+      "fecha_expedicion": {
+        "valor": null,
+        "ok": false,
+        "confianza": null,
+        "evidencia": null
+      },
+      "fecha_vencimiento": {
+        "valor": "09/05/2034",
+        "ok": false,
+        "confianza": 1,
+        "evidencia": "09/05/2034"
+      },
+      "nacionalidad": {
+        "valor": "PAIS FICTICIO",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "PAIS FICTICIO"
+      },
+      "sexo": {
+        "valor": "F",
+        "ok": true,
+        "confianza": 1,
+        "evidencia": "F"
+      }
+    },
+    "aciertos": 4,
+    "observaciones_visuales": [
+      "legibilidad: buena",
+      "recortes: no",
+      "alteraciones visibles: no"
+    ]
+  }
+]
