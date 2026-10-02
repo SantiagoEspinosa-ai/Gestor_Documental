@@ -17,7 +17,7 @@ OBLIGATORIAS = {
 @pytest.fixture
 def entorno(monkeypatch):
     for nombre in (*OBLIGATORIAS, "APP_ENV", "CONFIG_DIR", "JWT_ALGORITMO", "JWT_EXPIRA_MINUTOS",
-                   "AWS_REGION", "TAMANO_MAXIMO_ARCHIVO_MB"):
+                   "AWS_REGION", "TAMANO_MAXIMO_ARCHIVO_MB", "CORS_ORIGENES"):
         monkeypatch.delenv(nombre, raising=False)
     for nombre, valor in OBLIGATORIAS.items():
         monkeypatch.setenv(nombre, valor)
