@@ -37,10 +37,10 @@ react-router, Tailwind CSS 4 (plugin de Vite) e iconos lucide-react. Sin libreri
 |---|---|
 | `api/` | `cliente.ts` (HTTP), `sesion.ts` (token), `auth.ts` (login y `/auth/yo`), `folios.ts`, `revision.ts`, `auditoria.ts` |
 | `mocks/` | msw: `handlers.ts` (un handler por endpoint), `logica.ts` (simulacion), `estado.ts`, `token.ts` (token ficticio), `usuarios.ts`, `navegador.ts`; `mocks/datos/` con los JSON ficticios |
-| `paginas/` | Una pagina por ruta: login, folios, carga, expediente, auditoria, sin permiso y no encontrada |
+| `paginas/` | Una pagina por ruta: login, folios, carga, expediente, auditoria, procesos, sin permiso y no encontrada |
 | `componentes/` | Sesion (`ProveedorSesion`, `RutaProtegida`, `SoloRol`), `Estructura` comun, expediente (`DetalleDocumento`, `VisorOriginal`, `BarraConfianza`, `ListaAlertas`, `AccionesRevisor`, `ResumenExpediente`), `FormularioNuevoFolio`, `Insignias`, `AvisoSondeoDetenido` |
 | `tipos/` | `contrato.ts` (Contrato 1 exacto y peticiones/respuestas del 2), `codigos.ts` (errores y alertas oficiales y pendientes de main) |
-| `utilidades/` | `entorno.ts` (variables `VITE_*`), `etiquetas.ts`, `mensajes.ts` (texto por codigo de error), `valores.ts`, `expediente.ts` (tipo efectivo, regla 2.2), `sondeo.ts`, `auditoria.ts` (detalle legible), `navegacion.ts` (vuelta tras el login) |
+| `utilidades/` | `entorno.ts` (variables `VITE_*`), `etiquetas.ts`, `mensajes.ts` (texto por codigo de error), `valores.ts`, `expediente.ts` (tipo efectivo, regla 2.2), `sondeo.ts`, `auditoria.ts` (detalle legible), `navegacion.ts` (vuelta tras el login), `procesos.ts` (webhook sin la URL) |
 | `pruebas/` | Ayudas de los tests de pantallas (`app.tsx`, `preparar.ts`, `Ubicacion.tsx`) |
 
 Fuera de `src/`: `e2e/` (Playwright), `scripts/comprobar-build-sin-mocks.mjs` y `public/mock-originales/`.
@@ -222,6 +222,15 @@ hace fallar el build si queda algun rastro.
     enmascarada (`****` y los 4 ultimos caracteres; objetos y listas ocultos): si la API anade valores
     o comentarios, no se ven completos.
   - Estados: cargando, vacio (con o sin filtro) y error (403 `SIN_PERMISO`, 422 `PETICION_INVALIDA`).
+- Procesos (`paginas/PaginaProcesos.tsx`, `/procesos`, solo admin; enlace "Procesos" en la cabecera
+  junto a "Auditoría"; los demas que entran por URL ven "Sin permiso"): `GET /procesos` en SOLO
+  LECTURA (H8, recorte R3; la edicion queda fuera del MVP por el ADR-006, bloque 4). Tabla con nombre,
+  prefijo de folio, tipos requeridos y opcionales con su `nombre_visible` (el nombre tecnico si no hay
+  ficha), antecedentes (Si/No) y su caducidad en dias, modelos ("Por defecto" si es `null`) y webhook.
+  Del webhook NUNCA se muestra la URL (puede llevar una ruta o un token): "Sin webhook" si es `null`,
+  "Configurado (host)" con solo `new URL(...).host`, o "Configurado" si no se puede leer. Nota fija:
+  los procesos se cambian en `config/procesos.yaml` y se cargan al arrancar la API. Estados: cargando,
+  vacio y error con el mensaje del codigo.
 - Roles: `<RutaProtegida roles={[...]}>` para rutas (si no, "Sin permiso") y
   `<SoloRol roles={[...]} alternativa={...}>` para partes de una pantalla. Es solo interfaz: la API
   vuelve a comprobar el rol.
@@ -348,5 +357,7 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   enmascarada.
 - Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
   descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
-  de ADR) y pantalla de configuracion de procesos.
+  de ADR).
+- HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
+  "Procesos" en "Pantallas").
 - Fuera del MVP: reprocesar un documento en `error` (ADR-006, I).
