@@ -7,7 +7,7 @@ caracteristicas_esperadas:
   - Zona de lectura mecanica (MRZ) de dos lineas al pie
   - Fechas de expedicion y vencimiento
 formatos_permitidos: [pdf, jpg, jpeg, png]
-ejemplos_referencia: [fixtures/pasaporte_ejemplo_digital.pdf, fixtures/pasaporte_ejemplo_foto.jpg]
+ejemplos_referencia: [fixtures/generados/pasaporte_sano_digital.pdf, fixtures/generados/pasaporte_sano_foto.jpg]
 campos:
   nombre_completo:    {tipo: texto, obligatorio: true}
   numero_pasaporte:   {tipo: texto, obligatorio: true, patron: "^[A-Z0-9]{8,9}$"}

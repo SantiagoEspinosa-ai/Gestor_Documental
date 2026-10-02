@@ -1,0 +1,147 @@
+{
+  "medida": {
+    "id": "vision__credencial_elector_sano_escaneado_dificil",
+    "ruta": "vision",
+    "archivo": "credencial_elector_sano_escaneado_dificil.pdf",
+    "declarado": "credencial_elector",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "escaneado",
+    "nivel": "dificil",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
+    "segundos_preparar": 1.4,
+    "modalidad_detectada": "pdf_escaneado",
+    "caracteres_texto": 158,
+    "segundos_total": 142.0,
+    "estado": "completado",
+    "tipo_detectado": "credencial_elector",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "curp": {
+        "esperado": "AEPA900101MDFXXX01",
+        "extraido": "AEPA900101MDFXXX01",
+        "estado": "correcto",
+        "ok": true
+      },
+      "clave_elector": {
+        "esperado": "EJPRAN90010199M101",
+        "extraido": "EJPRAN90010199M101",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1990-01-01",
+        "extraido": "1990-01-01",
+        "estado": "correcto",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
+        "ok": true
+      },
+      "vigencia": {
+        "esperado": "2029",
+        "extraido": 2029,
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 0,
+    "total_campos": 6,
+    "llamadas": [
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 77.28,
+        "tokens_entrada": 1598,
+        "tokens_salida": 69,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 63.29,
+        "tokens_entrada": 1790,
+        "tokens_salida": 346,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "c7644427-b2d2-459c-ad48-e44d83d3f263",
+    "tipo_documental_declarado": "credencial_elector",
+    "tipo_documental_detectado": "credencial_elector",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "ANA EJEMPLO PRUEBA",
+      "curp": "AEPA900101MDFXXX01",
+      "clave_elector": "EJPRAN90010199M101",
+      "fecha_nacimiento": "1990-01-01",
+      "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+      "vigencia": 2029
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 0.9,
+      "curp": 0.9,
+      "clave_elector": 0.9,
+      "fecha_nacimiento": 0.9,
+      "domicilio": 0.9,
+      "vigencia": 0.9
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1",
+      "curp": "pagina_1",
+      "clave_elector": "pagina_1",
+      "fecha_nacimiento": "pagina_1",
+      "domicilio": "pagina_1",
+      "vigencia": "pagina_1"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T17:32:09.765819Z",
+      "proveedor": "ollama",
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_credencial_elector@v2"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_sano_escaneado_dificil.pdf",
+      "ruta": "local://credencial_elector_sano_escaneado_dificil.pdf",
+      "hash": "df6b61a0a759faac3203bbae97a6baec6cd6bfb1990aeff38253bec1db6e05f8"
+    }
+  }
+}

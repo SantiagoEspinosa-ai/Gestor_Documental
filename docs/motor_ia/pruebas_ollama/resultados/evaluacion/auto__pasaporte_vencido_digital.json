@@ -1,0 +1,157 @@
+{
+  "medida": {
+    "id": "auto__pasaporte_vencido_digital",
+    "ruta": "auto",
+    "archivo": "pasaporte_vencido_digital.pdf",
+    "declarado": "pasaporte",
+    "clasificacion_equivocada": false,
+    "caso": "vencido",
+    "tipo": "pasaporte",
+    "modalidad_fixture": "digital",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "numero_pasaporte",
+      "fecha_nacimiento",
+      "fecha_vencimiento"
+    ],
+    "segundos_preparar": 0.1,
+    "modalidad_detectada": "pdf_digital",
+    "caracteres_texto": 295,
+    "segundos_total": 65.2,
+    "estado": "completado",
+    "tipo_detectado": "pasaporte",
+    "confianza_clasificacion": 0.95,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "LUIS DEMO PRUEBAS",
+        "extraido": "LUIS DEMO PRUEBAS",
+        "estado": "correcto",
+        "ok": true
+      },
+      "numero_pasaporte": {
+        "esperado": "ZX0000002",
+        "extraido": "ZX0000002",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1985-06-15",
+        "extraido": "1985-06-15",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_expedicion": {
+        "esperado": "2016-08-31",
+        "extraido": "2016-08-31",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_vencimiento": {
+        "esperado": "2026-08-31",
+        "extraido": "2026-08-31",
+        "estado": "correcto",
+        "ok": true
+      },
+      "nacionalidad": {
+        "esperado": "UTOPICA",
+        "extraido": "UTOPICA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "sexo": {
+        "esperado": "M",
+        "extraido": "M",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 7,
+    "vacios": 0,
+    "incorrectos": 0,
+    "total_campos": 7,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 12.95,
+        "tokens_entrada": 551,
+        "tokens_salida": 81,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 52.2,
+        "tokens_entrada": 874,
+        "tokens_salida": 403,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "ce0c3eed-e257-4a2d-84f2-c3591fc18d5d",
+    "tipo_documental_declarado": "pasaporte",
+    "tipo_documental_detectado": "pasaporte",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.95,
+    "datos_extraidos": {
+      "nombre_completo": "LUIS DEMO PRUEBAS",
+      "numero_pasaporte": "ZX0000002",
+      "fecha_nacimiento": "1985-06-15",
+      "fecha_expedicion": "2016-08-31",
+      "fecha_vencimiento": "2026-08-31",
+      "nacionalidad": "UTOPICA",
+      "sexo": "M"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "numero_pasaporte": 1.0,
+      "fecha_nacimiento": 1.0,
+      "fecha_expedicion": 1.0,
+      "fecha_vencimiento": 1.0,
+      "nacionalidad": 1.0,
+      "sexo": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "numero_pasaporte": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "fecha_expedicion": "pagina_1:seccion_central",
+      "fecha_vencimiento": "pagina_1:seccion_central",
+      "nacionalidad": "pagina_1:seccion_central",
+      "sexo": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T19:46:01.766405Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_pasaporte@v3"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "pasaporte_vencido_digital.pdf",
+      "ruta": "local://pasaporte_vencido_digital.pdf",
+      "hash": "f15ec3b6c851fb1ee00dd8e2a8890039e46f3736abeb8eb8f329035d8814824a"
+    }
+  }
+}

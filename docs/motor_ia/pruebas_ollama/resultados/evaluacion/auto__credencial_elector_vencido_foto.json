@@ -1,0 +1,149 @@
+{
+  "medida": {
+    "id": "auto__credencial_elector_vencido_foto",
+    "ruta": "auto",
+    "archivo": "credencial_elector_vencido_foto.jpg",
+    "declarado": "credencial_elector",
+    "clasificacion_equivocada": false,
+    "caso": "vencido",
+    "tipo": "credencial_elector",
+    "modalidad_fixture": "foto",
+    "nivel": "normal",
+    "obligatorios": [
+      "nombre_completo",
+      "curp",
+      "fecha_nacimiento",
+      "domicilio",
+      "vigencia"
+    ],
+    "segundos_preparar": 0.6,
+    "modalidad_detectada": "imagen",
+    "caracteres_texto": 208,
+    "segundos_total": 53.2,
+    "estado": "completado",
+    "tipo_detectado": "credencial_elector",
+    "confianza_clasificacion": 1.0,
+    "clasificacion_ok": true,
+    "alertas": [],
+    "campos": {
+      "nombre_completo": {
+        "esperado": "LUIS DEMO PRUEBAS",
+        "extraido": "LUIS DEMO PRUEBAS",
+        "estado": "correcto",
+        "ok": true
+      },
+      "curp": {
+        "esperado": "DEPL850615HDFXXX02",
+        "extraido": "DEPL850615HDFXXX02",
+        "estado": "correcto",
+        "ok": true
+      },
+      "clave_elector": {
+        "esperado": "DEPRLU85061599H102",
+        "extraido": "DEPRLU85061599H102",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_nacimiento": {
+        "esperado": "1985-06-15",
+        "extraido": "1985-06-15",
+        "estado": "correcto",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "extraido": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+        "estado": "correcto",
+        "ok": true
+      },
+      "vigencia": {
+        "esperado": "2029",
+        "extraido": 2029,
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 6,
+    "vacios": 0,
+    "incorrectos": 0,
+    "total_campos": 6,
+    "llamadas": [
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 8.35,
+        "tokens_entrada": 497,
+        "tokens_salida": 69,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "gemma4:e2b",
+        "entrada": "texto",
+        "motivo": null,
+        "segundos": 44.18,
+        "tokens_entrada": 812,
+        "tokens_salida": 372,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "uso_vision": false,
+    "motivos_vision": [],
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "d8c90070-3e99-45fb-aee3-869b98c72c29",
+    "tipo_documental_declarado": "credencial_elector",
+    "tipo_documental_detectado": "credencial_elector",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 1.0,
+    "datos_extraidos": {
+      "nombre_completo": "LUIS DEMO PRUEBAS",
+      "curp": "DEPL850615HDFXXX02",
+      "clave_elector": "DEPRLU85061599H102",
+      "fecha_nacimiento": "1985-06-15",
+      "domicilio": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
+      "vigencia": 2029
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_completo": 1.0,
+      "curp": 1.0,
+      "clave_elector": 1.0,
+      "fecha_nacimiento": 1.0,
+      "domicilio": 1.0,
+      "vigencia": 1.0
+    },
+    "evidencia_por_campo": {
+      "nombre_completo": "pagina_1:seccion_central",
+      "curp": "pagina_1:seccion_central",
+      "clave_elector": "pagina_1:seccion_central",
+      "fecha_nacimiento": "pagina_1:seccion_central",
+      "domicilio": "pagina_1:seccion_central",
+      "vigencia": "pagina_1:seccion_central"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [],
+    "correcciones": [],
+    "recomendacion": null,
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-01T19:38:41.619434Z",
+      "proveedor": "ollama",
+      "modelo": "gemma4:e2b",
+      "version_prompt": "extraccion_credencial_elector@v3"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "credencial_elector_vencido_foto.jpg",
+      "ruta": "local://credencial_elector_vencido_foto.jpg",
+      "hash": "22311aa31b84acd5fd808df72094bb0723531f91593dbc422f26d2ea17e4d86e"
+    }
+  }
+}

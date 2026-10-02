@@ -1,0 +1,17 @@
+{
+  "model": "qwen2.5vl:3b",
+  "created_at": "2026-09-30T16:44:19.5034342Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\n  \"datos_extraidos\": {\n    \"nombre_completo\": \"ANA EJEMPLO PRUEBA\",\n    \"numero_pasaporte\": \"X1234567P\",\n    \"fecha_nacimiento\": \"1990-01-01\",\n    \"fecha_expedicion\": \"2024-10-05\",\n    \"fecha_vencimiento\": \"2034-09-05\",\n    \"nacionalidad\": \"PAIS FICTICIO\",\n    \"sexo\": \"F\"\n  },\n  \"nivel_confianza_por_campo\": {\n    \"nombre_completo\": 0.9,\n    \"numero_pasaporte\": 0.9,\n    \"fecha_nacimiento\": 0.9,\n    \"fecha_expedicion\": 0.9,\n    \"fecha_vencimiento\": 0.9,\n    \"nacionalidad\": 0.9,\n    \"sexo\": 0.9\n  },\n  \"evidencia_por_campo\": {\n    \"nombre_completo\": \"seccion_superior\",\n    \"numero_pasaporte\": \"seccion_superior\",\n    \"fecha_nacimiento\": \"seccion_superior\",\n    \"fecha_expedicion\": \"seccion_superior\",\n    \"fecha_vencimiento\": \"seccion_superior\",\n    \"nacionalidad\": \"seccion_superior\",\n    \"sexo\": \"seccion_superior\"\n  },\n  \"observaciones_visuales\": [\"Texto legible, sin cortes o alteraciones visibles.\"]\n}"
+  },
+  "done": true,
+  "done_reason": "stop",
+  "total_duration": 35201468000,
+  "load_duration": 5457600,
+  "prompt_eval_count": 2035,
+  "prompt_eval_cached_count": 2034,
+  "prompt_eval_duration": 141884000,
+  "eval_count": 335,
+  "eval_duration": 35001693000
+}
