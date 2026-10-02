@@ -38,7 +38,9 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   el nombre de la persona; ADR-004) o `null` si el folio se creo sin ella (ADR-008, punto 2).
 - `TipoDocumental`: la ficha YAML tal como la valida `configuracion`: `{nombre, nombre_visible,
   categoria, descripcion, formatos_permitidos, campos: {<campo>: {tipo, obligatorio, patron?}},
-  confianza_minima_clasificacion, confianza_minima_campo, reglas, comparaciones}`.
+  confianza_minima_clasificacion, confianza_minima_campo, reglas, comparaciones}`. Cada regla:
+  `{id, tipo, campo, campo_relacionado?, dias?, severidad, mensaje}`; `campo_relacionado` solo en las reglas de
+  coherencia entre dos campos (`curp_coincide_con_fecha`, `fecha_anterior_a_campo`) y `dias` solo en las de plazo.
 - `EntradaAuditoria`: `{id, usuario, accion, folio, documento_id, detalle, modelo, version_prompt,
   creado_en}`. `accion` es una lista cerrada: `login`, `folio_creado`, `documento_subido`,
   `documento_procesado`, `dato_corregido`, `clasificacion_confirmada`, `alerta_resuelta`,

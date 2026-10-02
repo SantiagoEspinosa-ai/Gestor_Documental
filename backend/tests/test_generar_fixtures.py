@@ -1,4 +1,4 @@
-"""Tests de scripts/generar_fixtures.py (PERSONA_3). Solo datos ficticios."""
+"""Tests de scripts/generar_fixtures.py (de PERSONA_3; lo mantiene PERSONA_2 desde el traspaso, H13). Solo datos ficticios."""
 import copy
 import importlib.util
 from datetime import date, timedelta
@@ -153,6 +153,22 @@ def test_regla_de_tipo_desconocido_falla(fichas):
     valores = gf.valores_documento("pasaporte", gf.PERSONAS_FICTICIAS[0], "sano", HOY)
     with pytest.raises(gf.ErrorFixture, match="desconocido"):
         gf.evaluar_reglas(ficha, valores, HOY)
+
+
+def test_reglas_de_coherencia_se_evaluan(fichas):
+    # Tipos de la etapa 2 (validacion/reglas.py): el generador los evalua con su propio codigo (H13)
+    def regla(id, tipo, campo, relacionado):
+        return {"id": id, "tipo": tipo, "campo": campo, "campo_relacionado": relacionado,
+                "severidad": "critica", "mensaje": id}
+    credencial, pasaporte = copy.deepcopy(fichas["credencial_elector"]), copy.deepcopy(fichas["pasaporte"])
+    credencial["reglas"].append(regla("curp", "curp_coincide_con_fecha", "curp", "fecha_nacimiento"))
+    pasaporte["reglas"].append(regla("orden", "fecha_anterior_a_campo", "fecha_nacimiento", "fecha_expedicion"))
+    for persona in gf.PERSONAS_FICTICIAS:
+        assert gf.evaluar_reglas(credencial, gf.valores_documento("credencial_elector", persona, "sano", HOY), HOY) == []
+        valores = gf.valores_documento("pasaporte", persona, "sano", HOY)
+        assert gf.evaluar_reglas(pasaporte, valores, HOY) == []
+        valores["fecha_nacimiento"] = valores["fecha_expedicion"]
+        assert "REG-orden" in [a["codigo"] for a in gf.evaluar_reglas(pasaporte, valores, HOY)]
 
 
 def test_fecha_en_la_frontera_de_una_regla_falla(fichas):
