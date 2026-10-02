@@ -224,3 +224,55 @@ def test_se_informan_todos_los_errores_a_la_vez(config):
     assert len(exc.value.errores) == 2
     assert any(e.startswith("tipo_a.yaml") for e in exc.value.errores)
     assert any(e.startswith("tipo_b.yaml") for e in exc.value.errores)
+
+
+# --- ADR-009: nombre reservado ---
+
+def test_ninguna_ficha_puede_llamarse_desconocido(config):
+    assert "reservado" in errores_de(config, ficha_base("desconocido"))
+
+
+def test_nombre_reservado_coincide_con_el_del_motor():
+    from app.modulos.motor_ia.proveedores.base import DESCONOCIDO
+    assert servicio.NOMBRE_RESERVADO == DESCONOCIDO
+
+
+# --- ADR-007: marcadores de clasificacion ---
+
+def test_marcadores_opcionales_y_validos(config):
+    sin = config(ficha_base("tipo_a"))
+    assert sin["tipo_a"].marcadores_clasificacion == []
+    ficha = ficha_base("tipo_b")
+    ficha["marcadores_clasificacion"] = [r"^P<[A-Z<]{3}", r"FECHA\s*(DE\s*)?EXPEDICION"]
+    assert config(ficha)["tipo_b"].marcadores_clasificacion == ficha["marcadores_clasificacion"]
+
+
+def test_marcador_con_expresion_regular_invalida(config):
+    ficha = ficha_base()
+    ficha["marcadores_clasificacion"] = ["VALIDO", "(sin cerrar"]
+    assert "marcador 1" in errores_de(config, ficha)
+
+
+def test_marcadores_repetidos(config):
+    ficha = ficha_base()
+    ficha["marcadores_clasificacion"] = ["CURP", "CURP"]
+    assert "marcadores repetidos" in errores_de(config, ficha)
+
+
+def test_las_fichas_reales_declaran_marcadores():
+    for ficha in cargar().values():
+        assert len(ficha.marcadores_clasificacion) >= 5, ficha.nombre
+
+
+def test_marcadores_fuera_de_model_dump_y_de_tipos_documentales():
+    # Son internos del motor: GET /tipos-documentales (Contrato 2) no los expone, tampoco cuando la API
+    # serialice las fichas con model_dump() de configuracion.servicio.listar() (ADR-006 1.5).
+    from app.modulos.api.tipos_documentales import TipoDocumental as RespuestaTipo
+    for ficha in cargar().values():
+        assert ficha.marcadores_clasificacion                       # el motor si los tiene
+        volcado = ficha.model_dump(mode="json")
+        assert "marcadores_clasificacion" not in volcado
+        # exclude_none: desde el PR #19 la API no admite `patron: null` (en contrato.ts es `patron?: string`)
+        respuesta = RespuestaTipo.model_validate(ficha.model_dump(mode="json", exclude_none=True)).model_dump(
+            exclude_unset=True)
+        assert "marcadores_clasificacion" not in respuesta

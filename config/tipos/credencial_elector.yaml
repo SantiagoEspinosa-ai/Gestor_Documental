@@ -15,6 +15,16 @@ campos:
   fecha_nacimiento: {tipo: fecha, obligatorio: true}
   domicilio:        {tipo: texto, obligatorio: true}
   vigencia:         {tipo: anio, obligatorio: true}
+# ADR-007: marcadores verificables en el texto (mayusculas, sin acentos, linea a linea);
+# confianza de clasificacion = proporcion encontrada. Cuantos: el umbral tolera uno sin encontrar.
+marcadores_clasificacion:
+  - 'CREDENCIAL\s*(DE|PARA)\s*(ELECTOR|VOTAR)'
+  - '\bCURP\b'
+  - '[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]'
+  - 'CLAVE\s*(DE\s*)?ELECTOR'
+  - '\bVIGENCIA\b'
+  - '\bDOMICILIO\b'
+  - 'FECHA\s*(DE\s*)?NACIMIENTO'
 confianza_minima_clasificacion: 0.85
 confianza_minima_campo: 0.80
 reglas:

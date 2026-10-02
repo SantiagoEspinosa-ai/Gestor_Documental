@@ -16,6 +16,16 @@ campos:
   fecha_vencimiento:  {tipo: fecha, obligatorio: true}
   nacionalidad:       {tipo: texto, obligatorio: false}
   sexo:               {tipo: texto, obligatorio: false}
+# ADR-007: marcadores verificables en el texto (mayusculas, sin acentos, linea a linea);
+# confianza de clasificacion = proporcion encontrada. Cuantos: el umbral tolera uno sin encontrar.
+marcadores_clasificacion:
+  - '\bPASAPORTE\b|\bPASSPORT\b'
+  - '(^|\s)P<[A-Z0-9<]{3}'
+  - '[A-Z0-9<]{9}[0-9O][A-Z0-9<]{3}[0-9O]{6}'
+  - 'NUMERO\s*(DE\s*)?PASAPORTE|PASSPORT\s*NO'
+  - 'FECHA\s*(DE\s*)?EXPEDICION|DATE\s*OF\s*ISSUE'
+  - 'FECHA\s*(DE\s*)?VENCIMIENTO|CADUCIDAD|DATE\s*OF\s*EXPIRY'
+  - 'NACIONALIDAD|NATIONALITY'
 confianza_minima_clasificacion: 0.85
 confianza_minima_campo: 0.80
 reglas:
