@@ -255,7 +255,7 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | ADR-006 | Huecos del contrato para la UI del revisor: lista de folios, `id` de alerta, catálogo de errores, resolución de alertas, correcciones, reproceso, folio cerrado | Aceptado |
 | ADR-007 | La confianza de campo y de clasificación la calcula el código, no el modelo | Aceptado |
 | ADR-008 | Auditoría paginada y `referencia_externa` en la lista de folios | Aceptado |
-| ADR-009 | Valor reservado `desconocido` en `tipo_documental_detectado` | Propuesto (PR #14) |
+| ADR-009 | Valor reservado `desconocido` en `tipo_documental_detectado`; un documento `desconocido` no cubre ningún requerido y genera EXP-002 informativa | Aceptado (PR #14 y #17) |
 | ADR-010 | Etapa 3: enmascaramiento en la API con "mostrar" auditado, edición de procesos y forma de los antecedentes | Reservado; borrador el día 7 (PERSONA_1) |
 
 ## 12. Riesgos y mejoras propuestas
@@ -293,7 +293,7 @@ ellas en vez de mantener su diagrama único, que mezcla niveles.
 ## 13. Estado actual del desarrollo
 
 A 2026-10-02. Cada persona trabaja en su rama y se integra en `main` por PR revisado por otra persona
-al cerrar cada etapa. Los PR #10, #11, #12, #13 y #15 están fusionados; el #14 (ADR-009) está abierto.
+al cerrar cada etapa. Los PR #10 a #16 están fusionados y el ADR-009 está aceptado en el #17.
 
 | Rama | Persona | Estado |
 | --- | --- | --- |
@@ -310,7 +310,7 @@ verlos clasificados, extraídos y validados); etapa 3 (resumen `.md`, webhooks, 
 
 - `docs/PLAN_PROYECTO.md`: plan, decisiones y etapas
 - `docs/arquitectura.md`: arquitectura de software (ADR-005)
-- `docs/adr/ADR-001` a `ADR-008`
+- `docs/adr/ADR-001` a `ADR-009`
 - `docs/contratos/endpoints.md`, `codigos_error.md`, `codigos_alertas.md`
 - `backend/app/schemas/resultado.py` y `backend/app/modulos/motor_ia/interfaces.py`
 - `docs/motor_ia/SPEC_CONFIGURACION.md` (PERSONA_2) y `docs/equipo/PERSONA_1_estado.md`
