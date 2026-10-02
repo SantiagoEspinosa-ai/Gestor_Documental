@@ -528,13 +528,30 @@ PERSONA_2 al final (import y `__all__ +=`), sin tocar lo de PERSONA_1.
 | Cargador | `Regla.campo_relacionado` (obligatorio en las de coherencia y prohibido en las demas; campo existente y de tipo `texto`+`fecha` o `fecha`+`fecha`) |
 | Tests | `test_reglas.py` (fronteras de cada tipo, D8, D9, coherencia con los dos fallos reales del bloque 3), `test_configuracion.py`, `test_generar_fixtures.py` |
 
+### Recomendacion del documento (`validacion/recomendacion.py`, etapa 2, paso 3)
+
+`validacion.servicio.recomendar_documento(resultado, ficha) -> Recomendacion`. Pura. **Nunca `rechazar`** (D1,
+aceptado en el PR #13; `codigos_alertas.md` no cambia). Mismas reglas que la recomendacion global de PERSONA_1
+(`expediente/recomendacion.py`), aplicadas a un documento:
+
+| Recomendacion | Cuando |
+|---|---|
+| `revision_manual` | `estado_analisis` distinto de `completado`; sin ficha (p. ej. `desconocido` sin tipo declarado ni confirmado); alguna alerta `critica` o `bloqueante` con `aplica` distinto de `false` (sin revisar o confirmada); `confianza_clasificacion` ausente o < `confianza_minima_clasificacion`; algun campo **con valor** con confianza < `confianza_minima_campo` |
+| `aprobar` | Todo lo demas. Las alertas preventivas e informativas no frenan; los campos vacios no cuentan en las confianzas (ya llevan `VAL-001`, critica, o `VAL-004`, informativa) |
+
+- `ficha`: la del tipo de extraccion (`TipoDocumental` o dict). Con tipo confirmado, el motor pone
+  `confianza_clasificacion = 1,0` (D2).
+- La plataforma puede recalcularla tras una correccion o al resolver alertas con el `ResultadoDocumento` vigente.
+- Tests: `test_recomendacion_documento.py`.
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | Etapa 2, paso 2: `validacion/reglas.py` (`evaluar_reglas`: `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, fechas no normalizables), expuesta en `validacion/servicio.py` (solo el bloque de PERSONA_2). Tipos de regla de coherencia `curp_coincide_con_fecha` y `fecha_anterior_a_campo` en el cargador (`campo_relacionado`), en `reglas.py` y en `generar_fixtures.py` (H13); las fichas aun no los usan (los mocks del frontend se regeneran). Medido: 4/12 incorrectos marcados, con y sin coherencia (seccion 7) | este commit |
+| 2026-10-02 | Etapa 2, paso 3: `validacion/recomendacion.py` (`recomendar_documento`): solo `aprobar` o `revision_manual` (D1), con las mismas reglas que la global de PERSONA_1; expuesta en el bloque de PERSONA_2 de `validacion/servicio.py`. Rama local `chore/reglas-coherencia` (`ecea1b0`): las 4 reglas de coherencia en las fichas y los mocks regenerados con el script, para abrir cuando se fusione el PR de marcadores | este commit |
+| 2026-10-02 | Etapa 2, paso 2: `validacion/reglas.py` (`evaluar_reglas`: `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, fechas no normalizables), expuesta en `validacion/servicio.py` (solo el bloque de PERSONA_2). Tipos de regla de coherencia `curp_coincide_con_fecha` y `fecha_anterior_a_campo` en el cargador (`campo_relacionado`), en `reglas.py` y en `generar_fixtures.py` (H13); las fichas aun no los usan (los mocks del frontend se regeneran). Medido: 4/12 incorrectos marcados, con y sin coherencia (seccion 7) | `1fbf9c7` |
 | 2026-10-02 | `marcadores_clasificacion` fuera de `model_dump()` (`Field(exclude=True)`): son internos del motor y `GET /tipos-documentales` (Contrato 2) no cambia, tampoco cuando la API use `configuracion.servicio.listar()`. Mismo cambio en `chore/marcadores-clasificacion` (`3ce49c4`) | `52aaa39` |
 | 2026-10-02 | Seccion 11: firma de `evaluar_reglas` aceptada por PERSONA_1 (ficha como `TipoDocumental`, `Reglas` devuelto, `VAL-003` borrada al corregir), D1 (nunca `rechazar`) y D2. "Hoy" de las reglas con `ZONA_HORARIA` (por defecto `America/Mexico_City`) en `orquestador/reloj.py`, sin `core.config`; test cerca de medianoche. Rama `chore/marcadores-clasificacion` (`8d8bfca`) con el cargador y los marcadores para `main` | `72b3d85` |
 | 2026-10-02 | Calibracion de ADR-007 aceptada (ajuste de la MRZ y ruido de `CLS-002` en los dificiles). Objetivo pendiente: marcar >= 50 % de los incorrectos (hoy 4/12), con las reglas de coherencia y la confianza de Tesseract. Especimenes: el comprobante "buena" verifica 4/4; los 4 sin verificar son del "dificil" (14 caracteres de OCR) | `a3787b2` |

@@ -21,6 +21,7 @@ def comparar(documentos: list[DocumentoComparable], fichas: list[dict] | dict[st
 
 
 # --- PERSONA_2: reglas del documento (reglas.py). Firma acordada: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 11 ---
+from app.modulos.validacion.recomendacion import recomendar_documento  # noqa: E402
 from app.modulos.validacion.reglas import evaluar_reglas  # noqa: E402
 
-__all__ += ["evaluar_reglas"]
+__all__ += ["evaluar_reglas", "recomendar_documento"]

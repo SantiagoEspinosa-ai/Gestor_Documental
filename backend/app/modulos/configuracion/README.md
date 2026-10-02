@@ -25,6 +25,8 @@ Que se valida:
   Son internos del motor: quedan fuera de `model_dump()` y de `GET /tipos-documentales` (Contrato 2 sin cambios).
 - Tipos de campo (`texto`, `fecha`, `anio`) y de regla validos; severidad del Contrato 1.
 - `patron` compila como expresion regular; una regla `patron` usa el patron de su campo.
+- Reglas de coherencia (`curp_coincide_con_fecha`, `fecha_anterior_a_campo`): llevan `campo_relacionado`, que
+  existe en la ficha y con el tipo que pide la regla (`texto`+`fecha` o `fecha`+`fecha`); las demas reglas no lo admiten.
 - Reglas `*_mas_dias` / `*_menos_dias` llevan `dias > 0`; ids de regla unicos; cada regla apunta a
   un campo existente.
 - `nombre` igual al nombre del fichero.

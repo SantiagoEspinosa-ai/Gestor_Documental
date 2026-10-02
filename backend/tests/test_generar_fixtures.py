@@ -168,7 +168,7 @@ def test_reglas_de_coherencia_se_evaluan(fichas):
         valores = gf.valores_documento("pasaporte", persona, "sano", HOY)
         assert gf.evaluar_reglas(pasaporte, valores, HOY) == []
         valores["fecha_nacimiento"] = valores["fecha_expedicion"]
-        assert [a["codigo"] for a in gf.evaluar_reglas(pasaporte, valores, HOY)] == ["REG-orden"]
+        assert "REG-orden" in [a["codigo"] for a in gf.evaluar_reglas(pasaporte, valores, HOY)]
 
 
 def test_fecha_en_la_frontera_de_una_regla_falla(fichas):

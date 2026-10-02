@@ -23,3 +23,9 @@ Responsable: ver CLAUDE.md. Entrada / salida: (completar al implementar).
 - Salida: alertas `VAL-001`, `VAL-002`, `VAL-004` y `REG-{id}` (nunca `VAL-003`, `CLS`, `SYS`, `DUP`, `EXP` ni `CMP`)
   y `Reglas(cumplidas, incumplidas)`. Una regla sobre un campo vacio no se evalua ni se lista.
 - Detalle de cada tipo de regla: `docs/motor_ia/SPEC_CONFIGURACION.md`, seccion 15.
+
+## recomendar_documento (PERSONA_2)
+`servicio.recomendar_documento(resultado, ficha) -> Recomendacion` (logica en `recomendacion.py`). Pura.
+- `aprobar` si el analisis esta `completado`, sin alertas criticas ni bloqueantes (salvo falsos positivos,
+  `aplica=False`) y con las confianzas sobre el minimo (clasificacion y campos con valor); si no, `revision_manual`.
+- Nunca `rechazar` (D1). Mismas reglas que la recomendacion global (`expediente/recomendacion.py`).
