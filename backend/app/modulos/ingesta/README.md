@@ -45,8 +45,11 @@ Las correcciones de versiones anteriores no se aplican.
 delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).
 
 ## tipos.py
-Lee `formatos_permitidos` de `config/tipos/*.yaml`. Provisional hasta que `configuracion` de
-PERSONA_2 este en main.
+Fichas desde `configuracion.servicio` (PERSONA_2: `obtener`, `listar`, `TipoNoEncontrado`), sin leer
+YAML; las carga y valida el lifespan de `main.py`. `listar_fichas()` arma a mano la forma
+`TipoDocumental` de `endpoints.md` (mismas claves, orden por nombre), para que un campo nuevo del
+modelo de `configuracion` no cambie el contrato. `nombre_visible` nunca lanza: sin ficha, el nombre
+tecnico.
 
 ## procesamiento.py
 `procesar(documento_id, tipo_confirmado=None)`: se lanza como BackgroundTask y abre su propia sesion.

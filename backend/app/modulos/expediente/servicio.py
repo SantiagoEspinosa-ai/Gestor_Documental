@@ -194,7 +194,7 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
 
 
 def _fichas() -> dict[str, dict]:
-    # TODO: las fichas saldran de configuracion.servicio.listar() de PERSONA_2 (hoy, el stub de ingesta)
+    # Las mismas de GET /tipos-documentales: ingesta las arma desde configuracion.servicio
     return {f["nombre"]: f for f in ingesta.listar_tipos()}
 
 

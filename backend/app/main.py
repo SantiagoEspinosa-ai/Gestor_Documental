@@ -8,12 +8,15 @@ from app.core.db import SesionLocal, get_engine
 from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
 from app.modulos.api import auditoria, auth, documentos, folios, procesos, revision, tipos_documentales
+from app.modulos.configuracion import servicio as configuracion
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # TODO: configuracion.cargar() de PERSONA_2 cuando su modulo este en main
-    procesos_yaml = leer_procesos(get_settings().config_dir)
+    config_dir = get_settings().config_dir
+    # Fichas primero: si alguna es invalida, ErrorConfiguracion con todos los errores y no arranca
+    configuracion.cargar(config_dir)
+    procesos_yaml = leer_procesos(config_dir, {t.nombre for t in configuracion.listar()})
     sesion = SesionLocal(bind=get_engine())
     try:
         sincronizar_procesos(sesion, procesos_yaml)

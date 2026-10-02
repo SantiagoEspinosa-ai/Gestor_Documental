@@ -62,8 +62,9 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ## Pendiente
 ### Cierre de la etapa 1
 - [x] PR #3 de `feat/plataforma` a `main`: aprobado y fusionado el 2026-09-30.
-- [ ] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
-      lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`.
+- [x] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
+      lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`
+      (etapa 2, paso 0; `GET /tipos-documentales` devuelve el mismo JSON).
 - [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
 - [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
 

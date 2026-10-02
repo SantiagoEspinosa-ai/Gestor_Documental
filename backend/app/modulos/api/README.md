@@ -75,8 +75,8 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
   descripcion, formatos_permitidos, campos: {<campo>: {tipo, obligatorio, patron?}},
   confianza_minima_clasificacion, confianza_minima_campo, reglas, comparaciones}`.
   `formatos_permitidos` en minusculas y sin punto; `patron` solo si la ficha lo define.
-- Fuente: `ingesta.servicio.listar_tipos()` sobre `ingesta/tipos.py`, provisional hasta que llegue
-  `configuracion.servicio.listar()` de PERSONA_2.
+- Fuente: `ingesta.servicio.listar_tipos()`, que arma la forma del contrato desde
+  `configuracion.servicio.listar()` de PERSONA_2 (`ingesta/tipos.py`).
 - Errores: 401.
 
 ## auditoria.py
