@@ -79,7 +79,8 @@ tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]`
   `CMP-001`, el recalculo de `EXP-001` y la recomendacion global.
 
 Mientras ese modulo no este en `main`, `procesamiento.py` importa `motor_stub.procesar_documento`,
-con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas, y
+con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas (con `tipo_confirmado`,
+`tipo_documental_detectado` y `confianza_clasificacion` a null, como el motor real; ADR-009), y
 `{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
 
 ## Fallos del procesamiento

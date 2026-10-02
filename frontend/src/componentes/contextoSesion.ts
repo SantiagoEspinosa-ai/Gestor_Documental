@@ -3,7 +3,8 @@ import type { Rol, UsuarioActual } from '../tipos/contrato'
 
 export type EstadoSesion =
   | { tipo: 'cargando' }
-  | { tipo: 'anonimo' }
+  /** `porCierre`: el usuario cerro la sesion; el login no vuelve a la pagina en la que estaba */
+  | { tipo: 'anonimo'; porCierre?: boolean }
   | { tipo: 'autenticado'; usuario: UsuarioActual }
   /** No se pudo recuperar la sesion (p. ej. sin conexion); el token se conserva */
   | { tipo: 'error'; mensaje: string }

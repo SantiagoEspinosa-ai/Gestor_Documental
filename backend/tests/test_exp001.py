@@ -136,7 +136,14 @@ def test_reprocesar_con_otro_tipo_vuelve_a_faltar(sesion, s3, folio):
     doc = _subir(sesion, s3, folio)
     procesamiento.procesar(doc.id)
     assert _exp001(sesion, folio) == ["comprobante_domicilio"]
-    procesamiento.procesar(doc.id, tipo_confirmado="pasaporte")  # el stub detecta el confirmado
+    # Como confirmar-clasificacion: el confirmado se guarda y se reprocesa con el (el stub, como el motor
+    # real, deja detectado a null; manda el confirmado de la BD, ADR-009)
+    fila = sesion.get(Documento, doc.id)
+    fila.tipo_documental_confirmado = "pasaporte"
+    fila.estado_analisis = "pendiente"
+    sesion.commit()
+    procesamiento.procesar(doc.id, tipo_confirmado="pasaporte")
+    sesion.expire_all()
     assert _exp001(sesion, folio) == ["comprobante_domicilio", "credencial_elector"]
 
 
