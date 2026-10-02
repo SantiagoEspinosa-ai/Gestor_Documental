@@ -1,7 +1,7 @@
 """
 API publica de motor_ia (ADR-005): analiza un DocumentoPreparado y devuelve un ResultadoDocumento.
-Clasifica, elige la ficha (ADR-006, 2.5), extrae, completa el sexo desde la MRZ y usa el respaldo si
-el proveedor principal falla. Con OCR pobre (spec, seccion 3) reclasifica o extrae con vision. La confianza
+Clasifica, elige la ficha (ADR-006, 2.5), extrae y usa el respaldo si el proveedor principal falla. La MRZ
+(sexo y VAL-003) la completa el orquestador despues (spec, seccion 11): este modulo no importa orquestador. Con OCR pobre (spec, seccion 3) reclasifica o extrae con vision. La confianza
 de campo y de clasificacion la calcula el codigo (ADR-007, `confianza.py`); la del modelo va a la auditoria.
 Reglas deterministas, VAL-00x y recomendacion: validacion.
 Decisiones: docs/motor_ia/SPEC_CONFIGURACION.md, seccion 10.
@@ -43,7 +43,6 @@ from app.modulos.motor_ia.proveedores.base import (
     obligatorios_vacios,
     recortar_texto,
 )
-from app.modulos.orquestador import servicio as orquestador
 from app.schemas.resultado import (
     Alerta,
     EstadoAnalisis,
@@ -68,6 +67,10 @@ class Analisis:
     resultado: ResultadoDocumento
     llamadas: list[InfoLlamada] = field(default_factory=list)
     confianzas_modelo: dict[str, float] = field(default_factory=dict)
+    version_prompt_clasificacion: str | None = None  # p. ej. clasificacion@v2; None si no se clasifico
+
+
+__all__ = ["Analisis", "VerificacionMrz", "analizar", "confianzas_de_campos", "texto_del_documento"]
 
 
 class _FalloProveedor(Exception):
@@ -136,9 +139,10 @@ def _enrutador() -> Enrutador:
 
 def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchivoOriginal,
              tipo_confirmado: str | None = None, enrutador: Enrutador | None = None,
-             ahora: datetime | None = None) -> Analisis:
+             ahora: datetime | None = None, mrz: VerificacionMrz | None = None) -> Analisis:
     """Analiza el documento. Ficha para extraer: tipo_confirmado > declarado > detectado (ADR-006, 2.5).
-    Con tipo_confirmado no se clasifica. Tipo desconocido sin declarado ni confirmado: no se extrae."""
+    Con tipo_confirmado no se clasifica. Tipo desconocido sin declarado ni confirmado: no se extrae.
+    `mrz`: la del pasaporte, si el orquestador la encontro; la usa la confianza calculada (ADR-007)."""
     ctx = _Contexto(enrutador or _enrutador())
     fichas = {f.nombre: f for f in configuracion.listar()}
     declarado = doc.tipo_documental_declarado
@@ -163,6 +167,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
         "estado_analisis": EstadoAnalisis.completado,
     }
     fecha_modelo: tuple[str, str, str] | None = None  # (proveedor, version_prompt, modelo real)
+    version_clasificacion: str | None = None
 
     ocr_pobre: str | None = None  # motivo si la clasificacion ya detecto un OCR pobre
     try:
@@ -184,6 +189,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             ficha_detectada = fichas.get(detectado)
             datos["confianza_clasificacion"] = confianza_clasificacion(ficha_detectada, texto)
             fecha_modelo = (proveedor.nombre, version, _modelo_usado(proveedor))
+            version_clasificacion = version
             if declarado is not None and detectado != declarado:
                 ctx.alerta("CLS-001", Severidad.critica,
                            f"Tipo declarado '{declarado}' distinto del detectado '{detectado}'")
@@ -221,10 +227,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             valores = dict(extraccion.datos_extraidos)
             confianzas_modelo.update(extraccion.nivel_confianza_por_campo)
             evidencias = dict(extraccion.evidencia_por_campo)
-            mrz = _verificacion_mrz(doc) if ficha.nombre == "pasaporte" else None
-            if ficha.nombre == "pasaporte" and "sexo" in ficha.campos and valores.get("sexo") is None:
-                _sexo_desde_mrz(doc, valores, evidencias, ctx)
-            confianzas = confianzas_de_campos(valores, ficha, texto, mrz)
+            confianzas = confianzas_de_campos(valores, ficha, texto, mrz if ficha.nombre == "pasaporte" else None)
             datos.update(datos_extraidos=valores, nivel_confianza_por_campo=confianzas, evidencia_por_campo=evidencias)
     except _FalloProveedor as fallo:
         if isinstance(fallo.ultimo, ErrorRespuestaInvalida):
@@ -239,7 +242,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             fecha_analisis=ahora or datetime.now(timezone.utc), proveedor=nombre_proveedor,
             modelo=modelo, version_prompt=version)
     datos["alertas_encontradas"] = ctx.alertas
-    return Analisis(ResultadoDocumento(**datos), ctx.llamadas, confianzas_modelo)
+    return Analisis(ResultadoDocumento(**datos), ctx.llamadas, confianzas_modelo, version_clasificacion)
 
 
 def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, tipos: list[str],
@@ -298,27 +301,3 @@ def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPre
     finally:
         ctx.registrar(proveedor)
     return combinar_texto_y_vision(extraccion, vision), _modelo_usado(proveedor)
-
-
-def _verificacion_mrz(doc: DocumentoPreparado) -> VerificacionMrz | None:
-    """La primera MRZ del documento, con sus valores y sus digitos de control (ADR-007)."""
-    for pagina in doc.paginas:
-        mrz = orquestador.buscar_mrz(pagina.texto)
-        if mrz is not None:
-            return VerificacionMrz(mrz.numero_documento, mrz.fecha_nacimiento, mrz.fecha_vencimiento, mrz.sexo,
-                                   orquestador.validar_digitos(mrz))
-    return None
-
-
-def _sexo_desde_mrz(doc: DocumentoPreparado, valores: dict, evidencias: dict, ctx: _Contexto) -> None:
-    """Sexo de la MRZ (posicion 21 de la linea 2) si la extraccion no lo trae. Su confianza la calcula
-    `confianza.py`: 1,0 si los digitos de control cuadran; como mucho 0,5 si alguno falla."""
-    for pagina in doc.paginas:
-        mrz = orquestador.buscar_mrz(pagina.texto)
-        if mrz is None or mrz.sexo is None:
-            continue
-        valores["sexo"] = mrz.sexo
-        evidencias["sexo"] = f"pagina_{pagina.numero}"
-        ctx.alerta("VAL-003", Severidad.informativa,
-                   "El valor del campo se ha tomado de la MRZ porque no se leyo en la zona visual", campo="sexo")
-        return

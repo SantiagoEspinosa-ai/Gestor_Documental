@@ -248,8 +248,9 @@ se queda solo con `pagina_<n>` (seccion 4).
       tocar `validacion/servicio.py` o `reglas.py`: `git fetch` y `git merge origin/main`. Si PERSONA_1 ya lo creo,
       anadir solo la linea de import de PERSONA_2 en su bloque, sin reescribir el fichero. Si hay conflicto, parar
       y ensenarlo antes de resolver.
-- [ ] **Etapa 2: implementar `orquestador.servicio.procesar_documento`** segun la seccion 11, moviendo la MRZ a
-      `orquestador` para evitar la importacion circular.
+- [x] **Etapa 2, paso 4: `orquestador.servicio.procesar_documento`** (seccion 11), con la MRZ en el orquestador
+      (`completar_mrz.py`) y `motor_ia` sin importar `orquestador` (test). Ya con ADR-007 aplicado (H10): PERSONA_1
+      puede sustituir el stub de la ingesta (paso 5).
 - [x] **Valor reservado `desconocido`: ADR-009 ACEPTADO** (2026-10-02, PERSONA_1 en la revision del PR #14 y
       PERSONA_2); ver seccion 10. El PR #14 se fusiono con el ADR aun en PROPUESTO y sin `EXP-002`; la version
       aceptada, con `EXP-002` y `EXP-001` tambien sin tipo declarado, esta en `main` desde el PR #17.
@@ -385,7 +386,7 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 | Ficha para extraer | `tipo_confirmado` > declarado > detectado (ADR-006, 2.5). Un tipo declarado o confirmado que no existe lanza `TipoNoEncontrado` (la ingesta lo valida antes) |
 | Tipo desconocido sin declarado ni confirmado | Se reclasifica con vision si hay imagenes; si da un tipo concreto, se extrae con esa ficha. Si sigue `desconocido` (o no hay imagenes): **no se extrae y el motor no emite alerta**, `completado` con datos vacios. La senal para el revisor es `EXP-002` (informativa), que emite el expediente (ADR-009) |
 | Extraccion | Prompt `extraccion_v3` con la lista de campos de la ficha (`campos_a_extraer`); `version_prompt` `extraccion_<tipo>@v3` |
-| Sexo desde la MRZ | Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza calculada (seccion 14): 1,0 si los digitos de control cuadran; como mucho 0,5 si alguno falla |
+| Sexo desde la MRZ | **Lo hace el orquestador** (`orquestador/completar_mrz.py`, dentro de `procesar_documento`), no `analizar`; `analizar` recibe la MRZ (`mrz=`) solo para la confianza. Solo `pasaporte` y solo si `sexo` llega `null`: posicion 21 de la linea 2, evidencia `pagina_<n>` de la pagina con la MRZ y `VAL-003` (informativa, `campo=sexo`). Confianza calculada (seccion 14): 1,0 si los digitos de control cuadran; como mucho 0,5 si alguno falla |
 | OCR pobre y vision | Ver seccion 3: reclasificacion con vision (`_reclasificar_con_vision`) y reintento (`_reintento_vision`); no se reintenta si salta `CLS-001` con un tipo concreto |
 | Respaldo | Si el principal lanza `ErrorProveedor` (incluido JSON invalido tras el reintento), se prueba el respaldo; si funciona, `SYS-005` (informativa), una sola vez por documento |
 | Sin respaldo o falla tambien | `estado_analisis=error` + `SYS-002` si el ultimo fallo fue JSON invalido, `SYS-001` si no (criticas). Si la clasificacion salio bien, se conserva |
@@ -397,13 +398,15 @@ la ficha se elige dentro (ADR-006, 2.5) y `ResultadoDocumento` exige `folio_soli
 
 ## 11. Integracion con la plataforma (etapa 2)
 
-Acuerdo cerrado con PERSONA_1 el 2026-09-30. **Solo documentado: aun no esta programado.**
+Acuerdo cerrado con PERSONA_1 el 2026-09-30. **Implementado** en la etapa 2, paso 4 (`orquestador/procesamiento.py`).
 
 | Punto | Acuerdo |
 |---|---|
 | Firma | `app.modulos.orquestador.servicio.procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia, tipo_confirmado=None) -> (ResultadoDocumento, datos_auditoria)` |
 | Alcance | No toca la BD ni S3: recibe los bytes del original y devuelve el resultado. PERSONA_1 descarga el original, gestiona los estados (`pendiente -> procesando -> completado/error`), guarda el resultado, inserta cada alerta en la tabla `alertas` y audita |
-| `datos_auditoria` | `{modelo, proveedor, respaldo_usado, version_prompt, confianzas_modelo, tiempos, tokens}`. Sale de `Analisis.llamadas` (`InfoLlamada`) y de las confianzas del modelo, que con ADR-007 solo van a la auditoria |
+| `datos_auditoria` | `{modelo, proveedor, version_prompt, version_prompt_clasificacion, respaldo_usado, confianzas_modelo, tiempos: {segundos_modelo}, tokens: {entrada, salida}, llamadas: [{proveedor, modelo, entrada, motivo, segundos, tokens_entrada, tokens_salida, peticiones, reintentos, lotes}], modalidad, paginas}`. Todo serializable a JSON y sin datos del documento. `modelo` y `version_prompt` van a sus columnas; el resto, a `detalle`. Sale de `Analisis` (llamadas, confianzas del modelo, version del prompt de clasificacion) |
+| Pasos | `preparar` -> verificacion de la MRZ -> `motor_ia.analizar(..., mrz=)` -> completar el sexo (`VAL-003`) -> `validacion.evaluar_reglas` (con `hoy` de `orquestador/reloj.py`) -> `validacion.recomendar_documento`. Las alertas del motor y las de las reglas se unen sin repetir (`codigo`, `campo`). Con `estado_analisis=error` o sin ficha (desconocido sin tipo) no se evaluan reglas y la recomendacion es `revision_manual` |
+| Parametros extra | `enrutador=` y `ahora=` (opcionales, por nombre) para los tests y el CLI; la firma de la plataforma no cambia (test contra `ingesta/motor_stub.py`) |
 | Errores | Proveedor caido o sin respaldo -> `estado_analisis=error` + `SYS-001`. JSON invalido -> `error` + `SYS-002`. Cualquier otra cosa inesperada lanza excepcion (PERSONA_1 la registra y pone el documento en `error`) |
 | Reparto de alertas y recomendaciones | PERSONA_2: `VAL-*`, `REG-*`, `CLS-*` y la recomendacion **por documento**. PERSONA_1: `CMP-001`, `EXP-001` y la recomendacion **global** del expediente |
 | `evaluar_reglas` (validacion) | **Firma aceptada por PERSONA_1** (2026-10-02): `validacion.servicio.evaluar_reglas(datos_extraidos, confianzas, ficha, *, hoy) -> (list[Alerta], Reglas)`. Pura (sin BD, S3 ni modelo); solo emite `VAL-001`, `VAL-002`, `VAL-004` y `REG-*`, nunca `VAL-003`, `CLS`, `SYS`, `DUP`, `EXP` ni `CMP`; alertas con `campo`, confianza 1,0, sin `id`, como mucho una por (`codigo`, `campo`); una regla sobre un campo vacio no se evalua ni se lista (D8); cada regla tal cual esta escrita (D9). PERSONA_1 la llama tras cada correccion (D3) con la ficha como `TipoDocumental` (`configuracion.servicio.obtener` del tipo de extraccion) y las confianzas con 1,0 en los corregidos; sustituye en la version vigente las VAL/REG sin revisar o confirmadas por las nuevas (conserva los falsos positivos, `aplica=false`), actualiza `reglas_cumplidas_e_incumplidas` con el `Reglas` devuelto y, al corregir un campo con `VAL-003`, borra su `VAL-003` sin revisar |
@@ -411,10 +414,8 @@ Acuerdo cerrado con PERSONA_1 el 2026-09-30. **Solo documentado: aun no esta pro
 | Confianza de clasificacion con tipo confirmado | El motor no clasifica: `tipo_documental_detectado = None` y `confianza_clasificacion = None` (ADR-009; igual que el stub del PR #19). **El 1,0 lo pone la plataforma** (D2), que ademas trata como 1,0 cualquier documento con tipo confirmado en la recomendacion global. `recomendar_documento` tambien cuenta como 1,0 esa confianza `None` si hay tipo confirmado |
 | Recomendacion del documento | Solo `aprobar` o `revision_manual`; **nunca `rechazar`** (D1, aceptado en el PR #13; `codigos_alertas.md` no cambia) |
 
-**Riesgo de importacion circular.** Hoy `motor_ia/servicio.py` importa `orquestador/servicio.py` (para la MRZ).
-Si `orquestador/servicio.py` importa `motor_ia/servicio.py` para `procesar_documento`, se forma un ciclo.
-
-Propuesta para la etapa 2: **que la dependencia sea en un solo sentido, `orquestador -> motor_ia`.**
+**Importacion circular resuelta** (paso 4): la dependencia va en un solo sentido, `orquestador -> motor_ia`.
+Lo que se decidio:
 - Mover la completacion del sexo desde la MRZ (hoy `_sexo_desde_mrz` en `motor_ia/servicio.py`) a
   `orquestador`, que la aplica despues de `analizar()` dentro de `procesar_documento`. Encaja con el
   catalogo, que ya da `VAL-003` como emitida por `orquestador (ocr)`.
@@ -423,14 +424,14 @@ Propuesta para la etapa 2: **que la dependencia sea en un solo sentido, `orquest
   recomendacion del documento) -> `(ResultadoDocumento, datos_auditoria)`.
 - Descartado: importar dentro de la funcion (funciona, pero esconde el ciclo) e importar `orquestador/mrz.py`
   directamente (incumple la regla 2 de ADR-005).
-- Un test comprobara que `motor_ia` no importa `orquestador`, salvo `motor_ia/cli.py`: es un punto de entrada
-  que ningun modulo importa, asi que no crea ciclo.
+- Un test (`test_procesar_documento.py`) comprueba que `motor_ia` no importa `orquestador`, salvo `motor_ia/cli.py`:
+  es un punto de entrada que ningun modulo importa, asi que no crea ciclo. El CLI llama a `procesar_documento`.
 
 ## 12. CLI (`motor_ia/cli.py`, tarea 10, entregable de la etapa 1)
 
 | Regla | Detalle |
 |---|---|
-| Uso | `python -m app.modulos.motor_ia.cli <archivo> [--tipo T] [--tipo-confirmado T] [--folio F] [--salida fichero.json]` desde `backend/` |
+| Uso | `python -m app.modulos.motor_ia.cli <archivo> [--tipo T] [--tipo-confirmado T] [--folio F] [--salida fichero.json]` desde `backend/`. Desde la etapa 2 usa `orquestador.procesar_documento` (MRZ, reglas y recomendacion incluidas) |
 | Salida | stdout: solo el `ResultadoDocumento` (JSON). stderr: resumen (modalidad, modelo, segundos y tokens por llamada, alertas), sin datos del documento |
 | Codigos de salida | 0 completado; 1 `estado_analisis=error` (el JSON se imprime igual); 2 error de entrada o de configuracion (archivo inexistente, `FormatoNoSoportado`, tipo inexistente, `ErrorEnrutador`, fichas o prompts invalidos) |
 | Folio y referencia | `CLI-2026-000000` por defecto; `referencia_archivo_original`: `nombre_archivo`, `ruta = local://<nombre>` (sin rutas personales) y el SHA-256 real |
@@ -554,7 +555,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | Revision de PERSONA_1 en el PR #18: con `tipo_confirmado` el motor deja `confianza_clasificacion = None` (ADR-009, como el stub del PR #19) y el 1,0 lo pone la plataforma (D2); `recomendar_documento` cuenta esa `None` como 1,0 si hay tipo confirmado. Merge de `origin/main` con el PR #19. La rama de reglas de coherencia se prepara desde `main` cuando se fusione el PR #18 y llevara tambien `endpoints.md`, `contrato.ts`, `_regla` de `ingesta/tipos.py` y pasara `test_openapi_contrato.py` (`campo_relacionado` cambia el Contrato 2) | este commit |
+| 2026-10-02 | Etapa 2, paso 4: `orquestador.procesar_documento` (`orquestador/procesamiento.py`) con la firma de la seccion 11: preparar, MRZ, `motor_ia.analizar(mrz=)`, sexo y `VAL-003` en el orquestador (`completar_mrz.py`), reglas con `hoy` de `reloj.py`, recomendacion y `datos_auditoria` (con `version_prompt_clasificacion`). `motor_ia` ya no importa `orquestador` (test). CLI y `evaluar_fixtures.py` pasan por el orquestador | este commit |
+| 2026-10-02 | Revision de PERSONA_1 en el PR #18: con `tipo_confirmado` el motor deja `confianza_clasificacion = None` (ADR-009, como el stub del PR #19) y el 1,0 lo pone la plataforma (D2); `recomendar_documento` cuenta esa `None` como 1,0 si hay tipo confirmado. Merge de `origin/main` con el PR #19. La rama de reglas de coherencia se prepara desde `main` cuando se fusione el PR #18 y llevara tambien `endpoints.md`, `contrato.ts`, `_regla` de `ingesta/tipos.py` y pasara `test_openapi_contrato.py` (`campo_relacionado` cambia el Contrato 2) | `d7a07f5` |
 | 2026-10-02 | Etapa 2, paso 3: `validacion/recomendacion.py` (`recomendar_documento`): solo `aprobar` o `revision_manual` (D1), con las mismas reglas que la global de PERSONA_1; expuesta en el bloque de PERSONA_2 de `validacion/servicio.py`. Rama local `chore/reglas-coherencia` (`ecea1b0`): las 4 reglas de coherencia en las fichas y los mocks regenerados con el script, para abrir cuando se fusione el PR de marcadores | `a1d85d3` |
 | 2026-10-02 | Etapa 2, paso 2: `validacion/reglas.py` (`evaluar_reglas`: `VAL-001`, `VAL-002`, `VAL-004`, `REG-*`, fechas no normalizables), expuesta en `validacion/servicio.py` (solo el bloque de PERSONA_2). Tipos de regla de coherencia `curp_coincide_con_fecha` y `fecha_anterior_a_campo` en el cargador (`campo_relacionado`), en `reglas.py` y en `generar_fixtures.py` (H13); las fichas aun no los usan (los mocks del frontend se regeneran). Medido: 4/12 incorrectos marcados, con y sin coherencia (seccion 7) | `1fbf9c7` |
 | 2026-10-02 | `marcadores_clasificacion` fuera de `model_dump()` (`Field(exclude=True)`): son internos del motor y `GET /tipos-documentales` (Contrato 2) no cambia, tampoco cuando la API use `configuracion.servicio.listar()`. Mismo cambio en `chore/marcadores-clasificacion` (`3ce49c4`) | `52aaa39` |

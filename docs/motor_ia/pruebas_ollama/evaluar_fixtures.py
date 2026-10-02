@@ -247,8 +247,13 @@ def trabajar(args) -> None:
             referencia = ReferenciaArchivoOriginal(nombre_archivo=caso["archivo"], ruta=f"local://{caso['archivo']}",
                                                    hash=hashlib.sha256(contenido).hexdigest())
             descargas_previas = descargas["antes_de_reintento"]
-            analisis = servicio_motor.analizar(doc, folio=FOLIO, referencia=referencia, enrutador=enrutador)
+            # Como orquestador.procesar_documento: la MRZ la verifica y completa el orquestador (spec, seccion 11)
+            from app.modulos.orquestador.completar_mrz import completar_sexo, verificacion_mrz
+            mrz = verificacion_mrz(doc)
+            analisis = servicio_motor.analizar(doc, folio=FOLIO, referencia=referencia, enrutador=enrutador, mrz=mrz)
             r = analisis.resultado
+            if r.datos_extraidos:
+                r = completar_sexo(r, doc, configuracion.obtener(caso["declarado"]), mrz)
             ResultadoDocumento.model_validate_json(r.model_dump_json())
             campos = {} if caso["clasificacion_equivocada"] else comparar_campos(esperado["campos"], r.datos_extraidos)
             reintento = any((i.motivo or "").startswith("reintento con vision") for i in analisis.llamadas)

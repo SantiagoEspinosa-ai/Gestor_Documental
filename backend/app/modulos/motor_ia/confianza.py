@@ -36,6 +36,7 @@ class VerificacionMrz:
     fecha_vencimiento: str    # AAMMDD
     sexo: str | None
     digitos: Mapping[str, bool]  # validar_digitos: numero_documento, fecha_nacimiento, ..., compuesto
+    pagina: int | None = None    # pagina del documento donde esta la MRZ (evidencia del sexo, VAL-003)
 
 
 # campo de la ficha del pasaporte -> digito de control que lo cubre (ademas del compuesto)

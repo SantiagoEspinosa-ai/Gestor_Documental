@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,7 +25,6 @@ from app.modulos.configuracion import servicio as configuracion
 from app.modulos.motor_ia.enrutador import ErrorEnrutador, crear_enrutador
 from app.modulos.motor_ia.interfaces import Enrutador
 from app.modulos.motor_ia.prompts import ErrorPrompt
-from app.modulos.motor_ia.servicio import analizar
 from app.modulos.orquestador import servicio as orquestador
 from app.schemas.resultado import EstadoAnalisis, ReferenciaArchivoOriginal
 
@@ -62,20 +62,19 @@ def _comprobar_tipo(tipo: str | None, opcion: str) -> None:
         raise ErrorEntrada(f"{opcion}: tipo documental desconocido '{tipo}' (disponibles: {disponibles})") from None
 
 
-def _resumen(nombre: str, doc, analisis) -> str:
-    r = analisis.resultado
-    lineas = [f"archivo: {nombre} | modalidad: {doc.modalidad.value} | paginas: {len(doc.paginas)}"]
-    for i, info in enumerate(analisis.llamadas, start=1):
-        lineas.append(f"llamada {i}: {info.proveedor} {info.modelo} ({info.entrada or '-'}) | {info.segundos} s | tokens "
-                      f"{info.tokens_entrada} entrada / {info.tokens_salida} salida | peticiones {info.peticiones} "
-                      f"| reintentos {info.reintentos} | lotes {info.lotes}"
-                      + (f" | {info.motivo}" if info.motivo else ""))
+def _resumen(nombre: str, r, auditoria: dict) -> str:
+    lineas = [f"archivo: {nombre} | modalidad: {auditoria['modalidad']} | paginas: {auditoria['paginas']}"]
+    for i, info in enumerate(auditoria["llamadas"], start=1):
+        lineas.append(f"llamada {i}: {info['proveedor']} {info['modelo']} ({info['entrada'] or '-'}) | {info['segundos']} s "
+                      f"| tokens {info['tokens_entrada']} entrada / {info['tokens_salida']} salida | peticiones "
+                      f"{info['peticiones']} | reintentos {info['reintentos']} | lotes {info['lotes']}"
+                      + (f" | {info['motivo']}" if info["motivo"] else ""))
     confianza = f" ({r.confianza_clasificacion:.2f})" if r.confianza_clasificacion is not None else ""
     alertas = ", ".join(f"{a.codigo} {a.severidad.value}" + (f" [{a.campo}]" if a.campo else "")
                         for a in r.alertas_encontradas) or "ninguna"
     lineas.append(f"estado: {r.estado_analisis.value} | declarado: {r.tipo_documental_declarado} | "
                   f"detectado: {r.tipo_documental_detectado}{confianza} | campos: {len(r.datos_extraidos)} | "
-                  f"alertas: {alertas}")
+                  f"alertas: {alertas} | recomendacion: {r.recomendacion.value if r.recomendacion else '-'}")
     return "\n".join(lineas)
 
 
@@ -103,21 +102,21 @@ def ejecutar(argv: list[str] | None = None, *, enrutador: Enrutador | None = Non
         contenido = ruta.read_bytes()
         referencia = ReferenciaArchivoOriginal(nombre_archivo=ruta.name, ruta=f"local://{ruta.name}",
                                                hash=hashlib.sha256(contenido).hexdigest())
-        doc = orquestador.preparar(contenido, ruta.name, args.tipo)
-        analisis = analizar(doc, folio=args.folio, referencia=referencia,
-                            tipo_confirmado=args.tipo_confirmado, enrutador=enrutador)
+        resultado, auditoria = orquestador.procesar_documento(
+            contenido, identificador=str(uuid.uuid4()), nombre_archivo=ruta.name, tipo_declarado=args.tipo,
+            folio=args.folio, referencia=referencia, tipo_confirmado=args.tipo_confirmado, enrutador=enrutador)
     except (ErrorEntrada, orquestador.FormatoNoSoportado, configuracion.ErrorConfiguracion,
             ErrorEnrutador, ErrorPrompt) as e:
         print(f"error: {e}", file=sys.stderr)
         return SALIDA_ERROR_ENTRADA
 
-    json_resultado = analisis.resultado.model_dump_json(indent=2)
+    json_resultado = resultado.model_dump_json(indent=2)
     if args.salida:
         args.salida.write_text(json_resultado + "\n", encoding="utf-8")
     else:
         sys.stdout.write(json_resultado + "\n")
-    print(_resumen(ruta.name, doc, analisis), file=sys.stderr)
-    return SALIDA_OK if analisis.resultado.estado_analisis is EstadoAnalisis.completado else SALIDA_ERROR_ANALISIS
+    print(_resumen(ruta.name, resultado, auditoria), file=sys.stderr)
+    return SALIDA_OK if resultado.estado_analisis is EstadoAnalisis.completado else SALIDA_ERROR_ANALISIS
 
 
 if __name__ == "__main__":

@@ -224,37 +224,31 @@ def test_texto_recortado_sys_003():
     assert "[texto recortado]" in p.prompts[0][1]
 
 
-# --- Sexo desde la MRZ ---
+# --- MRZ: la completa el orquestador (test_procesar_documento.py); aqui solo se usa para la confianza ---
 
-def test_sexo_desde_la_mrz_val_003():
-    datos = {**DATOS_PASAPORTE, "sexo": None}
-    analisis, _ = ejecutar(ProveedorFalso("ollama", datos=datos),
-                           doc=documento(texto="PASAPORTE\nANA EJEMPLO PRUEBA", n_paginas=1))
-    assert analisis.resultado.datos_extraidos["sexo"] is None  # sin MRZ en el texto: no cambia
-
-    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, TEXTO_PASAPORTE), Pagina(2, f"otros datos\n{MRZ}")],
-                             "pasaporte")
-    analisis, _ = ejecutar(ProveedorFalso("ollama", datos=datos), doc=doc)
-    r = analisis.resultado
-    assert (r.datos_extraidos["sexo"], r.nivel_confianza_por_campo["sexo"], r.evidencia_por_campo["sexo"]) == (
-        "F", 1.0, "pagina_2")
-    assert codigos(r) == [("VAL-003", "informativa", "sexo")]
-
-
-def test_sexo_desde_la_mrz_con_digitos_fallidos():
-    erronea = MRZ[:-1] + "9"  # digito compuesto incorrecto
-    sin_sexo = TEXTO_PASAPORTE.replace("SEXO\nF\n", "")  # la zona visual no da el sexo: sale de la MRZ
-    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, f"{sin_sexo}\n{erronea}")], "pasaporte")
-    analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": None}), doc=doc)
-    confianzas = analisis.resultado.nivel_confianza_por_campo
-    assert confianzas["sexo"] <= 0.5                                     # MRZ mal leida: sin verificar (ADR-007)
-    assert confianzas["fecha_vencimiento"] == 1.0                        # la zona visual si la confirma
-
-
-def test_sexo_leido_no_se_sustituye_por_la_mrz():
+def test_analizar_no_completa_el_sexo_desde_la_mrz():
     doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, f"{TEXTO_PASAPORTE}\n{MRZ}")], "pasaporte")
-    analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": "M"}), doc=doc)
-    assert analisis.resultado.datos_extraidos["sexo"] == "M" and codigos(analisis.resultado) == []
+    analisis, _ = ejecutar(ProveedorFalso("ollama", datos={**DATOS_PASAPORTE, "sexo": None}), doc=doc)
+    assert analisis.resultado.datos_extraidos["sexo"] is None and codigos(analisis.resultado) == []
+
+
+def test_analizar_usa_la_mrz_que_le_pasan_para_la_confianza():
+    from app.modulos.motor_ia.servicio import VerificacionMrz
+    mrz = VerificacionMrz("X1234567P", "900101", "340509", "F", {"numero_documento": True, "compuesto": True,
+                                                                 "fecha_nacimiento": True, "fecha_vencimiento": True})
+    sin_visual = TEXTO_PASAPORTE.replace("\n09/05/2034\n", "\n")  # el vencimiento solo esta en la MRZ
+    doc = DocumentoPreparado("id", Modalidad.pdf_digital, [Pagina(1, sin_visual)], "pasaporte")
+    con, _ = ejecutar(ProveedorFalso("ollama"), doc=doc, mrz=mrz)
+    sin, _ = ejecutar(ProveedorFalso("ollama"), doc=doc)
+    assert con.resultado.nivel_confianza_por_campo["fecha_vencimiento"] == 1.0
+    assert sin.resultado.nivel_confianza_por_campo["fecha_vencimiento"] == 0.4
+
+
+def test_version_del_prompt_de_clasificacion_para_la_auditoria():
+    analisis, _ = ejecutar(ProveedorFalso("ollama"))
+    assert analisis.version_prompt_clasificacion == "clasificacion@v2"
+    confirmado, _ = ejecutar(ProveedorFalso("ollama"), tipo_confirmado="pasaporte")
+    assert confirmado.version_prompt_clasificacion is None
 
 
 def test_registra_todas_las_llamadas_de_una_operacion():
