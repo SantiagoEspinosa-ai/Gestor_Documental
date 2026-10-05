@@ -328,12 +328,13 @@ se queda solo con `pagina_<n>` (seccion 4).
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
-- [~] **Especimenes** (`fixtures/especimenes/`, 5 fotos de movil de los documentos sanos impresos): bloque 5 de
-      `evaluar_fixtures.py`, con el flujo completo (`procesar_documento`). Evaluados el 2026-10-05 los 4 que van por
-      texto: **23/23 campos**, tipo 4/4, sin alertas, recomendacion `aprobar`, 59-72 s cada uno (informe en
-      `pruebas_ollama/resultados/especimenes/`). Pendiente el comprobante "dificil" (14 caracteres de OCR, va por
-      vision): necesita 5,8 GB libres. **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante
-      dara `REG-antiguedad_maxima`** (critica).
+- [x] **Especimenes** (`fixtures/especimenes/`, 5 fotos de movil de los documentos sanos impresos): bloque 5 de
+      `evaluar_fixtures.py` con el flujo completo (`procesar_documento`), 2026-10-05: **27/27 campos**, tipo 5/5, 0
+      incorrectos (informe en `pruebas_ollama/resultados/especimenes/`). Los 4 con texto: `aprobar`, 59-72 s. El
+      comprobante "dificil" (13 caracteres de OCR) va por vision: 4/4 correctos en 225 s, pero `revision_manual` con
+      `CLS-002` y `VAL-002` en sus 4 campos: sin texto no se puede verificar nada (ADR-007). RAM libre minima 1,41 GB.
+      **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante dara `REG-antiguedad_maxima`**
+      (critica).
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
       cada cambio; en produccion, semaforo y `OLLAMA_MAX_LOADED_MODELS=1` del PR #9 de PERSONA_1.
@@ -578,7 +579,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | este commit |
+| 2026-10-05 | Especimen "dificil" del comprobante (vision): 4/4 correctos, `revision_manual` con `CLS-002` y `VAL-002` (sin texto que verificar). Especimenes completos: 27/27, tipo 5/5 | este commit |
+| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
 | 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |

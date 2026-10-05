@@ -86,6 +86,97 @@
       "version_extraccion": "v3"
     },
     {
+      "id": "auto__comprobante_domicilio_sano_especimen_dificil",
+      "ruta": "auto",
+      "archivo": "../especimenes/comprobante_domicilio_sano_especimen_dificil.jpg",
+      "declarado": "comprobante_domicilio",
+      "clasificacion_equivocada": false,
+      "caso": "sano",
+      "tipo": "comprobante_domicilio",
+      "modalidad_fixture": "foto",
+      "nivel": "especimen",
+      "obligatorios": [
+        "nombre_titular",
+        "domicilio",
+        "fecha_emision"
+      ],
+      "segundos_preparar": 1.9,
+      "modalidad_detectada": "imagen",
+      "caracteres_texto": 13,
+      "segundos_total": 225.1,
+      "estado": "completado",
+      "tipo_detectado": "comprobante_domicilio",
+      "confianza_clasificacion": 0.0,
+      "clasificacion_ok": true,
+      "alertas": [
+        "CLS-002",
+        "VAL-002[nombre_titular]",
+        "VAL-002[domicilio]",
+        "VAL-002[proveedor]",
+        "VAL-002[fecha_emision]"
+      ],
+      "recomendacion": "revision_manual",
+      "reglas_incumplidas": [],
+      "campos": {
+        "nombre_titular": {
+          "esperado": "ANA EJEMPLO PRUEBA",
+          "extraido": "ANA EJEMPLO PRUEBA",
+          "estado": "correcto",
+          "ok": true
+        },
+        "domicilio": {
+          "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+          "estado": "correcto",
+          "ok": true
+        },
+        "proveedor": {
+          "esperado": "SERVICIOS DE EJEMPLO S.A.",
+          "extraido": "SERVICIOS DE EJEMPLO S.A.",
+          "estado": "correcto",
+          "ok": true
+        },
+        "fecha_emision": {
+          "esperado": "2026-09-15",
+          "extraido": "2026-09-15",
+          "estado": "correcto",
+          "ok": true
+        }
+      },
+      "aciertos": 4,
+      "vacios": 0,
+      "incorrectos": 0,
+      "total_campos": 4,
+      "llamadas": [
+        {
+          "modelo": "qwen2.5vl:3b",
+          "entrada": "vision",
+          "motivo": null,
+          "segundos": 168.64,
+          "tokens_entrada": 2147,
+          "tokens_salida": 64,
+          "reintentos": 0,
+          "lotes": 1
+        },
+        {
+          "modelo": "qwen2.5vl:3b",
+          "entrada": "vision",
+          "motivo": null,
+          "segundos": 54.48,
+          "tokens_entrada": 2450,
+          "tokens_salida": 250,
+          "reintentos": 0,
+          "lotes": 1
+        }
+      ],
+      "reintento_vision": false,
+      "uso_vision": true,
+      "motivos_vision": [],
+      "descarga_texto_antes_de_reintento": false,
+      "contrato_valido": true,
+      "version_extraccion": "v3"
+    },
+    {
       "id": "auto__credencial_elector_sano_especimen_buena",
       "ruta": "auto",
       "archivo": "../especimenes/credencial_elector_sano_especimen_buena.jpg",
@@ -393,11 +484,12 @@
       "auto__comprobante_domicilio_sano_especimen_buena": 2.7,
       "auto__credencial_elector_sano_especimen_buena": 2.61,
       "auto__credencial_elector_sano_especimen_dificil": 2.65,
-      "auto__pasaporte_sano_especimen_buena": 2.62
+      "auto__pasaporte_sano_especimen_buena": 2.62,
+      "auto__comprobante_domicilio_sano_especimen_dificil": 1.41
     },
     "bloques": {
       "5": {
-        "ram_libre_min_gb": 2.61,
+        "ram_libre_min_gb": 1.41,
         "abortado_por_ram": false
       }
     }

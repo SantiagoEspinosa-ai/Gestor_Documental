@@ -57,11 +57,12 @@ Ninguno.
 | Archivo | Caracteres OCR | Tipo | Correctos | Vacios | Incorrectos | Vision | Recomendacion | Alertas | Tiempo |
 |---|---|---|---|---|---|---|---|---|---|
 | `comprobante_domicilio_sano_especimen_buena.jpg` | 285 | ok | 4/4 | 0 | 0 | no | aprobar | - | 72.1 s |
+| `comprobante_domicilio_sano_especimen_dificil.jpg` | 13 | ok | 4/4 | 0 | 0 | si | revision_manual | CLS-002, VAL-002[nombre_titular], VAL-002[domicilio], VAL-002[proveedor], VAL-002[fecha_emision] | 225.1 s |
 | `credencial_elector_sano_especimen_buena.jpg` | 206 | ok | 6/6 | 0 | 0 | no | aprobar | - | 61.9 s |
 | `credencial_elector_sano_especimen_dificil.jpg` | 207 | ok | 6/6 | 0 | 0 | no | aprobar | - | 58.9 s |
 | `pasaporte_sano_especimen_buena.jpg` | 268 | ok | 7/7 | 0 | 0 | no | aprobar | - | 61.2 s |
 
-Total: 23/23 (100 %) correctos, 0 vacios y 0 incorrectos; tipo correcto 4/4.
+Total: 27/27 (100 %) correctos, 0 vacios y 0 incorrectos; tipo correcto 5/5.
 
 ## Clasificacion con tipo declarado equivocado (CLS-001)
 
@@ -74,6 +75,7 @@ Total: 23/23 (100 %) correctos, 0 vacios y 0 incorrectos; tipo correcto 4/4.
 | Caso | Nivel | Modalidad | Correctos | Vacios | Incorrectos | Tiempo | Llamadas | Vision (motivo) | RAM libre minima |
 |---|---|---|---|---|---|---|---|---|---|
 | `auto__comprobante_domicilio_sano_especimen_buena` | especimen | foto | 4/4 | 0 | 0 | 72.1 s | gemma4:e2b (texto) 30.42 s; gemma4:e2b (texto) 39.74 s | no | 2.7 GB |
+| `auto__comprobante_domicilio_sano_especimen_dificil` | especimen | foto | 4/4 | 0 | 0 | 225.1 s | qwen2.5vl:3b (vision) 168.64 s; qwen2.5vl:3b (vision) 54.48 s | si (sin texto suficiente) | 1.41 GB |
 | `auto__credencial_elector_sano_especimen_buena` | especimen | foto | 6/6 | 0 | 0 | 61.9 s | gemma4:e2b (texto) 12.58 s; gemma4:e2b (texto) 47.17 s | no | 2.61 GB |
 | `auto__credencial_elector_sano_especimen_dificil` | especimen | foto | 6/6 | 0 | 0 | 58.9 s | gemma4:e2b (texto) 11.18 s; gemma4:e2b (texto) 45.25 s | no | 2.65 GB |
 | `auto__pasaporte_sano_especimen_buena` | especimen | foto | 7/7 | 0 | 0 | 61.2 s | gemma4:e2b (texto) 11.04 s; gemma4:e2b (texto) 48.33 s | no | 2.62 GB |
@@ -82,4 +84,4 @@ Total: 23/23 (100 %) correctos, 0 vacios y 0 incorrectos; tipo correcto 4/4.
 
 | Bloque | RAM libre minima | Abortado por RAM |
 |---|---|---|
-| 5 | 2.61 GB | no |
+| 5 | 1.41 GB | no |
