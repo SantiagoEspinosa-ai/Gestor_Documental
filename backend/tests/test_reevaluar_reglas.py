@@ -228,3 +228,50 @@ def test_si_evaluar_reglas_falla_no_se_aplica_nada(cliente, sesion, s3, folio, m
     assert _alertas(cliente, doc.id) == antes  # ni las alertas
     assert cliente.get(f"/api/v1/documentos/{doc.id}").json()["datos_extraidos"]["nombre_completo"] == "Ana Ejemplo"
     assert "Nombre Que No Debe Salir" not in caplog.text
+
+
+# --- D3: recomendacion DEL DOCUMENTO recalculada tras corregir (sugerido por PERSONA_2) ---
+
+def _recomendacion(cliente, doc_id) -> str:
+    return cliente.get(f"/api/v1/documentos/{doc_id}").json()["recomendacion"]
+
+
+def test_rellenar_el_unico_obligatorio_vacio_pasa_el_documento_a_aprobar(cliente, sesion, s3, folio, motor):
+    motor["credencial_elector"][0]["curp"] = None
+    motor["credencial_elector"][2].append(_alerta("VAL-001", "curp"))
+    doc = _subir(sesion, s3, folio)
+    assert _recomendacion(cliente, doc.id) == "revision_manual"
+    assert _patch(cliente, doc.id, {"curp": "EJAA900101MDFJNN09"}).status_code == 200
+    assert _recomendacion(cliente, doc.id) == "aprobar"
+
+
+def test_una_correccion_que_anade_una_reg_critica_lo_deja_en_revision(cliente, sesion, s3, folio, motor):
+    doc = _subir(sesion, s3, folio)
+    _patch(cliente, doc.id, {"nombre_completo": "Ana Maria Ejemplo"})
+    assert _recomendacion(cliente, doc.id) == "aprobar"
+    # CURP con formato valido pero que no coincide con la fecha de nacimiento: REG critica
+    assert _patch(cliente, doc.id, {"curp": "EJAA910101MDFJNN09"}).status_code == 200
+    assert ("REG-curp_coincide_nacimiento", "curp", None) in _alertas(cliente, doc.id)
+    assert _recomendacion(cliente, doc.id) == "revision_manual"
+
+
+@pytest.mark.parametrize("cuerpo", [{"vigencia": 2020}, {"curp": "EJAA910101MDFJNN09"}, {"nombre_completo": "Ana E"},
+                                    {"fecha_nacimiento": "1991-01-01"}])
+def test_nunca_recomienda_rechazar(cliente, sesion, s3, folio, motor, cuerpo):
+    doc = _subir(sesion, s3, folio)
+    assert _patch(cliente, doc.id, cuerpo).status_code == 200
+    assert _recomendacion(cliente, doc.id) in ("aprobar", "revision_manual")
+
+
+def test_si_recomendar_documento_falla_no_se_aplica_nada(cliente, sesion, s3, folio, motor, monkeypatch):
+    doc = _subir(sesion, s3, folio)
+    antes = cliente.get(f"/api/v1/documentos/{doc.id}").json()
+
+    def rota(*args, **kwargs):
+        raise ValueError("fallo ficticio")
+    monkeypatch.setattr(validacion, "recomendar_documento", rota)
+    r = _patch(cliente, doc.id, {"vigencia": 2020})
+    assert (r.status_code, r.json()["codigo"]) == (500, "ERROR_INTERNO")
+    despues = cliente.get(f"/api/v1/documentos/{doc.id}").json()
+    assert (despues["datos_extraidos"], despues["alertas_encontradas"], despues["recomendacion"]) == \
+        (antes["datos_extraidos"], antes["alertas_encontradas"], antes["recomendacion"])

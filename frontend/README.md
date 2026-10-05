@@ -102,7 +102,7 @@ hace fallar el build si queda algun rastro.
     - comparaciones como `validacion.comparar`: por campo, con todos los documentos completados con valor de los tipos relacionados; los vacios no participan; normaliza mayusculas, acentos, espacios y fechas en varios formatos;
     - mensaje "Los documentos no coinciden en {campo}";
   - `EXP-001`, `CMP-001` y `EXP-002`: cuando la condicion desaparece se borran la sin revisar y la confirmada; solo se conserva el falso positivo (`aplica=false`);
-  - recomendacion global (`expediente/recomendacion.py`): `revision_manual` si no hay documentos o alguno no esta completado, si hay una critica o bloqueante que no es falso positivo, o si algun documento no tiene ficha, confianza de clasificacion o confianzas por encima de los minimos; si no, `aprobar`. No usa la recomendacion del documento, que la da el analisis y no se recalcula al corregir ni al resolver;
+  - recomendacion global (`expediente/recomendacion.py`): `revision_manual` si no hay documentos o alguno no esta completado, si hay una critica o bloqueante que no es falso positivo, o si algun documento no tiene ficha, confianza de clasificacion o confianzas por encima de los minimos; si no, `aprobar`. No usa la recomendacion del documento, que la da el analisis y, como la API (D3), se recalcula al corregir datos (no al resolver alertas). Al corregir, los mocks quitan tambien las `VAL-001`/`VAL-002`/`VAL-004` (salvo falso positivo) y la `VAL-003` sin revisar del campo corregido, pero no reevaluan las `REG-*`;
   - `detalle` de la auditoria (tabla de `api/README.md`):
     - `documento_procesado`: `{proveedor, respaldo_usado}` (modelo y `version_prompt` en sus columnas);
     - `dato_corregido`: `{campos}`;

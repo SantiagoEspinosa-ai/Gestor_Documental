@@ -510,7 +510,8 @@ def _reevaluar_reglas(sesion: Session, doc: Documento, vigente: int, actual: Res
     tipo de EXTRACCION y el "hoy" de ZONA_HORARIA. Para VAL-001, VAL-002, VAL-004 y REG-*: se borran las sin
     revisar y las confirmadas, se conservan los falsos positivos (aplica=False) y se anaden las nuevas que no
     esten ya como falso positivo. Se actualiza reglas_cumplidas_e_incumplidas. VAL-003 (dato de la MRZ): se
-    borra la sin revisar de cada campo corregido; las revisadas se conservan (acordado con PERSONA_2).
+    borra la sin revisar de cada campo corregido; las revisadas se conservan (acordado con PERSONA_2). Por
+    ultimo recalcula la recomendacion DEL DOCUMENTO (`validacion.recomendar_documento`).
     """
     datos = {**actual.datos_extraidos, **corregidos}
     confianzas = {**actual.nivel_confianza_por_campo, **{campo: 1.0 for campo in corregidos}}
@@ -537,6 +538,19 @@ def _reevaluar_reglas(sesion: Session, doc: Documento, vigente: int, actual: Res
 
     fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id, Resultado.version == vigente))
     fila.json = {**fila.json, "reglas_cumplidas_e_incumplidas": reglas.model_dump(mode="json")}  # dict nuevo: SQLAlchemy lo ve
+    sesion.flush()
+
+    # Recomendacion del documento tal como queda (sugerido por PERSONA_2): datos corregidos, confianzas 1.0 en
+    # los corregidos y las alertas visibles de esta version ya actualizadas, con la misma ficha de extraccion.
+    # La GLOBAL no se toca aqui: se calcula aparte al vuelo
+    visibles = sesion.scalars(select(AlertaBD).where(
+        AlertaBD.documento_id == doc.id,
+        or_(AlertaBD.version_resultado.is_(None), AlertaBD.version_resultado == vigente))).all()
+    tras_corregir = actual.model_copy(update={
+        "datos_extraidos": datos, "nivel_confianza_por_campo": confianzas,
+        "alertas_encontradas": [ingesta.alerta_desde_bd(a) for a in visibles]})
+    recomendacion = validacion.recomendar_documento(tras_corregir, ficha)
+    fila.json = {**fila.json, "recomendacion": recomendacion.value}
     sesion.flush()
 
 
