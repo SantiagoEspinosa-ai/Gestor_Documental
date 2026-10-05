@@ -269,7 +269,14 @@ def test_tipos_documentales_y_procesos_iguales_que_config():
     claves = ("nombre", "nombre_visible", "categoria", "descripcion", "formatos_permitidos", "campos",
               "confianza_minima_clasificacion", "confianza_minima_campo", "reglas", "comparaciones")
     fichas = [yaml.safe_load(_texto(r)) for r in sorted((RAIZ_REPO / "config" / "tipos").glob("*.yaml"))]
-    assert _json("tipos_documentales") == [{k: f[k] for k in claves} for f in fichas]
+
+    def campo_api(d):  # como _campo de ingesta/tipos.py: sensible siempre (ADR-010 A6), patron solo si existe
+        return {"tipo": d["tipo"], "obligatorio": bool(d.get("obligatorio", False)),
+                "sensible": bool(d.get("sensible", False)), **({"patron": d["patron"]} if d.get("patron") else {})}
+    esperado = [{**{k: f[k] for k in claves}, "campos": {c: campo_api(d) for c, d in f["campos"].items()}} for f in fichas]
+    assert _json("tipos_documentales") == esperado
+    for ficha in _json("tipos_documentales"):
+        assert all(isinstance(c["sensible"], bool) for c in ficha["campos"].values()), ficha["nombre"]
     procesos = yaml.safe_load(_texto(RAIZ_REPO / "config" / "procesos.yaml"))["procesos"]
     assert {p["nombre"]: {k: v for k, v in p.items() if k != "nombre"} for p in _json("procesos")} == {
         n: {**{k: p[k] for k in ("prefijo_folio", "tipos_requeridos", "tipos_opcionales", "permitir_antecedentes",
