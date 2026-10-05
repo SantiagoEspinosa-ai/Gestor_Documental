@@ -2,7 +2,9 @@
 
 Cuerpo: `{evento, fecha, folio, identificador_unico_documento?, datos}`; `datos` es un ResultadoDocumento
 (documento.*) o un ResultadoExpediente (folio.estado_cambiado), serializado como en la API. Cabecera
-`X-Firma: sha256=<hex HMAC-SHA256(cuerpo, WEBHOOK_SECRET_HMAC)>` sobre los mismos bytes que se envian.
+`X-Firma: sha256=<hex HMAC-SHA256(cuerpo, WEBHOOK_SECRET_HMAC)>` sobre los mismos bytes que se envian, y
+`X-Entrega-Id: <uuid4>`, uno por entrega e igual en todos sus reintentos: el receptor detecta un reenvio
+(p. ej. respondio 2xx pero la respuesta no llego) sin cambiar el cuerpo del contrato.
 
 core no importa modulos (ADR-005): quien llama pasa el resultado ya construido Y YA ENMASCARADO (ADR-010
 A5, con `ingesta.servicio.enmascarar` o `expediente.servicio.enmascarar`, la misma funcion que las respuestas
@@ -16,6 +18,7 @@ import json
 import logging
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
@@ -89,7 +92,8 @@ def entregar(url: str, evento: str, folio: str, datos: BaseModel, identificador:
         return False
     cuerpo = construir_cuerpo(evento, folio, datos, identificador)
     cabeceras = {"Content-Type": "application/json",
-                 "X-Firma": firmar(cuerpo, get_settings().webhook_secret_hmac.get_secret_value())}
+                 "X-Firma": firmar(cuerpo, get_settings().webhook_secret_hmac.get_secret_value()),
+                 "X-Entrega-Id": str(uuid.uuid4())}  # el mismo en los reintentos de esta entrega
     # Sin seguir redirecciones (un 3xx es un fallo) y verificando el certificado
     with httpx.Client(timeout=TIMEOUT_S, follow_redirects=False, verify=True, transport=_transporte) as cliente:
         for intento, espera in enumerate((0, *ESPERAS_REINTENTO_S), start=1):
