@@ -27,11 +27,11 @@ elector, pasaporte y comprobante de domicilio.
 | Reglas deterministas, comparaciones entre documentos y alertas por severidad | Multi-tenant completo |
 | Recomendación del expediente y decisión humana. La recomendación global nunca es `rechazar`; la decisión final es siempre humana. | Reprocesar documentos en `error` |
 | Originales en S3, resumen `.md` del expediente, API REST y webhooks | Cola de trabajos con varios procesos |
-| Memoria de folios (RAG) y base de conocimiento | Edición de procesos: la pantalla de procesos es de solo lectura (`GET /procesos`, recorte R3) |
+| Memoria de folios (fragmento del `resumen.md` enmascarado); base de conocimiento con embeddings, opcional | Edición de procesos: la pantalla de procesos es de solo lectura (`GET /procesos`, recorte R3) |
 
 Reparto: **PERSONA_1** plataforma (ingesta, API, expediente, core), frontend, e2e reales y demo;
 **PERSONA_2** motor de IA (configuración, orquestador, motor_ia, reglas), toda la carpeta
-`modulos/rag` (base de conocimiento y memoria de folios) y fixtures. PERSONA_3 dejó el equipo el
+`modulos/rag` (memoria de folios y, si se hace, la base de conocimiento) y fixtures. PERSONA_3 dejó el equipo el
 2026-10-01; su traspaso está en [docs/equipo/PERSONA_3_estado.md](equipo/PERSONA_3_estado.md) (PR #13).
 
 Recortes R1–R9 aceptados en el PR #13 (el MVP no se recorta): ver la
@@ -80,7 +80,8 @@ flowchart TB
 ## 3. C4 nivel 2: contenedores
 
 Dentro de Docker Compose hay tres piezas: la web, la API (que incluye Tesseract para el OCR) y
-PostgreSQL con pgvector, que guarda datos, auditoría y vectores en una sola base. Fuera quedan S3
+PostgreSQL (imagen con pgvector), que guarda datos, auditoría y los fragmentos de la memoria de folios en
+una sola base; pgvector solo haría falta para la base de conocimiento, que es opcional. Fuera quedan S3
 (en la nube), Ollama (en el equipo o como perfil opcional), OpenRouter (bloqueado por defecto) y los
 sistemas que reciben los webhooks. Cada webhook lleva la firma HMAC-SHA256 del cuerpo (`X-Firma`) y un
 `X-Entrega-Id` igual en todos sus reintentos, para que el receptor detecte un reenvío.
@@ -93,7 +94,7 @@ flowchart TB
     subgraph compose["Gestor Documental · Docker Compose"]
         web["<b>Web (React + Vite)</b><br/>Pantallas del revisor y del admin<br/>puerto 5173"]
         api["<b>API (FastAPI)</b><br/>Ingesta, motor, reglas, expediente, auditoría<br/>Máscara de datos sensibles en la salida<br/>Tesseract · puerto 8000"]
-        db[("<b>PostgreSQL 16 + pgvector</b><br/>Folios, documentos, alertas,<br/>auditoría y vectores del RAG")]
+        db[("<b>PostgreSQL 16</b><br/>Folios, documentos, alertas, auditoría<br/>y fragmentos de la memoria de folios<br/>pgvector (base de conocimiento opcional)")]
     end
 
     s3[("<b>Amazon S3</b><br/>Originales y derivados<br/>SSE-S3 · us-east-2")]
@@ -132,6 +133,10 @@ Textract al OCR) es añadir un adaptador sin tocar el resto. El detalle de capas
 dependencia está en `docs/arquitectura.md`. Las flechas del diagrama son dependencias reales entre
 módulos; `configuracion` y `core` los usan todos y no se dibujan sus flechas. La consulta de
 `rag.fragmento_resumen` desde `expediente` es para los antecedentes, que aún están en desarrollo.
+La memoria de folios no usa vectores: guarda un fragmento de texto del `resumen.md` ya enmascarado,
+sin embeddings, para no cargar otro modelo en Ollama en cada regeneración del resumen (sección 16 de
+`docs/motor_ia/SPEC_CONFIGURACION.md`, rama `feat/rag-memoria`). La base de conocimiento con embeddings
+es opcional y aún no existe.
 
 Reparto: **PERSONA_1** lleva `api`, `ingesta`, `expediente` y `core` (y las comparaciones de
 `validacion`); **PERSONA_2** lleva `orquestador`, `motor_ia`, `configuracion`, `rag` y las reglas y la
@@ -147,7 +152,7 @@ flowchart TB
         motor["<b>motor_ia</b><br/>Clasifica y extrae<br/>con el enrutador"]
         validacion["<b>validacion</b><br/>Reglas, comparaciones y<br/>recomendación por documento"]
         expediente["<b>expediente</b><br/>Folios, alertas, recomendación global,<br/>decisión y resumen.md"]
-        rag["<b>rag</b><br/>Base de conocimiento<br/>y memoria de folios"]
+        rag["<b>rag</b><br/>Memoria de folios: fragmento<br/>del resumen.md enmascarado<br/>(base de conocimiento: opcional)"]
     end
 
     subgraph compartidos["Compartidos (los usan todos los módulos)"]
@@ -229,7 +234,7 @@ de originales está en la nube.
 | --- | --- | --- |
 | Frontend React + Vite | Contenedor `frontend` (puerto 5173) | En desarrollo usa mocks (msw); el build final no incluye ningún mock |
 | API FastAPI | Contenedor `backend` (puerto 8000) | Ejecuta `alembic upgrade head` al arrancar; incluye Tesseract (`spa` + `eng`) |
-| PostgreSQL 16 + pgvector | Contenedor `db` (puerto 5432) | Datos, auditoría y vectores del RAG en una sola base |
+| PostgreSQL 16 (imagen con pgvector) | Contenedor `db` (puerto 5432) | Datos, auditoría y fragmentos de la memoria de folios en una sola base; pgvector solo para la base de conocimiento opcional |
 | Ollama | En el equipo (por defecto) o contenedor opcional (`--profile ollama`) | Modelos `qwen2.5vl:3b` (visión) y `gemma4:e2b` (texto); `OLLAMA_MAX_LOADED_MODELS=1` |
 | Amazon S3 | Bucket privado en `us-east-2` | Cifrado SSE-S3, versionado recomendado, CORS solo para la web local |
 | OpenRouter | Servicio externo | Respaldo gratuito, **desactivado por defecto** (`PERMITIR_PROVEEDORES_NO_PRIVADOS=false`) |
@@ -327,13 +332,14 @@ demo; todas tienen un camino de evolución.
 
 | Limitación hoy | Por qué se acepta en el MVP | Evolución propuesta |
 | --- | --- | --- |
-| El análisis corre en el mismo proceso de la API (BackgroundTask con semáforo); al arrancar se reanudan los análisis interrumpidos | Un solo servidor y un análisis a la vez bastan para la demo; sin piezas nuevas que desplegar | Un worker aparte con una cola persistente de trabajos, que permita varios procesos y reintentos |
+| El análisis corre en el mismo proceso de la API (BackgroundTask con semáforo); al arrancar se reanudan los análisis interrumpidos (sin límite de intentos: fila siguiente) | Un solo servidor y un análisis a la vez bastan para la demo; sin piezas nuevas que desplegar | Un worker aparte con una cola persistente de trabajos, que permita varios procesos y reintentos con límite |
+| Al arrancar se reanudan los análisis interrumpidos sin límite de intentos | Evita documentos atascados tras un reinicio | Contador de intentos por documento que lo pase a `error` tras N fallos, para que un documento que tumba el backend (p. ej. por RAM) no lo tumbe en bucle |
 | La web se sirve con el servidor de desarrollo de Vite dentro de Compose | Arranque rápido y recarga en caliente durante el desarrollo | Un proxy (nginx o Caddy) con TLS que sirva el build estático y haga de entrada única a la API |
 | Webhooks sin outbox: si la API se reinicia en mitad de los reintentos, ese aviso se pierde | Los reintentos (1, 5 y 25 s) cubren los fallos breves del receptor; el estado siempre se puede consultar por la API | Una tabla outbox en la misma transacción, con reintentos persistentes y una cola de fallidos (dead letter) |
 | El mismo JWT para las personas y para el integrador | Un solo mecanismo de autenticación, con roles comprobados en cada petición | Credenciales de servicio con scopes para el integrador y cookie httpOnly en el navegador |
 | La auditoría está en la misma base y con las mismas credenciales que la aplicación | Una sola base que mantener; la aplicación nunca actualiza ni borra entradas | Un rol de base de datos de solo inserción o una tabla append-only |
 | S3 con SSE-S3 y la no-sobrescritura garantizada por el código; región `us-east-2` | Cifrado en reposo sin coste ni gestión de claves; el usuario IAM no puede borrar | SSE-KMS, Versioning u Object Lock; revisar la región por residencia de datos |
-| Memoria RAG con vectores derivados del `resumen.md`, ya enmascarado | Los vectores no contienen los datos sensibles en claro | Retención definida y supresión en cascada de los vectores junto con el folio |
+| Memoria de folios con un fragmento de texto del `resumen.md` enmascarado | Suficiente para los antecedentes del MVP | Retención definida y borrado del fragmento junto con el folio |
 | OpenRouter bloqueado por defecto y solo con datos ficticios (ADR-003) | Los datos reales nunca salen del equipo | Si se activa con datos reales, definir antes qué se envía y con qué garantías |
 
 ### Arquitectura objetivo (post-MVP): PROPUESTA
@@ -350,7 +356,7 @@ flowchart TB
         proxy["<b>Proxy (nginx o Caddy)</b><br/>TLS · sirve el build de la web"]
         api["<b>API (FastAPI)</b><br/>Sin análisis en el proceso"]
         worker["<b>Worker de análisis</b><br/>Toma trabajos de la cola<br/>y envía los webhooks del outbox"]
-        db[("<b>PostgreSQL + pgvector</b><br/>Trabajos, outbox y vectores")]
+        db[("<b>PostgreSQL</b><br/>Trabajos, outbox y fragmentos<br/>de la memoria de folios<br/>pgvector (base de conocimiento opcional)")]
         auditoria[("<b>Auditoría</b><br/>Rol de solo inserción")]
     end
 
