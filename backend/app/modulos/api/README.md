@@ -54,14 +54,32 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
   415 `FORMATO_NO_PERMITIDO` (extension o contenido); 422 `PETICION_INVALIDA`.
 - El Content-Type del cliente se ignora: el del objeto en S3 sale de la extension.
 
+### Enmascaramiento (ADR-010 A3 y A5)
+Todas las respuestas con un `ResultadoDocumento` o un `ResultadoExpediente` (GET documento y folio, PATCH
+datos, confirmar-clasificacion, resolver alertas y decidir) salen enmascaradas para TODOS los roles, con
+`ingesta.servicio.enmascarar` / `expediente.servicio.enmascarar` (`core/enmascaramiento.py`), solo aqui, en
+el borde de salida. Campos sensibles: los `sensible: true` de la ficha de extraccion del documento y los de
+las fichas del declarado y el detectado (tras confirmar otro tipo, y hasta que acaba el reproceso, el
+resultado vigente lleva los datos de la ficha anterior). El valor real solo sale por `POST /revelar`.
+
 ### GET /api/v1/documentos/{id} (cualquier rol)
 - Salida 200: `ResultadoDocumento` de la version mayor, con `estado_analisis` y
   `tipo_documental_confirmado` de la BD; sin resultado todavia, uno minimo en `pendiente` con sus alertas.
+  Enmascarado.
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO` (tambien si el id no es un UUID).
 
 ### GET /api/v1/documentos/{id}/original (revisor, admin)
 - Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Sin auditoria hasta la etapa 3.
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`.
+
+### POST /api/v1/documentos/{id}/revelar (revisor, admin; ADR-010 A4)
+- Entrada (JSON, sin campos extra): `{campo}`.
+- Salida 200: `{campo, valor}` con el valor real y vigente (el corregido, si lo hay; `null` si no se
+  detecto) y la cabecera `Cache-Control: no-store`. Funciona tambien con el folio cerrado.
+- Audita `dato_revelado` con `{campo}`, nunca el valor. Es `POST` porque tiene efecto (la auditoria).
+- Errores: 403 `SIN_PERMISO` (integrador); 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `DOCUMENTO_EN_PROCESO` /
+  `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA` (cuerpo invalido, o el campo no esta en la ficha de
+  extraccion o no es sensible).
 
 ## procesos.py
 
@@ -94,7 +112,7 @@ Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 
 ## revision.py
 Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token). La logica esta en
-`expediente.servicio`.
+`expediente.servicio`. Todas las respuestas salen enmascaradas (ADR-010), tambien la del PATCH de datos.
 
 ### POST /api/v1/documentos/{id}/alertas/{alerta_id}/resolver
 ### POST /api/v1/folios/{folio}/alertas/{alerta_id}/resolver
@@ -153,3 +171,4 @@ ni contrasenas.
 | `clasificacion_confirmada` | `{tipo, reproceso}` |
 | `alerta_resuelta` | `{alerta_id, codigo, aplica}` |
 | `decision_tomada` | `{decision}` |
+| `dato_revelado` | `{campo}` (ADR-010 A4; nunca el valor) |

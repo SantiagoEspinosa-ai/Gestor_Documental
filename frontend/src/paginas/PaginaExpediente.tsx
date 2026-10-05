@@ -194,7 +194,8 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
                 ) : undefined}
                 celdaValor={puedeActuar && docAnalizado ? (campo, contenido) => (
                   <EditorCampo campo={campo} valor={doc.datos_extraidos[campo]} tipo={fichaDoc?.campos[campo]?.tipo}
-                    obligatorio={fichaDoc?.campos[campo]?.obligatorio ?? false} deshabilitado={ocupado}
+                    obligatorio={fichaDoc?.campos[campo]?.obligatorio ?? false}
+                    sensible={fichaDoc?.campos[campo]?.sensible ?? false} deshabilitado={ocupado}
                     alGuardar={(valor) => ejecutar(() => corregirDatos(idDoc, { [campo]: valor }), aplicarDocumento,
                       `${nombreCampo(campo)} corregido.`, true)}>
                     {contenido}

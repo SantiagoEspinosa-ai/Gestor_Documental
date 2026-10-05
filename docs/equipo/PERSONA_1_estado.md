@@ -92,14 +92,18 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
 - [x] Webhooks firmados con HMAC-SHA256 y 3 intentos (`core/webhooks.py`, rama `feat/plataforma-etapa3`):
-      `documento.completado`, `documento.error` y `folio.estado_cambiado`. El enmascaramiento de `datos`
-      queda pendiente del ADR-010 y H15 (`enmascarar_para_webhook`).
+      `documento.completado`, `documento.error` y `folio.estado_cambiado`. `datos` enmascarado y
+      `X-Entrega-Id` (ver abajo).
 - [x] Resumen `.md` del expediente (rama `feat/plataforma-etapa3`): `expediente/resumen.py` y plantilla Jinja,
       con los datos extraidos (decision del usuario), regenerado tras cada cambio en S3 y `GET
       /folios/{folio}/resumen.md`. Decision: `ruta_resumen_md` se deriva del folio, sin migracion; un folio
       anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton y da 404
-      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. El enmascaramiento queda pendiente de H15.
-- [ ] Enmascaramiento en la API, en los logs y "mostrar" auditado (ADR-010, tras H15).
+      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. Enmascarado (ver abajo).
+- [x] Enmascaramiento ADR-010 A2-A6 (PR A, rama `feat/plataforma`): `core/enmascaramiento.py` (mascara unica),
+      respuestas de la API enmascaradas para todos los roles, webhook y `resumen.md` con la misma mascara,
+      `POST /documentos/{id}/revelar` con `dato_revelado`, filtro de logs (`core/logs.py`) y `X-Entrega-Id` en
+      los webhooks. Evidencia: ubicaciones conservadas (acordado con PERSONA_2). Mocks con la misma mascara.
+- [ ] H17: boton "mostrar" en la UI (PR B).
 
 ## H1 (2026-10-02)
 UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
@@ -158,7 +162,7 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
 - [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
-- [ ] H17: enmascaramiento en la UI con "mostrar" (tras H7 y `sensible: true` de PERSONA_2).
+- [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
 
 ### Etapa 4
 - [ ] H19: guion de la demo, ensayo y `docker compose up` desde cero.

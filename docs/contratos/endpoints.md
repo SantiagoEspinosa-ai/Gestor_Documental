@@ -2,7 +2,7 @@
 
 Base: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Roles: `admin`, `revisor`, `integrador`.
 Errores: `{ "codigo": "...", "mensaje": "..." }`, catalogo en `docs/contratos/codigos_error.md`.
-Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30).
+Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) y ADR-010 (enmascaramiento).
 
 | Metodo | Ruta | Rol | Descripcion | Respuesta |
 |---|---|---|---|---|
@@ -73,9 +73,23 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
     `tipo_confirmado`, que manda sobre el declarado y el detectado. El resultado anterior se conserva
     como version previa en la tabla `resultados`.
 - Reprocesar un documento en `error` queda fuera del MVP (ADR-006, I).
+- Enmascaramiento (ADR-010 A2, A3 y A5): los campos con `sensible: true` en su ficha (hoy `curp`,
+  `clave_elector` y `numero_pasaporte`) salen como `****` seguido de sus 4 ultimos caracteres (con 4 o
+  menos, `****`; `null` sigue siendo `null`) en TODAS las respuestas y para TODOS los roles: datos,
+  correcciones (`valor_anterior` y `valor_nuevo`), comparaciones, evidencias, webhooks y `resumen.md`;
+  tambien en la respuesta del `PATCH` de datos. En las evidencias se conservan las ubicaciones
+  (`pagina_N[:seccion]`, `correccion_revisor`), cualquier otro contenido de la de un campo sensible se tapa
+  entero, y en todas se tapan la linea 2 de la MRZ y las apariciones del valor leido y del corregido. El
+  valor real solo se obtiene con `POST /documentos/{id}/revelar` (revisor y admin; el integrador, `403
+  SIN_PERMISO`): `{campo}` -> `{campo, valor}` con el valor vigente (el corregido, si lo hay) y
+  `Cache-Control: no-store`; funciona con el folio cerrado; `422 PETICION_INVALIDA` si el campo no esta en
+  la ficha o no es sensible, `409 DOCUMENTO_EN_PROCESO` o `DOCUMENTO_CON_ERROR`, `404
+  DOCUMENTO_NO_ENCONTRADO`. Cada llamada correcta deja `dato_revelado` con `detalle: {campo}`, nunca el valor.
 
 ## Webhook (salida)
-Configurable por proceso. `POST <url>` con cabecera `X-Firma: sha256=<HMAC(cuerpo, WEBHOOK_SECRET_HMAC)>`.
+Configurable por proceso. `POST <url>` con cabecera `X-Firma: sha256=<HMAC(cuerpo, WEBHOOK_SECRET_HMAC)>`
+y `X-Entrega-Id: <uuid>`: uno por entrega, igual en todos sus reintentos, para detectar reenvios (no va en
+el cuerpo). `datos` va enmascarado (ver "Reglas").
 Eventos: `documento.completado`, `documento.error`, `folio.estado_cambiado`.
 Cuerpo: `{evento, fecha, folio, identificador_unico_documento?, datos: ResultadoDocumento | ResultadoExpediente}`.
 
