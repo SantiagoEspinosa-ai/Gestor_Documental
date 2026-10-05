@@ -212,7 +212,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
 | `/tipos-documentales` | `configuracion/servicio.py` serializa `TipoDocumental` para el router de PERSONA_1 | ADR-006, 1.5 | pendiente (ver seccion 7) |
-| RAG | Toda la carpeta `modulos/rag` es de PERSONA_2 desde el traspaso de PERSONA_3 (PR #13): `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`), `rag/embeddings.py` (Ollama `nomic-embed-text`), `rag/memoria.py` y `buscar_antecedentes` (H14) | ADR-006, coordinacion, PR #13 | pendiente (etapa 3; la ruta critica de la etapa 2 va antes) |
+| RAG | Toda la carpeta `modulos/rag` es de PERSONA_2 desde el traspaso de PERSONA_3 (PR #13): `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`), `rag/embeddings.py` (Ollama `nomic-embed-text`) y, por ADR-010 (PR #21), **solo** `rag.servicio.fragmento_resumen(folio) -> str | None`, ya enmascarado; los folios relacionados los elige PERSONA_1 con SQL (ya no hay `buscar_antecedentes` en `rag`) (H14) | ADR-006, coordinacion, PR #13, ADR-010 | pendiente (etapa 3; la ruta critica de la etapa 2 va antes) |
 
 ## 7. Pendientes y riesgos
 
@@ -314,8 +314,13 @@ se queda solo con `pagina_<n>` (seccion 4).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
         (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
         y Pillow.
-      - [ ] H14: `rag` completo (etapa 3, dias 9-11).
-      - [ ] H15: `sensible: true` en los YAML y en el cargador (etapa 3).
+      - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
+        `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
+        relacionados con SQL. Etapa 3 (dias 9-11).
+      - [ ] H15: `sensible: true` en los YAML y en el cargador (etapa 3, ADR-010). **Despues de que se fusione el PR de
+        reglas de coherencia** (`chore/reglas-coherencia`), nunca en paralelo: tocan los mismos ficheros (cargador y
+        `config/tipos/*.yaml`). Incluye un test de que los logs del motor y `datos_auditoria` no llevan valores de los
+        campos.
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
@@ -556,7 +561,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | este commit |
+| 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | este commit |
+| 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |
 | 2026-10-02 | Etapa 2, paso 4: `orquestador.procesar_documento` (`orquestador/procesamiento.py`) con la firma de la seccion 11: preparar, MRZ, `motor_ia.analizar(mrz=)`, sexo y `VAL-003` en el orquestador (`completar_mrz.py`), reglas con `hoy` de `reloj.py`, recomendacion y `datos_auditoria` (con `version_prompt_clasificacion`). `motor_ia` ya no importa `orquestador` (test). CLI y `evaluar_fixtures.py` pasan por el orquestador | `90e9a36` |
 | 2026-10-02 | Revision de PERSONA_1 en el PR #18: con `tipo_confirmado` el motor deja `confianza_clasificacion = None` (ADR-009, como el stub del PR #19) y el 1,0 lo pone la plataforma (D2); `recomendar_documento` cuenta esa `None` como 1,0 si hay tipo confirmado. Merge de `origin/main` con el PR #19. La rama de reglas de coherencia se prepara desde `main` cuando se fusione el PR #18 y llevara tambien `endpoints.md`, `contrato.ts`, `_regla` de `ingesta/tipos.py` y pasara `test_openapi_contrato.py` (`campo_relacionado` cambia el Contrato 2) | `d7a07f5` |
 | 2026-10-02 | Etapa 2, paso 3: `validacion/recomendacion.py` (`recomendar_documento`): solo `aprobar` o `revision_manual` (D1), con las mismas reglas que la global de PERSONA_1; expuesta en el bloque de PERSONA_2 de `validacion/servicio.py`. Rama local `chore/reglas-coherencia` (`ecea1b0`): las 4 reglas de coherencia en las fichas y los mocks regenerados con el script, para abrir cuando se fusione el PR de marcadores | `a1d85d3` |
