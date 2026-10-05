@@ -268,6 +268,8 @@ export interface ReglaFicha {
   id: string
   tipo: string
   campo: string
+  /** Solo en las reglas de coherencia entre dos campos (curp_coincide_con_fecha, fecha_anterior_a_campo) */
+  campo_relacionado?: string
   severidad: Severidad
   mensaje: string
   dias?: number

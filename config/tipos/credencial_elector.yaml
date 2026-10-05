@@ -38,6 +38,13 @@ reglas:
     campo: curp
     severidad: critica
     mensaje: La CURP no tiene un formato valido
+  # Coherencia (etapa 2): posiciones 5-10 de la CURP = fecha de nacimiento (AAMMDD; posicion 17: digito antes de 2000)
+  - id: curp_coincide_nacimiento
+    tipo: curp_coincide_con_fecha
+    campo: curp
+    campo_relacionado: fecha_nacimiento
+    severidad: critica
+    mensaje: La CURP no coincide con la fecha de nacimiento
 comparaciones:
   pasaporte: [nombre_completo, fecha_nacimiento]
   comprobante_domicilio: [domicilio]

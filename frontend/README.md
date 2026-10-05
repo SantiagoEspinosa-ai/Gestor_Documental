@@ -306,6 +306,35 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
 - `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` (por defecto): OpenRouter no se usa nunca, ni como respaldo
   (ADR-003). Si Ollama falla, el documento acaba en `error` con `SYS-001`.
 
+### e2e reales (H6): humo contra la API real con el stub (`e2e-real/`)
+```
+npm run test:e2e:real   # playwright.real.config.ts: Chromium, workers 1, http://localhost:5173
+```
+- Requisitos (este proyecto no arranca nada; `e2e-real/comprobar-servidores.ts` lo comprueba antes y
+  falla con un mensaje claro):
+  - backend en el equipo en `:8000` (`uvicorn app.main:app --port 8000` desde `backend/`, con la BD
+    migrada); `GET /api/v1/procesos` sin token tiene que dar 401;
+  - `npm run dev` en `:5173` con `VITE_USAR_MOCKS=false` y `VITE_API_URL=http://localhost:8000`;
+  - un usuario de cada rol en variables de entorno del proceso, nunca en el repo:
+    `E2E_REVISOR_USUARIO`/`E2E_REVISOR_CLAVE`, `E2E_ADMIN_USUARIO`/`E2E_ADMIN_CLAVE` y
+    `E2E_INTEGRADOR_USUARIO`/`E2E_INTEGRADOR_CLAVE` (se crean con `scripts/crear_usuario.py`). Si falta
+    alguna, el test se omite con el motivo.
+- Sin traza (`trace: 'off'`): guardaria lo escrito en el login y el cuerpo de `POST /auth/login`. Solo
+  captura si falla, con la contrasena tapada (`type=password`).
+- Casos (cada uno crea su folio con `referencia_externa` `E2E-<timestamp>`, sin depender de datos
+  existentes): `revisor_flujo` (folio nuevo con sus 2 `EXP-001`, subir credencial y comprobante del
+  caso sano digital con su tipo declarado, esperar "Completado" con `expect.poll` hasta 5 min por
+  documento, las `EXP-001` desaparecen, aprobar con comentario y folio cerrado en solo lectura);
+  `admin_auditoria` (en serie tras el anterior: en `/auditoria?folio=` estan "Folio creado", 2
+  "Documento subido", 2 "Documento analizado" y "Decisión del folio"); `integrador_roles` (sin lista de
+  folios, "Sin permiso" en `/auditoria` y `/procesos`, y en el expediente de su folio "Tu rol no puede
+  ver el original del documento.").
+- Aviso: cada ejecucion sube 3 PDF ficticios (`public/mock-originales`) al bucket de desarrollo y crea 2
+  folios en la BD local. Con el stub tarda unos 30 s.
+- `npm test` y `npm run test:e2e` no los recogen (`src/**/*.test.*` y `e2e/**/*.e2e.ts`).
+- Falta: los casos del motor real con los folios de `INDICE.md` cuando `procesar_documento` sustituya al
+  stub, calentar Ollama antes de cronometrar y los tiempos de H12 (spec de PERSONA_2, seccion 13).
+
 ## Tipos y datos de los mocks
 - `src/tipos/contrato.ts` refleja `backend/app/schemas/resultado.py` campo a campo (las claves
   siempre estan: los opcionales son `T | null`) y `docs/contratos/endpoints.md`.
@@ -348,7 +377,8 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
 - HECHO (H1, 2026-10-02): probar la UI contra la API real de PERSONA_1 (`VITE_USAR_MOCKS=false`) y
   reportar como issue cualquier desviacion del contrato. Sin desviaciones; detalle en
   `docs/equipo/PERSONA_1_estado.md`, seccion "H1 (2026-10-02)".
-- Etapa 2: e2e reales con los 4 casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales").
+- Etapa 2: humo real con el stub HECHO (H6, ver "e2e reales (H6)"). Falta con el motor real: los
+  casos de fixtures sobre `docker compose` y Ollama (ver "e2e reales de la etapa 2").
 - Con PERSONA_1 (menor, no bloquea): la API acepta un `anio` `"0999"` y lo guarda como `999`, de 3
   cifras. La UI no lo envia nunca (exige `[1-9]\d{3}`) y el mock hace lo mismo que la API mientras no
   cambie.
