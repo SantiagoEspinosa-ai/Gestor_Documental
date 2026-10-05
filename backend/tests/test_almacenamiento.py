@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 from moto import mock_aws
 
 from app.core.almacenamiento import (AlmacenamientoS3, ErrorAlmacenamiento, ObjetoNoEncontrado,
-                                     clave_original)
+                                     clave_derivado, clave_original)
 
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
@@ -39,6 +39,31 @@ def test_no_se_sobrescribe_un_original(s3):
     with pytest.raises(ErrorAlmacenamiento, match="ya existe"):
         s3.subir(b"otro contenido", CLAVE, "application/pdf")
     assert s3.descargar(CLAVE) == b"original"
+
+
+def test_subir_derivado_sobrescribe_con_sse(s3):
+    clave = "onboarding/2026/000001/resumen.md"
+    s3.subir_derivado(b"# version 1", clave, "text/markdown; charset=utf-8")
+    s3.subir_derivado(b"# version 2", clave, "text/markdown; charset=utf-8")
+    assert s3.descargar(clave) == b"# version 2"
+    cabecera = boto3.client("s3", region_name=REGION).head_object(Bucket=BUCKET, Key=clave)
+    assert cabecera["ServerSideEncryption"] == "AES256"
+    assert cabecera["ContentType"] == "text/markdown; charset=utf-8"
+
+
+def test_subir_derivado_no_afloja_los_originales(s3):
+    s3.subir(b"original", CLAVE, "application/pdf")
+    s3.subir_derivado(b"resumen", "onboarding/2026/000001/resumen.md", "text/markdown")
+    with pytest.raises(ErrorAlmacenamiento, match="ya existe"):
+        s3.subir(b"otro contenido", CLAVE, "application/pdf")
+    assert s3.descargar(CLAVE) == b"original"
+
+
+def test_clave_derivado():
+    assert clave_derivado("onboarding", 2026, 7, "resumen.md") == "onboarding/2026/000007/resumen.md"
+    for proceso, nombre in (("on/boarding", "resumen.md"), ("onboarding", "../resumen.md"), ("onboarding", "")):
+        with pytest.raises(ValueError):
+            clave_derivado(proceso, 2026, 7, nombre)
 
 
 def test_descargar_inexistente(s3):
