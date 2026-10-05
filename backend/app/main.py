@@ -45,6 +45,3 @@ app.include_router(revision.router)
 @app.get("/salud")
 def salud() -> dict:
     return {"estado": "ok"}
-
-
-# TODO PERSONA_1: incluir routers de app/modulos/api (webhooks, etapa 3)

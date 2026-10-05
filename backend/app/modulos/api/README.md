@@ -39,6 +39,10 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
   (ADR-004) y los datos de la decision (ADR-006 G).
 - Errores: 404 `FOLIO_NO_ENCONTRADO`.
 
+### GET /api/v1/folios/{folio}/resumen.md (cualquier rol)
+- Salida 200: el `resumen.md` guardado en S3, `text/markdown; charset=utf-8` (`expediente.obtener_resumen`).
+- Errores: 401; 404 `RESUMEN_NO_DISPONIBLE` si aun no se ha generado; 404 `FOLIO_NO_ENCONTRADO`.
+
 ## documentos.py
 Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 

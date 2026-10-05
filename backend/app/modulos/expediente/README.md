@@ -52,6 +52,37 @@ plataforma no la toca; la GLOBAL es de la plataforma. Reglas, en orden (la prime
    confianza del modelo) y confirmar otro (el motor la devuelve vacia). Lo aplica `servicio._recomendar`.
 4. Si no, `aprobar`. Nunca `rechazar`: la decision final es humana (regla 9 de CLAUDE.md).
 
+## resumen.py (etapa 3)
+`generar(expediente, fichas, generado_en) -> str`: el `resumen.md` del folio, puro y determinista (sin BD
+ni S3; con la misma entrada, el mismo texto). Plantilla `plantillas/resumen.md.j2` (Jinja, sin autoescape
+porque es Markdown, y `StrictUndefined`). Contenido: cabecera (folio, referencia o "sin referencia",
+proceso, fecha de solicitud y estado), recomendacion global, la decision si la hay, cada documento con su
+tipo ("Tipo no reconocido" para `desconocido`, "Sin tipo"), estado, lista de datos (campo, valor o "no
+detectado", "(corregido por revisor)") y alertas por severidad con su revision; alertas del expediente,
+comparaciones (coincide / no coincide y, debajo, el valor de cada documento) y "Generado el <fecha>".
+Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
+- La persona se identifica por la referencia: el nombre nunca va en la cabecera ni en el titulo, solo
+  como un dato de la tabla. El nombre del fichero no sale (suele llevar el de la persona).
+- `escapar(valor)`: los valores del OCR o del revisor se escapan (`|`, `` ` ``, `*`, `_`, `[`, `]`, `<`, `>`
+  y `\`) y los saltos de linea pasan a espacios, para no romper las listas ni inyectar formato o HTML.
+- `enmascarar_para_resumen(datos, ficha)`: unico punto por el que pasan los datos (de cada documento y de
+  las comparaciones). Hoy no enmascara; ADR-010 A5 lo aplicara a los campos `sensible` cuando llegue H15.
+
+## Regeneracion del resumen.md (etapa 3)
+- `regenerar_resumen(sesion, folio)`: despues del COMMIT de cada cambio genera el resumen y lo guarda con
+  `subir_derivado` (sobrescribe) en `{proceso}/{anio}/{secuencia:06d}/resumen.md`, junto a los originales.
+  Se llama al crear el folio (cabecera y "Sin documentos"), al terminar cada analisis (tambien los
+  reprocesos y los documentos en error, desde `ingesta/procesamiento.py`), al corregir datos, al
+  confirmar la clasificacion, al resolver una alerta y al decidir. Nunca lanza: si S3 falla se registra
+  (solo el folio y el tipo de error) y la accion sigue; el siguiente cambio lo regenera. Despues llama a
+  `avisar_reindexar(folio)`, que hoy no hace nada (H14, PERSONA_2: `rag` reindexa el resumen).
+- `obtener_resumen(sesion, folio)`: el Markdown de S3 para `GET /folios/{folio}/resumen.md`.
+- `ruta_resumen_md` se deriva del folio, sin columna ni migracion: el expediente la devuelve siempre.
+  Caso limite: un folio anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton "Ver
+  resumen" pero `GET` da 404 `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio del folio.
+- `_almacenamiento()` es el unico acceso a S3 del modulo; en los tests lo sustituye uno en memoria
+  (`tests/conftest.py`).
+
 ## Revision (E2.6)
 - `resolver_alerta_documento(sesion, documento_id, alerta_id, aplica, comentario, usuario) -> ResultadoDocumento`
   y `resolver_alerta_expediente(sesion, folio, alerta_id, aplica, comentario, usuario) -> ResultadoExpediente`.

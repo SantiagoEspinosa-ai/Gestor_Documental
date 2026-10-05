@@ -91,6 +91,15 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
+- [x] Webhooks firmados con HMAC-SHA256 y 3 intentos (`core/webhooks.py`, rama `feat/plataforma-etapa3`):
+      `documento.completado`, `documento.error` y `folio.estado_cambiado`. El enmascaramiento de `datos`
+      queda pendiente del ADR-010 y H15 (`enmascarar_para_webhook`).
+- [x] Resumen `.md` del expediente (rama `feat/plataforma-etapa3`): `expediente/resumen.py` y plantilla Jinja,
+      con los datos extraidos (decision del usuario), regenerado tras cada cambio en S3 y `GET
+      /folios/{folio}/resumen.md`. Decision: `ruta_resumen_md` se deriva del folio, sin migracion; un folio
+      anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton y da 404
+      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. El enmascaramiento queda pendiente de H15.
+- [ ] Enmascaramiento en la API, en los logs y "mostrar" auditado (ADR-010, tras H15).
 
 ## H1 (2026-10-02)
 UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
@@ -134,7 +143,8 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 2 (con el motor de PERSONA_2)
 - [ ] H3: mocks con `version_prompt` y evidencias reales (el PR #11 ya esta en `main`).
-- [ ] H4: "Tipo no reconocido" (tras el ADR-009 de `desconocido`, H9 de PERSONA_2, PR #14).
+- [x] H4: "Tipo no reconocido" (ADR-009): UI, aviso sin datos y mensaje de `EXP-002` "Tipo de documento no
+      reconocido" (rama `feat/plataforma-etapa3`).
 - [ ] H5: etiqueta de la confianza segun la decision sobre ADR-007 (H10: PERSONA_2 ha decidido no
       sustituir el stub hasta entonces; PENDIENTE de tu confirmacion).
 - [ ] H6 (completo): folios de `INDICE.md` con el motor real; 5 min por documento, 10 min por folio de 3.

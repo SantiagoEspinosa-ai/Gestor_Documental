@@ -7,7 +7,7 @@ import { useRol } from '../componentes/contextoSesion'
 import { InsigniaEstado } from '../componentes/Insignias'
 import type { EstadoAnalisis, Proceso, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_ANALISIS } from '../utilidades/etiquetas'
-import { enProceso, tipoEfectivo, tiposRequeridosQueFaltan } from '../utilidades/expediente'
+import { enProceso, nombreTipo, tipoEfectivo, tiposRequeridosQueFaltan } from '../utilidades/expediente'
 import { MENSAJES_ERROR, mensajeDeError } from '../utilidades/mensajes'
 import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
 
@@ -95,7 +95,8 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
     },
   })
 
-  const nombreVisible = (tipo: string | null) => tipos.find((t) => t.nombre === tipo)?.nombre_visible ?? tipo ?? 'Sin tipo'
+  // "Tipo no reconocido" para `desconocido` (ADR-009); "Sin tipo" si no hay ninguno
+  const nombreVisible = (tipo: string | null) => nombreTipo(tipo, tipos, 'Sin tipo')
   const cerrado = expediente !== null && expediente.estado_general !== 'en_revision'
   const puedeSubir = rol !== null && ROLES_SUBIR.includes(rol) && expediente !== null && !cerrado
   // Aviso de lo que falta: cuentan los subidos que se estan analizando o ya estan completados; uno en

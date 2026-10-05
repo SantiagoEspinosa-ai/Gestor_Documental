@@ -729,9 +729,11 @@ describe('campos sin valor', () => {
     const val004 = documentos.flatMap((d) => d.alertas_encontradas.filter((a) => a.codigo === 'VAL-004').map((a) => [d, a] as const))
     expect(val004.length).toBeGreaterThan(0)
     for (const [d, a] of val004) expect([a.severidad, d.datos_extraidos[a.campo!]]).toEqual(['informativa', null])
-    // Tres informativas, todas posibles con la configuracion por defecto (sin SYS-005: ADR-003)
+    // Cuatro informativas, todas posibles con la configuracion por defecto (sin SYS-005: ADR-003); la EXP-002
+    // es la del documento no reconocido de ONB-2026-000003 (ADR-009)
     const informativas = documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa')
-    expect(informativas.map((a) => [a.codigo, a.campo]).sort()).toEqual([['VAL-003', 'nacionalidad'], ['VAL-003', 'sexo'], ['VAL-004', 'proveedor']])
+    expect(informativas.map((a) => [a.codigo, a.campo]).sort()).toEqual([
+      ['EXP-002', 'desconocido'], ['VAL-003', 'nacionalidad'], ['VAL-003', 'sexo'], ['VAL-004', 'proveedor']])
   })
 })
 
