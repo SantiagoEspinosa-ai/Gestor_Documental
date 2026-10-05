@@ -1,7 +1,14 @@
 # orquestador  (responsable: PERSONA_2)
 
-Prepara cada documento para el motor de IA. Los demas modulos solo importan `servicio.py`
-(`preparar`, `detectar`, `FormatoNoSoportado`, `buscar_mrz`, `validar_digitos`, `Mrz`). Configuracion vigente:
+Prepara cada documento y orquesta su analisis. Los demas modulos solo importan `servicio.py`
+(`procesar_documento`, `preparar`, `detectar`, `FormatoNoSoportado`, `buscar_mrz`, `validar_digitos`, `Mrz`).
+
+## `procesamiento.py`: `procesar_documento` (lo conecta la plataforma)
+`procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia,
+tipo_confirmado=None) -> (ResultadoDocumento, datos_auditoria)`. Sin BD ni S3. Pasos: `preparar` -> MRZ ->
+`motor_ia.analizar` -> sexo desde la MRZ (`VAL-003`, `completar_mrz.py`) -> `validacion.evaluar_reglas` (con `hoy`
+de `reloj.py`, zona `ZONA_HORARIA`) -> `validacion.recomendar_documento`. Proveedor caido: `error` + `SYS-001`; JSON
+invalido: `error` + `SYS-002`; lo demas lanza. Detalle: spec, seccion 11. Configuracion vigente:
 [docs/motor_ia/SPEC_CONFIGURACION.md](../../../../docs/motor_ia/SPEC_CONFIGURACION.md).
 
 ## `preparador.py`

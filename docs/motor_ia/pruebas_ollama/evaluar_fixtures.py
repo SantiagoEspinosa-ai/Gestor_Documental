@@ -7,6 +7,9 @@ Bloques (un modelo cada vez):
   2 - nivel normal, ruta "vision" (modelo de vision forzado) en escaneado y foto.
   3 - fixtures de dificultad (dificil y extremo, seccion "Fixtures de dificultad" de INDICE.md), ruta "auto".
   4 - fixtures de dificultad, ruta "vision".
+  5 - especimenes (fixtures/especimenes/: fotos de movil de los documentos sanos impresos), ruta "auto"; valores
+      esperados = caso sano. Conviene --salida resultados/especimenes para no mezclarlos con los bloques 1-4.
+Todos pasan por orquestador.procesar_documento (preparar, MRZ, motor, reglas y recomendacion), como la plataforma.
 Cada campo queda como correcto, vacio (null) o incorrecto (con valor distinto del esperado: error
 silencioso, que el reintento con vision no detecta porque solo mira los vacios).
 
@@ -47,9 +50,12 @@ OLLAMA_EQUIPO = "http://localhost:11434"
 MODELOS = ("gemma4:e2b", "qwen2.5vl:3b")
 UMBRAL_ABORTAR_GB = 1.0
 # RAM libre minima para arrancar cada bloque. El 3 puede reintentar con vision (carga qwen tras descargar gemma).
-MARGEN_GB = {1: 4.5, 2: 5.8, 3: 5.8, 4: 5.8}
+MARGEN_GB = {1: 4.5, 2: 5.8, 3: 5.8, 4: 5.8, 5: 5.8}
 FOLIO = "CLI-2026-000000"
 NIVELES_DIFICULTAD = ("dificil", "extremo")
+# Bloque 5: especimenes (fotos de movil de los documentos sanos impresos), en fixtures/especimenes; valores
+# esperados = caso sano de INDICE.md. Se leen como "../especimenes/<fichero>" desde la carpeta de fixtures.
+PREFIJO_ESPECIMEN = "../especimenes/"
 CASOS_CLS = [  # (archivo, tipo declarado equivocado)
     ("credencial_elector_sano_digital.pdf", "pasaporte"),
     ("pasaporte_sano_foto.jpg", "credencial_elector"),
@@ -117,6 +123,12 @@ def leer_indice(fixtures: Path, casos: set[str] | None = None) -> dict[str, dict
         if casos and "sano" not in casos:
             continue
         salida[archivo] = {"caso": "sano", **d, "campos": dict(valores_dificultad.get(d["tipo"], {}))}
+    sanos = {d["tipo"]: d["campos"] for d in salida.values() if d["caso"] == "sano" and d["nivel"] == "normal"}
+    for ruta in sorted((fixtures.parent / "especimenes").glob("*_sano_especimen_*.jpg")):
+        tipo = ruta.name.split("_sano_especimen_")[0]
+        if tipo in sanos:
+            salida[PREFIJO_ESPECIMEN + ruta.name] = {"caso": "sano", "tipo": tipo, "modalidad": "foto",
+                                                     "nivel": "especimen", "campos": dict(sanos[tipo])}
     return salida
 
 
@@ -136,6 +148,11 @@ def casos_del_bloque(bloque: int, indice: dict[str, dict]) -> list[dict]:
         for archivo, d in sorted(normales.items()):
             if d["modalidad"] in ("escaneado", "foto"):
                 casos.append({"id": f"vision__{Path(archivo).stem}", "ruta": "vision", "archivo": archivo,
+                              "declarado": d["tipo"], "clasificacion_equivocada": False})
+    elif bloque == 5:
+        for archivo, d in sorted(indice.items()):
+            if d["nivel"] == "especimen":
+                casos.append({"id": f"auto__{Path(archivo).stem}", "ruta": "auto", "archivo": archivo,
                               "declarado": d["tipo"], "clasificacion_equivocada": False})
     else:
         ruta = "auto" if bloque == 3 else "vision"
@@ -186,6 +203,7 @@ def comparar_campos(esperados: dict, extraidos: dict) -> dict:
 def trabajar(args) -> None:
     sys.path.insert(0, "/app")
     import hashlib
+    import uuid
 
     import app.modulos.motor_ia.servicio as servicio_motor
     from app.modulos.configuracion import servicio as configuracion
@@ -228,6 +246,23 @@ def trabajar(args) -> None:
 
         servicio_motor._reintento_vision = reintento_con_captura
 
+    # Captura lo que procesar_documento no devuelve: el documento preparado (metricas) y el Analisis (llamadas)
+    from app.modulos.orquestador import procesamiento
+    capturado: dict = {}
+    original_preparar, original_analizar = procesamiento.preparar, servicio_motor.analizar
+
+    def preparar_con_captura(*a, **k):
+        t = time.perf_counter()
+        capturado["doc"] = original_preparar(*a, **k)
+        capturado["segundos_preparar"] = round(time.perf_counter() - t, 1)
+        return capturado["doc"]
+
+    def analizar_con_captura(*a, **k):
+        capturado["analisis"] = original_analizar(*a, **k)
+        return capturado["analisis"]
+
+    procesamiento.preparar = preparar_con_captura
+    servicio_motor.analizar = analizar_con_captura
     configuracion.cargar()
     enrutador = crear_enrutador()
     for caso in lista:
@@ -240,15 +275,19 @@ def trabajar(args) -> None:
         inicio = time.perf_counter()
         try:
             contenido = (fixtures / caso["archivo"]).read_bytes()
-            doc = orquestador.preparar(contenido, caso["archivo"], caso["declarado"])
-            medida["segundos_preparar"] = round(time.perf_counter() - inicio, 1)
-            medida["modalidad_detectada"] = doc.modalidad.value
-            medida["caracteres_texto"] = sum(len("".join((p.texto or "").split())) for p in doc.paginas)
-            referencia = ReferenciaArchivoOriginal(nombre_archivo=caso["archivo"], ruta=f"local://{caso['archivo']}",
+            nombre = Path(caso["archivo"]).name
+            referencia = ReferenciaArchivoOriginal(nombre_archivo=nombre, ruta=f"local://{nombre}",
                                                    hash=hashlib.sha256(contenido).hexdigest())
             descargas_previas = descargas["antes_de_reintento"]
-            analisis = servicio_motor.analizar(doc, folio=FOLIO, referencia=referencia, enrutador=enrutador)
-            r = analisis.resultado
+            capturado.clear()
+            # El flujo real de la plataforma: preparar, MRZ, motor, reglas y recomendacion
+            r, auditoria = orquestador.procesar_documento(
+                contenido, identificador=str(uuid.uuid4()), nombre_archivo=nombre, tipo_declarado=caso["declarado"],
+                folio=FOLIO, referencia=referencia, enrutador=enrutador)
+            doc, analisis = capturado["doc"], capturado["analisis"]
+            medida["segundos_preparar"] = capturado["segundos_preparar"]
+            medida["modalidad_detectada"] = doc.modalidad.value
+            medida["caracteres_texto"] = sum(len("".join((p.texto or "").split())) for p in doc.paginas)
             ResultadoDocumento.model_validate_json(r.model_dump_json())
             campos = {} if caso["clasificacion_equivocada"] else comparar_campos(esperado["campos"], r.datos_extraidos)
             reintento = any((i.motivo or "").startswith("reintento con vision") for i in analisis.llamadas)
@@ -259,6 +298,8 @@ def trabajar(args) -> None:
                 "confianza_clasificacion": r.confianza_clasificacion,
                 "clasificacion_ok": r.tipo_documental_detectado == esperado["tipo"],
                 "alertas": [a.codigo + (f"[{a.campo}]" if a.campo else "") for a in r.alertas_encontradas],
+                "recomendacion": r.recomendacion.value if r.recomendacion else None,
+                "reglas_incumplidas": list(r.reglas_cumplidas_e_incumplidas.incumplidas),
                 "campos": campos,
                 "aciertos": sum(c["estado"] == "correcto" for c in campos.values()),
                 "vacios": sum(c["estado"] == "vacio" for c in campos.values()),
@@ -333,7 +374,7 @@ def descargar_modelos() -> None:
 
 
 def lanzar(args) -> None:
-    salida = Path(args.salida)
+    salida = Path(args.salida).resolve()  # Docker solo monta rutas absolutas
     salida.mkdir(parents=True, exist_ok=True)
     indice = leer_indice(Path(args.fixtures), set(args.casos.split(",")) if args.casos else None)
     lista = pendientes(casos_del_bloque(args.bloque, indice), salida, args.repetir, args.solo)
@@ -351,7 +392,8 @@ def lanzar(args) -> None:
     print(f"Bloque {args.bloque}: {len(lista)} casos pendientes; RAM libre {libre:.2f} GB", flush=True)
     contenedor = f"evaluacion_bloque{args.bloque}_{int(time.time())}"
     comando = ["docker", "compose", "run", "--rm", "--no-deps", "--name", contenedor,
-               "-v", f"{Path(args.fixtures)}:/fixtures/generados:ro", "-v", f"{AQUI}:/evaluacion:ro",
+               "-v", f"{Path(args.fixtures)}:/fixtures/generados:ro",
+               "-v", f"{Path(args.fixtures).parent / 'especimenes'}:/fixtures/especimenes:ro", "-v", f"{AQUI}:/evaluacion:ro",
                "-v", f"{salida}:/salida", "-e", "OLLAMA_BASE_URL=http://host.docker.internal:11434",
                "backend", "python", "/evaluacion/evaluar_fixtures.py", "trabajar", "--bloque", str(args.bloque),
                "--fixtures", "/fixtures/generados", "--salida", "/salida"]
@@ -552,6 +594,21 @@ def generar_informe(salida: Path) -> None:
     else:
         lineas.append("Ninguno.")
 
+    especimenes = [m for m in validas if m["nivel"] == "especimen"]
+    if especimenes:
+        lineas += ["", "## Especimenes (fotos de movil reales, bloque 5)", "",
+                   "| Archivo | Caracteres OCR | Tipo | Correctos | Vacios | Incorrectos | Vision | Recomendacion | Alertas | Tiempo |",
+                   "|---|---|---|---|---|---|---|---|---|---|"]
+        for m in sorted(especimenes, key=lambda x: x["id"]):
+            lineas.append(f"| `{Path(m['archivo']).name}` | {m.get('caracteres_texto')} | "
+                          f"{'ok' if m.get('clasificacion_ok') else m.get('tipo_detectado')} | {m['aciertos']}/{m['total_campos']} | "
+                          f"{m['vacios']} | {m['incorrectos']} | {'si' if m.get('uso_vision') else 'no'} | "
+                          f"{m.get('recomendacion') or '-'} | {', '.join(m.get('alertas', [])) or '-'} | {m['segundos_total']} s |")
+        lineas.append(f"\nTotal: {_pct(suma(especimenes, 'aciertos'), suma(especimenes, 'total_campos'))} correctos, "
+                      f"{suma(especimenes, 'vacios')} vacios y {suma(especimenes, 'incorrectos')} incorrectos; tipo correcto "
+                      f"{sum(m.get('clasificacion_ok', False) for m in especimenes)}/{len(especimenes)}.")
+        fallos += [(m, c, v) for m in especimenes for c, v in m["campos"].items() if v["estado"] != "correcto"]
+
     lineas += ["", "## Clasificacion con tipo declarado equivocado (CLS-001)", "",
                "| Archivo | Declarado | Detectado | Alertas |", "|---|---|---|---|"]
     lineas += [f"| `{m['archivo']}` | {m['declarado']} | {m.get('tipo_detectado')} | {', '.join(m.get('alertas', [])) or '-'} |"
@@ -583,17 +640,17 @@ def generar_informe(salida: Path) -> None:
 
 def listar_indice(args) -> None:
     indice = leer_indice(Path(args.fixtures), set(args.casos.split(",")) if args.casos else None)
-    for nivel in ("normal", *NIVELES_DIFICULTAD):
+    for nivel in ("normal", *NIVELES_DIFICULTAD, "especimen"):
         docs = {a: d for a, d in indice.items() if d["nivel"] == nivel}
         print(f"nivel {nivel}: {len(docs)} documentos, {sum(len(d['campos']) for d in docs.values())} campos")
-    for bloque in (1, 2, 3, 4):
+    for bloque in (1, 2, 3, 4, 5):
         print(f"bloque {bloque}: {len(casos_del_bloque(bloque, indice))} casos")
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     p.add_argument("modo", choices=["lanzar", "trabajar", "informe", "indice"])
-    p.add_argument("--bloque", type=int, choices=[1, 2, 3, 4], default=1)
+    p.add_argument("--bloque", type=int, choices=[1, 2, 3, 4, 5], default=1)
     p.add_argument("--casos", help="casos de INDICE.md separados por comas (p. ej. sano,vencido)")
     p.add_argument("--repetir", action="store_true")
     p.add_argument("--solo", help="ids de casos concretos separados por comas (p. ej. cls__comprobante_domicilio_sano_escaneado__como_pasaporte)")

@@ -1,6 +1,6 @@
 # ADR-010: Etapa 3 - enmascaramiento con "mostrar" auditado, procesos en solo lectura y forma de /antecedentes
 
-Fecha: 2026-10-02. Estado: PROPUESTO.
+Fecha: 2026-10-02. Estado: ACEPTADO (2026-10-05, PERSONA_1 y PERSONA_2 en la revision del PR #21).
 Propone: PERSONA_1 (tarea H7 del traspaso, PR #13). Revisa: PERSONA_2.
 Cierra los huecos 3, 4 y 8 del ADR-006 (edicion de procesos, enmascaramiento y `/antecedentes`,
 aplazados a la etapa 3) y aplica los recortes aceptados R3, R7 y
@@ -11,18 +11,18 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| A1 | Campos sensibles: solo CURP, numero de pasaporte y clave de elector (R8), con `sensible: true` en la ficha | PERSONA_2 (YAML y cargador, H15) | Pendiente |
-| A2 | Mascara `****` + 4 ultimos caracteres | PERSONA_1 (API) | Pendiente |
-| A3 | Enmascarado para todos los roles por defecto; revisor y admin pueden "mostrar"; integrador nunca | PERSONA_1 (API y UI, H17) | Pendiente |
-| A4 | `POST /documentos/{id}/revelar` con auditoria `dato_revelado` (nombre del campo, nunca el valor) | PERSONA_1 | Pendiente |
-| A5 | Tambien se enmascaran evidencias, comparaciones, "antes" de las correcciones, webhooks, `resumen.md` y logs | PERSONA_1 (API, resumen, webhooks); PERSONA_2 (logs del motor) | Pendiente |
-| A6 | `sensible` sale en `CampoFicha` de `GET /tipos-documentales` | PERSONA_2 (cargador) y PERSONA_1 (router y UI) | Pendiente |
-| B | Procesos: solo lectura (R3); la edicion queda fuera del MVP | Hecho (H8, PR #20) | Pendiente |
-| C1 | Antecedentes por `referencia_externa` del folio (R7) | PERSONA_1 (`expediente.servicio`, H16) | Pendiente |
-| C2 | Mismo proceso y misma referencia, folios cerrados, dentro de la caducidad, sin el actual, maximo 10 | PERSONA_1 (consulta en `expediente.servicio`, H16) | Pendiente |
-| C3 | Sin permiso del proceso o sin referencia: 200 con `permitido: false` y lista vacia | PERSONA_1 (router, H16) | Pendiente |
-| C4 | Forma de cada antecedente; `fragmento_resumen` de la memoria | PERSONA_1 (router) y PERSONA_2 (`rag.servicio.fragmento_resumen`, H14) | Pendiente |
-| C5 | Roles: revisor y admin | PERSONA_1 | Pendiente |
+| A1 | Campos sensibles: solo CURP, numero de pasaporte y clave de elector (R8), con `sensible: true` en la ficha | PERSONA_2 (YAML y cargador, H15) | Aceptada |
+| A2 | Mascara `****` + 4 ultimos caracteres | PERSONA_1 (API) | Aceptada |
+| A3 | Enmascarado para todos los roles por defecto; revisor y admin pueden "mostrar"; integrador nunca | PERSONA_1 (API y UI, H17) | Aceptada |
+| A4 | `POST /documentos/{id}/revelar` con auditoria `dato_revelado` (nombre del campo, nunca el valor) | PERSONA_1 | Aceptada |
+| A5 | Tambien se enmascaran evidencias, comparaciones, "antes" de las correcciones, webhooks, `resumen.md` y logs | PERSONA_1 (API, resumen, webhooks); PERSONA_2 (logs del motor) | Aceptada |
+| A6 | `sensible` sale en `CampoFicha` de `GET /tipos-documentales` | PERSONA_2 (cargador) y PERSONA_1 (router y UI) | Aceptada |
+| B | Procesos: solo lectura (R3); la edicion queda fuera del MVP | Hecho (H8, PR #20) | Aceptada |
+| C1 | Antecedentes por `referencia_externa` del folio (R7) | PERSONA_1 (`expediente.servicio`, H16) | Aceptada |
+| C2 | Mismo proceso y misma referencia, folios cerrados, dentro de la caducidad, sin el actual, maximo 10 | PERSONA_1 (consulta en `expediente.servicio`, H16) | Aceptada |
+| C3 | Sin permiso del proceso o sin referencia: 200 con `permitido: false` y lista vacia | PERSONA_1 (router, H16) | Aceptada |
+| C4 | Forma de cada antecedente; `fragmento_resumen` de la memoria | PERSONA_1 (router) y PERSONA_2 (`rag.servicio.fragmento_resumen`, H14) | Aceptada |
+| C5 | Roles: revisor y admin | PERSONA_1 | Aceptada |
 
 ## Contexto
 - ADR-006, hueco 4: el enmascaramiento real tiene que hacerse en el backend; hacerlo solo en la UI no
