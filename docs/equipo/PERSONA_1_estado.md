@@ -151,6 +151,8 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 - [x] H10: el motor real (`orquestador.servicio.procesar_documento`) en `ingesta/procesamiento.py`, con
       `MOTOR_ANALISIS` (`real` por defecto, `stub` para el humo sin Ollama). Forma de `tiempos` y `tokens`
       revisada y legible en la auditoria de la UI (rama `feat/plataforma-motor`).
+- [x] D3: al corregir datos se vuelven a evaluar las reglas del documento (VAL-001/002/004 y REG-*, VAL-003 del
+      campo corregido; falsos positivos conservados; rollback y 500 si falla), rama `feat/plataforma-motor`.
 - [ ] La nota del `anio` `"0999"` (del PR #9).
 
 ### Etapa 3
