@@ -478,7 +478,9 @@ lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno 
 se suma. En la maquina con GPU hay que volver a medir.
 
 **Calentar los modelos antes de la demo** (`motor_ia/calentar.py`): carga el modelo de texto en Ollama con una
-peticion vacia (`/api/generate` sin prompt, `keep_alive` de `proveedores/base.py`), sin analizar ningun documento.
+peticion vacia (`/api/generate` sin prompt, `keep_alive` y **`num_ctx` = `NUM_CTX`** de `proveedores/base.py`), sin
+analizar ningun documento. Sin el mismo `num_ctx` (fallo corregido el 2026-10-05), Ollama lo cargaba con 4096 y lo
+recargaba en la primera peticion del motor: el calentamiento no servia.
 Asi el primer documento tarda como los demas (~47 s) y no ~80 s. Medido el 2026-10-05: `gemma4:e2b` cargado en
 28,3 s. `--vision` carga tambien `qwen2.5vl:3b`; con `OLLAMA_MAX_LOADED_MODELS=1` descarga el de texto, asi que solo
 conviene si la demo empieza con fotos. Lanzarlo justo antes de la demo: el modelo se descarga tras `KEEP_ALIVE` (10
@@ -576,7 +578,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | este commit |
+| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | este commit |
+| 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
 | 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |
 | 2026-10-05 | H15 (ADR-010, A1 y A6): `sensible` en el cargador y en `curp`, `clave_elector` y `numero_pasaporte`; Contrato 2 con `sensible` en `CampoFicha`; test de que los logs del motor y `datos_auditoria` no llevan valores | `a627aa8` |

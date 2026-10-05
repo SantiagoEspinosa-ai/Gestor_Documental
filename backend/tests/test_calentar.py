@@ -1,8 +1,10 @@
 """Tests de motor_ia/calentar.py sin Ollama: el HTTP es falso. No envia datos de documentos."""
+import json
+
 import httpx
 
 from app.modulos.motor_ia import calentar
-from app.modulos.motor_ia.proveedores.base import KEEP_ALIVE
+from app.modulos.motor_ia.proveedores.base import KEEP_ALIVE, NUM_CTX
 
 
 def cliente(respuesta=200, peticiones=None):
@@ -18,8 +20,10 @@ def test_carga_cada_modelo_sin_prompt_y_con_keep_alive():
     r = calentar.calentar("http://ollama:11434/", ["texto:1", "vision:1"], cliente(peticiones=peticiones))
     assert set(r) == {"texto:1", "vision:1"} and all(isinstance(v, float) for v in r.values())
     assert [ruta for ruta, _ in peticiones] == ["/api/generate", "/api/generate"]
-    cuerpo = peticiones[0][1].decode()
-    assert '"keep_alive"' in cuerpo and KEEP_ALIVE in cuerpo and "prompt" not in cuerpo
+    cuerpo = json.loads(peticiones[0][1])
+    assert cuerpo["keep_alive"] == KEEP_ALIVE and "prompt" not in cuerpo
+    # Mismo contexto que el motor: si no, Ollama recarga el modelo en la primera peticion real (prueba H10)
+    assert cuerpo["options"] == {"num_ctx": NUM_CTX}
 
 
 def test_error_http_se_informa_sin_lanzar():
