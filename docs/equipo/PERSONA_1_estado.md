@@ -148,8 +148,10 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 - [ ] H5: etiqueta de la confianza segun la decision sobre ADR-007 (H10: PERSONA_2 ha decidido no
       sustituir el stub hasta entonces; PENDIENTE de tu confirmacion).
 - [ ] H6 (completo): folios de `INDICE.md` con el motor real; 5 min por documento, 10 min por folio de 3.
-- [ ] Revisar la forma de `tiempos` y `tokens` del `detalle` de `documento_procesado` y la nota del
-      `anio` `"0999"` (las dos, del PR #9).
+- [x] H10: el motor real (`orquestador.servicio.procesar_documento`) en `ingesta/procesamiento.py`, con
+      `MOTOR_ANALISIS` (`real` por defecto, `stub` para el humo sin Ollama). Forma de `tiempos` y `tokens`
+      revisada y legible en la auditoria de la UI (rama `feat/plataforma-motor`).
+- [ ] La nota del `anio` `"0999"` (del PR #9).
 
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).

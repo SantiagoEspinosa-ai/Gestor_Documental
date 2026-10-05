@@ -35,6 +35,19 @@ describe('detalle de la auditoria legible por accion', () => {
     expect(de('documento_procesado', { tiempos: 'lento', tokens: { entrada: 'x' } })).toEqual(['tiempos: ****ento', 'tokens: (oculto)'])
   })
 
+  it('documento_procesado con la forma del motor real (H10): todo legible, nada enmascarado por error', () => {
+    const frases = de('documento_procesado', {
+      proveedor: 'ollama', version_prompt_clasificacion: 'clasificacion@v2', respaldo_usado: false,
+      confianzas_modelo: { nombre_completo: 0.95 }, tiempos: { segundos_modelo: 37.5 }, tokens: { entrada: 1200, salida: 150 },
+      llamadas: [{ proveedor: 'ollama', modelo: 'gemma4:e2b', entrada: 'texto', motivo: null, segundos: 37.5 }],
+      modalidad: 'pdf_digital', paginas: 1,
+    })
+    expect(frases).toEqual(['Proveedor: ollama', 'Sin respaldo', 'Tiempo: segundos modelo 37,5 s',
+      'Tokens: entrada 1200 · salida 150', 'Modalidad: pdf digital', 'Páginas: 1',
+      'Prompt de clasificación: clasificacion@v2', 'Llamadas al modelo: 1'])
+    expect(frases.join(' ')).not.toContain('****')
+  })
+
   it('correccion, clasificacion, alerta, decision y dato revelado con la forma del PR #9', () => {
     expect(de('dato_corregido', { campos: ['nombre_completo'] })).toEqual(['Campo: nombre completo'])
     expect(de('dato_corregido', { campos: ['nacionalidad', 'sexo'] })).toEqual(['Campos: nacionalidad, sexo'])

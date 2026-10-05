@@ -321,7 +321,8 @@ npm run test:e2e:real   # playwright.real.config.ts: Chromium, workers 1, http:/
 - Requisitos (este proyecto no arranca nada; `e2e-real/comprobar-servidores.ts` lo comprueba antes y
   falla con un mensaje claro):
   - backend en el equipo en `:8000` (`uvicorn app.main:app --port 8000` desde `backend/`, con la BD
-    migrada); `GET /api/v1/procesos` sin token tiene que dar 401;
+    migrada) y con `MOTOR_ANALISIS=stub` en su entorno: el humo no usa Ollama (con `real`, cada documento
+    tardaria minutos); `GET /api/v1/procesos` sin token tiene que dar 401;
   - `npm run dev` en `:5173` con `VITE_USAR_MOCKS=false` y `VITE_API_URL=http://localhost:8000`;
   - un usuario de cada rol en variables de entorno del proceso, nunca en el repo:
     `E2E_REVISOR_USUARIO`/`E2E_REVISOR_CLAVE`, `E2E_ADMIN_USUARIO`/`E2E_ADMIN_CLAVE` y
@@ -396,9 +397,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
 - Con PERSONA_1 (menor, no bloquea): la API acepta un `anio` `"0999"` y lo guarda como `999`, de 3
   cifras. La UI no lo envia nunca (exige `[1-9]\d{3}`) y el mock hace lo mismo que la API mientras no
   cambie.
-- Cuando el motor real de PERSONA_2 llegue a main, revisar la forma de `tiempos` y `tokens` en el
-  `detalle` de `documento_procesado`. La UI formatea un numero o `{nombre: numero}`; otra forma sale
-  enmascarada.
+- HECHO (H10): forma de `tiempos` (`{segundos_modelo}`) y `tokens` (`{entrada, salida}`) del motor real
+  revisada; `describirDetalle` muestra tambien `modalidad`, `paginas`, el prompt de clasificacion y el
+  numero de llamadas al modelo, sin enmascararlos por error.
 - Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
   descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
   de ADR).
