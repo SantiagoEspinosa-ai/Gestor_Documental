@@ -332,13 +332,15 @@ npm run test:e2e:real   # playwright.real.config.ts: Chromium, workers 1, http:/
 - Casos (cada uno crea su folio con `referencia_externa` `E2E-<timestamp>`, sin depender de datos
   existentes): `revisor_flujo` (folio nuevo con sus 2 `EXP-001`, subir credencial y comprobante del
   caso sano digital con su tipo declarado, esperar "Completado" con `expect.poll` hasta 5 min por
-  documento, las `EXP-001` desaparecen, aprobar con comentario y folio cerrado en solo lectura);
+  documento, las `EXP-001` desaparecen, aprobar con comentario y folio cerrado en solo lectura; despues,
+  "Ver resumen" muestra el `resumen.md` regenerado con el folio, la referencia `E2E-...` y la decision, sin el
+  nombre de la persona en la cabecera);
   `admin_auditoria` (en serie tras el anterior: en `/auditoria?folio=` estan "Folio creado", 2
   "Documento subido", 2 "Documento analizado" y "Decisión del folio"); `integrador_roles` (sin lista de
   folios, "Sin permiso" en `/auditoria` y `/procesos`, y en el expediente de su folio "Tu rol no puede
   ver el original del documento.").
-- Aviso: cada ejecucion sube 3 PDF ficticios (`public/mock-originales`) al bucket de desarrollo y crea 2
-  folios en la BD local. Con el stub tarda unos 30 s.
+- Aviso: cada ejecucion sube 3 PDF ficticios (`public/mock-originales`) al bucket de desarrollo, crea 2
+  folios en la BD local y escribe sus `resumen.md` (se regeneran en cada cambio). Con el stub tarda unos 30 s.
 - `npm test` y `npm run test:e2e` no los recogen (`src/**/*.test.*` y `e2e/**/*.e2e.ts`).
 - Falta: los casos del motor real con los folios de `INDICE.md` cuando `procesar_documento` sustituya al
   stub, calentar Ollama antes de cronometrar y los tiempos de H12 (spec de PERSONA_2, seccion 13).
@@ -402,6 +404,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   de ADR).
 - HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
   "Procesos" en "Pantallas").
+- `resumen.md` (etapa 3, `ResumenExpediente.tsx`): `react-markdown` sin `remark-gfm`, asi que las tablas del
+  resumen (datos de cada documento y comparaciones) se ven como texto con `|`. Para verlas como tabla haria
+  falta la dependencia `remark-gfm` (decidir antes de anadirla).
 - HECHO (H4): `desconocido` como "Tipo no reconocido" y aviso si no hay ficha ni datos (ADR-009; ver
   "Documento no reconocido" en "Pantallas"). Queda de H3: los mocks con `version_prompt` y evidencias
   del motor real.
