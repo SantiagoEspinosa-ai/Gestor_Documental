@@ -52,7 +52,7 @@ Opcional, si sobra tiempo: folio `vencido` (`REG-vigencia_documento` bloqueante 
 | El primero tarda ~30 s mas | `curl http://localhost:11434/api/ps`: `context_length` debe ser 16384 | No se calento, o paso mas de 10 min desde el calentamiento |
 | Mucho mas lento (>4 min por documento) o el equipo se queda sin memoria | `api/ps`: ¿dos modelos cargados? | Ollama sin `OLLAMA_MAX_LOADED_MODELS=1`, o el documento fue por vision (foto mala) |
 | `VAL-002` o `CLS-002` en un documento sano | El documento usado y su OCR | Se subio otro fichero (p. ej. un nivel dificil): la confianza es baja cuando el texto no deja verificar el dato (ADR-007) |
-| `REG-antiguedad_maxima` en el comprobante | Fecha de emision | Se uso un especimen impreso despues del 2026-12-14, o fixtures generados con otro `--hoy` |
+| `REG-antiguedad_maxima` en el comprobante | Fecha de emision | Se uso un especimen impreso a partir del 2026-12-15, o fixtures generados con otro `--hoy` |
 | La UI se queda en "procesando" | El estado en `GET /documentos/{id}` | Los documentos van de uno en uno: el tercero espera a los dos primeros |
 
 Datos para el informe del hito: tiempos de cada documento (columna "Terminado a los"), RAM libre minima, capturas
