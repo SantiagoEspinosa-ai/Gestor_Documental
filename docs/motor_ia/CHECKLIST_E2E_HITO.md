@@ -57,3 +57,21 @@ Opcional, si sobra tiempo: folio `vencido` (`REG-vigencia_documento` bloqueante 
 
 Datos para el informe del hito: tiempos de cada documento (columna "Terminado a los"), RAM libre minima, capturas
 de la UI sin datos personales reales (solo ficticios).
+
+## 5. Resultado del e2e del hito (2026-10-05)
+
+Sobre `main` (`1eff60d`: H10 y D3 de PERSONA_1), `docker compose` con `MOTOR_ANALISIS=real`,
+`MAX_PROCESAMIENTOS_SIMULTANEOS=1`, Ollama del equipo y S3 real; modelo calentado con `calentar` (contexto 16384).
+Documentos subidos por la API, datos ficticios.
+
+| Folio | Documentos | Resultado | Tiempo total |
+|---|---|---|---|
+| `ONB-2026-000001` (sano) | pasaporte digital, credencial foto, comprobante escaneado | Los 3 `completado`, tipo y 17/17 campos con confianza 1,0, sin alertas, comparaciones coinciden; `aprobar` en cada documento y **global `aprobar`** | **210 s** (75, 74 y 61 s) |
+| `ONB-2026-000002` (vencido) | los 3 del caso vencido | Pasaporte con `REG-vigencia_documento` (bloqueante) y `REG-vigencia_proxima`; global `revision_manual` | 197 s |
+| `ONB-2026-000003` (domicilio distinto) | los 3 del caso domicilio_distinto | `CMP-001` critica en `domicilio`; global `revision_manual` | 196 s |
+
+- El primer documento **no recargo el modelo**: su clasificacion tardo 13,3 s, como las demas (14,2 y 11,8 s).
+- D3: al corregir `fecha_vencimiento` del pasaporte a una fecha pasada se recalcularon las reglas
+  (`REG-vigencia_documento` y `REG-vigencia_proxima`) y la recomendacion paso a `revision_manual` (documento y
+  global); al restaurarla, volvio a `aprobar`.
+- RAM libre minima: 3,4-3,8 GB (6,3 GB antes de calentar, tras vaciar la cache de la VM de Docker).
