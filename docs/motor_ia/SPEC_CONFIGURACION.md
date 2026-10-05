@@ -317,10 +317,13 @@ se queda solo con `pagina_<n>` (seccion 4).
       - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
         `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
         relacionados con SQL. Etapa 3 (dias 9-11).
-      - [ ] H15: `sensible: true` en los YAML y en el cargador (etapa 3, ADR-010). **Despues de que se fusione el PR de
-        reglas de coherencia** (`chore/reglas-coherencia`), nunca en paralelo: tocan los mismos ficheros (cargador y
-        `config/tipos/*.yaml`). Incluye un test de que los logs del motor y `datos_auditoria` no llevan valores de los
-        campos.
+      - [x] H15 (ADR-010, A1 y A6; rama `feat/sensible`, despues del PR de reglas de coherencia): `Campo.sensible`
+        en el cargador (booleano, por defecto `false`) y `sensible: true` solo en `curp`, `clave_elector` y
+        `numero_pasaporte` (R8). **Cambia el Contrato 2**: `sensible` siempre presente en `CampoFicha` de
+        `GET /tipos-documentales` (`endpoints.md`, `contrato.ts`, `_campo` de `ingesta/tipos.py` y `CampoTipo` del
+        router). Test `test_sin_valores_en_logs.py`: los logs del motor y `datos_auditoria` no llevan valores de los
+        campos (normal, proveedor caido, JSON invalido y sexo desde la MRZ). Los mocks del frontend los regenera
+        PERSONA_1: hasta entonces fallan `test_contrato_frontend` y `test_generar_datos_mock` (tipos_documentales).
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
@@ -572,7 +575,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | este commit |
+| 2026-10-05 | H15 (ADR-010, A1 y A6): `sensible` en el cargador y en `curp`, `clave_elector` y `numero_pasaporte`; Contrato 2 con `sensible` en `CampoFicha`; test de que los logs del motor y `datos_auditoria` no llevan valores | este commit |
+| 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | `f4b41fb` |
 | 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | `6195d28` |
 | 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |
 | 2026-10-02 | Etapa 2, paso 4: `orquestador.procesar_documento` (`orquestador/procesamiento.py`) con la firma de la seccion 11: preparar, MRZ, `motor_ia.analizar(mrz=)`, sexo y `VAL-003` en el orquestador (`completar_mrz.py`), reglas con `hoy` de `reloj.py`, recomendacion y `datos_auditoria` (con `version_prompt_clasificacion`). `motor_ia` ya no importa `orquestador` (test). CLI y `evaluar_fixtures.py` pasan por el orquestador | `90e9a36` |

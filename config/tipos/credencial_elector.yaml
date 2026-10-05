@@ -10,8 +10,8 @@ formatos_permitidos: [pdf, jpg, jpeg, png]
 ejemplos_referencia: [fixtures/generados/credencial_elector_sano_foto.jpg]
 campos:
   nombre_completo:  {tipo: texto, obligatorio: true}
-  curp:             {tipo: texto, obligatorio: true, patron: "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"}
-  clave_elector:    {tipo: texto, obligatorio: false}
+  curp:             {tipo: texto, obligatorio: true, patron: "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$", sensible: true}
+  clave_elector:    {tipo: texto, obligatorio: false, sensible: true}
   fecha_nacimiento: {tipo: fecha, obligatorio: true}
   domicilio:        {tipo: texto, obligatorio: true}
   vigencia:         {tipo: anio, obligatorio: true}

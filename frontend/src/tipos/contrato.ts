@@ -261,6 +261,8 @@ export type RespuestaAntecedentes = unknown[]
 export interface CampoFicha {
   tipo: string
   obligatorio: boolean
+  /** ADR-010 (A6): dato sensible; la API lo devuelve enmascarado salvo "mostrar" */
+  sensible: boolean
   patron?: string
 }
 
