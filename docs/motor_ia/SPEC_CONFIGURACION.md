@@ -323,17 +323,17 @@ se queda solo con `pagina_<n>` (seccion 4).
         `GET /tipos-documentales` (`endpoints.md`, `contrato.ts`, `_campo` de `ingesta/tipos.py` y `CampoTipo` del
         router). Test `test_sin_valores_en_logs.py`: los logs del motor y `datos_auditoria` no llevan valores de los
         campos (normal, proveedor caido, JSON invalido y sexo desde la MRZ). Mocks regenerados con
-        `scripts/generar_datos_mock.py` (solo `tipos_documentales.json`). Nota: el script copia el YAML tal cual, asi
-        que en los mocks `sensible` solo aparece en los tres campos sensibles; la API lo da en todos.
+        `scripts/generar_datos_mock.py` (solo `tipos_documentales.json`). Con la rama `chore/mocks-sensible`
+        (`e24e757`, PR pendiente) el script pone `sensible` en todos los campos, igual que la API.
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
-- [ ] **Especimenes** (`fixtures/especimenes/`, de PERSONA_3; ahora los mantiene PERSONA_2), fotos de movil de documentos ficticios impresos: en
-      `main` desde el PR #10 y ya integrados en `feat/motor-ia`; pendiente de evaluarlos. Seran la prueba final con fotos reales: 5 fotos
-      (pasaporte buena; credencial y comprobante buena y dificil), valores esperados = caso `sano` de `INDICE.md`
-      con `--hoy 2026-09-30`; anadir el nivel `especimen` a `evaluar_fixtures.py`. Verificar antes que no tienen
-      metadatos. **Aviso: sus fechas impresas no cambian; desde el 2026-12-14 el comprobante dara
-      `REG-antiguedad_maxima`** (critica) y dejara de equivaler al folio `sano`.
+- [~] **Especimenes** (`fixtures/especimenes/`, 5 fotos de movil de los documentos sanos impresos): bloque 5 de
+      `evaluar_fixtures.py`, con el flujo completo (`procesar_documento`). Evaluados el 2026-10-05 los 4 que van por
+      texto: **23/23 campos**, tipo 4/4, sin alertas, recomendacion `aprobar`, 59-72 s cada uno (informe en
+      `pruebas_ollama/resultados/especimenes/`). Pendiente el comprobante "dificil" (14 caracteres de OCR, va por
+      vision): necesita 5,8 GB libres. **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante
+      dara `REG-antiguedad_maxima`** (critica).
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
       cada cambio; en produccion, semaforo y `OLLAMA_MAX_LOADED_MODELS=1` del PR #9 de PERSONA_1.
@@ -478,7 +478,9 @@ lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno 
 se suma. En la maquina con GPU hay que volver a medir.
 
 **Calentar los modelos antes de la demo** (`motor_ia/calentar.py`): carga el modelo de texto en Ollama con una
-peticion vacia (`/api/generate` sin prompt, `keep_alive` de `proveedores/base.py`), sin analizar ningun documento.
+peticion vacia (`/api/generate` sin prompt, `keep_alive` y **`num_ctx` = `NUM_CTX`** de `proveedores/base.py`), sin
+analizar ningun documento. Sin el mismo `num_ctx` (fallo corregido el 2026-10-05), Ollama lo cargaba con 4096 y lo
+recargaba en la primera peticion del motor: el calentamiento no servia.
 Asi el primer documento tarda como los demas (~47 s) y no ~80 s. Medido el 2026-10-05: `gemma4:e2b` cargado en
 28,3 s. `--vision` carga tambien `qwen2.5vl:3b`; con `OLLAMA_MAX_LOADED_MODELS=1` descarga el de texto, asi que solo
 conviene si la demo empieza con fotos. Lanzarlo justo antes de la demo: el modelo se descarga tras `KEEP_ALIVE` (10
@@ -576,7 +578,11 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | H15 (ADR-010, A1 y A6): `sensible` en el cargador y en `curp`, `clave_elector` y `numero_pasaporte`; Contrato 2 con `sensible` en `CampoFicha`; test de que los logs del motor y `datos_auditoria` no llevan valores | este commit |
+| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | este commit |
+| 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
+| 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
+| 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |
+| 2026-10-05 | H15 (ADR-010, A1 y A6): `sensible` en el cargador y en `curp`, `clave_elector` y `numero_pasaporte`; Contrato 2 con `sensible` en `CampoFicha`; test de que los logs del motor y `datos_auditoria` no llevan valores | `a627aa8` |
 | 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | `f4b41fb` |
 | 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | `6195d28` |
 | 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |

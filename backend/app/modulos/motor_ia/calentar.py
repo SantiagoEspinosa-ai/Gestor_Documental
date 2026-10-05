@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 from app.modulos.motor_ia.enrutador import ErrorEnrutador, crear_enrutador
 from app.modulos.motor_ia.interfaces import Tarea
-from app.modulos.motor_ia.proveedores.base import KEEP_ALIVE
+from app.modulos.motor_ia.proveedores.base import KEEP_ALIVE, NUM_CTX
 
 RAIZ_REPO = Path(__file__).resolve().parents[4]
 TIMEOUT_CARGA_S = 300  # cargar un modelo en CPU tarda decenas de segundos
@@ -29,13 +29,15 @@ TIMEOUT_CARGA_S = 300  # cargar un modelo en CPU tarda decenas de segundos
 
 def calentar(base_url: str, modelos: list[str], cliente: httpx.Client | None = None) -> dict[str, float | str]:
     """Carga cada modelo con una peticion vacia (`/api/generate` sin prompt) y lo deja `KEEP_ALIVE` en memoria.
-    Devuelve {modelo: segundos} o {modelo: "error: ..."}."""
+    Con el mismo `num_ctx` que el motor (`NUM_CTX`): con otro, Ollama lo recargaria en la primera peticion real y
+    el calentamiento no serviria. Devuelve {modelo: segundos} o {modelo: "error: ..."}."""
     cliente = cliente or httpx.Client()
     resultado: dict[str, float | str] = {}
     for modelo in modelos:
         inicio = time.perf_counter()
         try:
-            r = cliente.post(f"{base_url.rstrip('/')}/api/generate", json={"model": modelo, "keep_alive": KEEP_ALIVE},
+            r = cliente.post(f"{base_url.rstrip('/')}/api/generate",
+                             json={"model": modelo, "keep_alive": KEEP_ALIVE, "options": {"num_ctx": NUM_CTX}},
                              timeout=TIMEOUT_CARGA_S)
             r.raise_for_status()
             resultado[modelo] = round(time.perf_counter() - inicio, 1)

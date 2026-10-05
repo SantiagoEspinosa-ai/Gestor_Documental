@@ -385,9 +385,10 @@ def lanzar(args) -> None:
     descargar_modelos()
     time.sleep(5)
     libre = ram_libre_gb()
-    if libre is not None and libre < MARGEN_GB[args.bloque]:
-        print(f"Bloque {args.bloque}: RAM libre {libre:.2f} GB < margen {MARGEN_GB[args.bloque]} GB; "
-              f"faltan {MARGEN_GB[args.bloque] - libre:.2f} GB. No se lanza.")
+    margen = args.margen_gb if args.margen_gb is not None else MARGEN_GB[args.bloque]
+    if libre is not None and libre < margen:
+        print(f"Bloque {args.bloque}: RAM libre {libre:.2f} GB < margen {margen} GB; "
+              f"faltan {margen - libre:.2f} GB. No se lanza.")
         return
     print(f"Bloque {args.bloque}: {len(lista)} casos pendientes; RAM libre {libre:.2f} GB", flush=True)
     contenedor = f"evaluacion_bloque{args.bloque}_{int(time.time())}"
@@ -585,7 +586,9 @@ def generar_informe(salida: Path) -> None:
     else:
         lineas.append("Ninguno.")
 
-    fallos = [(m, c, v) for m in normales + dificiles for c, v in m["campos"].items() if v["estado"] != "correcto"]
+    especimenes = [m for m in validas if m["nivel"] == "especimen"]
+    fallos = [(m, c, v) for m in normales + dificiles + especimenes for c, v in m["campos"].items()
+              if v["estado"] != "correcto"]
     lineas += ["", "## Campos que fallan (todos los bloques)", ""]
     if fallos:
         lineas += ["| Ruta | Nivel | Archivo | Campo | Estado | Esperado | Extraido |", "|---|---|---|---|---|---|---|"]
@@ -594,7 +597,6 @@ def generar_informe(salida: Path) -> None:
     else:
         lineas.append("Ninguno.")
 
-    especimenes = [m for m in validas if m["nivel"] == "especimen"]
     if especimenes:
         lineas += ["", "## Especimenes (fotos de movil reales, bloque 5)", "",
                    "| Archivo | Caracteres OCR | Tipo | Correctos | Vacios | Incorrectos | Vision | Recomendacion | Alertas | Tiempo |",
@@ -607,7 +609,6 @@ def generar_informe(salida: Path) -> None:
         lineas.append(f"\nTotal: {_pct(suma(especimenes, 'aciertos'), suma(especimenes, 'total_campos'))} correctos, "
                       f"{suma(especimenes, 'vacios')} vacios y {suma(especimenes, 'incorrectos')} incorrectos; tipo correcto "
                       f"{sum(m.get('clasificacion_ok', False) for m in especimenes)}/{len(especimenes)}.")
-        fallos += [(m, c, v) for m in especimenes for c, v in m["campos"].items() if v["estado"] != "correcto"]
 
     lineas += ["", "## Clasificacion con tipo declarado equivocado (CLS-001)", "",
                "| Archivo | Declarado | Detectado | Alertas |", "|---|---|---|---|"]
@@ -656,6 +657,8 @@ def main() -> None:
     p.add_argument("--solo", help="ids de casos concretos separados por comas (p. ej. cls__comprobante_domicilio_sano_escaneado__como_pasaporte)")
     p.add_argument("--fixtures", default=str(FIXTURES_POR_DEFECTO))
     p.add_argument("--salida", default=str(SALIDA_POR_DEFECTO))
+    p.add_argument("--margen-gb", type=float, help="RAM libre minima para lanzar (por defecto la del bloque); "
+                   "p. ej. 4.5 con --solo para casos que solo van por texto")
     args = p.parse_args()
     {"lanzar": lanzar, "trabajar": trabajar, "informe": lambda a: generar_informe(Path(a.salida)),
      "indice": listar_indice}[args.modo](args)
