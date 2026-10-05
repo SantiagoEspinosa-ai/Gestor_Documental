@@ -61,7 +61,8 @@ def test_carga_las_fichas_reales_del_repo():
     assert {"credencial_elector", "pasaporte", "comprobante_domicilio"} <= tipos.keys()
     pasaporte = servicio.obtener("pasaporte")
     assert pasaporte.campos["numero_pasaporte"].obligatorio
-    assert {r.id for r in pasaporte.reglas} == {"vigencia_documento", "vigencia_proxima", "formato_numero"}
+    # "contiene": las reglas de coherencia se anaden en un PR aparte de las fichas
+    assert {"vigencia_documento", "vigencia_proxima", "formato_numero"} <= {r.id for r in pasaporte.reglas}
     assert len(servicio.listar()) == len(tipos)
 
 
@@ -276,3 +277,41 @@ def test_marcadores_fuera_de_model_dump_y_de_tipos_documentales():
         respuesta = RespuestaTipo.model_validate(ficha.model_dump(mode="json", exclude_none=True)).model_dump(
             exclude_unset=True)
         assert "marcadores_clasificacion" not in respuesta
+
+
+# --- Reglas de coherencia (etapa 2) ---
+
+def _coherencia(**extra):
+    return {"id": "coherente", "tipo": "fecha_anterior_a_campo", "campo": "fecha_vencimiento",
+            "severidad": "critica", "mensaje": "Fechas incoherentes", **extra}
+
+
+def test_regla_de_coherencia_valida(config):
+    ficha = ficha_base()
+    ficha["campos"]["fecha_expedicion"] = {"tipo": "fecha"}
+    ficha["reglas"].append(_coherencia(campo="fecha_expedicion", campo_relacionado="fecha_vencimiento"))
+    assert config(ficha)["tipo_a"].reglas[-1].campo_relacionado == "fecha_vencimiento"
+
+
+def test_regla_de_coherencia_sin_campo_relacionado(config):
+    ficha = ficha_base()
+    ficha["reglas"].append(_coherencia())
+    assert "campo_relacionado" in errores_de(config, ficha)
+
+
+def test_campo_relacionado_en_una_regla_que_no_es_de_coherencia(config):
+    ficha = ficha_base()
+    ficha["reglas"][0]["campo_relacionado"] = "fecha_vencimiento"
+    assert "campo_relacionado" in errores_de(config, ficha)
+
+
+def test_campo_relacionado_inexistente(config):
+    ficha = ficha_base()
+    ficha["reglas"].append(_coherencia(campo_relacionado="no_existe"))
+    assert "campo_relacionado inexistente" in errores_de(config, ficha)
+
+
+def test_regla_de_coherencia_con_campos_de_otro_tipo(config):
+    ficha = ficha_base()
+    ficha["reglas"].append(_coherencia(campo="numero", campo_relacionado="fecha_vencimiento"))
+    assert "necesita campos de tipo fecha y fecha" in errores_de(config, ficha)

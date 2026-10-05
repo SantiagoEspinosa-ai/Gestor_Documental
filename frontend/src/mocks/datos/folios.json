@@ -42,7 +42,10 @@
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
-            "formato_numero"
+            "formato_numero",
+            "nacimiento_antes_de_expedicion",
+            "expedicion_antes_de_vencimiento",
+            "nacimiento_antes_de_vencimiento"
           ],
           "incumplidas": [
             "vigencia_documento",
@@ -152,7 +155,8 @@
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
             "vigencia_documento",
-            "formato_curp_valido"
+            "formato_curp_valido",
+            "curp_coincide_nacimiento"
           ],
           "incumplidas": []
         },
@@ -371,7 +375,8 @@
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
             "vigencia_documento",
-            "formato_curp_valido"
+            "formato_curp_valido",
+            "curp_coincide_nacimiento"
           ],
           "incumplidas": []
         },
@@ -558,7 +563,8 @@
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
             "vigencia_documento",
-            "formato_curp_valido"
+            "formato_curp_valido",
+            "curp_coincide_nacimiento"
           ],
           "incumplidas": []
         },
@@ -711,7 +717,10 @@
           "cumplidas": [
             "vigencia_documento",
             "vigencia_proxima",
-            "formato_numero"
+            "formato_numero",
+            "nacimiento_antes_de_expedicion",
+            "expedicion_antes_de_vencimiento",
+            "nacimiento_antes_de_vencimiento"
           ],
           "incumplidas": []
         },
@@ -765,7 +774,8 @@
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
             "vigencia_documento",
-            "formato_curp_valido"
+            "formato_curp_valido",
+            "curp_coincide_nacimiento"
           ],
           "incumplidas": []
         },
