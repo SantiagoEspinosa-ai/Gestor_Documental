@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     # Llamadas simultaneas al motor de IA (ingesta/procesamiento.py); 1 con Ollama sin GPU
     max_procesamientos_simultaneos: int = Field(1, gt=0)
 
+    # Motor de analisis (H10): real = orquestador de PERSONA_2 (Ollama); stub = sin Ollama, solo pruebas (e2e de humo).
+    # Otro valor no arranca (Literal)
+    motor_analisis: Literal["real", "stub"] = "real"
+
     # Zona horaria del negocio: decide el anio del folio (no UTC)
     zona_horaria: str = "America/Mexico_City"
 

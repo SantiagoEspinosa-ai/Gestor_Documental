@@ -425,6 +425,18 @@ describe('acciones del revisor', () => {
     expect((await api('PATCH', `/documentos/${credencial.identificador_unico_documento}/datos`, { token, cuerpo: { inventado: 1 } })).status).toBe(422)
   })
 
+  it('corregir un dato recalcula la recomendacion del documento, como la API (D3)', async () => {
+    const token = await entrar('revisor.demo')
+    const f2 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000002', { token })).cuerpo
+    const id = f2.documentos[0].identificador_unico_documento // credencial, sin criticas ni bloqueantes
+    const enEstado = estado.folios.get('ONB-2026-000002')!.documentos[0]
+    enEstado.nivel_confianza_por_campo.nombre_completo = 0.5 // por debajo del minimo de la ficha
+    enEstado.recomendacion = 'revision_manual'
+    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${id}/datos`, { token, cuerpo: { nombre_completo: 'Ana Ejemplo' } })
+    expect(r.cuerpo.recomendacion).toBe('aprobar')
+    expect((await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo.recomendacion).toBe('aprobar')
+  })
+
   it('confirmar clasificacion: el mismo tipo resuelve CLS-001; otro tipo reprocesa', async () => {
     const token = await entrar('revisor.demo')
     const { folio } = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })).cuerpo
@@ -480,12 +492,15 @@ describe('alineado con la API del PR #9', () => {
     expect((await folio(token, 'ONB-2026-000002')).recomendacion_global).toBe('revision_manual') // tiene un pendiente
     expect((await folio(token, 'ONB-2026-000004')).recomendacion_global).toBe('aprobar')
 
-    // La del documento la da el analisis y no se recalcula: corregir el campo con confianza baja no la cambia
+    // La del documento la da el analisis y, como la API (D3), se recalcula al corregir: corregir el unico campo
+    // con confianza baja quita su VAL-002 y la deja en aprobar. La global sigue sin usarla
     const credencial = (await folio(token, 'ONB-2026-000001')).documentos[1]
     expect([credencial.recomendacion, credencial.nivel_confianza_por_campo.clave_elector]).toEqual(['revision_manual', 0.62])
     const r = await api<ResultadoDocumento>('PATCH', `/documentos/${credencial.identificador_unico_documento}/datos`,
       { token, cuerpo: { clave_elector: 'EJPRLU85061599H102' } })
-    expect([r.status, r.cuerpo.nivel_confianza_por_campo.clave_elector, r.cuerpo.recomendacion]).toEqual([200, 1, 'revision_manual'])
+    expect([r.status, r.cuerpo.nivel_confianza_por_campo.clave_elector, r.cuerpo.recomendacion]).toEqual([200, 1, 'aprobar'])
+    expect(codigos(r.cuerpo.alertas_encontradas)).not.toContain('VAL-002')
+    expect((await folio(token, 'ONB-2026-000001')).recomendacion_global).toBe('revision_manual')
   })
 
   it.each([
