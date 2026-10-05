@@ -1,10 +1,11 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
-import type {
-  Alerta, ComparacionCampo, Recomendacion, ResultadoDocumento, ResultadoExpediente, ResumenFolio, Severidad, TipoDocumental,
+import {
+  TIPO_DESCONOCIDO, type Alerta, type ComparacionCampo, type Recomendacion, type ResultadoDocumento, type ResultadoExpediente,
+  type ResumenFolio, type Severidad, type TipoDocumental,
 } from '../tipos/contrato'
 import {
-  alertasQueBloquean, bloquea, enProceso, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
+  alertasQueBloquean, bloquea, enProceso, fichaDeTipo, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
 } from '../utilidades/expediente'
 import { sinValor } from '../utilidades/valores'
 import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } from './estado'
@@ -41,8 +42,9 @@ export function valorOnull(valor: unknown): unknown {
 export { bloquea, enProceso, tipoExtraccion }
 const pesa = (a: Alerta) => (a.severidad === 'critica' || a.severidad === 'bloqueante') && a.aplica !== false
 
+/** Ficha de un tipo; nunca la de `desconocido` (ADR-009) */
 export function ficha(estado: EstadoMock, tipo: string | null): TipoDocumental | undefined {
-  return estado.tipos.find((t) => t.nombre === tipo)
+  return fichaDeTipo(estado.tipos, tipo)
 }
 
 export function nuevaAlerta(
@@ -187,8 +189,11 @@ export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoEx
     doc.alertas_encontradas = doc.alertas_encontradas.filter((a) =>
       a.codigo !== 'EXP-002' || a.campo === noPrevisto || a.aplica === false)
     if (noPrevisto && !doc.alertas_encontradas.some((a) => a.codigo === 'EXP-002' && a.campo === noPrevisto)) {
-      const nombre = ficha(estado, noPrevisto)?.nombre_visible ?? noPrevisto
-      doc.alertas_encontradas.push(nuevaAlerta(estado, 'EXP-002', `Tipo de documento no previsto en el proceso: ${nombre}`, 'informativa', noPrevisto))
+      // Como expediente.servicio: `desconocido` (ADR-009) es un tipo no reconocido, no uno "no previsto"
+      const mensaje = noPrevisto === TIPO_DESCONOCIDO
+        ? 'Tipo de documento no reconocido'
+        : `Tipo de documento no previsto en el proceso: ${ficha(estado, noPrevisto)?.nombre_visible ?? noPrevisto}`
+      doc.alertas_encontradas.push(nuevaAlerta(estado, 'EXP-002', mensaje, 'informativa', noPrevisto))
     }
   }
   recalcularExpediente(estado, folio)

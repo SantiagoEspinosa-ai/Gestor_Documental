@@ -647,12 +647,56 @@
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000003.pdf",
           "hash": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c"
         }
+      },
+      {
+        "folio_solicitud": "ONB-2026-000003",
+        "identificador_unico_documento": "00000000-0000-4000-8000-000003000004",
+        "tipo_documental_declarado": null,
+        "tipo_documental_detectado": "desconocido",
+        "tipo_documental_confirmado": null,
+        "confianza_clasificacion": null,
+        "datos_extraidos": {},
+        "nivel_confianza_por_campo": {},
+        "evidencia_por_campo": {},
+        "reglas_cumplidas_e_incumplidas": {
+          "cumplidas": [],
+          "incumplidas": []
+        },
+        "alertas_encontradas": [
+          {
+            "id": "alr-000010",
+            "codigo": "EXP-002",
+            "mensaje": "Tipo de documento no reconocido",
+            "severidad": "informativa",
+            "confianza": 1.0,
+            "campo": "desconocido",
+            "resuelta_por_revisor": false,
+            "aplica": null,
+            "comentario_revisor": null,
+            "resuelta_por": null,
+            "resuelta_en": null
+          }
+        ],
+        "correcciones": [],
+        "recomendacion": "revision_manual",
+        "estado_analisis": "completado",
+        "fecha_y_modelo_utilizado": {
+          "fecha_analisis": "2026-09-30T08:09:40Z",
+          "proveedor": "ollama",
+          "modelo": "qwen2.5vl:3b",
+          "version_prompt": "extraccion@v1"
+        },
+        "referencia_archivo_original": {
+          "nombre_archivo": "pasaporte_sano_escaneado.pdf",
+          "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000004.pdf",
+          "hash": "0b30d434cb47098788f021f943b201b2f1f5a8577a902dbc169d4775e091bacc"
+        }
       }
     ],
     "comparaciones": [],
     "alertas_expediente": [
       {
-        "id": "alr-000010",
+        "id": "alr-000011",
         "codigo": "EXP-001",
         "mensaje": "Falta el documento requerido: Comprobante de domicilio",
         "severidad": "bloqueante",

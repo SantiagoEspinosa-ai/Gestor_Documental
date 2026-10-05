@@ -49,7 +49,6 @@ API = {(metodo.upper(), _normalizar(ruta)): operacion
 
 # Desviaciones conocidas de (a): endpoints del contrato que la API aun no tiene
 PENDIENTES = {
-    ("GET", "/api/v1/folios/{}/resumen.md"): "Etapa 3: el resumen .md del expediente aun no esta implementado",
     ("GET", "/api/v1/folios/{}/antecedentes"): "Etapa 3: antecedentes (RAG memoria), forma pendiente del ADR-010",
 }
 

@@ -309,6 +309,10 @@ def test_datos_y_originales_coherentes_con_los_fixtures(generador):
             if doc["estado_analisis"] != "completado":
                 assert doc["datos_extraidos"] == {}
                 continue
+            if doc["tipo_documental_detectado"] == "desconocido":  # ADR-009: sin declarado, el motor no extrae
+                assert (doc["tipo_documental_declarado"], doc["datos_extraidos"]) == (None, {}), archivo
+                assert [(a["codigo"], a["campo"]) for a in doc["alertas_encontradas"]] == [("EXP-002", "desconocido")]
+                continue
             persona = gf.PERSONAS_FICTICIAS[gf.CASOS[caso]["persona"]]
             esperados = {c: v.isoformat() if isinstance(v, date) else v
                          for c, v in gf.valores_documento(tipo, persona, caso, HOY_MOCKS).items()}

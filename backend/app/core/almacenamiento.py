@@ -1,7 +1,8 @@
-"""Puerto `Almacenamiento` y adaptador `AlmacenamientoS3` para los originales (ADR-005).
+"""Puerto `Almacenamiento` y adaptador `AlmacenamientoS3` para los originales y sus derivados (ADR-005).
 
 Amazon S3 real, sin endpoint personalizado (ADR-001). El original nunca se sobrescribe
-(diapositiva 10): la subida es condicional con `IfNoneMatch="*"`. Cifrado en reposo SSE-S3.
+(diapositiva 10): `subir` es condicional con `IfNoneMatch="*"`. Los derivados que se regeneran (p. ej.
+`resumen.md`) van con `subir_derivado`, que si sobrescribe. Cifrado en reposo SSE-S3 en los dos.
 boto3 solo aparece en este fichero.
 """
 import logging
@@ -33,6 +34,8 @@ class ObjetoNoEncontrado(ErrorAlmacenamiento):
 class Almacenamiento(Protocol):
     def subir(self, datos: bytes, clave: str, tipo_contenido: str) -> None: ...
 
+    def subir_derivado(self, datos: bytes, clave: str, tipo_contenido: str) -> None: ...
+
     def descargar(self, clave: str) -> bytes: ...
 
     def url_prefirmada(self, clave: str) -> str: ...
@@ -48,6 +51,15 @@ def clave_original(proceso: str, anio: int, secuencia: int, identificador: str, 
     if not _EXTENSION.match(ext):
         raise ValueError(f"Extension no valida: {extension!r}")
     return f"{proceso}/{anio}/{secuencia:06d}/{identificador}.{ext}"
+
+
+def clave_derivado(proceso: str, anio: int, secuencia: int, nombre: str) -> str:
+    """Clave S3 de un derivado del folio, junto a sus originales: `{proceso}/{anio}/{secuencia:06d}/{nombre}`."""
+    if not proceso or "/" in proceso or ".." in proceso:
+        raise ValueError(f"Proceso no valido para una clave S3: {proceso!r}")
+    if not nombre or "/" in nombre or ".." in nombre:
+        raise ValueError(f"Nombre de derivado no valido: {nombre!r}")
+    return f"{proceso}/{anio}/{secuencia:06d}/{nombre}"
 
 
 def _codigo(error: ClientError) -> str:
@@ -80,6 +92,14 @@ class AlmacenamientoS3:
             raise self._error("subir", clave, e) from None
         except BotoCoreError as e:
             raise self._error("subir", clave, e) from None
+
+    def subir_derivado(self, datos: bytes, clave: str, tipo_contenido: str) -> None:
+        """Como `subir`, pero sin `IfNoneMatch`: sobrescribe. Solo para derivados que se regeneran, nunca originales."""
+        try:
+            self._s3.put_object(Bucket=self.bucket, Key=clave, Body=datos, ContentType=tipo_contenido,
+                                ServerSideEncryption="AES256")
+        except (ClientError, BotoCoreError) as e:
+            raise self._error("subir_derivado", clave, e) from None
 
     def descargar(self, clave: str) -> bytes:
         try:

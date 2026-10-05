@@ -1,5 +1,5 @@
-"""Router de folios: POST /api/v1/folios, GET /api/v1/folios y GET /api/v1/folios/{folio}."""
-from fastapi import APIRouter, Depends, Query
+"""Router de folios: POST /api/v1/folios, GET /api/v1/folios, GET /api/v1/folios/{folio} y su resumen.md."""
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
@@ -52,3 +52,10 @@ def listar(proceso: str | None = None, estado_general: EstadoGeneral | None = No
 def obtener(folio: str, sesion: Session = Depends(get_sesion),
             _: Usuario = Depends(usuario_actual)) -> ResultadoExpediente:
     return expediente.obtener_expediente(sesion, folio)
+
+
+@router.get("/{folio}/resumen.md", response_class=Response,
+            responses={200: {"content": {"text/markdown": {}}, "description": "Resumen del expediente en Markdown"}})
+def resumen_md(folio: str, sesion: Session = Depends(get_sesion), _: Usuario = Depends(usuario_actual)) -> Response:
+    """Cualquier rol. 404 RESUMEN_NO_DISPONIBLE si aun no se ha generado; 404 FOLIO_NO_ENCONTRADO si no existe."""
+    return Response(content=expediente.obtener_resumen(sesion, folio), media_type=expediente.TIPO_RESUMEN)

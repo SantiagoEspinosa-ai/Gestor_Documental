@@ -11,7 +11,8 @@ test('revisor_flujo: nuevo folio, subir credencial y comprobante, esperar el an�
   exigirUsuarios('revisor')
   test.setTimeout(10 * 60_000)
   await entrar(page, 'revisor')
-  folio = await nuevoFolio(page, referenciaE2E())
+  const referencia = referenciaE2E()
+  folio = await nuevoFolio(page, referencia)
 
   // Folio nuevo: EXP-001 por cada tipo requerido, visibles en el expediente
   await page.getByRole('link', { name: 'Ver expediente' }).click()
@@ -38,6 +39,15 @@ test('revisor_flujo: nuevo folio, subir credencial y comprobante, esperar el an�
   await expect(cabecera.getByRole('status')).toContainText('Folio cerrado: solo lectura')
   await expect(page.getByRole('region', { name: 'Decisión del revisor' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: /^Corregir / })).toHaveCount(0)
+
+  // resumen.md regenerado tras la decision: folio y referencia; nunca el nombre en la cabecera
+  await page.getByRole('button', { name: 'Ver resumen' }).click()
+  const resumen = page.getByRole('region', { name: 'Resumen del expediente' })
+  await expect(resumen.getByRole('heading', { level: 1 })).toHaveText(`Expediente ${folio}`)
+  await expect(resumen).toContainText(`Referencia: ${referencia}`)
+  await expect(resumen).toContainText('Decision: Aprobado')
+  const cabeceraResumen = (await resumen.textContent())!.split('Documentos')[0]
+  expect(cabeceraResumen).not.toMatch(/Nombre|nombre_completo/)
 })
 
 test('admin_auditoria: la auditoría del folio tiene la creación, las subidas, los análisis y la decisión', async ({ page }) => {
