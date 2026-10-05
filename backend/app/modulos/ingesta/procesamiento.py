@@ -17,13 +17,22 @@ from app.core.almacenamiento import get_almacenamiento
 from app.core.config import get_settings
 from app.core.db import SesionLocal, get_engine
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado
-# TODO: sustituir por: from app.modulos.orquestador.servicio import procesar_documento as analizar (PERSONA_2)
-from app.modulos.ingesta.motor_stub import procesar_documento as analizar
+from app.modulos.ingesta import motor_stub
+from app.modulos.orquestador import servicio as orquestador
 from app.schemas.resultado import EstadoAnalisis, ReferenciaArchivoOriginal
 
 log = logging.getLogger(__name__)
 
 _COLUMNAS_AUDITORIA = {"modelo", "version_prompt"}
+
+
+def analizar(contenido: bytes, **kwargs):
+    """El motor de MOTOR_ANALISIS (H10): `real` = `orquestador.servicio.procesar_documento` (PERSONA_2);
+    `stub` = `motor_stub`, solo para pruebas sin Ollama (e2e de humo). Misma firma y mismos errores
+    acordados: SYS-001/SYS-002 llegan como resultado en `error`; cualquier otra cosa lanza."""
+    if get_settings().motor_analisis == "stub":
+        return motor_stub.procesar_documento(contenido, **kwargs)
+    return orquestador.procesar_documento(contenido, **kwargs)
 
 
 @lru_cache

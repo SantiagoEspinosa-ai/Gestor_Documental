@@ -479,6 +479,12 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
     for campo, valor in a_guardar.items():
         sesion.add(Correccion(documento_id=doc.id, campo=campo, valor_anterior=actual.datos_extraidos.get(campo),
                               valor_nuevo=valor, usuario=usuario, version_resultado=vigente))
+    try:
+        _reevaluar_reglas(sesion, doc, vigente, actual, a_guardar)
+    except Exception as e:  # noqa: BLE001  nada a medias: ni la correccion ni las alertas
+        sesion.rollback()
+        log.error("No se pudieron reevaluar las reglas del documento %s: %s", doc.id, type(e).__name__)
+        raise ErrorApi(500, "ERROR_INTERNO", "No se pudo aplicar la correccion") from None
     recalcular_cmp001(sesion, doc.folio)
     # Solo los nombres de los campos: los valores son datos personales
     auditoria.registrar(sesion, "dato_corregido", usuario=usuario, folio=doc.folio, documento_id=doc.id,
@@ -486,6 +492,66 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
     sesion.commit()
     regenerar_resumen(sesion, doc.folio)
     return ingesta.construir_resultado(sesion, doc)
+
+
+# Alertas que dependen de los datos y se recalculan al corregir (D3). Nunca CLS, SYS, DUP, EXP ni CMP
+_CODIGOS_REEVALUABLES = {"VAL-001", "VAL-002", "VAL-004"}
+
+
+def _reevaluable(codigo: str) -> bool:
+    return codigo in _CODIGOS_REEVALUABLES or codigo.startswith("REG-")
+
+
+def _reevaluar_reglas(sesion: Session, doc: Documento, vigente: int, actual: ResultadoDocumento,
+                      corregidos: dict) -> None:
+    """D3: tras corregir, vuelve a evaluar las reglas del documento sobre la version vigente, sin commit.
+
+    Datos vigentes con las correcciones y confianza 1.0 en los corregidos (ADR-006 2.4), con la ficha del
+    tipo de EXTRACCION y el "hoy" de ZONA_HORARIA. Para VAL-001, VAL-002, VAL-004 y REG-*: se borran las sin
+    revisar y las confirmadas, se conservan los falsos positivos (aplica=False) y se anaden las nuevas que no
+    esten ya como falso positivo. Se actualiza reglas_cumplidas_e_incumplidas. VAL-003 (dato de la MRZ): se
+    borra la sin revisar de cada campo corregido; las revisadas se conservan (acordado con PERSONA_2). Por
+    ultimo recalcula la recomendacion DEL DOCUMENTO (`validacion.recomendar_documento`).
+    """
+    datos = {**actual.datos_extraidos, **corregidos}
+    confianzas = {**actual.nivel_confianza_por_campo, **{campo: 1.0 for campo in corregidos}}
+    ficha = configuracion.obtener(_tipo_extraccion(sesion, doc))
+    hoy = datetime.now(ZoneInfo(get_settings().zona_horaria)).date()
+    nuevas, reglas = validacion.evaluar_reglas(datos, confianzas, ficha, hoy=hoy)
+
+    existentes = sesion.scalars(select(AlertaBD).where(
+        AlertaBD.documento_id == doc.id, AlertaBD.version_resultado == vigente)).all()
+    falsos_positivos = set()
+    for alerta in existentes:
+        if _reevaluable(alerta.codigo):
+            if alerta.aplica is False:
+                falsos_positivos.add((alerta.codigo, alerta.campo))
+            else:
+                sesion.delete(alerta)
+        elif alerta.codigo == "VAL-003" and alerta.campo in corregidos and alerta.aplica is None:
+            sesion.delete(alerta)
+    for alerta in nuevas:
+        if _reevaluable(alerta.codigo) and (alerta.codigo, alerta.campo) not in falsos_positivos:
+            sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=vigente, codigo=alerta.codigo,
+                                severidad=alerta.severidad.value, mensaje=alerta.mensaje, confianza=alerta.confianza,
+                                campo=alerta.campo))
+
+    fila = sesion.scalar(select(Resultado).where(Resultado.documento_id == doc.id, Resultado.version == vigente))
+    fila.json = {**fila.json, "reglas_cumplidas_e_incumplidas": reglas.model_dump(mode="json")}  # dict nuevo: SQLAlchemy lo ve
+    sesion.flush()
+
+    # Recomendacion del documento tal como queda (sugerido por PERSONA_2): datos corregidos, confianzas 1.0 en
+    # los corregidos y las alertas visibles de esta version ya actualizadas, con la misma ficha de extraccion.
+    # La GLOBAL no se toca aqui: se calcula aparte al vuelo
+    visibles = sesion.scalars(select(AlertaBD).where(
+        AlertaBD.documento_id == doc.id,
+        or_(AlertaBD.version_resultado.is_(None), AlertaBD.version_resultado == vigente))).all()
+    tras_corregir = actual.model_copy(update={
+        "datos_extraidos": datos, "nivel_confianza_por_campo": confianzas,
+        "alertas_encontradas": [ingesta.alerta_desde_bd(a) for a in visibles]})
+    recomendacion = validacion.recomendar_documento(tras_corregir, ficha)
+    fila.json = {**fila.json, "recomendacion": recomendacion.value}
+    sesion.flush()
 
 
 def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,

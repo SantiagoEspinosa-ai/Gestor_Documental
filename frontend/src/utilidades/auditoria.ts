@@ -86,6 +86,14 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       if (tiempos) usar('tiempos', `Tiempo: ${tiempos}`)
       const tokens = numeros(d.tokens)
       if (tokens) usar('tokens', `Tokens: ${tokens}`)
+      // Resto de datos_auditoria del motor real (H10, orquestador de PERSONA_2): ninguno es un dato del documento
+      if (nombreTecnico(d.modalidad)) usar('modalidad', `Modalidad: ${legible(d.modalidad)}`)
+      if (numero(d.paginas)) usar('paginas', `Páginas: ${formatoNumero(d.paginas)}`)
+      if (texto(d.version_prompt_clasificacion) && /^[\w.@-]+$/.test(d.version_prompt_clasificacion)) {
+        usar('version_prompt_clasificacion', `Prompt de clasificación: ${d.version_prompt_clasificacion}`)
+      }
+      // Detalle de cada llamada al modelo: solo cuantas hubo (el detalle queda en la auditoria)
+      if (Array.isArray(d.llamadas)) usar('llamadas', `Llamadas al modelo: ${d.llamadas.length}`)
       break
     }
     case 'dato_corregido':
