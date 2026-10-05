@@ -119,6 +119,15 @@ modelo o resultado de prueba.
 | 2026-10-01 | Textos vacios (`""` o solo espacios) parecian datos presentes | Se convierten a "sin dato" (`null`) | Las alertas de campo ausente (`VAL-001`, `VAL-004`) los ven; cubierto por tests |
 | 2026-10-01 | Fixtures dificiles con la ruta normal: muchos vacios y errores; con OCR muy malo el texto daba "desconocido" y `CLS-001` bloqueaba el reintento | **Cuatro senales de OCR pobre** (texto insuficiente, clasificacion desconocida, obligatorios vacios, formato imposible) y **reclasificacion con vision** cuando el texto da "desconocido" | Dificil: **19/34 -> 31/34** correctos (incorrectos 7 -> 2). Extremo: **9/34 -> 28/34** (incorrectos 10 -> 6). Tipo correcto en extremo 2/6 -> 6/6. Vacios 23 -> 1. Normales sin cambios: 153/153, 59 s |
 | 2026-10-01 | Con vision, `fecha_expedicion` del pasaporte salia vacia aunque se lee bien | Prompt `extraccion_v3`: lista de campos **sin la palabra "opcional"** (el modelo se saltaba los campos opcionales) | 4 pasaportes dificiles con vision: **21/28 -> 25/28**, vacios 4 -> 0 |
+| 2026-10-02 | La confianza que da el modelo no sirve: dio 0,9-1,0 a los 12 campos mal leidos de la evaluacion | **Confianza calculada por el codigo** (ADR-007): cada dato vale mas si aparece en el texto del documento y tiene un formato valido; la clasificacion, segun cuantas "marcas" del tipo (etiquetas, MRZ) aparecen. La del modelo solo se guarda para auditoria | Documentos normales: **152/153** datos correctos y **27/27** tipos por encima del minimo (pocos avisos falsos). De los 12 datos incorrectos, el codigo marca 4 como dudosos (el modelo, 0). Los 8 que no ve estan mal en el propio texto del OCR: los cubriran las reglas de coherencia |
+| 2026-10-05 | El primer documento de la demo tardaria ~30 s mas que los demas por la carga del modelo | Script **`calentar`**: carga el modelo de texto en Ollama antes de empezar, sin analizar ningun documento | Modelo cargado en 28,3 s; despues, el primer documento tarda como los demas (~47 s) |
+| 2026-10-02 | Un pasaporte normal tardo 87 s con todo el flujo, por encima del maximo de 73 s | Medido dos veces seguidas: la primera vez Ollama carga el modelo (~21 s); la segunda ya esta en memoria | Modelo sin cargar: 76-87 s. Modelo cargado: **47 s**. El maximo de 73 s se mantiene; en la demo conviene calentar el modelo antes del primer documento |
+| 2026-10-02 | Las piezas (preparar, motor, reglas, recomendacion) no estaban unidas, y el motor y el orquestador se importaban mutuamente | **`procesar_documento`**: una sola llamada que prepara el archivo, lo analiza, completa la MRZ, aplica las reglas y da la recomendacion, con los datos de auditoria (modelos, tiempos, tokens, version de los prompts). La MRZ pasa al orquestador: las dependencias van en un solo sentido | Probado con proveedores falsos (normal, MRZ, tipo confirmado, desconocido, proveedor caido, formato no soportado) y un test que impide que el motor vuelva a importar el orquestador |
+| 2026-10-02 | El motor no daba recomendacion por documento | **Recomendacion del documento**: `aprobar` solo si el analisis termino, no hay alertas criticas ni bloqueantes y los datos y el tipo estan verificados; si no, `revision_manual`. **Nunca `rechazar`**: la decision es humana | Probado con cada caso (estado, alertas, falsos positivos, confianzas); las mismas reglas que la recomendacion global del expediente |
+| 2026-10-02 | No habia reglas del documento: nadie avisaba de un campo obligatorio vacio, un dato dudoso o un documento vencido | **Reglas del documento** (`evaluar_reglas`): avisos de campo vacio (`VAL-001`, `VAL-004`), dato sin verificar (`VAL-002`) y las reglas de cada ficha (`REG-*`: vencimiento, formato, antiguedad). Preparadas tambien dos reglas de coherencia (CURP con fecha de nacimiento, orden de las fechas), aun sin activar en las fichas | Probado con casos de frontera de cada regla. Datos mal leidos marcados en los dificiles y extremos: 4 de 12, con y sin las reglas de coherencia: los que quedan son textos libres o un numero con formato valido |
+| 2026-10-02 | Las reglas de fecha (vigencia, antiguedad) usarian el dia de UTC: cerca de medianoche, un dia distinto al de la plataforma | "Hoy" se calcula con la zona horaria de la plataforma (`ZONA_HORARIA`, por defecto Ciudad de Mexico) | Probado: a las 23:30 de Ciudad de Mexico (05:30 UTC del dia siguiente) da el dia correcto |
+| 2026-10-02 | Calibracion aceptada, con un objetivo sin cumplir: marcar como dudosos al menos la mitad de los datos mal leidos de los documentos dificiles y extremos | Se deja para las reglas de coherencia (p. ej. CURP con fecha de nacimiento) y la confianza de Tesseract por palabra | Hoy 4 de 12; se volvera a medir cuando esten. En las fotos reales "buenas" (especimenes), todos los datos quedan verificados |
+| 2026-10-02 | Con la MRZ mal leida por el OCR, el codigo castigaba datos que la zona visual si leia bien | La MRZ solo pone tope (0,5) si el dato no esta tal cual en la zona visual | Normales: 149/153 -> **152/153** datos correctos por encima del minimo |
 | 2026-10-01 | Dos documentos a la vez cargarian dos modelos y dejarian la maquina sin RAM (en una prueba la RAM libre bajo a 0,99 GB con los dos modelos cargados) | PERSONA_1 (PR #9): la ingesta procesa **de uno en uno** (`MAX_PROCESAMIENTOS_SIMULTANEOS=1`) y Ollama se arranca con `OLLAMA_MAX_LOADED_MODELS=1` | Un solo analisis y un solo modelo en memoria cada vez; sin medida propia del motor (lo cubren los tests de la ingesta) |
 
 Coste de la regla de OCR pobre: los documentos dificiles tardan mas (~63-82 s -> ~150 s), porque ahora usan
@@ -129,7 +138,7 @@ vision. Los normales no cambian (ninguno usa vision).
 | Regla | Que hace | Por que |
 |---|---|---|
 | Barrera de privacidad (ADR-003) | Un proveedor que no es privado (en la nube) solo se puede usar si se activa `PERMITIR_PROVEEDORES_NO_PRIVADOS=true`, y solo con documentos ficticios. Por defecto esta cerrada | Los documentos reales tienen datos personales: no pueden salir de nuestra maquina |
-| Confianza calculada por el codigo (ADR-007) | La "confianza" de cada campo la calculara el codigo comprobando el dato (aparece en el texto, cumple el formato, es una fecha valida); la del modelo solo se guarda para auditoria | El modelo dice 0,9-1 siempre, incluso cuando se inventa los datos. Con su confianza, un documento inventado podria salir como "aprobar" |
+| Confianza calculada por el codigo (ADR-007) | La "confianza" de cada campo la calcula el codigo comprobando el dato (aparece en el texto, cumple el formato, coincide con la MRZ); la del tipo, por las marcas del documento. Si es baja: `VAL-002` o `CLS-002` y revision manual. La del modelo solo se guarda para auditoria | El modelo dice 0,9-1 siempre, incluso cuando se inventa los datos. Con su confianza, un documento inventado podria salir como "aprobar" |
 | `SYS-003` (preventiva) | Avisa de que el texto era demasiado largo y se ha recortado | Para no pasarnos del limite del modelo sin que nadie lo sepa: los campos de las ultimas paginas pueden faltar |
 | `SYS-005` (informativa) | Avisa de que se uso el proveedor de respaldo porque fallo el principal | Que quede claro que modelo hizo el analisis |
 | `VAL-003` (informativa) | Avisa de que un campo se tomo de la MRZ (las dos lineas con `<<<` del pasaporte) porque no se leia en la zona visual | El revisor debe saber de donde sale el dato |
@@ -184,11 +193,14 @@ Nota: el bloque 4 no se ha repetido entero; el informe avisa de que mezcla v2 (8
 
 Solo la B funciona en los dos: es la que se aplico.
 
-**Tiempo por documento** (1 pagina, en la maquina de pruebas sin GPU; medido en la evaluacion del 2026-10-01)
+**Tiempo por documento** (1 pagina, en la maquina de pruebas sin GPU; evaluaciones del 2026-10-01 y medidas del
+2026-10-02 con todo el flujo: preparar, motor, reglas y recomendacion)
 
 | Documento | Media | Maximo medido |
 |---|---|---|
-| Normal (PDF digital, escaneado o foto) | ~60 s | 73 s |
+| Normal, con el modelo ya en memoria (pasaporte digital) | **47 s** (clasificar 7 s + extraer 37 s + resto 3 s) | 73 s |
+| Normal (evaluacion de los 27 documentos) | ~60 s | 73 s |
+| Primer documento del dia (modelo sin cargar) | ~80 s (**~21 s** son de cargar el modelo) | 87 s |
 | Dificil (usa vision en 3 de 6) | ~150 s | 244 s |
 | Extremo (usa vision en 5 de 6) | ~156 s | 193 s |
 
@@ -197,6 +209,10 @@ por imagen** (210 s con 1 pagina). En el peor caso, un documento de 1 pagina con
 (clasificar con texto, reclasificar con vision y extraer con vision) y puede llegar a **~9 minutos** (540 s) antes
 de dar error. Como los documentos se procesan de uno en uno, si hay varios en cola los tiempos se suman. En una
 maquina con GPU estos tiempos bajarian mucho, pero hay que medirlos.
+
+**Para la demo**: antes de empezar, `python -m app.modulos.motor_ia.calentar` carga el modelo de texto (28 s) sin
+analizar nada. Asi el primer documento tarda como los demas, ~47 s. Lanzarlo justo antes: Ollama descarga el modelo
+tras 10 minutos sin uso.
 
 ## 6. Lo que falta y los riesgos
 

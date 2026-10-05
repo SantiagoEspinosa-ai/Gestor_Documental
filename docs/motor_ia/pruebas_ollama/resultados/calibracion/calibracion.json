@@ -1,0 +1,2872 @@
+{
+ "a": [
+  {
+   "archivo": "comprobante_domicilio_sano_digital.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 377,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_escaneado.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 327,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_foto.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 300,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_digital.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 252,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_escaneado.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 221,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_foto.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 221,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_digital.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 308,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_escaneado.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 277,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_foto.jpg",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 277,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_vencido_digital.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 379,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_vencido_escaneado.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 325,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_vencido_foto.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 301,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_vencido_digital.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 254,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_vencido_escaneado.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 223,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_vencido_foto.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 223,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_vencido_digital.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 307,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_vencido_escaneado.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 275,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 0.4
+   }
+  },
+  {
+   "archivo": "pasaporte_vencido_foto.jpg",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 275,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_domicilio_distinto_digital.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 376,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_domicilio_distinto_escaneado.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 326,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_domicilio_distinto_foto.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 300,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_domicilio_distinto_digital.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 252,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_domicilio_distinto_escaneado.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 221,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_domicilio_distinto_foto.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 221,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_domicilio_distinto_digital.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_digital",
+   "caracteres": 308,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_domicilio_distinto_escaneado.pdf",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 277,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_domicilio_distinto_foto.jpg",
+   "tipo": "pasaporte",
+   "nivel": "normal",
+   "modalidad": "imagen",
+   "caracteres": 277,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_escaneado_dificil.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "dificil",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 254,
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 0.987,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_escaneado_extremo.pdf",
+   "tipo": "comprobante_domicilio",
+   "nivel": "extremo",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 121,
+   "clasificacion": 0.6,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 0.4,
+    "domicilio": 0.4,
+    "proveedor": 0.962,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_foto_dificil.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "dificil",
+   "modalidad": "imagen",
+   "caracteres": 232,
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_foto_extremo.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "extremo",
+   "modalidad": "imagen",
+   "caracteres": 158,
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 0.4,
+    "proveedor": 0.988,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_escaneado_dificil.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "dificil",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 170,
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 0.966,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_escaneado_extremo.pdf",
+   "tipo": "credencial_elector",
+   "nivel": "extremo",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 144,
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 0.4,
+    "clave_elector": 0.4,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 0.987,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_foto_dificil.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "dificil",
+   "modalidad": "imagen",
+   "caracteres": 133,
+   "clasificacion": 0.286,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 0.4
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_foto_extremo.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "extremo",
+   "modalidad": "imagen",
+   "caracteres": 17,
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 0.4,
+    "curp": 0.4,
+    "clave_elector": 0.4,
+    "fecha_nacimiento": 0.4,
+    "domicilio": 0.4,
+    "vigencia": 0.4
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_escaneado_dificil.pdf",
+   "tipo": "pasaporte",
+   "nivel": "dificil",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 162,
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 0.4,
+    "fecha_nacimiento": 0.4,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 0.4
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_escaneado_extremo.pdf",
+   "tipo": "pasaporte",
+   "nivel": "extremo",
+   "modalidad": "pdf_escaneado",
+   "caracteres": 92,
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 0.4,
+    "numero_pasaporte": 0.4,
+    "fecha_nacimiento": 0.4,
+    "fecha_expedicion": 0.4,
+    "fecha_vencimiento": 0.4,
+    "nacionalidad": 0.4,
+    "sexo": 0.4
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_foto_dificil.jpg",
+   "tipo": "pasaporte",
+   "nivel": "dificil",
+   "modalidad": "imagen",
+   "caracteres": 161,
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 0.933,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_foto_extremo.jpg",
+   "tipo": "pasaporte",
+   "nivel": "extremo",
+   "modalidad": "imagen",
+   "caracteres": 133,
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 0.966,
+    "numero_pasaporte": 0.4,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 0.4,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 0.4
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_especimen_buena.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "especimen",
+   "modalidad": "imagen",
+   "caracteres": 314,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 1.0,
+    "domicilio": 1.0,
+    "proveedor": 1.0,
+    "fecha_emision": 1.0
+   }
+  },
+  {
+   "archivo": "comprobante_domicilio_sano_especimen_dificil.jpg",
+   "tipo": "comprobante_domicilio",
+   "nivel": "especimen",
+   "modalidad": "imagen",
+   "caracteres": 14,
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": 0.4,
+    "domicilio": 0.4,
+    "proveedor": 0.4,
+    "fecha_emision": 0.4
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_especimen_buena.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "especimen",
+   "modalidad": "imagen",
+   "caracteres": 220,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "credencial_elector_sano_especimen_dificil.jpg",
+   "tipo": "credencial_elector",
+   "nivel": "especimen",
+   "modalidad": "imagen",
+   "caracteres": 221,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "curp": 1.0,
+    "clave_elector": 1.0,
+    "fecha_nacimiento": 1.0,
+    "domicilio": 1.0,
+    "vigencia": 1.0
+   }
+  },
+  {
+   "archivo": "pasaporte_sano_especimen_buena.jpg",
+   "tipo": "pasaporte",
+   "nivel": "especimen",
+   "modalidad": "imagen",
+   "caracteres": 279,
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": 1.0,
+    "numero_pasaporte": 1.0,
+    "fecha_nacimiento": 1.0,
+    "fecha_expedicion": 1.0,
+    "fecha_vencimiento": 1.0,
+    "nacionalidad": 1.0,
+    "sexo": 1.0
+   }
+  }
+ ],
+ "b": [
+  {
+   "id": "auto__comprobante_domicilio_domicilio_distinto_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_domicilio_distinto_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_domicilio_distinto_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_escaneado_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_escaneado_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.6,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_foto_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_sano_foto_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 0.988,
+     "modelo": 0.9
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_vencido_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_vencido_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__comprobante_domicilio_vencido_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_domicilio_distinto_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_domicilio_distinto_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_domicilio_distinto_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_escaneado_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 0.966,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_escaneado_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.987,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_foto_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.286,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "vacio",
+     "confianza": 0.0,
+     "modelo": 0.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_sano_foto_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "incorrecto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_vencido_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_vencido_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__credencial_elector_vencido_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_domicilio_distinto_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_domicilio_distinto_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_domicilio_distinto_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_escaneado_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_escaneado_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_foto_dificil",
+   "ruta": "auto",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_sano_foto_extremo",
+   "ruta": "auto",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "incorrecto",
+     "confianza": 0.6,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_vencido_digital",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_vencido_escaneado",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "auto__pasaporte_vencido_foto",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 1.0
+    }
+   }
+  },
+  {
+   "id": "cls__comprobante_domicilio_sano_escaneado__como_pasaporte",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": true,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.8,
+   "campos": {}
+  },
+  {
+   "id": "cls__credencial_elector_sano_digital__como_pasaporte",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": true,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {}
+  },
+  {
+   "id": "cls__pasaporte_sano_foto__como_credencial_elector",
+   "ruta": "auto",
+   "nivel": "normal",
+   "cls_equivocada": true,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 1.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {}
+  },
+  {
+   "id": "vision__comprobante_domicilio_sano_escaneado_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.987,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__comprobante_domicilio_sano_escaneado_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.6,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 0.962,
+     "modelo": 0.8
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__comprobante_domicilio_sano_foto_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.8,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.5
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__comprobante_domicilio_sano_foto_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "comprobante_domicilio",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.8,
+   "minimo_campo": 0.75,
+   "campos": {
+    "nombre_titular": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "proveedor": {
+     "estado": "correcto",
+     "confianza": 0.988,
+     "modelo": 0.5
+    },
+    "fecha_emision": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__credencial_elector_sano_escaneado_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 0.966,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__credencial_elector_sano_escaneado_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.987,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__credencial_elector_sano_foto_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.286,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__credencial_elector_sano_foto_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "credencial_elector",
+   "clasificacion": 0.0,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "curp": {
+     "estado": "incorrecto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "clave_elector": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "domicilio": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "vigencia": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__pasaporte_sano_escaneado_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__pasaporte_sano_escaneado_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__pasaporte_sano_foto_dificil",
+   "ruta": "vision",
+   "nivel": "dificil",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.429,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    }
+   }
+  },
+  {
+   "id": "vision__pasaporte_sano_foto_extremo",
+   "ruta": "vision",
+   "nivel": "extremo",
+   "cls_equivocada": false,
+   "tipo_detectado": "pasaporte",
+   "clasificacion": 0.143,
+   "minimo_clasificacion": 0.85,
+   "minimo_campo": 0.8,
+   "campos": {
+    "nombre_completo": {
+     "estado": "incorrecto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "numero_pasaporte": {
+     "estado": "incorrecto",
+     "confianza": 0.6,
+     "modelo": 0.9
+    },
+    "fecha_nacimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "fecha_expedicion": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    },
+    "fecha_vencimiento": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "nacionalidad": {
+     "estado": "correcto",
+     "confianza": 1.0,
+     "modelo": 0.9
+    },
+    "sexo": {
+     "estado": "correcto",
+     "confianza": 0.4,
+     "modelo": 0.9
+    }
+   }
+  }
+ ]
+}
