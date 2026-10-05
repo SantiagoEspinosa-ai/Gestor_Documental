@@ -319,6 +319,12 @@ def evaluar_reglas(ficha: dict, valores: dict, hoy: date) -> list[dict]:
             if abs((valor - limite).days) <= 1:
                 raise ErrorFixture(f"{ficha['nombre']}.{regla['id']}: fecha en la frontera de la regla")
             cumple = valor > limite
+        elif tipo == "curp_coincide_con_fecha":
+            # posiciones 5-10 de la CURP = fecha (AAMMDD); posicion 17: digito antes de 2000, letra despues
+            fecha = valores[regla["campo_relacionado"]]
+            cumple = valor[4:10] == fecha.strftime("%y%m%d") and valor[16].isdigit() == (fecha.year < 2000)
+        elif tipo == "fecha_anterior_a_campo":
+            cumple = valor < valores[regla["campo_relacionado"]]
         else:
             raise ErrorFixture(f"Tipo de regla desconocido '{tipo}' en {ficha['nombre']}: actualiza el generador")
         if not cumple:

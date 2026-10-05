@@ -28,8 +28,10 @@ def _campo(campo: configuracion.Campo) -> dict:
 
 
 def _regla(regla: configuracion.Regla) -> dict:
-    # Mismo orden de claves que las fichas YAML (dias, si lo hay, tras campo)
+    # Mismo orden de claves que las fichas YAML (campo_relacionado y dias, si los hay, tras campo)
     datos = {"id": regla.id, "tipo": regla.tipo.value, "campo": regla.campo}
+    if regla.campo_relacionado is not None:
+        datos["campo_relacionado"] = regla.campo_relacionado
     if regla.dias is not None:
         datos["dias"] = regla.dias
     datos["severidad"] = regla.severidad.value

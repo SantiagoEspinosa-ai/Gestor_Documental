@@ -50,9 +50,17 @@ class TipoRegla(str, Enum):
     anio_mayor_o_igual_actual = "anio_mayor_o_igual_actual"
     obligatorio = "obligatorio"
     confianza_minima = "confianza_minima"
+    # Coherencia entre dos campos (etapa 2): `campo` y `campo_relacionado`
+    curp_coincide_con_fecha = "curp_coincide_con_fecha"   # posiciones 5-10 de la CURP = fecha (AAMMDD)
+    fecha_anterior_a_campo = "fecha_anterior_a_campo"     # campo < campo_relacionado
 
 
 _REGLAS_CON_DIAS = {TipoRegla.fecha_posterior_a_hoy_mas_dias, TipoRegla.fecha_no_anterior_a_hoy_menos_dias}
+# tipo de regla de coherencia -> (tipo de `campo`, tipo de `campo_relacionado`)
+_REGLAS_DE_COHERENCIA = {
+    TipoRegla.curp_coincide_con_fecha: ("texto", "fecha"),
+    TipoRegla.fecha_anterior_a_campo: ("fecha", "fecha"),
+}
 
 
 class _Estricto(BaseModel):
@@ -83,11 +91,15 @@ class Regla(_Estricto):
     severidad: Severidad
     mensaje: str
     dias: int | None = Field(None, gt=0)
+    campo_relacionado: str | None = None
 
     @model_validator(mode="after")
     def _dias_si_hacen_falta(self) -> Regla:
         if self.tipo in _REGLAS_CON_DIAS and self.dias is None:
             raise ValueError(f"la regla '{self.id}' de tipo {self.tipo.value} necesita 'dias'")
+        if (self.tipo in _REGLAS_DE_COHERENCIA) != (self.campo_relacionado is not None):
+            raise ValueError(f"la regla '{self.id}': 'campo_relacionado' es obligatorio en las reglas de coherencia "
+                             "y no se admite en las demas")
         return self
 
 
@@ -144,6 +156,15 @@ class TipoDocumental(_Estricto):
                 raise ValueError(f"la regla '{regla.id}' apunta al campo inexistente '{regla.campo}'")
             if regla.tipo is TipoRegla.patron and self.campos[regla.campo].patron is None:
                 raise ValueError(f"la regla '{regla.id}' es de tipo patron pero el campo '{regla.campo}' no tiene patron")
+            if regla.tipo in _REGLAS_DE_COHERENCIA:
+                if regla.campo_relacionado not in self.campos:
+                    raise ValueError(f"la regla '{regla.id}' apunta al campo_relacionado inexistente "
+                                     f"'{regla.campo_relacionado}'")
+                esperados = _REGLAS_DE_COHERENCIA[regla.tipo]
+                reales = (self.campos[regla.campo].tipo.value, self.campos[regla.campo_relacionado].tipo.value)
+                if reales != esperados:
+                    raise ValueError(f"la regla '{regla.id}' de tipo {regla.tipo.value} necesita campos de tipo "
+                                     f"{esperados[0]} y {esperados[1]}, no {reales[0]} y {reales[1]}")
         return self
 
 

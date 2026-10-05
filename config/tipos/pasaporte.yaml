@@ -45,5 +45,24 @@ reglas:
     campo: numero_pasaporte
     severidad: critica
     mensaje: El numero de pasaporte no tiene un formato valido
+  # Coherencia (etapa 2): nacimiento < expedicion < vencimiento (la tercera cubre la expedicion vacia)
+  - id: nacimiento_antes_de_expedicion
+    tipo: fecha_anterior_a_campo
+    campo: fecha_nacimiento
+    campo_relacionado: fecha_expedicion
+    severidad: critica
+    mensaje: La fecha de nacimiento no es anterior a la de expedicion
+  - id: expedicion_antes_de_vencimiento
+    tipo: fecha_anterior_a_campo
+    campo: fecha_expedicion
+    campo_relacionado: fecha_vencimiento
+    severidad: critica
+    mensaje: La fecha de expedicion no es anterior a la de vencimiento
+  - id: nacimiento_antes_de_vencimiento
+    tipo: fecha_anterior_a_campo
+    campo: fecha_nacimiento
+    campo_relacionado: fecha_vencimiento
+    severidad: critica
+    mensaje: La fecha de nacimiento no es anterior a la de vencimiento
 comparaciones:
   credencial_elector: [nombre_completo, fecha_nacimiento]
