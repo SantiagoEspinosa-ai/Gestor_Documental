@@ -99,6 +99,8 @@ EQUIVALENTES = {
     "FolioCreado": "RespuestaCrearFolio",
     "DocumentoAceptado": "RespuestaSubidaDocumento",
     "UrlOriginal": "RespuestaOriginal",
+    "RevelarEntrada": "PeticionRevelar",
+    "DatoRevelado": "RespuestaRevelar",
     "ConfirmarClasificacionEntrada": "PeticionConfirmarClasificacion",
     "ResolverAlertaEntrada": "PeticionResolverAlerta",
     "DecisionEntrada": "PeticionDecision",

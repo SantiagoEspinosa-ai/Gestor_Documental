@@ -62,6 +62,16 @@ def listar_fichas() -> list[dict]:
     ]
 
 
+def campos_sensibles(*tipos: str | None) -> set[str]:
+    """Campos con `sensible: true` (ADR-010 A1) en las fichas de esos tipos; los que no tienen ficha
+    (None, "desconocido") no aportan ninguno."""
+    sensibles = set()
+    for tipo in tipos:
+        if tipo and existe_tipo(tipo):
+            sensibles |= {nombre for nombre, campo in configuracion.obtener(tipo).campos.items() if campo.sensible}
+    return sensibles
+
+
 def nombre_visible(tipo: str) -> str:
     """Nombre legible del tipo; si no hay ficha o no lo define, el nombre tecnico."""
     try:

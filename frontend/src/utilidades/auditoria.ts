@@ -102,7 +102,7 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       }
       break
     case 'dato_revelado':
-      if (nombreTecnico(d.campo)) usar('campo', `Campo mostrado: ${legible(d.campo)}`)
+      if (nombreTecnico(d.campo)) usar('campo', `Campo: ${legible(d.campo)}`)
       break
     case 'clasificacion_confirmada':
       if (nombreTecnico(d.tipo)) usar('tipo', `Tipo confirmado: ${nombreTipo(d.tipo)}`)

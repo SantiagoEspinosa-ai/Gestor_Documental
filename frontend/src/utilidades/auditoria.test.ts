@@ -57,7 +57,9 @@ describe('detalle de la auditoria legible por accion', () => {
     expect(de('alerta_resuelta', { alerta_id: 'alr-000012', codigo: 'DUP-001', aplica: false })).toEqual(['Alerta DUP-001: falso positivo'])
     expect(de('alerta_resuelta', { alerta_id: '7', codigo: 'EXP-001', aplica: true })).toEqual(['Alerta EXP-001: aplica'])
     expect(de('decision_tomada', { decision: 'rechazar' })).toEqual(['Decisión: Rechazado'])
-    expect(de('dato_revelado', { campo: 'curp' })).toEqual(['Campo mostrado: curp'])
+    expect(de('dato_revelado', { campo: 'curp' })).toEqual(['Campo: curp'])
+    expect(de('dato_revelado', { campo: 'clave_elector' })).toEqual(['Campo: clave elector'])
+    expect(etiquetaAccion('dato_revelado')).toBe('Dato revelado')
   })
 
   it('nunca muestra completos los valores que no son de la forma conocida', () => {

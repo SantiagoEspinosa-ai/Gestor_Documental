@@ -328,3 +328,59 @@ export function resumenMarkdown(folio: ResultadoExpediente): string {
     ...(alertas.length ? alertas.map((a) => `- ${a.codigo} (${a.severidad}): ${a.mensaje}`) : ['- Ninguna']), '',
   ].join('\n')
 }
+
+// ---------------------------------------------------------------- enmascaramiento (ADR-010 A2-A5)
+// La misma mascara que la API (backend/app/core/enmascaramiento.py), solo en el borde de salida: el estado
+// en memoria guarda el valor real (como la BD) y cada respuesta sale enmascarada para todos los roles.
+
+const MASCARA = '****'
+/** Linea MRZ (30 o mas de [A-Z0-9<]); la que empieza por "P<" (linea 1 del pasaporte) se deja */
+const MRZ = /(?<![A-Z0-9<])[A-Z0-9<]{30,}(?![A-Z0-9<])/g
+/** Evidencia que es una ubicacion (como _EVIDENCIA del motor) o "correccion_revisor" */
+const UBICACION = /^(?:pagina_[1-9]\d*(?::.+)?|correccion_revisor)$/
+
+/** `****` + 4 ultimos caracteres; 4 o menos, `****`; null sigue siendo null */
+export function mascara(valor: unknown): string | null {
+  if (valor === null || valor === undefined) return null
+  const texto = String(valor)
+  return texto.length > 4 ? `${MASCARA}${texto.slice(-4)}` : MASCARA
+}
+
+/** Campos sensibles del documento: los de su ficha de extraccion y los del declarado y el detectado (como la API) */
+export function camposSensibles(estado: EstadoMock, doc: ResultadoDocumento): Set<string> {
+  const tipos = [doc.tipo_documental_confirmado, doc.tipo_documental_declarado, doc.tipo_documental_detectado]
+  return new Set(tipos.flatMap((t) => Object.entries(ficha(estado, t)?.campos ?? {}).filter(([, c]) => c.sensible).map(([n]) => n)))
+}
+
+function taparEvidencia(campo: string, texto: string, literales: string[], sensibles: Set<string>): string {
+  if (sensibles.has(campo) && !UBICACION.test(texto)) return MASCARA
+  let tapado = texto.replace(MRZ, (linea) => (linea.startsWith('P<') ? linea : MASCARA))
+  for (const literal of literales) tapado = tapado.split(literal).join(mascara(literal)!)
+  return tapado
+}
+
+/** Copia del documento enmascarada: datos, evidencias y correcciones de los campos sensibles */
+export function enmascararDocumento(estado: EstadoMock, doc: ResultadoDocumento): ResultadoDocumento {
+  const sensibles = camposSensibles(estado, doc)
+  const valores = [...sensibles].map((c) => doc.datos_extraidos[c])
+    .concat(doc.correcciones.filter((c) => sensibles.has(c.campo)).flatMap((c) => [c.valor_anterior, c.valor_nuevo]))
+  const literales = [...new Set(valores.filter((v) => v !== null && v !== undefined && String(v)).map(String))]
+    .sort((a, b) => b.length - a.length)
+  const copia = structuredClone(doc)
+  for (const campo of sensibles) if (campo in copia.datos_extraidos) copia.datos_extraidos[campo] = mascara(copia.datos_extraidos[campo])
+  copia.evidencia_por_campo = Object.fromEntries(Object.entries(copia.evidencia_por_campo)
+    .map(([campo, texto]) => [campo, taparEvidencia(campo, texto, literales, sensibles)]))
+  copia.correcciones = copia.correcciones.map((c) => (sensibles.has(c.campo)
+    ? { ...c, valor_anterior: mascara(c.valor_anterior), valor_nuevo: mascara(c.valor_nuevo) } : c))
+  return copia
+}
+
+/** Copia del expediente enmascarada: cada documento y las comparaciones de un campo sensible en alguno de ellos */
+export function enmascararExpediente(estado: EstadoMock, folio: ResultadoExpediente): ResultadoExpediente {
+  const sensibles = new Map(folio.documentos.map((d) => [d.identificador_unico_documento, camposSensibles(estado, d)]))
+  const copia = structuredClone(folio)
+  copia.documentos = folio.documentos.map((d) => enmascararDocumento(estado, d))
+  copia.comparaciones = copia.comparaciones.map((c) => (Object.keys(c.valores).some((id) => sensibles.get(id)?.has(c.campo))
+    ? { ...c, valores: Object.fromEntries(Object.entries(c.valores).map(([id, v]) => [id, mascara(v)])) } : c))
+  return copia
+}
