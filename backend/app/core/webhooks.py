@@ -4,7 +4,9 @@ Cuerpo: `{evento, fecha, folio, identificador_unico_documento?, datos}`; `datos`
 (documento.*) o un ResultadoExpediente (folio.estado_cambiado), serializado como en la API. Cabecera
 `X-Firma: sha256=<hex HMAC-SHA256(cuerpo, WEBHOOK_SECRET_HMAC)>` sobre los mismos bytes que se envian.
 
-core no importa modulos (ADR-005): quien llama pasa el resultado ya construido y la URL del proceso.
+core no importa modulos (ADR-005): quien llama pasa el resultado ya construido Y YA ENMASCARADO (ADR-010
+A5, con `ingesta.servicio.enmascarar` o `expediente.servicio.enmascarar`, la misma funcion que las respuestas
+de la API: `core/enmascaramiento.py`) y la URL del proceso. Este modulo no enmascara nada por su cuenta.
 Se envia en un hilo aparte y despues del commit: un fallo nunca cambia el documento ni el folio. Los logs
 solo llevan evento, folio, intento, estado HTTP y el host; nunca el cuerpo, la firma, el secreto ni la URL.
 """
@@ -44,23 +46,17 @@ def _lanzar(funcion: Callable[[], object]) -> None:
     threading.Thread(target=funcion, name="webhook", daemon=True).start()
 
 
-def enmascarar_para_webhook(datos: dict) -> dict:
-    """ADR-010 A5: aqui se enmascaran los campos sensibles cuando llegue H15. Unico punto para el webhook.
-    Con H15, este punto y `expediente/resumen.enmascarar_para_resumen` usaran la MISMA funcion de mascara
-    (`****` + 4 ultimos caracteres), para que el webhook y el resumen no se separen."""
-    return datos
-
-
 def firmar(cuerpo: bytes, secreto: str) -> str:
     return "sha256=" + hmac.new(secreto.encode("utf-8"), cuerpo, hashlib.sha256).hexdigest()
 
 
 def construir_cuerpo(evento: str, folio: str, datos: BaseModel, identificador: str | None = None) -> bytes:
-    """Bytes JSON del cuerpo del contrato. `identificador_unico_documento` solo en los eventos documento.*"""
+    """Bytes JSON del cuerpo del contrato. `identificador_unico_documento` solo en los eventos documento.*
+    `datos` llega ya enmascarado de quien llama (ADR-010 A5) y se serializa tal cual."""
     cuerpo = {"evento": evento, "fecha": datetime.now(timezone.utc).isoformat(), "folio": folio}
     if evento.startswith("documento."):
         cuerpo["identificador_unico_documento"] = identificador
-    cuerpo["datos"] = enmascarar_para_webhook(datos.model_dump(mode="json"))
+    cuerpo["datos"] = datos.model_dump(mode="json")
     return json.dumps(cuerpo, ensure_ascii=False).encode("utf-8")
 
 

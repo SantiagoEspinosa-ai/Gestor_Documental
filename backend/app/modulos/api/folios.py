@@ -51,7 +51,7 @@ def listar(proceso: str | None = None, estado_general: EstadoGeneral | None = No
 @router.get("/{folio}", response_model=ResultadoExpediente)
 def obtener(folio: str, sesion: Session = Depends(get_sesion),
             _: Usuario = Depends(usuario_actual)) -> ResultadoExpediente:
-    return expediente.obtener_expediente(sesion, folio)
+    return expediente.enmascarar(expediente.obtener_expediente(sesion, folio))  # ADR-010 A3
 
 
 @router.get("/{folio}/resumen.md", response_class=Response,

@@ -1,5 +1,8 @@
 """Router de las acciones del revisor (E2.6): resolver alertas; despues, corregir datos, confirmar
 clasificacion y decidir el folio. Solo rol revisor. La logica esta en `expediente.servicio`.
+
+Todas las respuestas salen enmascaradas (ADR-010 A3 y A5), tambien la de PATCH datos aunque el revisor
+acabe de escribir el valor: el valor real solo se pide con POST /documentos/{id}/revelar.
 """
 from typing import Any
 
@@ -30,16 +33,16 @@ class ResolverAlertaEntrada(BaseModel):
 def resolver_alerta_documento(documento_id: str, alerta_id: str, entrada: ResolverAlertaEntrada,
                               sesion: Session = Depends(get_sesion),
                               usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
-    return expediente.resolver_alerta_documento(sesion, documento_id, alerta_id, entrada.aplica,
-                                                entrada.comentario, usuario.usuario)
+    return ingesta.enmascarar(expediente.resolver_alerta_documento(sesion, documento_id, alerta_id, entrada.aplica,
+                                                                   entrada.comentario, usuario.usuario))
 
 
 @router.post("/folios/{folio}/alertas/{alerta_id}/resolver", response_model=ResultadoExpediente)
 def resolver_alerta_expediente(folio: str, alerta_id: str, entrada: ResolverAlertaEntrada,
                                sesion: Session = Depends(get_sesion),
                                usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoExpediente:
-    return expediente.resolver_alerta_expediente(sesion, folio, alerta_id, entrada.aplica,
-                                                 entrada.comentario, usuario.usuario)
+    return expediente.enmascarar(expediente.resolver_alerta_expediente(sesion, folio, alerta_id, entrada.aplica,
+                                                                       entrada.comentario, usuario.usuario))
 
 
 @router.patch("/documentos/{documento_id}/datos", response_model=ResultadoDocumento)
@@ -47,7 +50,7 @@ def corregir_datos(documento_id: str, cambios: dict[str, Any] = Body(...),
                    sesion: Session = Depends(get_sesion),
                    usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
     """Cuerpo `{campo: valor}`; los campos y valores los valida el servicio contra la ficha."""
-    return expediente.corregir_datos(sesion, documento_id, cambios, usuario.usuario)
+    return ingesta.enmascarar(expediente.corregir_datos(sesion, documento_id, cambios, usuario.usuario))
 
 
 class ConfirmarClasificacionEntrada(BaseModel):
@@ -65,7 +68,7 @@ def confirmar_clasificacion(documento_id: str, entrada: ConfirmarClasificacionEn
     if reprocesar:  # version N+1 con el tipo confirmado (ADR-006 2.5); la anterior se conserva
         background_tasks.add_task(ingesta.procesar_documento, uuid.UUID(resultado.identificador_unico_documento),
                                   tipo_confirmado=entrada.tipo_documental)
-    return resultado
+    return ingesta.enmascarar(resultado)
 
 
 class DecisionEntrada(BaseModel):
@@ -78,4 +81,5 @@ class DecisionEntrada(BaseModel):
 @router.post("/folios/{folio}/decision", response_model=ResultadoExpediente)
 def decidir_folio(folio: str, entrada: DecisionEntrada, sesion: Session = Depends(get_sesion),
                   usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoExpediente:
-    return expediente.decidir_folio(sesion, folio, entrada.decision, entrada.comentario, usuario.usuario)
+    return expediente.enmascarar(expediente.decidir_folio(sesion, folio, entrada.decision, entrada.comentario,
+                                                          usuario.usuario))

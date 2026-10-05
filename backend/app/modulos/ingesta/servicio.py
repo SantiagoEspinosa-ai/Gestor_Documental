@@ -7,7 +7,7 @@ from pathlib import PurePath
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.core import auditoria
+from app.core import auditoria, enmascaramiento
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
@@ -194,6 +194,20 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
 def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
     """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
     return construir_resultado(sesion, obtener_documento(sesion, documento_id))
+
+
+def campos_sensibles(resultado: ResultadoDocumento) -> set[str]:
+    """Campos sensibles del documento (ADR-010 A1): los de su ficha de EXTRACCION (confirmado > declarado >
+    detectado, ADR-006 2.5) y tambien los de las otras dos: tras confirmar otro tipo, y hasta que acabe
+    el reproceso, el resultado vigente lleva los datos extraidos con la ficha anterior."""
+    return tipos.campos_sensibles(resultado.tipo_documental_confirmado, resultado.tipo_documental_declarado,
+                                  resultado.tipo_documental_detectado)
+
+
+def enmascarar(resultado: ResultadoDocumento) -> ResultadoDocumento:
+    """Copia del resultado con los campos sensibles enmascarados (ADR-010 A3 y A5). Solo en el borde de
+    salida (respuestas de la API y webhooks): por dentro, BD, reglas y comparaciones usan el valor real."""
+    return enmascaramiento.enmascarar_resultado(resultado, campos_sensibles(resultado))
 
 
 def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:

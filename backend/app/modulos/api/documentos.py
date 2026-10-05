@@ -46,7 +46,7 @@ def subir(folio: str, background_tasks: BackgroundTasks, archivo: UploadFile = F
 @router.get("/documentos/{documento_id}", response_model=ResultadoDocumento)
 def obtener(documento_id: str, sesion: Session = Depends(get_sesion),
             _: Usuario = Depends(usuario_actual)) -> ResultadoDocumento:
-    return ingesta.obtener_resultado(sesion, documento_id)
+    return ingesta.enmascarar(ingesta.obtener_resultado(sesion, documento_id))  # ADR-010 A3
 
 
 @router.get("/documentos/{documento_id}/original", response_model=UrlOriginal)

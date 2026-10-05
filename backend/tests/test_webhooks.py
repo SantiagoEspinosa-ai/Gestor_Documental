@@ -201,13 +201,13 @@ def test_el_log_no_lleva_cuerpo_firma_ni_ruta(entorno, monkeypatch, caplog):
         assert prohibido not in texto
 
 
-def test_enmascarar_para_webhook_es_el_unico_punto(entorno, monkeypatch):
-    llamadas = []
-    monkeypatch.setattr(webhooks, "enmascarar_para_webhook", lambda datos: llamadas.append(datos) or {"tapado": True})
+def test_los_datos_se_envian_tal_cual_llegan(entorno, monkeypatch):
+    # ADR-010 A5: quien llama los pasa ya enmascarados; core/webhooks no tiene mascara propia
+    assert not hasattr(webhooks, "enmascarar_para_webhook")
     r = receptor(monkeypatch, 200)
-    entregar()
-    assert len(llamadas) == 1
-    assert r.cuerpos()[0]["datos"] == {"tapado": True}
+    datos = resultado_ficticio()
+    assert webhooks.entregar(URL, "documento.completado", "TST-2026-000001", datos) is True
+    assert r.cuerpos()[0]["datos"] == datos.model_dump(mode="json")
 
 
 # --- disparo desde el flujo real ---
