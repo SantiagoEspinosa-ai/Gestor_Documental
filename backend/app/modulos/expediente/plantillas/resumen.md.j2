@@ -1,0 +1,76 @@
+{#- Resumen del expediente (expediente/resumen.py). Todos los valores llegan ya escapados para Markdown. -#}
+# Expediente {{ folio }}
+
+- Referencia: {{ referencia }}
+- Proceso: {{ proceso }}
+- Fecha de solicitud: {{ fecha_solicitud }}
+- Estado: {{ estado_general }}
+- Recomendacion global: {{ recomendacion }}
+
+{% if decision %}
+## Decision
+
+- Decision: {{ decision.decision }}
+- Comentario: {{ decision.comentario }}
+- Usuario: {{ decision.usuario }}
+- Fecha: {{ decision.fecha }}
+
+{% endif %}
+## Documentos
+
+{% for doc in documentos %}
+### Documento {{ doc.n }}: {{ doc.tipo }}
+
+- Estado del analisis: {{ doc.estado }}
+
+{% if doc.filas %}
+| Campo | Valor | Nota |
+| --- | --- | --- |
+{% for fila in doc.filas %}
+| {{ fila.campo }} | {{ fila.valor }} | {{ fila.nota }} |
+{% endfor %}
+{% else %}
+Sin datos extraidos.
+{% endif %}
+
+{% if doc.alertas %}
+{% for grupo in doc.alertas %}
+{{ grupo.titulo }}:
+{% for alerta in grupo.alertas %}
+- {{ alerta.codigo }}{% if alerta.campo %} ({{ alerta.campo }}){% endif %}: {{ alerta.mensaje }} ({{ alerta.estado }})
+{% endfor %}
+
+{% endfor %}
+{% else %}
+Sin alertas.
+
+{% endif %}
+{% else %}
+Sin documentos.
+
+{% endfor %}
+## Alertas del expediente
+
+{% for grupo in alertas_expediente %}
+{{ grupo.titulo }}:
+{% for alerta in grupo.alertas %}
+- {{ alerta.codigo }}{% if alerta.campo %} ({{ alerta.campo }}){% endif %}: {{ alerta.mensaje }} ({{ alerta.estado }})
+{% endfor %}
+
+{% else %}
+Sin alertas del expediente.
+
+{% endfor %}
+## Comparaciones
+
+{% if comparaciones %}
+| Campo | Coincide | Valores |
+| --- | --- | --- |
+{% for comparacion in comparaciones %}
+| {{ comparacion.campo }} | {{ comparacion.coincide }} | {{ comparacion.valores }} |
+{% endfor %}
+{% else %}
+Sin comparaciones.
+{% endif %}
+
+Generado el {{ generado_en }}
