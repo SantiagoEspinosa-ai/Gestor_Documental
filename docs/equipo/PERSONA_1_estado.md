@@ -135,7 +135,7 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 2 (sin esperar al motor)
 - [x] H1: UI contra la API real con el stub; issue por cada desviacion del contrato. Ver "H1 (2026-10-02)".
 - [x] H2: test de rutas de `app.openapi()` frente a `endpoints.md` (`tests/test_openapi_contrato.py`).
-- [x] H6 (humo): humo con stub HECHO; motor real pendiente. Proyecto aparte `playwright.real.config.ts`
+- [x] H6: humo con stub y e2e con el motor real HECHOS (hito del dia 8, 2026-10-05). Proyecto aparte `playwright.real.config.ts`
       (`npm run test:e2e:real`, carpeta `frontend/e2e-real/`), contra el backend y Vite locales.
 - [ ] H7: borrador del ADR-010 de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`)
       el dia 7; reservar antes el numero en el chat del equipo.
@@ -165,3 +165,15 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 - [ ] `frontend/README.md`: Node >= 22.22 y responsable.
 - [ ] `docs/arquitectura_solucion.md` (en `main` desde el PR #12): el reparto nuevo, en un PR pequeno
       cuando se fusione el #13 (comprometido en su revision).
+
+## Hito del dia 8 (2026-10-05): e2e con el motor real
+Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
+- Folio con los 3 documentos sanos: completado y "aprobar" en unos 3,5 min (~70 s por documento). El
+  primero no recarga el modelo gracias a `python -m app.modulos.motor_ia.calentar` (`num_ctx` igual que
+  el motor, PR #31).
+- D3 con el motor real: al corregir la fecha de vencimiento a una pasada aparecen `REG-vigencia_documento`
+  y `REG-vigencia_proxima` y el documento pasa a `revision_manual`; al restaurarla vuelve a `aprobar`.
+- Casos de error: `vencido` da `REG-vigencia`; `domicilio_distinto` da `CMP-001`.
+- Los 9 documentos de `fixtures/generados/INDICE.md` dan el resultado esperado.
+- Pendiente para la demo: el enmascaramiento (PR #32) aun no estaba en `main` durante el hito; repetir la
+  prueba con el #32 fusionado y anotar los tiempos por documento para el guion (H19).
