@@ -62,11 +62,10 @@ ESPERADO = """\
 
 - Estado del analisis: Completado
 
-| Campo | Valor | Nota |
-| --- | --- | --- |
-| Nombre completo | Ana Ejemplo Prueba \\| Segundo renglon | corregido por revisor |
-| Curp | no detectado |  |
-| Domicilio | no detectado |  |
+Datos:
+- Nombre completo: Ana Ejemplo Prueba \\| Segundo renglon (corregido por revisor)
+- Curp: no detectado
+- Domicilio: no detectado
 
 Criticas:
 - VAL-001 (curp): Falta curp (sin revisar)
@@ -86,9 +85,9 @@ Bloqueantes:
 
 ## Comparaciones
 
-| Campo | Coincide | Valores |
-| --- | --- | --- |
-| Domicilio | No | documento 1: Calle \\*Uno\\*; documento 2: no detectado |
+- Domicilio: no coincide
+  - Documento 1 (Credencial de elector): Calle \\*Uno\\*
+  - Documento 2 (Tipo no reconocido): no detectado
 
 Generado el 2026-10-05 08:00 UTC
 """
@@ -102,12 +101,17 @@ def test_es_determinista():
     assert generar(_expediente(), FICHAS, GENERADO) == generar(_expediente(), FICHAS, GENERADO)
 
 
-def test_un_valor_con_barra_y_salto_de_linea_no_rompe_la_tabla():
+def test_un_valor_con_barra_y_salto_de_linea_se_queda_en_su_elemento_de_lista():
     texto = generar(_expediente(), FICHAS, GENERADO)
-    [fila] = [linea for linea in texto.splitlines() if linea.startswith("| Nombre completo")]
-    # 4 separadores de columna sin escapar: la fila sigue teniendo 3 columnas
-    assert fila.replace("\\|", "").count("|") == 4
-    assert "Segundo renglon" in fila  # el salto de linea pasa a espacio, en la misma fila
+    [linea] = [l for l in texto.splitlines() if l.startswith("- Nombre completo: ")]
+    assert "Segundo renglon" in linea  # el salto de linea pasa a espacio: sigue en el mismo elemento
+    assert "\\|" in linea and linea.replace("\\|", "").count("|") == 0  # la barra, escapada
+    assert not any(l.startswith("Segundo") for l in texto.splitlines())
+
+
+def test_sin_tablas_markdown():
+    # react-markdown sin remark-gfm no pinta tablas: el resumen solo usa listas
+    assert not [l for l in generar(_expediente(), FICHAS, GENERADO).splitlines() if l.startswith("|")]
 
 
 def test_el_nombre_no_sale_en_la_cabecera_ni_el_fichero_en_ningun_sitio():

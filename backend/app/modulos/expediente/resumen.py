@@ -2,7 +2,7 @@
 
 Puro y determinista: sin BD ni S3, y con la misma entrada da el mismo texto. Lo guarda en S3 y lo
 regenera en cada cambio `servicio.py`. Plantilla `plantillas/resumen.md.j2` (Jinja, sin autoescape:
-es Markdown); todo valor que viene del OCR o del revisor se escapa aqui antes de llegar a la plantilla.
+es Markdown; solo listas, sin tablas, para verse bien con react-markdown sin plugins); todo valor que viene del OCR o del revisor se escapa aqui antes de llegar a la plantilla.
 
 La persona se identifica por la `referencia_externa` del folio, nunca por su nombre (ADR-004): el
 nombre solo aparece, si se extrajo, como un dato mas de la tabla de su documento. El nombre del fichero
@@ -92,26 +92,28 @@ def _documento(n: int, doc: ResultadoDocumento, fichas: dict[str, dict]) -> dict
     corregidos = {c.campo for c in doc.correcciones}
     filas = [{"campo": _nombre_campo(c),
               "valor": "no detectado" if datos.get(c) is None else escapar(datos[c]),
-              "nota": "corregido por revisor" if c in corregidos else ""} for c in campos]
+              "corregido": c in corregidos} for c in campos]
     return {"n": n, "tipo": _nombre_tipo(efectivo, fichas), "estado": _ESTADO_ANALISIS[doc.estado_analisis.value],
             "filas": filas, "alertas": _alertas(doc.alertas_encontradas)}
 
 
 def _comparaciones(expediente: ResultadoExpediente, fichas: dict[str, dict]) -> list[dict]:
-    numero = {d.identificador_unico_documento: i for i, d in enumerate(expediente.documentos, start=1)}
-    ficha_de = {d.identificador_unico_documento: _ficha(
-        d.tipo_documental_confirmado or d.tipo_documental_declarado or d.tipo_documental_detectado, fichas)
-        for d in expediente.documentos}
-    filas = []
+    por_id = {d.identificador_unico_documento: (i, d) for i, d in enumerate(expediente.documentos, start=1)}
+    resultado = []
     for comparacion in expediente.comparaciones:
         valores = []
         for documento_id, valor in comparacion.valores.items():
-            enmascarado = enmascarar_para_resumen({comparacion.campo: valor}, ficha_de.get(documento_id))
+            n, doc = por_id.get(documento_id, ("?", None))
+            extraccion = (doc.tipo_documental_confirmado or doc.tipo_documental_declarado
+                          or doc.tipo_documental_detectado) if doc else None
+            efectivo = (doc.tipo_documental_confirmado or doc.tipo_documental_detectado
+                        or doc.tipo_documental_declarado) if doc else None
+            enmascarado = enmascarar_para_resumen({comparacion.campo: valor}, _ficha(extraccion, fichas))
             texto = "no detectado" if enmascarado[comparacion.campo] is None else escapar(enmascarado[comparacion.campo])
-            valores.append(f"documento {numero.get(documento_id, '?')}: {texto}")
-        filas.append({"campo": _nombre_campo(comparacion.campo), "coincide": "Si" if comparacion.coincide else "No",
-                      "valores": "; ".join(valores)})
-    return filas
+            valores.append({"n": n, "tipo": _nombre_tipo(efectivo, fichas), "valor": texto})
+        resultado.append({"campo": _nombre_campo(comparacion.campo),
+                          "coincide": "coincide" if comparacion.coincide else "no coincide", "valores": valores})
+    return resultado
 
 
 def generar(expediente: ResultadoExpediente, fichas: dict[str, dict], generado_en: datetime) -> str:

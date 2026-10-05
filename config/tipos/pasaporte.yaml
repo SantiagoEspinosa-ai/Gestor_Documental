@@ -10,7 +10,7 @@ formatos_permitidos: [pdf, jpg, jpeg, png]
 ejemplos_referencia: [fixtures/generados/pasaporte_sano_digital.pdf, fixtures/generados/pasaporte_sano_foto.jpg]
 campos:
   nombre_completo:    {tipo: texto, obligatorio: true}
-  numero_pasaporte:   {tipo: texto, obligatorio: true, patron: "^[A-Z0-9]{8,9}$"}
+  numero_pasaporte:   {tipo: texto, obligatorio: true, patron: "^[A-Z0-9]{8,9}$", sensible: true}
   fecha_nacimiento:   {tipo: fecha, obligatorio: true}
   fecha_expedicion:   {tipo: fecha, obligatorio: false}
   fecha_vencimiento:  {tipo: fecha, obligatorio: true}

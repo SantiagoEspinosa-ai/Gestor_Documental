@@ -21,7 +21,7 @@ def formatos_permitidos(tipo: str | None) -> set[str]:
 
 
 def _campo(campo: configuracion.Campo) -> dict:
-    datos = {"tipo": campo.tipo.value, "obligatorio": campo.obligatorio}
+    datos = {"tipo": campo.tipo.value, "obligatorio": campo.obligatorio, "sensible": campo.sensible}  # ADR-010 A6
     if campo.patron:
         datos["patron"] = campo.patron
     return datos

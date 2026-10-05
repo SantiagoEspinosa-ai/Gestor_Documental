@@ -1,4 +1,5 @@
-{#- Resumen del expediente (expediente/resumen.py). Todos los valores llegan ya escapados para Markdown. -#}
+{#- Resumen del expediente (expediente/resumen.py). Todos los valores llegan ya escapados para Markdown.
+    Solo listas, sin tablas: la web lo pinta con react-markdown sin plugins (sin remark-gfm). -#}
 # Expediente {{ folio }}
 
 - Referencia: {{ referencia }}
@@ -24,10 +25,10 @@
 - Estado del analisis: {{ doc.estado }}
 
 {% if doc.filas %}
-| Campo | Valor | Nota |
-| --- | --- | --- |
+Datos:
 {% for fila in doc.filas %}
-| {{ fila.campo }} | {{ fila.valor }} | {{ fila.nota }} |
+- {{ fila.campo }}: {{ fila.valor }}{% if fila.corregido %} (corregido por revisor){% endif %}
+
 {% endfor %}
 {% else %}
 Sin datos extraidos.
@@ -64,10 +65,11 @@ Sin alertas del expediente.
 ## Comparaciones
 
 {% if comparaciones %}
-| Campo | Coincide | Valores |
-| --- | --- | --- |
 {% for comparacion in comparaciones %}
-| {{ comparacion.campo }} | {{ comparacion.coincide }} | {{ comparacion.valores }} |
+- {{ comparacion.campo }}: {{ comparacion.coincide }}
+{% for valor in comparacion.valores %}
+  - Documento {{ valor.n }} ({{ valor.tipo }}): {{ valor.valor }}
+{% endfor %}
 {% endfor %}
 {% else %}
 Sin comparaciones.
