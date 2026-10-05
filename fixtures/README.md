@@ -1,4 +1,4 @@
-# fixtures (responsable: PERSONA_3)
+# fixtures (responsable: PERSONA_2 desde el traspaso de PERSONA_3, PR #13)
 
 Documentos FICTICIOS de prueba para el pipeline de ingesta, OCR y extraccion, y para los e2e.
 
@@ -74,6 +74,29 @@ severidad y si van en el documento o en `alertas_expediente`:
 Solo lista alertas deterministas: `VAL-002`, `CLS-002` y `VIS-xxx` dependen del modelo.
 Al final, la seccion "Fixtures de dificultad" (ver "Niveles de dificultad").
 
+### Formato estable de INDICE.md (H11)
+Varios programas leen `INDICE.md` linea a linea: `backend/tests/test_fixtures_ocr.py`,
+`docs/motor_ia/pruebas_ollama/evaluar_fixtures.py` (`leer_indice`, que tambien usa `calibrar_confianza.py`) y
+`scripts/verificar_ocr_fixtures.py`. Es un contrato de hecho: **si el generador cambia algo de esta lista,
+actualiza en el mismo commit esos lectores y sus tests**. Lo que puede cambiar sin romper nada: el texto libre
+entre secciones, el orden de los documentos y las columnas de la tabla "Archivos".
+
+| Elemento | Formato exacto | Lo usan |
+|---|---|---|
+| Secciones | `## Archivos`, `## Valores esperados por documento`, `## Folios de prueba y alertas esperadas (proceso onboarding)`, `## Fixtures de dificultad` (titulo exacto: abre el bloque de dificultad) | todos: cualquier linea `## ` cierra la seccion anterior |
+| Documento del nivel normal | `### <caso> / <tipo>` (p. ej. `### sano / pasaporte`) | test OCR, evaluacion |
+| Ficheros de un documento | una linea con `Archivos:` seguida de los nombres entre comillas invertidas, separados por comas | test OCR, evaluacion |
+| Valor esperado | fila `` | `<campo>` | <valor> | ``: el campo entre comillas invertidas y el valor sin ellas. Fechas en ISO `AAAA-MM-DD` (en el documento, `DD/MM/AAAA`); anio como 4 cifras | test OCR, evaluacion, calibracion |
+| MRZ del pasaporte | dos lineas de 44 caracteres dentro de un bloque de codigo (tres comillas invertidas) bajo su `### <caso> / pasaporte` | test OCR (lectura y digitos de control) |
+| Caso `duplicado` | `### duplicado / credencial_elector`: los lectores lo **excluyen** (mismo SHA-256 que el sano) | test OCR, evaluacion |
+| Fichero de dificultad | fila `` | `<archivo>` | <tipo> | <escaneado o foto> | <dificil o extremo> | ... | `` dentro de `## Fixtures de dificultad` | evaluacion |
+| Valores de dificultad | `### Valores esperados: <tipo>` y sus filas de valor (los del caso sano) | evaluacion |
+| Especimenes | no estan en `INDICE.md`: se leen de `fixtures/especimenes/*_sano_especimen_*.jpg` con los valores del caso sano | evaluacion (bloque 5), calibracion |
+
+Comprobacion rapida tras cambiar el generador: `python docs/motor_ia/pruebas_ollama/evaluar_fixtures.py indice`
+debe dar 27 documentos y 153 campos en nivel normal, 6 y 34 en dificil y en extremo, y 5 especimenes con 27
+campos; y `test_fixtures_ocr.py` debe pasar.
+
 ## Legibilidad OCR
 Tras cambiar el generador, comprueba que Tesseract los lee (contenedor del backend, PowerShell,
 desde la raiz del repo):
@@ -101,9 +124,8 @@ con `scripts/procesar_especimenes.py` y el verificador OCR las incluye como nive
 `fixtures/especimenes/README.md` (valores esperados y fechas a partir de las que dan alertas).
 
 ## Pendientes
-- Especimenes: repetir o recortar las 4 fotos descartadas (`pasaporte` inclinada y dificil,
-  `credencial_elector` inclinada y `comprobante_domicilio` inclinada); ver
-  `fixtures/especimenes/README.md`.
+- Especimenes: las 4 fotos descartadas (`pasaporte` inclinada y dificil, `credencial_elector` inclinada y
+  `comprobante_domicilio` inclinada) **no se repiten** (recorte R5 del PR #13).
 - Etapa 2: e2e reales con los folios de prueba de `INDICE.md` sobre `docker compose` y Ollama.
 
 ## Prohibido

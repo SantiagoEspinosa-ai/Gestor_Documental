@@ -308,8 +308,8 @@ se queda solo con `pagina_<n>` (seccion 4).
       `docs/PLAN_PROYECTO.md` seccion 8). Tareas heredadas por PERSONA_2:
       - [x] H9: ADR-009 (`desconocido`), aceptado (PR #14 y #17).
       - [x] H10: el stub no se sustituye hasta ADR-007 (decidido; ver "Notas para la etapa 2").
-      - [ ] H11: documentar el formato de `INDICE.md` en `fixtures/README.md` (o generar un `INDICE.json`);
-        `test_fixtures_ocr.py` ya filtra por los casos y el nivel conocidos.
+      - [x] H11: formato estable de `INDICE.md` documentado en `fixtures/README.md` (elementos que leen
+        `test_fixtures_ocr.py`, `evaluar_fixtures.py` y `verificar_ocr_fixtures.py`, y comprobacion tras cambiarlo).
       - [x] H12: tiempo maximo por documento (seccion 13).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
         (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
@@ -473,6 +473,17 @@ de 1 pagina con OCR pobre, sin reintentos de correccion: clasificacion con texto
 lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno en uno (PR #9): el tiempo de espera
 se suma. En la maquina con GPU hay que volver a medir.
 
+**Calentar los modelos antes de la demo** (`motor_ia/calentar.py`): carga el modelo de texto en Ollama con una
+peticion vacia (`/api/generate` sin prompt, `keep_alive` de `proveedores/base.py`), sin analizar ningun documento.
+Asi el primer documento tarda como los demas (~47 s) y no ~80 s. Medido el 2026-10-05: `gemma4:e2b` cargado en
+28,3 s. `--vision` carga tambien `qwen2.5vl:3b`; con `OLLAMA_MAX_LOADED_MODELS=1` descarga el de texto, asi que solo
+conviene si la demo empieza con fotos. Lanzarlo justo antes de la demo: el modelo se descarga tras `KEEP_ALIVE` (10
+min) sin uso. Salida 0 si carga; 1 si falla (p. ej. modelo no descargado). Tests: `test_calentar.py` (HTTP falso).
+
+```
+MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps backend python -m app.modulos.motor_ia.calentar
+```
+
 ## 14. Confianza calculada por el codigo (ADR-007, etapa 2)
 
 Implementado en `motor_ia/confianza.py` (funciones puras) y aplicado en `motor_ia/servicio.py`. La confianza que
@@ -561,7 +572,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | este commit |
+| 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | este commit |
+| 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | `6195d28` |
 | 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |
 | 2026-10-02 | Etapa 2, paso 4: `orquestador.procesar_documento` (`orquestador/procesamiento.py`) con la firma de la seccion 11: preparar, MRZ, `motor_ia.analizar(mrz=)`, sexo y `VAL-003` en el orquestador (`completar_mrz.py`), reglas con `hoy` de `reloj.py`, recomendacion y `datos_auditoria` (con `version_prompt_clasificacion`). `motor_ia` ya no importa `orquestador` (test). CLI y `evaluar_fixtures.py` pasan por el orquestador | `90e9a36` |
 | 2026-10-02 | Revision de PERSONA_1 en el PR #18: con `tipo_confirmado` el motor deja `confianza_clasificacion = None` (ADR-009, como el stub del PR #19) y el 1,0 lo pone la plataforma (D2); `recomendar_documento` cuenta esa `None` como 1,0 si hay tipo confirmado. Merge de `origin/main` con el PR #19. La rama de reglas de coherencia se prepara desde `main` cuando se fusione el PR #18 y llevara tambien `endpoints.md`, `contrato.ts`, `_regla` de `ingesta/tipos.py` y pasara `test_openapi_contrato.py` (`campo_relacionado` cambia el Contrato 2) | `d7a07f5` |

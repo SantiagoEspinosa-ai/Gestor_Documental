@@ -120,6 +120,7 @@ modelo o resultado de prueba.
 | 2026-10-01 | Fixtures dificiles con la ruta normal: muchos vacios y errores; con OCR muy malo el texto daba "desconocido" y `CLS-001` bloqueaba el reintento | **Cuatro senales de OCR pobre** (texto insuficiente, clasificacion desconocida, obligatorios vacios, formato imposible) y **reclasificacion con vision** cuando el texto da "desconocido" | Dificil: **19/34 -> 31/34** correctos (incorrectos 7 -> 2). Extremo: **9/34 -> 28/34** (incorrectos 10 -> 6). Tipo correcto en extremo 2/6 -> 6/6. Vacios 23 -> 1. Normales sin cambios: 153/153, 59 s |
 | 2026-10-01 | Con vision, `fecha_expedicion` del pasaporte salia vacia aunque se lee bien | Prompt `extraccion_v3`: lista de campos **sin la palabra "opcional"** (el modelo se saltaba los campos opcionales) | 4 pasaportes dificiles con vision: **21/28 -> 25/28**, vacios 4 -> 0 |
 | 2026-10-02 | La confianza que da el modelo no sirve: dio 0,9-1,0 a los 12 campos mal leidos de la evaluacion | **Confianza calculada por el codigo** (ADR-007): cada dato vale mas si aparece en el texto del documento y tiene un formato valido; la clasificacion, segun cuantas "marcas" del tipo (etiquetas, MRZ) aparecen. La del modelo solo se guarda para auditoria | Documentos normales: **152/153** datos correctos y **27/27** tipos por encima del minimo (pocos avisos falsos). De los 12 datos incorrectos, el codigo marca 4 como dudosos (el modelo, 0). Los 8 que no ve estan mal en el propio texto del OCR: los cubriran las reglas de coherencia |
+| 2026-10-05 | El primer documento de la demo tardaria ~30 s mas que los demas por la carga del modelo | Script **`calentar`**: carga el modelo de texto en Ollama antes de empezar, sin analizar ningun documento | Modelo cargado en 28,3 s; despues, el primer documento tarda como los demas (~47 s) |
 | 2026-10-02 | Un pasaporte normal tardo 87 s con todo el flujo, por encima del maximo de 73 s | Medido dos veces seguidas: la primera vez Ollama carga el modelo (~21 s); la segunda ya esta en memoria | Modelo sin cargar: 76-87 s. Modelo cargado: **47 s**. El maximo de 73 s se mantiene; en la demo conviene calentar el modelo antes del primer documento |
 | 2026-10-02 | Las piezas (preparar, motor, reglas, recomendacion) no estaban unidas, y el motor y el orquestador se importaban mutuamente | **`procesar_documento`**: una sola llamada que prepara el archivo, lo analiza, completa la MRZ, aplica las reglas y da la recomendacion, con los datos de auditoria (modelos, tiempos, tokens, version de los prompts). La MRZ pasa al orquestador: las dependencias van en un solo sentido | Probado con proveedores falsos (normal, MRZ, tipo confirmado, desconocido, proveedor caido, formato no soportado) y un test que impide que el motor vuelva a importar el orquestador |
 | 2026-10-02 | El motor no daba recomendacion por documento | **Recomendacion del documento**: `aprobar` solo si el analisis termino, no hay alertas criticas ni bloqueantes y los datos y el tipo estan verificados; si no, `revision_manual`. **Nunca `rechazar`**: la decision es humana | Probado con cada caso (estado, alertas, falsos positivos, confianzas); las mismas reglas que la recomendacion global del expediente |
@@ -192,12 +193,14 @@ Nota: el bloque 4 no se ha repetido entero; el informe avisa de que mezcla v2 (8
 
 Solo la B funciona en los dos: es la que se aplico.
 
-**Tiempo por documento** (1 pagina, en la maquina de pruebas sin GPU; medido en la evaluacion del 2026-10-01)
+**Tiempo por documento** (1 pagina, en la maquina de pruebas sin GPU; evaluaciones del 2026-10-01 y medidas del
+2026-10-02 con todo el flujo: preparar, motor, reglas y recomendacion)
 
 | Documento | Media | Maximo medido |
 |---|---|---|
-| Normal (PDF digital, escaneado o foto) | ~60 s | 73 s |
-| Primer documento del dia (modelo sin cargar) | ~80 s | 87 s |
+| Normal, con el modelo ya en memoria (pasaporte digital) | **47 s** (clasificar 7 s + extraer 37 s + resto 3 s) | 73 s |
+| Normal (evaluacion de los 27 documentos) | ~60 s | 73 s |
+| Primer documento del dia (modelo sin cargar) | ~80 s (**~21 s** son de cargar el modelo) | 87 s |
 | Dificil (usa vision en 3 de 6) | ~150 s | 244 s |
 | Extremo (usa vision en 5 de 6) | ~156 s | 193 s |
 
@@ -206,6 +209,10 @@ por imagen** (210 s con 1 pagina). En el peor caso, un documento de 1 pagina con
 (clasificar con texto, reclasificar con vision y extraer con vision) y puede llegar a **~9 minutos** (540 s) antes
 de dar error. Como los documentos se procesan de uno en uno, si hay varios en cola los tiempos se suman. En una
 maquina con GPU estos tiempos bajarian mucho, pero hay que medirlos.
+
+**Para la demo**: antes de empezar, `python -m app.modulos.motor_ia.calentar` carga el modelo de texto (28 s) sin
+analizar nada. Asi el primer documento tarda como los demas, ~47 s. Lanzarlo justo antes: Ollama descarga el modelo
+tras 10 minutos sin uso.
 
 ## 6. Lo que falta y los riesgos
 

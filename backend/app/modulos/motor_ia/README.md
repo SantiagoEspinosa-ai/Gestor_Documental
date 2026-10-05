@@ -15,6 +15,8 @@ Configuracion vigente (modelos, enrutador, reglas de vision y parseo, prompts):
 - Confianzas (ADR-007): las calcula el codigo en `confianza.py` (spec, seccion 14) y el servicio emite `CLS-002`;
   la del modelo va a `Analisis.confianzas_modelo` (auditoria). `VAL-00x`, reglas y recomendacion: `validacion`.
 - Tests: `backend/tests/test_servicio_motor.py` (proveedores y enrutador falsos).
+- `calentar.py`: `python -m app.modulos.motor_ia.calentar [--vision]` carga los modelos en Ollama antes de la demo
+  (sin analizar nada); el primer documento deja de pagar ~21-28 s de carga. Spec, seccion 13.
 
 Proveedores (cada uno en `proveedores/<nombre>.py`, implementan `ProveedorLLM`):
 - `ollama.py` -> `OllamaProvider(base_url, modelo_texto, modelo_vision)`. Modelo de texto (sin imagenes)
