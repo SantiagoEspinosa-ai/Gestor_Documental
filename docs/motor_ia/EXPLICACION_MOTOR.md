@@ -222,7 +222,7 @@ tras 10 minutos sin uso.
 | Maquina con GPU | En esta maquina la vision tarda ~110-150 s por documento | Para la demo hace falta una maquina con GPU (8 GB de memoria grafica o mas) o mas RAM y nucleos |
 | Errores silenciosos sin senal | Datos mal leidos que parecen correctos (p. ej. `GALLE FICTICIA 123` en vez de `CALLE`). El comprobante extremo escaneado se queda en 1/4 | Reglas de coherencia en la etapa 2 (CURP con fecha de nacimiento, orden de las fechas) y la confianza del OCR |
 | Confianza de Tesseract | El OCR sabe cuando duda de una palabra, pero aun no lo usamos | Usarla como quinta senal de OCR pobre, despues de probar con los especimenes |
-| Especimenes | Fotos de movil reales de documentos ficticios impresos (PERSONA_3) | Esperar a que lleguen a `main`. Aviso: desde el 2026-12-14 el comprobante dara `REG-antiguedad_maxima` porque sus fechas impresas no cambian |
+| Especimenes | Fotos de movil reales de documentos ficticios impresos (PERSONA_3) | Esperar a que lleguen a `main`. Aviso: desde el 2026-12-15 el comprobante dara `REG-antiguedad_maxima` porque sus fechas impresas no cambian |
 | Un documento cada vez | Cada documento tarda de 60 a 150 s y carga un modelo de 3-4 GB; dos a la vez cargarian dos modelos y la maquina se queda sin RAM | **Resuelto por PERSONA_1 (PR #9)**: la ingesta procesa los documentos de uno en uno (`MAX_PROCESAMIENTOS_SIMULTANEOS=1`) y Ollama se arranca con `OLLAMA_MAX_LOADED_MODELS=1` |
 | Confianza del modelo | Sigue siendo provisional | Calcularla en el codigo en la etapa 2 (ADR-007) |
 | No determinismo | El modelo puede responder distinto con el mismo documento | Los tests usan respuestas guardadas; las evaluaciones se repiten |

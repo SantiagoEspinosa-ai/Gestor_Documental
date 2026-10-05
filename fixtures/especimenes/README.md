@@ -94,11 +94,11 @@ fijas. Con el tiempo empiezan a dar alertas que hoy no dan:
 
 | Documento | Regla | Desde | Alerta |
 |---|---|---|---|
-| `comprobante_domicilio` | `antiguedad_maxima` (90 dias desde la emision) | **2026-12-14** (15/09/2026 + 90 dias; el 14 o el 15 de diciembre segun la regla compare con `>` o `>=`) | `REG-antiguedad_maxima`, critica |
+| `comprobante_domicilio` | `antiguedad_maxima` (90 dias desde la emision) | **2026-12-15** (la regla exige emision >= hoy - 90 dias: el 14 de diciembre el limite es justo el 15/09/2026 y aun cumple) | `REG-antiguedad_maxima`, critica |
 | `pasaporte` | `vigencia_proxima` (vence en menos de 90 dias) | 2031-07-02 | `REG-vigencia_proxima`, preventiva |
 | `credencial_elector` | `vigencia_documento` (anio de vigencia >= anio actual) | 2030 | `REG-vigencia_documento`, bloqueante |
 
-A partir del 2026-12-14, un folio con estos especimenes ya no equivale al folio `sano` de
+A partir del 2026-12-15, un folio con estos especimenes ya no equivale al folio `sano` de
 `INDICE.md`: el comprobante dara `REG-antiguedad_maxima`. Para tener un comprobante vigente hay que
 volver a imprimirlo y fotografiarlo.
 

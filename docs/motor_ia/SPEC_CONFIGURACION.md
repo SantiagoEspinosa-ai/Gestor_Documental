@@ -328,7 +328,7 @@ se queda solo con `pagina_<n>` (seccion 4).
       `evaluar_fixtures.py`, con el flujo completo (`procesar_documento`). Evaluados el 2026-10-05 los 4 que van por
       texto: **23/23 campos**, tipo 4/4, sin alertas, recomendacion `aprobar`, 59-72 s cada uno (informe en
       `pruebas_ollama/resultados/especimenes/`). Pendiente el comprobante "dificil" (14 caracteres de OCR, va por
-      vision): necesita 5,8 GB libres. **Aviso: sus fechas impresas no cambian; desde el 2026-12-14 el comprobante
+      vision): necesita 5,8 GB libres. **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante
       dara `REG-antiguedad_maxima`** (critica).
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
@@ -572,7 +572,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | este commit |
+| 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | este commit |
+| 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |
 | 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | `f4b41fb` |
 | 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | `6195d28` |
 | 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |
