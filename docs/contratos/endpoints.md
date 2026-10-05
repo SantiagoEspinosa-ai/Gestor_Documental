@@ -15,6 +15,7 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30).
 | POST | /folios/{folio}/documentos | integrador, revisor | multipart: `archivo` (max. 20 MB), `tipo_declarado?` -> lanza BackgroundTask | `202 {identificador_unico_documento, estado_analisis: "pendiente"}` |
 | GET | /documentos/{id} | todos | Resultado del documento | `ResultadoDocumento` |
 | GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream) | `{url}` |
+| POST | /documentos/{id}/revelar | revisor, admin | `{campo}`: valor real y vigente de un campo sensible (ADR-010 A4; ver "Reglas") | `{campo, valor}` |
 | PATCH | /documentos/{id}/datos | revisor | `{campo: valor}` corrige datos; se guarda en `correcciones` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/confirmar-clasificacion | revisor | `{tipo_documental}` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` | `ResultadoDocumento` |

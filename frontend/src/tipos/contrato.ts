@@ -242,6 +242,17 @@ export interface RespuestaOriginal {
   url: string
 }
 
+/** POST /documentos/{id}/revelar (ADR-010 A4): solo revisor y admin; deja `dato_revelado` en la auditoria */
+export interface PeticionRevelar {
+  campo: string
+}
+
+/** Respuesta de POST /documentos/{id}/revelar: el valor real y vigente (el corregido, si lo hay). No se guarda */
+export interface RespuestaRevelar {
+  campo: string
+  valor: unknown
+}
+
 /** PATCH /documentos/{id}/datos: {campo: valor} */
 export type PeticionCorregirDatos = Record<string, unknown>
 

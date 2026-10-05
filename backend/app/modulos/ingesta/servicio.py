@@ -3,6 +3,7 @@ import hashlib
 import logging
 import uuid
 from pathlib import PurePath
+from typing import Any
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -208,6 +209,29 @@ def enmascarar(resultado: ResultadoDocumento) -> ResultadoDocumento:
     """Copia del resultado con los campos sensibles enmascarados (ADR-010 A3 y A5). Solo en el borde de
     salida (respuestas de la API y webhooks): por dentro, BD, reglas y comparaciones usan el valor real."""
     return enmascaramiento.enmascarar_resultado(resultado, campos_sensibles(resultado))
+
+
+def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -> Any:
+    """POST /documentos/{id}/revelar (ADR-010 A4): el valor real y vigente (el corregido, si lo hay) de un
+    campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor).
+
+    Funciona tambien con el folio cerrado: consultar no cambia el folio. El rol lo comprueba el router.
+    """
+    doc = obtener_documento(sesion, documento_id)
+    if doc.estado_analisis in (EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value):
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
+    if doc.estado_analisis == EstadoAnalisis.error.value:
+        raise ErrorApi(409, "DOCUMENTO_CON_ERROR", "El documento no se pudo procesar; vuelve a subirlo")
+    resultado = construir_resultado(sesion, doc)
+    # Ficha de EXTRACCION (ADR-006 2.5): la de los datos que tiene el resultado
+    extraccion = (resultado.tipo_documental_confirmado or resultado.tipo_documental_declarado
+                  or resultado.tipo_documental_detectado)
+    if campo not in tipos.campos_sensibles(extraccion):
+        raise ErrorApi(422, "PETICION_INVALIDA", "El campo no existe en la ficha del documento o no es sensible")
+    auditoria.registrar(sesion, "dato_revelado", usuario=usuario, folio=doc.folio, documento_id=doc.id,
+                        detalle={"campo": campo})
+    sesion.commit()
+    return resultado.datos_extraidos.get(campo)
 
 
 def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:

@@ -1,6 +1,9 @@
-"""Router de documentos: subir un original, consultar su resultado y pedir la URL del original."""
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
-from pydantic import BaseModel
+"""Router de documentos: subir un original, consultar su resultado, pedir la URL del original y revelar
+un dato sensible (ADR-010 A4)."""
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, UploadFile
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.core.almacenamiento import Almacenamiento, get_almacenamiento
@@ -22,6 +25,17 @@ class DocumentoAceptado(BaseModel):
 
 class UrlOriginal(BaseModel):
     url: str
+
+
+class RevelarEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    campo: str = Field(min_length=1, max_length=100)
+
+
+class DatoRevelado(BaseModel):
+    campo: str
+    valor: Any
 
 
 # def (no async): la BD es sincrona y FastAPI la ejecuta en un hilo sin bloquear el bucle
@@ -55,3 +69,12 @@ def original(documento_id: str, sesion: Session = Depends(get_sesion),
              _: Usuario = Depends(requiere_rol("revisor", "admin"))) -> UrlOriginal:
     # Sin auditoria por ahora: el "mostrar" auditado es de la etapa 3
     return UrlOriginal(url=ingesta.url_original(sesion, almacenamiento, documento_id))
+
+
+@router.post("/documentos/{documento_id}/revelar", response_model=DatoRevelado)
+def revelar(documento_id: str, entrada: RevelarEntrada, response: Response, sesion: Session = Depends(get_sesion),
+            usuario: Usuario = Depends(requiere_rol("revisor", "admin"))) -> DatoRevelado:
+    """ADR-010 A4: POST y no GET porque deja auditoria; la respuesta no se guarda en ninguna cache."""
+    valor = ingesta.revelar_dato(sesion, documento_id, entrada.campo, usuario.usuario)
+    response.headers["Cache-Control"] = "no-store"
+    return DatoRevelado(campo=entrada.campo, valor=valor)
