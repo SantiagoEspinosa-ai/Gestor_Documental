@@ -59,7 +59,8 @@ def test_foto_dentro_del_limite_de_tamano(ruta):
 def test_el_readme_lista_todas_las_fotos():
     readme = (ESPECIMENES / "README.md").read_text(encoding="utf-8")
     assert all(f"`{p.name}`" in readme for p in FOTOS)
-    assert "2026-12-14" in readme and "--hoy 2026-09-30" in readme
+    # 2026-12-15: desde ese dia el comprobante da REG-antiguedad_maxima (emision >= hoy - 90 dias)
+    assert "2026-12-15" in readme and "--hoy 2026-09-30" in readme
 
 
 # ---------------------------------------------------------------- script con imagenes sinteticas
