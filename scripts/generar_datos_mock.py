@@ -76,6 +76,16 @@ def iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def campo_api(definicion: dict) -> dict:
+    """Un campo como lo devuelve GET /tipos-documentales (`_campo` de ingesta/tipos.py): `sensible` siempre
+    (false si la ficha no lo marca; ADR-010 A6) y `patron` solo si existe, con el mismo orden de claves."""
+    campo = {"tipo": definicion["tipo"], "obligatorio": bool(definicion.get("obligatorio", False)),
+             "sensible": bool(definicion.get("sensible", False))}
+    if definicion.get("patron"):
+        campo["patron"] = definicion["patron"]
+    return campo
+
+
 def confianza_campo(tipo: str, campo: str) -> float:
     """Determinista y plausible (0.86..0.98), sin azar."""
     h = int(hashlib.sha256(f"{tipo}.{campo}".encode()).hexdigest(), 16)
@@ -340,7 +350,8 @@ def generar(datos: Path = DATOS, originales: Path = ORIGINALES) -> None:
                 for nombre, p in procesos_yaml.items()]
     claves_ficha = ("nombre", "nombre_visible", "categoria", "descripcion", "formatos_permitidos", "campos",
                     "confianza_minima_clasificacion", "confianza_minima_campo", "reglas", "comparaciones")
-    tipos = [{k: ficha[k] for k in claves_ficha} for ficha in constructor.fichas.values()]
+    tipos = [{**{k: ficha[k] for k in claves_ficha}, "campos": {c: campo_api(d) for c, d in ficha["campos"].items()}}
+             for ficha in constructor.fichas.values()]
     auditoria = sorted(constructor.auditoria, key=lambda e: e["creado_en"])
     for i, entrada in enumerate(auditoria, 1):
         entrada["id"] = i

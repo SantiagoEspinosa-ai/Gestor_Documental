@@ -13,19 +13,23 @@
     "campos": {
       "nombre_titular": {
         "tipo": "texto",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "domicilio": {
         "tipo": "texto",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "proveedor": {
         "tipo": "texto",
-        "obligatorio": false
+        "obligatorio": false,
+        "sensible": false
       },
       "fecha_emision": {
         "tipo": "fecha",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       }
     },
     "confianza_minima_clasificacion": 0.8,
@@ -60,13 +64,14 @@
     "campos": {
       "nombre_completo": {
         "tipo": "texto",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "curp": {
         "tipo": "texto",
         "obligatorio": true,
-        "patron": "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$",
-        "sensible": true
+        "sensible": true,
+        "patron": "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"
       },
       "clave_elector": {
         "tipo": "texto",
@@ -75,15 +80,18 @@
       },
       "fecha_nacimiento": {
         "tipo": "fecha",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "domicilio": {
         "tipo": "texto",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "vigencia": {
         "tipo": "anio",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       }
     },
     "confianza_minima_clasificacion": 0.85,
@@ -136,33 +144,39 @@
     "campos": {
       "nombre_completo": {
         "tipo": "texto",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "numero_pasaporte": {
         "tipo": "texto",
         "obligatorio": true,
-        "patron": "^[A-Z0-9]{8,9}$",
-        "sensible": true
+        "sensible": true,
+        "patron": "^[A-Z0-9]{8,9}$"
       },
       "fecha_nacimiento": {
         "tipo": "fecha",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "fecha_expedicion": {
         "tipo": "fecha",
-        "obligatorio": false
+        "obligatorio": false,
+        "sensible": false
       },
       "fecha_vencimiento": {
         "tipo": "fecha",
-        "obligatorio": true
+        "obligatorio": true,
+        "sensible": false
       },
       "nacionalidad": {
         "tipo": "texto",
-        "obligatorio": false
+        "obligatorio": false,
+        "sensible": false
       },
       "sexo": {
         "tipo": "texto",
-        "obligatorio": false
+        "obligatorio": false,
+        "sensible": false
       }
     },
     "confianza_minima_clasificacion": 0.85,
