@@ -42,6 +42,12 @@ export function etiquetaRevision(alerta: Pick<Alerta, 'aplica'>): string {
   return alerta.aplica ? 'Aplica (confirmada por el revisor)' : 'Falso positivo'
 }
 
+/**
+ * Segundos que un dato sensible revelado con "Mostrar" (ADR-010 A4) queda a la vista antes de ocultarse
+ * solo. Unico sitio de este valor: lo usan DatoSensible y sus tests.
+ */
+export const SEGUNDOS_DATO_REVELADO = 60
+
 /** Barra de confianza por campo (ADR-007): la calcula el codigo comprobando el dato, no el modelo */
 export const ETIQUETA_CONFIANZA = 'Confianza verificada'
 export const AYUDA_CONFIANZA =

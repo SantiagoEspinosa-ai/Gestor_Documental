@@ -103,7 +103,7 @@ Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "most
       respuestas de la API enmascaradas para todos los roles, webhook y `resumen.md` con la misma mascara,
       `POST /documentos/{id}/revelar` con `dato_revelado`, filtro de logs (`core/logs.py`) y `X-Entrega-Id` en
       los webhooks. Evidencia: ubicaciones conservadas (acordado con PERSONA_2). Mocks con la misma mascara.
-- [ ] H17: boton "mostrar" en la UI (PR B).
+- [x] H17: boton "Mostrar" en la UI (PR B, rama `feat/plataforma-mostrar`).
 
 ## H1 (2026-10-02)
 UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
@@ -162,10 +162,16 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
 - [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
-- [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
+- [x] H17: boton "Mostrar" de los datos sensibles (PR B, rama `feat/plataforma-mostrar`): revisor y admin,
+      tambien con el folio cerrado; valor solo en memoria del componente, oculto a los 60 s, al cambiar de
+      documento o de pantalla; errores por codigo. Vitest, e2e de mocks y e2e real (con "Dato revelado").
 
 ### Etapa 4
 - [ ] H19: guion de la demo, ensayo y `docker compose up` desde cero.
 - [ ] `frontend/README.md`: Node >= 22.22 y responsable.
 - [ ] `docs/arquitectura_solucion.md` (en `main` desde el PR #12): el reparto nuevo, en un PR pequeno
       cuando se fusione el #13 (comprometido en su revision).
+
+## Mejoras post-MVP
+- Motivo al mostrar un dato sensible (cambio del ADR-010): pedirlo en "Mostrar" y guardarlo en `dato_revelado`.
+- Auditar la apertura del original (accion `original_visto`).

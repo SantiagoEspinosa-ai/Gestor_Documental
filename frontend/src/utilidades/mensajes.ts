@@ -35,3 +35,20 @@ export function mensajeDeError(error: unknown): string {
   if (!base) return error.message || 'Ha ocurrido un error inesperado.'
   return error.codigo === 'PETICION_INVALIDA' && error.message ? `${base} ${error.message}` : base
 }
+
+/** Mensajes propios de "Mostrar" (POST /documentos/{id}/revelar) para los codigos que pueden salir ahi */
+const MENSAJES_REVELAR: Partial<Record<CodigoError, string>> = {
+  DOCUMENTO_EN_PROCESO: 'El documento aún se está analizando: no se puede mostrar el dato todavía.',
+  DOCUMENTO_CON_ERROR: 'El documento terminó en error: no tiene datos que mostrar.',
+  SIN_PERMISO: 'Tu rol no puede ver datos sensibles.',
+  PETICION_INVALIDA: 'Este campo no se puede mostrar.',
+}
+
+/** Mensaje de un fallo al mostrar un dato sensible; el resto de codigos, como en cualquier pantalla */
+export function mensajeRevelar(error: unknown): string {
+  if (error instanceof ErrorApi) {
+    const propio = MENSAJES_REVELAR[error.codigo as CodigoError]
+    if (propio) return propio
+  }
+  return mensajeDeError(error)
+}
