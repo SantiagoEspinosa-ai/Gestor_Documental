@@ -37,6 +37,9 @@ DATOS = {
                            {"nombre_completo": 0.95, "domicilio": 0.95}),
     "comprobante_domicilio": ({"domicilio": "Calle Ficticia 123"}, {"domicilio": 0.95}),
 }
+# Credencial ficticia completa y coherente: CURP (posiciones 5-10 = 900101) con la fecha de nacimiento
+CREDENCIAL_COMPLETA = {"curp": "EJAA900101MDFJNN09", "fecha_nacimiento": "1990-01-01", "vigencia": 2030,
+                       "clave_elector": "EJAANN90010109M100"}
 
 
 @pytest.fixture
@@ -167,6 +170,10 @@ def test_corregir_el_domicilio_quita_la_cmp001(cliente, sesion, s3, folio, motor
 
 
 def test_corregir_una_confianza_baja_lleva_a_aprobar(cliente, sesion, s3, folio, motor):
+    # D3: al corregir se reevaluan todas las reglas, asi que la credencial ficticia tiene que estar completa y
+    # ser coherente (CURP con la fecha de nacimiento) para que solo frene la confianza baja
+    motor["credencial_elector"][0].update(CREDENCIAL_COMPLETA)
+    motor["credencial_elector"][1].update({campo: 0.95 for campo in CREDENCIAL_COMPLETA})
     motor["credencial_elector"][1]["nombre_completo"] = 0.5  # por debajo del minimo (0.80)
     doc = _subir(sesion, s3, folio)
     _subir(sesion, s3, folio, tipo="comprobante_domicilio")

@@ -78,10 +78,15 @@ tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]`
 - Reparto: el motor hace las reglas del documento (VAL, REG, CLS) y su recomendacion; la plataforma,
   `CMP-001`, el recalculo de `EXP-001` y la recomendacion global.
 
-Mientras ese modulo no este en `main`, `procesamiento.py` importa `motor_stub.procesar_documento`,
-con la misma firma: devuelve un `ResultadoDocumento` ficticio valido, sin alertas (con `tipo_confirmado`,
-`tipo_documental_detectado` y `confianza_clasificacion` a null, como el motor real; ADR-009), y
-`{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
+`procesamiento.analizar` usa el motor de `MOTOR_ANALISIS` (H10): `real` (por defecto) es
+`orquestador.servicio.procesar_documento`; `stub` es `motor_stub.procesar_documento`, solo para pruebas sin
+Ollama (e2e de humo), con la misma firma: un `ResultadoDocumento` ficticio valido, sin alertas (con
+`tipo_confirmado`, `tipo_documental_detectado` y `confianza_clasificacion` a null, como el motor real;
+ADR-009), y `{"proveedor": "stub", "modelo": "stub", "version_prompt": "stub@v0", "respaldo_usado": False}`.
+Otro valor no arranca. Los tests usan `stub` (`tests/conftest.py`); los del motor real sustituyen el
+orquestador por uno falso. `datos_auditoria` del motor real (proveedor, `version_prompt_clasificacion`,
+respaldo, `confianzas_modelo`, `tiempos` `{segundos_modelo}`, `tokens` `{entrada, salida}`, `llamadas`,
+`modalidad` y `paginas`) va al `detalle` de `documento_procesado`; `modelo` y `version_prompt`, a sus columnas.
 
 ## Fallos del procesamiento
 Si falla la descarga de S3 o el motor lanza una excepcion, el documento queda en `error`, sin

@@ -67,10 +67,11 @@ export function bloqueantesSinResolver(folio: ResultadoExpediente): Alerta[] {
 }
 
 /**
- * Recomendacion del documento: la da el motor al analizar y no se recalcula al corregir ni al resolver
- * (PR #9, acordado entre PERSONA_1 y PERSONA_2). Aqui la "da" el analisis simulado al completar.
+ * Recomendacion del documento: la da el analisis simulado al completar y, como la API (D3, sugerido por
+ * PERSONA_2), se recalcula al corregir datos (los campos corregidos ya valen 1.0). No al resolver alertas.
+ * Los mocks no reevaluan las reglas al corregir: las alertas del documento no cambian.
  */
-function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void {
+export function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento): void {
   const minimo = ficha(estado, tipoExtraccion(doc))?.confianza_minima_campo ?? 0
   const bajas = Object.values(doc.nivel_confianza_por_campo).some((c) => c < minimo)
   doc.recomendacion = bajas || doc.alertas_encontradas.some(pesa) ? 'revision_manual' : 'aprobar'

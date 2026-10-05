@@ -94,7 +94,15 @@ Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
   (`aplica` false); las confirmadas desaparecen cuando la condicion deja de darse.
 - `corregir_datos(sesion, documento_id, cambios, usuario) -> ResultadoDocumento`: valida contra la
   ficha del tipo de EXTRACCION (confirmado > declarado > detectado, no el efectivo) y guarda una `Correccion` por campo sobre la version vigente del resultado
-  (sin version nueva); recalcula `CMP-001`. Orden comun de las acciones sobre un documento: 404 ->
+  (sin version nueva). D3: despues vuelve a evaluar las reglas (`validacion.evaluar_reglas` de PERSONA_2)
+  con los datos vigentes ya corregidos, confianza 1.0 en los corregidos, la ficha de extraccion y el "hoy"
+  de `ZONA_HORARIA`. Sobre la version vigente y solo para `VAL-001`, `VAL-002`, `VAL-004` y `REG-*`: borra
+  las sin revisar y las confirmadas, conserva los falsos positivos y anade las nuevas que no esten ya como
+  falso positivo; actualiza `reglas_cumplidas_e_incumplidas`. La `VAL-003` sin revisar de un campo corregido
+  se borra (las revisadas se conservan). Nunca toca CLS, SYS, DUP, EXP ni CMP. Si la evaluacion falla, rollback
+  de todo (ni la correccion ni las alertas) y 500 `ERROR_INTERNO`, con un log sin valores. Tambien recalcula la
+  recomendacion DEL DOCUMENTO (ver "Decision sobre la recomendacion por documento"). Despues recalcula
+  `CMP-001` y el resumen. Orden comun de las acciones sobre un documento: 404 ->
   `FOLIO_CERRADO` -> `DOCUMENTO_EN_PROCESO` / `DOCUMENTO_CON_ERROR`. Las comparaciones usan los datos
   ya corregidos.
 - `confirmar_clasificacion(sesion, documento_id, tipo, usuario) -> (ResultadoDocumento, reprocesar)`:
@@ -110,8 +118,10 @@ Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
 
 ## Decision sobre la recomendacion por documento (revision del PR #9)
 La recomendacion global no usa `ResultadoDocumento.recomendacion`. Esa la da el motor de PERSONA_2 al
-analizar, y la plataforma no la recalcula al corregir datos o resolver alertas (acordado con
-PERSONA_2). Si se quiere recalcular, hay que hablarlo con ella.
+analizar y, desde D3 (sugerido y aprobado por PERSONA_2), `corregir_datos` la recalcula con
+`validacion.recomendar_documento(resultado, ficha)`: el resultado vigente tal como queda (datos corregidos,
+confianza 1.0 en los corregidos y las alertas visibles ya reevaluadas) y la misma ficha de extraccion; se
+guarda en el `json` de la version vigente. Al resolver alertas no se recalcula.
 
 ## EXP-002
 `recalcular_exp002(sesion, folio)`: una `EXP-002` informativa, de plataforma y en el DOCUMENTO

@@ -3,7 +3,7 @@
 Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ningun modulo (ADR-005).
 
 ## Ficheros
-- `config.py`: `Settings` (pydantic-settings) y `get_settings()`. Lee el entorno y el `.env` de la raiz. `CORS_ORIGENES`: origenes separados por comas (por defecto `http://localhost:5173`); con `*` no arranca.
+- `config.py`: `Settings` (pydantic-settings) y `get_settings()`. Lee el entorno y el `.env` de la raiz. `CORS_ORIGENES`: origenes separados por comas (por defecto `http://localhost:5173`); con `*` no arranca. `MOTOR_ANALISIS`: `real` (por defecto, el orquestador de PERSONA_2) o `stub` (pruebas sin Ollama); otro valor no arranca.
 - `cors.py`: `CorsDesdeSettings`, el `CORSMiddleware` de Starlette con `CORS_ORIGENES`, los metodos del contrato (`GET`, `POST`, `PATCH` y `OPTIONS`), cabeceras `Authorization` y `Content-Type` y sin credenciales (el token va en la cabecera, no en cookies). Se construye con los Settings de la primera peticion.
 - `db.py`: `Base` de SQLAlchemy 2, `get_engine()` perezoso y dependencia `get_sesion()` de FastAPI.
 - `modelos.py`: tablas de la plataforma. Migraciones en `backend/alembic/` (`alembic upgrade head`).

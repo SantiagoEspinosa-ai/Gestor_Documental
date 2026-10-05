@@ -8,7 +8,7 @@ import {
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
   avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, recalcularTiposDelProceso,
-  resumenFolio,
+  recomendarDocumento, resumenFolio,
   resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -334,6 +334,12 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       doc.nivel_confianza_por_campo[campo] = 1
       doc.evidencia_por_campo[campo] = 'correccion_revisor'
     }
+    // Como la API (D3), en los campos corregidos: fuera VAL-001/002/004 (salvo falso positivo) y la VAL-003 sin
+    // revisar. Los mocks no reevaluan las REG-*. Despues, la recomendacion del documento
+    const corregidos = new Set(valores.map(([campo]) => campo))
+    doc.alertas_encontradas = doc.alertas_encontradas.filter((a) => !(a.campo && corregidos.has(a.campo) && (
+      (['VAL-001', 'VAL-002', 'VAL-004'].includes(a.codigo) && a.aplica !== false) || (a.codigo === 'VAL-003' && a.aplica === null))))
+    recomendarDocumento(estado, doc)
     // Una entrada por PATCH con los nombres de los campos (los valores son datos personales)
     auditar(estado, usuario.usuario, 'dato_corregido', folio.folio, doc.identificador_unico_documento,
       { campos: Object.keys(cuerpo).sort() })
