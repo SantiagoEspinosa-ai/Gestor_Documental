@@ -143,7 +143,7 @@ def test_se_regenera_tras_cada_accion(sesion, s3, monkeypatch):
     c = cliente()
     assert c.patch(f"/api/v1/documentos/{doc.id}/datos", json={"nombre_completo": "Ana Ejemplo"}).status_code == 200
     assert s3.subidas == 3
-    assert "| Nombre completo | Ana Ejemplo | corregido por revisor |" in _resumen(folio).text
+    assert "- Nombre completo: Ana Ejemplo (corregido por revisor)" in _resumen(folio).text
 
     respuesta = c.post(f"/api/v1/documentos/{doc.id}/confirmar-clasificacion",
                        json={"tipo_documental": "credencial_elector"})  # el mismo tipo: sin reproceso

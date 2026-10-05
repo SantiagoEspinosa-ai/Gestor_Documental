@@ -404,9 +404,8 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   de ADR).
 - HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
   "Procesos" en "Pantallas").
-- `resumen.md` (etapa 3, `ResumenExpediente.tsx`): `react-markdown` sin `remark-gfm`, asi que las tablas del
-  resumen (datos de cada documento y comparaciones) se ven como texto con `|`. Para verlas como tabla haria
-  falta la dependencia `remark-gfm` (decidir antes de anadirla).
+- `resumen.md` (etapa 3, `ResumenExpediente.tsx`): el resumen usa solo listas (datos de cada documento y
+  comparaciones), sin tablas, para verse bien con `react-markdown` sin plugins (sin `remark-gfm`).
 - HECHO (H4): `desconocido` como "Tipo no reconocido" y aviso si no hay ficha ni datos (ADR-009; ver
   "Documento no reconocido" en "Pantallas"). Queda de H3: los mocks con `version_prompt` y evidencias
   del motor real.
