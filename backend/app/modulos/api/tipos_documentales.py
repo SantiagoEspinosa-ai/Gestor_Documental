@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/v1/tipos-documentales", tags=["tipos-documentale
 class CampoTipo(BaseModel):
     tipo: str
     obligatorio: bool
+    sensible: bool  # ADR-010 (A6): la API lo enmascara; siempre presente
     # Opcional pero nunca null (`patron?: string` en contrato.ts): solo aparece si la ficha lo define. El
     # None por defecto no se valida ni se envia (exclude_unset), y el openapi lo da como string no requerido
     patron: str = None  # type: ignore[assignment]

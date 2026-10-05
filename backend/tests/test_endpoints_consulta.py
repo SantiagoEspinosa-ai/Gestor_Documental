@@ -109,10 +109,13 @@ def test_tipos_documentales(cliente):
         assert set(t) == CAMPOS_TIPO
         assert t["formatos_permitidos"] == ["pdf", "jpg", "jpeg", "png"]
         for campo in t["campos"].values():
-            assert set(campo) in ({"tipo", "obligatorio"}, {"tipo", "obligatorio", "patron"})
+            assert set(campo) in ({"tipo", "obligatorio", "sensible"}, {"tipo", "obligatorio", "sensible", "patron"})
     pasaporte = tipos[2]
     assert pasaporte["campos"]["numero_pasaporte"]["patron"] == "^[A-Z0-9]{8,9}$"
     assert "patron" not in pasaporte["campos"]["nombre_completo"]
+    # ADR-010 (A6): sensible siempre presente
+    assert pasaporte["campos"]["numero_pasaporte"]["sensible"] is True
+    assert pasaporte["campos"]["nombre_completo"]["sensible"] is False
     assert pasaporte["comparaciones"] == {"credencial_elector": ["nombre_completo", "fecha_nacimiento"]}
     assert pasaporte["confianza_minima_clasificacion"] == 0.85
 

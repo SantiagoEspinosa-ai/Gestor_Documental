@@ -20,6 +20,8 @@ Que se valida:
 - Claves obligatorias; claves desconocidas son error (detecta erratas).
 - Confianzas entre 0 y 1; `formatos_permitidos` se normaliza a minusculas sin punto.
 - Ninguna ficha puede llamarse `desconocido` (`NOMBRE_RESERVADO`, ADR-009).
+- `sensible` de cada campo (ADR-010, A1): booleano, por defecto `false`. Con R8, solo `curp`, `clave_elector` y
+  `numero_pasaporte`. Lo usa la plataforma para enmascarar; sale en `GET /tipos-documentales` (A6).
 - `marcadores_clasificacion` (opcional, ADR-007): expresiones regulares que compilan (con `FLAGS_MARCADORES`)
   y sin repetidos. `motor_ia/confianza.py` las busca en el texto normalizado del documento.
   Son internos del motor: quedan fuera de `model_dump()` y de `GET /tipos-documentales` (Contrato 2 sin cambios).

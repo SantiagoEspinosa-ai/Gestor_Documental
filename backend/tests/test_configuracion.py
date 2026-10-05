@@ -315,3 +315,18 @@ def test_regla_de_coherencia_con_campos_de_otro_tipo(config):
     ficha = ficha_base()
     ficha["reglas"].append(_coherencia(campo="numero", campo_relacionado="fecha_vencimiento"))
     assert "necesita campos de tipo fecha y fecha" in errores_de(config, ficha)
+
+
+# --- ADR-010 (A1): campos sensibles ---
+
+def test_sensible_por_defecto_false_y_solo_booleano(config):
+    assert config(ficha_base())["tipo_a"].campos["numero"].sensible is False
+    ficha = ficha_base()
+    ficha["campos"]["numero"]["sensible"] = "quizas"
+    assert "sensible" in errores_de(config, ficha)
+
+
+def test_fichas_reales_solo_curp_clave_elector_y_numero_pasaporte_son_sensibles():
+    sensibles = {(f.nombre, c) for f in cargar().values() for c, campo in f.campos.items() if campo.sensible}
+    assert sensibles == {("credencial_elector", "curp"), ("credencial_elector", "clave_elector"),
+                         ("pasaporte", "numero_pasaporte")}
