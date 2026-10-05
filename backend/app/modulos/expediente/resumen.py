@@ -41,7 +41,9 @@ def escapar(valor: Any) -> str:
 
 
 def enmascarar_para_resumen(datos: dict[str, Any], ficha: dict | None) -> dict[str, Any]:
-    """ADR-010 A5: aplicar la mascara a los campos sensible cuando llegue H15. Unico punto del resumen."""
+    """ADR-010 A5: aplicar la mascara a los campos sensible cuando llegue H15. Unico punto del resumen.
+    Con H15, este punto y `core/webhooks.enmascarar_para_webhook` usaran la MISMA funcion de mascara
+    (`****` + 4 ultimos caracteres), para que el resumen y el webhook no se separen."""
     return datos
 
 

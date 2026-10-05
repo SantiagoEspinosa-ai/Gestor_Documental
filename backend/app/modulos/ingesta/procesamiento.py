@@ -60,6 +60,17 @@ def _expediente_servicio():
     return servicio
 
 
+def _despues_del_commit(sesion, documento_id: uuid.UUID) -> None:
+    """Tras guardar el analisis (o el error): regenera el resumen.md del folio y avisa por webhook."""
+    try:
+        doc = sesion.get(Documento, documento_id)
+        if doc is not None:
+            _expediente_servicio().regenerar_resumen(sesion, doc.folio)  # tampoco lanza
+    except Exception:  # noqa: BLE001  el resumen no cambia el documento
+        log.exception("No se pudo regenerar el resumen tras procesar el documento %s", documento_id)
+    _notificar(sesion, documento_id)
+
+
 def _notificar(sesion, documento_id: uuid.UUID) -> None:
     """Webhook documento.completado o documento.error, DESPUES del commit y en segundo plano (core/webhooks.py).
     Solo si el proceso del folio tiene `webhook_url`. Nunca lanza: un fallo no cambia el documento."""
@@ -106,7 +117,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
         except Exception:
             log.exception("Fallo al procesar el documento %s", documento_id)
             _marcar_error(sesion, documento_id)
-            _notificar(sesion, documento_id)  # documento.error, ya con el estado guardado
+            _despues_del_commit(sesion, documento_id)  # documento.error, ya con el estado guardado
             return
 
         try:
@@ -130,7 +141,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
             log.exception("Fallo al guardar el resultado del documento %s", documento_id)
             _marcar_error(sesion, documento_id)
         # Tras el commit (o tras marcar el error): completado o error segun lo guardado
-        _notificar(sesion, documento_id)
+        _despues_del_commit(sesion, documento_id)
 
 
 def _marcar_error(sesion, documento_id: uuid.UUID) -> None:

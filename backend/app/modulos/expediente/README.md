@@ -67,6 +67,21 @@ comparaciones y "Generado el <fecha>".
 - `enmascarar_para_resumen(datos, ficha)`: unico punto por el que pasan los datos (de cada documento y de
   las comparaciones). Hoy no enmascara; ADR-010 A5 lo aplicara a los campos `sensible` cuando llegue H15.
 
+## Regeneracion del resumen.md (etapa 3)
+- `regenerar_resumen(sesion, folio)`: despues del COMMIT de cada cambio genera el resumen y lo guarda con
+  `subir_derivado` (sobrescribe) en `{proceso}/{anio}/{secuencia:06d}/resumen.md`, junto a los originales.
+  Se llama al crear el folio (cabecera y "Sin documentos"), al terminar cada analisis (tambien los
+  reprocesos y los documentos en error, desde `ingesta/procesamiento.py`), al corregir datos, al
+  confirmar la clasificacion, al resolver una alerta y al decidir. Nunca lanza: si S3 falla se registra
+  (solo el folio y el tipo de error) y la accion sigue; el siguiente cambio lo regenera. Despues llama a
+  `avisar_reindexar(folio)`, que hoy no hace nada (H14, PERSONA_2: `rag` reindexa el resumen).
+- `obtener_resumen(sesion, folio)`: el Markdown de S3 para `GET /folios/{folio}/resumen.md`.
+- `ruta_resumen_md` se deriva del folio, sin columna ni migracion: el expediente la devuelve siempre.
+  Caso limite: un folio anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton "Ver
+  resumen" pero `GET` da 404 `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio del folio.
+- `_almacenamiento()` es el unico acceso a S3 del modulo; en los tests lo sustituye uno en memoria
+  (`tests/conftest.py`).
+
 ## Revision (E2.6)
 - `resolver_alerta_documento(sesion, documento_id, alerta_id, aplica, comentario, usuario) -> ResultadoDocumento`
   y `resolver_alerta_expediente(sesion, folio, alerta_id, aplica, comentario, usuario) -> ResultadoExpediente`.

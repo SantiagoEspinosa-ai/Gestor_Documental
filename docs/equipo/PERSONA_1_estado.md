@@ -94,7 +94,11 @@ Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "most
 - [x] Webhooks firmados con HMAC-SHA256 y 3 intentos (`core/webhooks.py`, rama `feat/plataforma-etapa3`):
       `documento.completado`, `documento.error` y `folio.estado_cambiado`. El enmascaramiento de `datos`
       queda pendiente del ADR-010 y H15 (`enmascarar_para_webhook`).
-- [ ] Resumen `.md` del expediente.
+- [x] Resumen `.md` del expediente (rama `feat/plataforma-etapa3`): `expediente/resumen.py` y plantilla Jinja,
+      con los datos extraidos (decision del usuario), regenerado tras cada cambio en S3 y `GET
+      /folios/{folio}/resumen.md`. Decision: `ruta_resumen_md` se deriva del folio, sin migracion; un folio
+      anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton y da 404
+      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. El enmascaramiento queda pendiente de H15.
 - [ ] Enmascaramiento en la API, en los logs y "mostrar" auditado (ADR-010, tras H15).
 
 ## H1 (2026-10-02)

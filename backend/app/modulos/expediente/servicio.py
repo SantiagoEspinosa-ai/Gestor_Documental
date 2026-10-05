@@ -1,4 +1,5 @@
 """API publica del modulo expediente: crear, consultar y listar folios (ADR-005: solo esto se importa)."""
+import logging
 import re
 import uuid
 from datetime import datetime, timezone
@@ -10,18 +11,24 @@ from sqlalchemy.dialects.sqlite import insert as insert_sqlite
 from sqlalchemy.orm import Session
 
 from app.core import auditoria, webhooks
+from app.core.almacenamiento import ObjetoNoEncontrado, clave_derivado, get_almacenamiento
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
 from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Proceso, Resultado, SecuenciaFolio
 from app.modulos.configuracion import servicio as configuracion
 from app.modulos.ingesta import servicio as ingesta
+from app.modulos.expediente import resumen
 from app.modulos.expediente.recomendacion import DocumentoParaRecomendar, calcular_recomendacion_global
 from app.modulos.validacion import servicio as validacion
 from app.schemas.resultado import (Alerta, ComparacionCampo, DecisionHumana, EstadoAnalisis, EstadoGeneral,
                                    Recomendacion, ResultadoDocumento, ResultadoExpediente, ResumenFolio,
                                    Severidad)
 
+log = logging.getLogger(__name__)
+
 MAX_SECUENCIA = 999_999  # NNNNNN
+NOMBRE_RESUMEN = "resumen.md"
+TIPO_RESUMEN = "text/markdown; charset=utf-8"
 
 
 def _siguiente_secuencia(sesion: Session, proceso: str, anio: int) -> int:
@@ -197,12 +204,53 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
         _crear_exp001(sesion, folio.folio, tipo)
     auditoria.registrar(sesion, "folio_creado", usuario=usuario, folio=folio.folio)
     sesion.commit()
+    regenerar_resumen(sesion, folio.folio)  # cabecera y "Sin documentos"
     return folio
 
 
 def _fichas() -> dict[str, dict]:
     # Las mismas de GET /tipos-documentales: ingesta las arma desde configuracion.servicio
     return {f["nombre"]: f for f in ingesta.listar_tipos()}
+
+
+def _almacenamiento():
+    """S3 de los derivados del folio. En los tests lo sustituye uno en memoria (tests/conftest.py)."""
+    return get_almacenamiento()
+
+
+def _ruta_resumen(fila: Folio) -> str:
+    """Clave S3 del resumen, derivada del folio (sin columna): junto a sus originales."""
+    return clave_derivado(fila.proceso, fila.anio, fila.secuencia, NOMBRE_RESUMEN)
+
+
+def avisar_reindexar(folio: str) -> None:
+    """H14 (PERSONA_2): rag reindexa el resumen."""
+
+
+def regenerar_resumen(sesion: Session, folio: str) -> None:
+    """Regenera `resumen.md` y lo guarda en S3 (sobrescribe). Llamar DESPUES del commit.
+
+    Nunca lanza: si falla (S3 caido, por ejemplo), se registra sin datos y el siguiente cambio lo regenera.
+    """
+    try:
+        expediente = obtener_expediente(sesion, folio)
+        texto = resumen.generar(expediente, _fichas(), datetime.now(timezone.utc))
+        _almacenamiento().subir_derivado(texto.encode("utf-8"), expediente.ruta_resumen_md, TIPO_RESUMEN)
+    except Exception as e:  # noqa: BLE001  el resumen nunca hace fallar la accion que lo provoca
+        log.warning("No se pudo regenerar el resumen del folio %s: %s", folio, type(e).__name__)
+        return
+    avisar_reindexar(folio)
+
+
+def obtener_resumen(sesion: Session, folio: str) -> str:
+    """GET /folios/{folio}/resumen.md: el Markdown guardado en S3."""
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    try:
+        return _almacenamiento().descargar(_ruta_resumen(fila)).decode("utf-8")
+    except ObjetoNoEncontrado:
+        raise ErrorApi(404, "RESUMEN_NO_DISPONIBLE", "El resumen del folio todavia no esta disponible") from None
 
 
 def _documentos_y_alertas(sesion: Session, folio: str) -> tuple[list[ResultadoDocumento], list[Alerta]]:
@@ -260,6 +308,9 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         comentario_decision=fila.decision_comentario,  # ADR-006 G
         usuario_decision=fila.decision_usuario,
         fecha_decision=fila.decision_fecha,
+        # Derivada del folio (sin migracion): el resumen se genera al crearlo y en cada cambio. Un folio
+        # anterior a esta funcion, o con un fallo de S3 al crearlo, da 404 RESUMEN_NO_DISPONIBLE hasta el siguiente
+        ruta_resumen_md=_ruta_resumen(fila),
     )
 
 
@@ -329,6 +380,7 @@ def _guardar_resolucion(sesion: Session, alerta: AlertaBD, aplica: bool, comenta
                         documento_id=alerta.documento_id,
                         detalle={"alerta_id": str(alerta.id), "codigo": alerta.codigo, "aplica": aplica})
     sesion.commit()
+    regenerar_resumen(sesion, alerta.folio)
 
 
 def resolver_alerta_documento(sesion: Session, documento_id: str, alerta_id: str, aplica: bool,
@@ -432,6 +484,7 @@ def corregir_datos(sesion: Session, documento_id: str, cambios: dict, usuario: s
     auditoria.registrar(sesion, "dato_corregido", usuario=usuario, folio=doc.folio, documento_id=doc.id,
                         detalle={"campos": sorted(cambios)})
     sesion.commit()
+    regenerar_resumen(sesion, doc.folio)
     return ingesta.construir_resultado(sesion, doc)
 
 
@@ -474,6 +527,7 @@ def confirmar_clasificacion(sesion: Session, documento_id: str, tipo: str,
     auditoria.registrar(sesion, "clasificacion_confirmada", usuario=usuario, folio=doc.folio,
                         documento_id=doc.id, detalle={"tipo": tipo, "reproceso": reprocesar})
     sesion.commit()
+    regenerar_resumen(sesion, doc.folio)  # si se reprocesa, el procesamiento lo vuelve a regenerar al acabar
     return ingesta.construir_resultado(sesion, doc), reprocesar
 
 
@@ -513,6 +567,7 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
     sesion.commit()
     sesion.expire(fila)  # el UPDATE no paso por el ORM: releer el folio
     resultado = obtener_expediente(sesion, folio)
+    regenerar_resumen(sesion, folio)
     # Webhook folio.estado_cambiado tras el commit y en segundo plano: un fallo no cambia la decision
     webhooks.enviar_en_segundo_plano(sesion.get(Proceso, fila.proceso).webhook_url, "folio.estado_cambiado",
                                      folio, resultado)

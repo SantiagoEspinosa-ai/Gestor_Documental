@@ -45,7 +45,9 @@ def _lanzar(funcion: Callable[[], object]) -> None:
 
 
 def enmascarar_para_webhook(datos: dict) -> dict:
-    """ADR-010 A5: aqui se enmascaran los campos sensibles cuando llegue H15. Unico punto para el webhook."""
+    """ADR-010 A5: aqui se enmascaran los campos sensibles cuando llegue H15. Unico punto para el webhook.
+    Con H15, este punto y `expediente/resumen.enmascarar_para_resumen` usaran la MISMA funcion de mascara
+    (`****` + 4 ultimos caracteres), para que el webhook y el resumen no se separen."""
     return datos
 
 
