@@ -72,6 +72,8 @@ class Campo(_Estricto):
     tipo: TipoCampo
     obligatorio: bool = False
     patron: str | None = None
+    # ADR-010 (A1): dato sensible; la API lo enmascara y solo revisor y admin pueden "mostrarlo"
+    sensible: bool = False
 
     @field_validator("patron")
     @classmethod

@@ -317,10 +317,14 @@ se queda solo con `pagina_<n>` (seccion 4).
       - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
         `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
         relacionados con SQL. Etapa 3 (dias 9-11).
-      - [ ] H15: `sensible: true` en los YAML y en el cargador (etapa 3, ADR-010). **Despues de que se fusione el PR de
-        reglas de coherencia** (`chore/reglas-coherencia`), nunca en paralelo: tocan los mismos ficheros (cargador y
-        `config/tipos/*.yaml`). Incluye un test de que los logs del motor y `datos_auditoria` no llevan valores de los
-        campos.
+      - [x] H15 (ADR-010, A1 y A6; rama `feat/sensible`, despues del PR de reglas de coherencia): `Campo.sensible`
+        en el cargador (booleano, por defecto `false`) y `sensible: true` solo en `curp`, `clave_elector` y
+        `numero_pasaporte` (R8). **Cambia el Contrato 2**: `sensible` siempre presente en `CampoFicha` de
+        `GET /tipos-documentales` (`endpoints.md`, `contrato.ts`, `_campo` de `ingesta/tipos.py` y `CampoTipo` del
+        router). Test `test_sin_valores_en_logs.py`: los logs del motor y `datos_auditoria` no llevan valores de los
+        campos (normal, proveedor caido, JSON invalido y sexo desde la MRZ). Mocks regenerados con
+        `scripts/generar_datos_mock.py` (solo `tipos_documentales.json`). Con la rama `chore/mocks-sensible`
+        (`e24e757`, PR pendiente) el script pone `sensible` en todos los campos, igual que la API.
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
@@ -572,8 +576,10 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | este commit |
+| 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | este commit |
+| 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
 | 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |
+| 2026-10-05 | H15 (ADR-010, A1 y A6): `sensible` en el cargador y en `curp`, `clave_elector` y `numero_pasaporte`; Contrato 2 con `sensible` en `CampoFicha`; test de que los logs del motor y `datos_auditoria` no llevan valores | `a627aa8` |
 | 2026-10-05 | `motor_ia/calentar.py` (calentar los modelos antes de la demo; `gemma4:e2b` cargado en 28,3 s) en la seccion 13. `evaluar_fixtures.py`: todos los bloques pasan por `orquestador.procesar_documento` (reglas y recomendacion en el resultado), bloque 5 de especimenes (`--salida resultados/especimenes`) y `--salida` absoluta para Docker. H11: formato de `INDICE.md` documentado en `fixtures/README.md` | `f4b41fb` |
 | 2026-10-05 | ADR-010 (PR #21, aprobado por PERSONA_2): H14 pasa a ser solo `rag.servicio.fragmento_resumen(folio) -> str \| None` ya enmascarado (PERSONA_1 elige los folios con SQL); H15 (`sensible: true`) despues del PR de reglas de coherencia, con test de que logs y `datos_auditoria` no llevan valores | `6195d28` |
 | 2026-10-02 | Seccion 13: tiempo del primer documento con el modelo sin cargar (76-87 s; carga ~21 s) frente a 47 s con el modelo cargado (CLI con `procesar_documento`, pasaporte digital). No supera los 73 s con el modelo cargado: el maximo no cambia. Rama `chore/reglas-coherencia` (`2986d2b`) desde `main`, subida sin PR. Test de ids de reglas del pasaporte como subconjunto | `e679f60` |
