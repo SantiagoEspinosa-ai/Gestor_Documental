@@ -579,7 +579,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Especimen "dificil" del comprobante (vision): 4/4 correctos, `revision_manual` con `CLS-002` y `VAL-002` (sin texto que verificar). Especimenes completos: 27/27, tipo 5/5 | este commit |
+| 2026-10-05 | `docs/motor_ia/CHECKLIST_E2E_HITO.md`: checklist del e2e del hito (preparacion, calentar, prueba con los 3 sanos, resultado esperado de la prueba local de H10 y que mirar si falla) | este commit |
+| 2026-10-05 | Especimen "dificil" del comprobante (vision): 4/4 correctos, `revision_manual` con `CLS-002` y `VAL-002` (sin texto que verificar). Especimenes completos: 27/27, tipo 5/5 | `c8cf280` |
 | 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
