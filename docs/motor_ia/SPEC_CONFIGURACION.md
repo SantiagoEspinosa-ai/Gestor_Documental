@@ -322,8 +322,9 @@ se queda solo con `pagina_<n>` (seccion 4).
         `numero_pasaporte` (R8). **Cambia el Contrato 2**: `sensible` siempre presente en `CampoFicha` de
         `GET /tipos-documentales` (`endpoints.md`, `contrato.ts`, `_campo` de `ingesta/tipos.py` y `CampoTipo` del
         router). Test `test_sin_valores_en_logs.py`: los logs del motor y `datos_auditoria` no llevan valores de los
-        campos (normal, proveedor caido, JSON invalido y sexo desde la MRZ). Los mocks del frontend los regenera
-        PERSONA_1: hasta entonces fallan `test_contrato_frontend` y `test_generar_datos_mock` (tipos_documentales).
+        campos (normal, proveedor caido, JSON invalido y sexo desde la MRZ). Mocks regenerados con
+        `scripts/generar_datos_mock.py` (solo `tipos_documentales.json`). Nota: el script copia el YAML tal cual, asi
+        que en los mocks `sensible` solo aparece en los tres campos sensibles; la API lo da en todos.
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).

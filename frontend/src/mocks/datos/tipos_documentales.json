@@ -65,11 +65,13 @@
       "curp": {
         "tipo": "texto",
         "obligatorio": true,
-        "patron": "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$"
+        "patron": "^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$",
+        "sensible": true
       },
       "clave_elector": {
         "tipo": "texto",
-        "obligatorio": false
+        "obligatorio": false,
+        "sensible": true
       },
       "fecha_nacimiento": {
         "tipo": "fecha",
@@ -139,7 +141,8 @@
       "numero_pasaporte": {
         "tipo": "texto",
         "obligatorio": true,
-        "patron": "^[A-Z0-9]{8,9}$"
+        "patron": "^[A-Z0-9]{8,9}$",
+        "sensible": true
       },
       "fecha_nacimiento": {
         "tipo": "fecha",
