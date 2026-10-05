@@ -28,6 +28,15 @@ docker compose --profile ollama up --build  # o Ollama en un contenedor
 `OLLAMA_BASE_URL` vale por defecto `http://host.docker.internal:11434` (Ollama instalado en el equipo);
 con el perfil `ollama`, cambialo a `http://ollama:11434` (ver `.env.example`).
 
+## Integracion continua
+GitHub Actions (`.github/workflows/ci.yml`) en cada PR a `main` y en cada push a `main`, sin secretos:
+- backend: `pytest` completo con Tesseract y PostgreSQL 16 + pgvector (tambien los tests de concurrencia),
+  S3 simulado con moto y el motor stub (`MOTOR_ANALISIS=stub`);
+- frontend: lint, build (con la comprobacion de que no queda ningun mock), Vitest y los e2e de Playwright
+  sobre los mocks.
+
+Los e2e reales (`frontend/e2e-real/`, contra la API y con usuarios reales) se ejecutan a mano.
+
 ## Reglas del equipo
 - Contratos (schemas, endpoints, interfaz del motor) solo cambian con un ADR y aviso al equipo.
 - Secretos solo en `.env` o gestor de secretos. Placeholders `TU_CLAVE_AQUI` en ejemplos.
