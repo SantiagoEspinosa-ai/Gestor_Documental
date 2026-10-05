@@ -100,3 +100,14 @@ Solo se limita `analizar`; la descarga de S3 y la escritura en BD van fuera. Mie
 el documento sigue en `procesando`. Vale para un solo proceso uvicorn (las BackgroundTasks son hilos
 del mismo proceso); con varios workers haria falta una cola, fuera del MVP. Con Ollama, arrancarlo con
 `OLLAMA_MAX_LOADED_MODELS=1`.
+
+## Reanudar al arrancar
+Las BackgroundTasks viven en memoria: si la API se reinicia en mitad de un analisis, el documento se
+quedaria en `pendiente` o `procesando` para siempre. `reanudar_pendientes(sesion)` (lo llama el lifespan
+de `main.py` tras cargar fichas y procesos, si `REANUDAR_ANALISIS_AL_ARRANCAR=true`, por defecto) busca
+esos documentos y relanza cada uno con `procesamiento.procesar(id, tipo_confirmado=...)` en un hilo
+daemon: respeta el semaforo, un reproceso por confirmar otro tipo sigue con ese tipo y el arranque no
+espera. `completado` y `error` no se tocan. El log solo lleva el numero de documentos y sus ids. Vale
+para un solo proceso uvicorn: con varios workers cada uno relanzaria los mismos documentos (haria falta
+una cola, limitacion conocida). En los tests el ajuste va a `false` (`tests/conftest.py`), salvo en
+`test_reanudar_analisis.py`.

@@ -1,7 +1,9 @@
 """API publica del modulo ingesta: recibir un original, guardarlo en S3, registrarlo y consultarlo (ADR-005)."""
 import hashlib
 import logging
+import threading
 import uuid
+from collections.abc import Callable
 from pathlib import PurePath
 
 from sqlalchemy import or_, select
@@ -222,3 +224,32 @@ def procesar_documento(documento_id: uuid.UUID, tipo_confirmado: str | None = No
 def existe_tipo(tipo: str) -> bool:
     """True si hay ficha para ese tipo documental."""
     return tipos.existe_tipo(tipo)
+
+
+def _lanzar(funcion: Callable[[], object]) -> None:
+    """En un hilo daemon: el arranque no espera a los analisis. Los tests lo sustituyen."""
+    threading.Thread(target=funcion, name="reanudar-analisis", daemon=True).start()
+
+
+def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
+    """Relanza los analisis que un reinicio de la API dejo a medias. Lo llama el arranque (main.py).
+
+    Las BackgroundTasks viven en memoria: si la API se reinicia en mitad de un analisis, el documento se
+    queda en `pendiente` o `procesando` para siempre. Aqui se vuelve a lanzar cada uno con
+    `procesamiento.procesar` (que respeta el limite MAX_PROCESAMIENTOS_SIMULTANEOS) y su
+    `tipo_documental_confirmado` (un reproceso por confirmar otro tipo sigue con ese tipo), cada uno en un
+    hilo daemon para no bloquear el arranque. `completado` y `error` no se tocan. Devuelve los ids.
+
+    Limitacion conocida: vale para un solo proceso uvicorn. Con varios workers, cada uno relanzaria los
+    mismos documentos; haria falta una cola (fuera del MVP).
+    """
+    filas = sesion.execute(select(Documento.id, Documento.tipo_documental_confirmado).where(
+        Documento.estado_analisis.in_([EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value]))
+        .order_by(Documento.creado_en, Documento.id)).all()
+    if not filas:
+        return []
+    # Solo el numero y los ids: nunca datos del documento
+    log.info("Reanudando %d analisis interrumpidos: %s", len(filas), ", ".join(str(f.id) for f in filas))
+    for documento_id, tipo_confirmado in filas:
+        _lanzar(lambda d=documento_id, t=tipo_confirmado: procesamiento.procesar(d, tipo_confirmado=t))
+    return [f.id for f in filas]
