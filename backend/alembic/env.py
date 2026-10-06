@@ -5,6 +5,8 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 import app.core.modelos  # noqa: F401  registra las tablas en Base.metadata
+# memoria_folios vive en rag (PERSONA_2, H14) y no en core/modelos.py: tambien hay que registrarla
+import app.modulos.rag.modelos  # noqa: F401
 from app.core.db import Base
 
 config = context.config
@@ -16,7 +18,7 @@ if config.config_file_name is not None:
 # La URL sale siempre de los settings (.env), nunca de alembic.ini
 config.set_main_option("sqlalchemy.url", get_settings().database_url.get_secret_value())
 
-# Tablas de app.core.modelos
+# Tablas de app.core.modelos y de app.modulos.rag.modelos
 target_metadata = Base.metadata
 
 
