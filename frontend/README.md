@@ -182,6 +182,15 @@ hace fallar el build si queda algun rastro.
     admin), clasificacion declarada, detectada y confirmada con su confianza, tabla de datos con
     `<BarraConfianza>` (umbral de la ficha; texto de ADR-007), formato segun el tipo del campo, `null`
     como "no detectado", evidencia y "Corregido por revisor (antes: X)"; reglas y modelo usado.
+    Datos sensibles (ADR-010, H17, `componentes/DatoSensible.tsx`): un campo `sensible` de la ficha de
+    extraccion con valor sale enmascarado (`****1234`, como lo da la API) y, para revisor y admin (nunca el
+    integrador; tambien con el folio cerrado), con el boton "Mostrar <campo>": `POST
+    /documentos/{id}/revelar` (`api/revision.ts`, `revelarDato`), boton deshabilitado mientras carga, el
+    valor completo con "Ocultar" y un aviso `aria-live`. El valor vive solo en el estado del componente
+    (nada de storage, URL ni consola) y se oculta al pulsar "Ocultar", al cambiar de documento o de
+    pantalla y solo a los `SEGUNDOS_DATO_REVELADO` (60 s, `utilidades/etiquetas.ts`). Errores con
+    `mensajeRevelar` (`utilidades/mensajes.ts`): 409 en proceso o con error, 403 y 422; el valor sigue
+    enmascarado. Solo en la tabla de datos: comparaciones, evidencia y correcciones siguen enmascaradas.
     Documento en error: mensaje y alerta `SYS-00x`, sin reprocesar (fuera del MVP).
     Documento no reconocido (ADR-009, H4): un detectado `desconocido` (`TIPO_DESCONOCIDO` en
     `tipos/contrato.ts`) sale como "Tipo no reconocido" en la clasificacion, en la lista del expediente y
@@ -294,9 +303,10 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   `/auditoria?tamano_pagina=500`, tras el login como admin vuelve con los parametros y ve el 422;
   recargar mantiene la sesion y la URL completa; el revisor
   que entra por URL ve "Sin permiso"); correccion de datos (un obligatorio no se vacia, un opcional
-  vaciado queda en "no detectado", y un `anio` con menos de 4 cifras no se guarda); antecedentes (el revisor
-  ve en el folio 2 su antecedente, el folio 4, y lo abre).
-- 11 tests en 7 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
+  vaciado queda en "no detectado", y un `anio` con menos de 4 cifras no se guarda); mostrar (el revisor
+  muestra y oculta la CURP de una credencial, H17); antecedentes (el revisor ve en el folio 2 su antecedente, el
+  folio 4, y lo abre).
+- 12 tests en 8 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
   `nuevoFolio`, `subir`, `filaCarga` y `abrirFolio`.
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.
@@ -346,7 +356,9 @@ npm run test:e2e:real   # playwright.real.config.ts: Chromium, workers 1, http:/
   `admin_auditoria` (en serie tras el anterior: en `/auditoria?folio=` estan "Folio creado", 2
   "Documento subido", 2 "Documento analizado" y "Decisión del folio"); `integrador_roles` (sin lista de
   folios, "Sin permiso" en `/auditoria` y `/procesos`, y en el expediente de su folio "Tu rol no puede
-  ver el original del documento.").
+  ver el original del documento."); `revisor_mostrar` (con el stub no hay datos: el revisor escribe una
+  CURP ficticia, sale enmascarada, la muestra y la oculta) y `admin_auditoria_revelado` (en serie: en
+  `/auditoria?folio=` hay un "Dato revelado" con "Campo: curp" y nunca el valor).
 - Aviso: cada ejecucion sube 3 PDF ficticios (`public/mock-originales`) al bucket de desarrollo, crea 2
   folios en la BD local y escribe sus `resumen.md` (se regeneran en cada cambio). Con el stub tarda unos 30 s.
 - `npm test` y `npm run test:e2e` no los recogen (`src/**/*.test.*` y `e2e/**/*.e2e.ts`).
@@ -413,7 +425,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   al responder: el estado en memoria guarda el valor real, como la BD. `POST /documentos/{id}/revelar`
   responde como la API (revisor y admin, 403 al integrador, 422/404/409, `Cache-Control: no-store` y
   `dato_revelado` con `{campo}`). Al corregir un campo `sensible`, `EditorCampo` empieza vacio (el valor
-  llega enmascarado y no debe guardarse la mascara). Falta H17 (PR B): el boton "mostrar".
+  llega enmascarado y no debe guardarse la mascara).
+- HECHO (H17, PR B): boton "Mostrar" de los datos sensibles para revisor y admin, con auto-ocultado a los
+  60 s (ver "Expediente" en "Pantallas").
 - HECHO (H16): antecedentes del folio en el expediente (ver "Pantallas"). En los mocks, el folio 2 y el 4 tienen
   la misma referencia (`scripts/generar_datos_mock.py`): el 4, cerrado, es el antecedente del 2; el 3 no tiene
   referencia. El fragmento del mock es el principio de su `resumen.md` de mock.
