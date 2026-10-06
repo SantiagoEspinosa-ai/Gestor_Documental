@@ -15,12 +15,14 @@ Punto de partida para la proxima sesion. El detalle de cada decision esta en
 | #41 | `feat/plataforma-antecedentes` (PERSONA_1) | H16: antecedentes (ADR-010 C1-C4) con `fragmento_resumen` |
 | #38 | `feat/plataforma-mostrar` (PERSONA_1) | H17: boton "Mostrar" en los campos sensibles para revisor y admin |
 | #40 | `chore/ci-ubuntu-24` (PERSONA_1) | CI fijado a `ubuntu-24.04` |
+| #43 | `fix/filtro-logs-acceso` (PERSONA_1) | `core/logs.py` conserva los `args`: vuelven las lineas de acceso de uvicorn |
+| #42 | `chore/compose-demo` (PERSONA_1) | `docker-compose.demo.yml`: arranque de demo con el backend sin `--reload` |
 
 ## Ramas de PERSONA_2
 
 | Rama | Ultimo commit | Push | Contenido pendiente de llegar a `main` |
 |---|---|---|---|
-| `feat/motor-ia` | este commit | si | Merge de `origin/main` (#38-#41), este documento, la spec al dia (H14 hecho) y el docstring de `indexar_resumen` (commit sobre la sesion recibida). Sin PR todavia |
+| `feat/motor-ia` | este commit | si | Merges de `origin/main` (#37-#41 en `6325c9d`; #42 y #43), este documento, la spec al dia (H14 hecho), el docstring de `indexar_resumen` (commit sobre la sesion recibida) y el arranque de demo en `CHECKLIST_E2E_HITO.md`. Sin PR todavia |
 
 `feat/rag-memoria` ya esta en `main` (#37).
 
@@ -35,15 +37,13 @@ Punto de partida para la proxima sesion. El detalle de cada decision esta en
      su fragmento en el segundo, sin valores de los datos; sin referencia o sin permiso, `permitido: false`.
    Plataforma preparada el 2026-10-06 (sin el `docker-compose.override.yml` local; en `.env` del equipo,
    `OLLAMA_BASE_URL` a `host.docker.internal` y `MOTOR_ANALISIS=real`; `revisor_hito` y su contrasena temporal
-   borrados; frontend con `VITE_USAR_MOCKS=false`). **Despues se paro Docker Desktop**: antes del e2e, arrancarlo,
-   `git pull` en `main`, `docker compose up -d --build db backend` (aplica la migracion `0005`), ejecutar una vez
-   `scripts/reindexar_resumenes.py` para los folios existentes, lanzar el frontend y crear el usuario revisor con
-   `scripts/crear_usuario.py`. Antes de subir: calentar el modelo y, si hace falta, vaciar la cache de la VM de
+   borrados). **Despues se paro la plataforma** (Docker Desktop se cerro; ya esta arrancado, con `db` y `backend`
+   parados). Antes del e2e: `git pull` en `main`, arranque de demo
+   `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build` (#42; aplica la migracion `0005` y
+   levanta tambien el frontend en `:5173`), ejecutar una vez `scripts/reindexar_resumenes.py` para los folios
+   existentes y crear el usuario revisor con `scripts/crear_usuario.py`. Antes de subir: calentar el modelo y, si hace falta, vaciar la cache de la VM de
    Docker. Recomendado `OLLAMA_MAX_LOADED_MODELS=1` en el equipo (variable de usuario) y reiniciar Ollama.
-2. **Aviso a PERSONA_1** (#32): `core/logs.py` (`FiltroDatosSensibles`) deja `record.args = None` y el log de
-   acceso de uvicorn lanza `TypeError` en cada peticion (las respuestas no cambian; se pierden las lineas de
-   acceso).
-3. **Limpiar despues del e2e por la web**: el usuario revisor creado para la prueba (BD local), si no se queda
+2. **Limpiar despues del e2e por la web**: el usuario revisor creado para la prueba (BD local), si no se queda
    para la demo.
 
 ## No tocar sin aviso

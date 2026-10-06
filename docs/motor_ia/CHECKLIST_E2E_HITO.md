@@ -11,7 +11,7 @@ Para PERSONA_1 y PERSONA_2, juntos. Datos ficticios: fixtures sanos de `fixtures
 | `.env` | Claves de S3 sin `< >` ni comillas; `OLLAMA_BASE_URL=http://host.docker.internal:11434` (backend en Docker); `MOTOR_ANALISIS=real`; `MAX_PROCESAMIENTOS_SIMULTANEOS=1`; `PERMITIR_PROVEEDORES_NO_PRIVADOS=false` | La API arranca |
 | Ollama | Arrancado con `OLLAMA_MAX_LOADED_MODELS=1`; `ollama list` muestra `gemma4:e2b` y `qwen2.5vl:3b` | Un solo modelo en memoria cada vez |
 | Fixtures | `python scripts/generar_fixtures.py --hoy 2026-09-30` si no estan en `fixtures/generados/` | 42 ficheros + `INDICE.md` |
-| Plataforma | `docker compose up -d --build db backend` y `npm run dev` en `frontend/` (`VITE_USAR_MOCKS=false`) | `GET /api/v1/procesos` sin token da 401; la web carga en `:5173` |
+| Plataforma | **Demo** (#42): `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build`. Backend sin `--reload`; levanta `db`, `backend` y `frontend` (`:5173`), que usa la API real si `frontend/.env` no tiene `VITE_USAR_MOCKS=true`. Alternativa de desarrollo: `docker compose up -d --build db backend` y `npm run dev` en `frontend/` (`VITE_USAR_MOCKS=false`) | `GET /api/v1/procesos` sin token da 401; la web carga en `:5173` |
 | RAM | Comprobar memoria libre | Al menos 4,5 GB libres antes de calentar. Si no: `docker run --rm --privileged alpine sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"` (vacia la cache de la VM de Docker; no toca datos) |
 | Calentar | `docker compose exec backend python -m app.modulos.motor_ia.calentar` | `gemma4:e2b: cargado en ~30 s`. Justo antes de subir: el modelo se descarga tras 10 min sin uso |
 
