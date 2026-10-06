@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    # ubuntu-latest pasa a Ubuntu 26 el 2026-10-19; fijado hasta revisar la compatibilidad
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -63,7 +64,8 @@ jobs:
         run: python -m pytest -q
 
   frontend:
-    runs-on: ubuntu-latest
+    # ubuntu-latest pasa a Ubuntu 26 el 2026-10-19; fijado hasta revisar la compatibilidad
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
