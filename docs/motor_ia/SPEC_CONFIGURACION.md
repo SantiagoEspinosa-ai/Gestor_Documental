@@ -312,8 +312,9 @@ se queda solo con `pagina_<n>` (seccion 4).
         `test_fixtures_ocr.py`, `evaluar_fixtures.py` y `verificar_ocr_fixtures.py`, y comprobacion tras cambiarlo).
       - [x] H12: tiempo maximo por documento (seccion 13).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
-        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
-        y Pillow.
+        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`. Versiones de PyMuPDF (1.28.2) y Pillow
+        (12.3.0) fijadas con `==` en `backend/requirements.txt` (rama `chore/fijar-pymupdf-pillow`, PR pequeno con
+        aviso): son las del contenedor y las de `sha256_fixtures_existentes.txt`.
       - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
         `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
         relacionados con SQL. Etapa 3 (dias 9-11).
@@ -578,7 +579,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | este commit |
+| 2026-10-05 | H13: PyMuPDF 1.28.2 y Pillow 12.3.0 fijadas con `==` en `backend/requirements.txt` (las del contenedor y de `sha256_fixtures_existentes.txt`) | este commit |
+| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
 | 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |
