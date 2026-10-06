@@ -163,6 +163,10 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
+- [x] H14, parte de la plataforma (rama `feat/plataforma-memoria`): migracion 0005 de `memoria_folios` (igual que
+      `rag.modelos.MemoriaFolio`), `alembic/env.py` registra `app.modulos.rag.modelos`, y `regenerar_resumen`
+      indexa el resumen enmascarado con `rag.servicio.indexar_resumen` (tambien si S3 falla; en un try).
+      **Tras desplegar, ejecutar una vez `scripts/reindexar_resumenes.py`** (ver README de expediente).
 - [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
 - [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
 

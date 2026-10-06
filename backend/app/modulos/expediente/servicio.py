@@ -19,6 +19,7 @@ from app.modulos.configuracion import servicio as configuracion
 from app.modulos.ingesta import servicio as ingesta
 from app.modulos.expediente import resumen
 from app.modulos.expediente.recomendacion import DocumentoParaRecomendar, calcular_recomendacion_global
+from app.modulos.rag import servicio as rag
 from app.modulos.validacion import servicio as validacion
 from app.schemas.resultado import (Alerta, ComparacionCampo, DecisionHumana, EstadoAnalisis, EstadoGeneral,
                                    Recomendacion, ResultadoDocumento, ResultadoExpediente, ResumenFolio,
@@ -223,23 +224,34 @@ def _ruta_resumen(fila: Folio) -> str:
     return clave_derivado(fila.proceso, fila.anio, fila.secuencia, NOMBRE_RESUMEN)
 
 
-def avisar_reindexar(folio: str) -> None:
-    """H14 (PERSONA_2): rag reindexa el resumen."""
+def avisar_reindexar(sesion: Session, folio: str, resumen_md: str) -> None:
+    """H14 (ADR-010 C4): la memoria de folios (`rag`, PERSONA_2) guarda el resumen y su fragmento para los
+    antecedentes. `resumen_md` es EL MISMO texto enmascarado que se sube a S3; asi `rag` no lee S3.
+    `indexar_resumen` ya no lanza; aun asi, nada de aqui rompe la accion que regenera el resumen."""
+    try:
+        rag.indexar_resumen(folio, resumen_md, sesion=sesion)
+    except Exception as e:  # noqa: BLE001
+        log.warning("No se pudo indexar el resumen del folio %s: %s", folio, type(e).__name__)
 
 
 def regenerar_resumen(sesion: Session, folio: str) -> None:
-    """Regenera `resumen.md` y lo guarda en S3 (sobrescribe). Llamar DESPUES del commit.
+    """Regenera `resumen.md` (enmascarado), lo guarda en S3 (sobrescribe) y lo indexa en la memoria de folios.
+    Llamar DESPUES del commit.
 
-    Nunca lanza: si falla (S3 caido, por ejemplo), se registra sin datos y el siguiente cambio lo regenera.
+    Nunca lanza: si falla S3, se registra sin datos y el siguiente cambio lo vuelve a subir; la memoria se
+    indexa igual con ese texto, porque no depende de S3. Si falla la generacion, no hay nada que indexar.
     """
     try:
         expediente = obtener_expediente(sesion, folio)
         texto = resumen.generar(enmascarar(expediente), _fichas(), datetime.now(timezone.utc))
-        _almacenamiento().subir_derivado(texto.encode("utf-8"), expediente.ruta_resumen_md, TIPO_RESUMEN)
     except Exception as e:  # noqa: BLE001  el resumen nunca hace fallar la accion que lo provoca
-        log.warning("No se pudo regenerar el resumen del folio %s: %s", folio, type(e).__name__)
+        log.warning("No se pudo generar el resumen del folio %s: %s", folio, type(e).__name__)
         return
-    avisar_reindexar(folio)
+    try:
+        _almacenamiento().subir_derivado(texto.encode("utf-8"), expediente.ruta_resumen_md, TIPO_RESUMEN)
+    except Exception as e:  # noqa: BLE001
+        log.warning("No se pudo subir el resumen del folio %s: %s", folio, type(e).__name__)
+    avisar_reindexar(sesion, folio, texto)
 
 
 def obtener_resumen(sesion: Session, folio: str) -> str:
