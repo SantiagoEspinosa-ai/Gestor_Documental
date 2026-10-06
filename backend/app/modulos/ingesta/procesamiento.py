@@ -90,11 +90,13 @@ def _notificar(sesion, documento_id: uuid.UUID) -> None:
         proceso = sesion.get(Proceso, sesion.get(Folio, doc.folio).proceso)
         if not proceso.webhook_url:
             return
-        # El mismo armado que GET /documentos/{id}; import diferido: servicio importa este modulo
+        # El mismo armado que GET /documentos/{id}, enmascarado igual (ADR-010 A5); import diferido:
+        # servicio importa este modulo
         from app.modulos.ingesta import servicio
         evento = "documento.completado" if doc.estado_analisis == EstadoAnalisis.completado.value else "documento.error"
         webhooks.enviar_en_segundo_plano(proceso.webhook_url, evento, doc.folio,
-                                         servicio.construir_resultado(sesion, doc), identificador=str(doc.id))
+                                         servicio.enmascarar(servicio.construir_resultado(sesion, doc)),
+                                         identificador=str(doc.id))
     except Exception:  # noqa: BLE001
         log.exception("No se pudo preparar el webhook del documento %s", documento_id)
 

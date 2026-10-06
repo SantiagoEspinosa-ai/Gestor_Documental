@@ -312,8 +312,9 @@ se queda solo con `pagina_<n>` (seccion 4).
         `test_fixtures_ocr.py`, `evaluar_fixtures.py` y `verificar_ocr_fixtures.py`, y comprobacion tras cambiarlo).
       - [x] H12: tiempo maximo por documento (seccion 13).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
-        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
-        y Pillow.
+        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`. Versiones de PyMuPDF (1.28.2) y Pillow
+        (12.3.0) fijadas con `==` en `backend/requirements.txt` (rama `chore/fijar-pymupdf-pillow`, PR pequeno con
+        aviso): son las del contenedor y las de `sha256_fixtures_existentes.txt`.
       - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
         `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
         relacionados con SQL. Etapa 3 (dias 9-11).
@@ -579,10 +580,12 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | `docs/motor_ia/ESTADO_SESION.md`: estado de las ramas, PR abiertos, pendientes en orden y reglas de trabajo, para retomar la proxima sesion | este commit |
+| 2026-10-06 | Merge de `origin/main` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | este commit |
+| 2026-10-05 | `docs/motor_ia/ESTADO_SESION.md`: estado de las ramas, PR abiertos, pendientes en orden y reglas de trabajo, para retomar la proxima sesion | `c6350c7` |
 | 2026-10-05 | e2e del hito sobre `main` (H10 y D3) con Ollama real y S3: folio sano con los 3 `completado`, sin alertas, global `aprobar` en 210 s; el primer documento no recargo el modelo (`calentar` con `num_ctx`); D3 recalcula reglas y recomendacion al corregir; folios vencido (`REG-vigencia_documento`) y domicilio_distinto (`CMP-001`) como en `INDICE.md`. Resultado anadido a `CHECKLIST_E2E_HITO.md` | `b7cacb2` |
 | 2026-10-05 | `docs/motor_ia/CHECKLIST_E2E_HITO.md`: checklist del e2e del hito (preparacion, calentar, prueba con los 3 sanos, resultado esperado de la prueba local de H10 y que mirar si falla) | `00e9546` |
 | 2026-10-05 | Especimen "dificil" del comprobante (vision): 4/4 correctos, `revision_manual` con `CLS-002` y `VAL-002` (sin texto que verificar). Especimenes completos: 27/27, tipo 5/5 | `c8cf280` |
+| 2026-10-05 | H13: PyMuPDF 1.28.2 y Pillow 12.3.0 fijadas con `==` en `backend/requirements.txt` (las del contenedor y de `sha256_fixtures_existentes.txt`) | `8080f6f` |
 | 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |

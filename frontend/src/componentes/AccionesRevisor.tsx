@@ -15,13 +15,15 @@ interface EditorCampoProps {
   tipo?: string | null
   /** `obligatorio` de la ficha: no se puede guardar vacio */
   obligatorio?: boolean
+  /** `sensible` de la ficha (ADR-010): la API lo da enmascarado, asi que el formulario empieza vacio */
+  sensible?: boolean
   deshabilitado: boolean
   /** Devuelve true si se guardo */
   alGuardar: (valor: unknown) => Promise<boolean>
   children: ReactNode
 }
 
-export function EditorCampo({ campo, valor, tipo, obligatorio = false, deshabilitado, alGuardar, children }: EditorCampoProps) {
+export function EditorCampo({ campo, valor, tipo, obligatorio = false, sensible = false, deshabilitado, alGuardar, children }: EditorCampoProps) {
   const [editando, setEditando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -35,7 +37,8 @@ export function EditorCampo({ campo, valor, tipo, obligatorio = false, deshabili
       <div className="flex items-start justify-between gap-2">
         <div>{children}</div>
         <button type="button" disabled={deshabilitado} aria-label={`Corregir ${nombreCampo(campo)}`}
-          onClick={() => { setTexto(sinValor(valor) ? '' : String(valor)); setEditando(true) }}
+          // Un sensible llega enmascarado ("****1234"): no se precarga, para no guardar la mascara como valor
+          onClick={() => { setTexto(sensible || sinValor(valor) ? '' : String(valor)); setEditando(true) }}
           className={`${boton} border-slate-300 text-slate-700 hover:bg-slate-100`}>
           <Pencil className="size-3" aria-hidden /> Corregir
         </button>
@@ -65,6 +68,7 @@ export function EditorCampo({ campo, valor, tipo, obligatorio = false, deshabili
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
       <p id={idMotivo} aria-live="polite" className="text-xs text-red-700">{preparada.valida ? '' : preparada.motivo}</p>
       <p id={idAyuda} className="text-xs text-slate-500">
+        {sensible && 'Dato sensible: escribe el valor completo. '}
         {obligatorio
           ? 'Campo obligatorio de la ficha: escribe el valor correcto.'
           : 'Déjalo vacío si el documento no trae este dato (queda como “no detectado”).'}

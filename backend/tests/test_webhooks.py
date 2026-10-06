@@ -5,6 +5,7 @@ import hmac
 import importlib.util
 import json
 import logging
+import uuid
 from pathlib import Path
 
 import boto3
@@ -201,14 +202,28 @@ def test_el_log_no_lleva_cuerpo_firma_ni_ruta(entorno, monkeypatch, caplog):
         assert prohibido not in texto
 
 
-def test_enmascarar_para_webhook_es_el_unico_punto(entorno, monkeypatch):
-    llamadas = []
-    monkeypatch.setattr(webhooks, "enmascarar_para_webhook", lambda datos: llamadas.append(datos) or {"tapado": True})
+def test_los_datos_se_envian_tal_cual_llegan(entorno, monkeypatch):
+    # ADR-010 A5: quien llama los pasa ya enmascarados; core/webhooks no tiene mascara propia
+    assert not hasattr(webhooks, "enmascarar_para_webhook")
     r = receptor(monkeypatch, 200)
-    entregar()
-    assert len(llamadas) == 1
-    assert r.cuerpos()[0]["datos"] == {"tapado": True}
+    datos = resultado_ficticio()
+    assert webhooks.entregar(URL, "documento.completado", "TST-2026-000001", datos) is True
+    assert r.cuerpos()[0]["datos"] == datos.model_dump(mode="json")
 
+
+
+def test_x_entrega_id_igual_en_los_reintentos_y_distinto_entre_entregas(entorno, monkeypatch):
+    r = receptor(monkeypatch, 500, 500, 200)
+    assert entregar() is True
+    ids = [p.headers["X-Entrega-Id"] for p in r.peticiones]
+    assert len(ids) == 3 and len(set(ids)) == 1
+    assert str(uuid.UUID(ids[0], version=4)) == ids[0]
+    assert all("X-Entrega-Id" not in json.dumps(c) and ids[0] not in json.dumps(c) for c in r.cuerpos())  # no va en el cuerpo
+    r2 = receptor(monkeypatch, 200)
+    entregar("documento.error")
+    entregar("documento.completado")
+    otros = [p.headers["X-Entrega-Id"] for p in r2.peticiones]
+    assert len(set(otros)) == 2 and ids[0] not in otros
 
 # --- disparo desde el flujo real ---
 

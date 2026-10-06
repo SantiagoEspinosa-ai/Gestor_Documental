@@ -1,7 +1,7 @@
 """Versiones de PyMuPDF y Pillow con las que se registraron los SHA-256 de los fixtures.
 
 Los bytes que generan scripts/generar_fixtures.py y scripts/generar_datos_mock.py dependen de esas
-versiones, y requirements.txt usa >=. Con otras versiones, los tests que comparan hashes o bytes con
+versiones, que requirements.txt fija con == (H13). Con otras versiones (p. ej. un venv antiguo), los tests que comparan hashes o bytes con
 los registrados (sha256_fixtures_existentes.txt, frontend/public/mock-originales y los JSON de los
 mocks) se omiten con un mensaje, en vez de fallar. El determinismo dentro de una misma instalacion
 (generar dos veces y comparar) se sigue comprobando siempre.

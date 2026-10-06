@@ -66,7 +66,11 @@ Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
 - `escapar(valor)`: los valores del OCR o del revisor se escapan (`|`, `` ` ``, `*`, `_`, `[`, `]`, `<`, `>`
   y `\`) y los saltos de linea pasan a espacios, para no romper las listas ni inyectar formato o HTML.
 - `enmascarar_para_resumen(datos, ficha)`: unico punto por el que pasan los datos (de cada documento y de
-  las comparaciones). Hoy no enmascara; ADR-010 A5 lo aplicara a los campos `sensible` cuando llegue H15.
+  las comparaciones): `mascara` de `core/enmascaramiento.py` en los campos `sensible` de la ficha (ADR-010
+  A5). `regenerar_resumen` ademas le pasa el expediente ya enmascarado (`servicio.enmascarar`); la mascara
+  es idempotente.
+- `servicio.enmascarar(expediente)`: copia enmascarada para la salida (API, webhook `folio.estado_cambiado`
+  y resumen). Por dentro (BD, D3, comparaciones, recomendacion) siempre el valor real.
 
 ## Regeneracion del resumen.md (etapa 3)
 - `regenerar_resumen(sesion, folio)`: despues del COMMIT de cada cambio genera el resumen y lo guarda con

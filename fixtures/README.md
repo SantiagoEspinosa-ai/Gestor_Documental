@@ -48,8 +48,8 @@ Para que PERSONA_2 decida cuando el motor pasa del OCR al modelo de vision, el c
 - El nivel `normal` no cambia: sus SHA-256 estan fijados en
   `backend/tests/sha256_fixtures_existentes.txt`, porque de ellos dependen
   `frontend/public/mock-originales` y los mocks. El fichero guarda tambien las versiones de PyMuPDF y
-  Pillow con las que se generaron: los bytes dependen de ellas y `requirements.txt` usa `>=`, asi que
-  con otras versiones los tests que comparan hashes se omiten (`pytest.skip`, con las versiones
+  Pillow con las que se generaron: los bytes dependen de ellas. `requirements.txt` las fija con `==` (H13) a esas
+  mismas versiones; si alguien instala otras (p. ej. un venv antiguo), los tests que comparan hashes se omiten (`pytest.skip`, con las versiones
   esperadas y las instaladas) en vez de fallar (`backend/tests/versiones_fixtures.py`).
 
 ## Nombres
