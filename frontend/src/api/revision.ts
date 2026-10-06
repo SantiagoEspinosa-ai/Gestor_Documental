@@ -1,7 +1,8 @@
-// Acciones del revisor sobre documentos y expedientes (Contrato 2, reglas del ADR-006). Solo rol revisor.
+// Acciones del revisor sobre documentos y expedientes (Contrato 2, reglas del ADR-006). Solo rol revisor,
+// salvo revelar (revisor y admin, ADR-010 A4).
 import type {
-  PeticionConfirmarClasificacion, PeticionCorregirDatos, PeticionDecision, PeticionResolverAlerta, ResultadoDocumento,
-  ResultadoExpediente,
+  PeticionConfirmarClasificacion, PeticionCorregirDatos, PeticionDecision, PeticionResolverAlerta, PeticionRevelar,
+  RespuestaRevelar, ResultadoDocumento, ResultadoExpediente,
 } from '../tipos/contrato'
 import { peticion } from './cliente'
 
@@ -29,4 +30,10 @@ export function resolverAlertaExpediente(idFolio: string, alertaId: string, dato
 /** POST /folios/{folio}/decision: la decision es siempre humana y cierra el folio */
 export function decidir(idFolio: string, datos: PeticionDecision): Promise<ResultadoExpediente> {
   return peticion<ResultadoExpediente>(`${folio(idFolio)}/decision`, { metodo: 'POST', cuerpo: datos })
+}
+
+/** POST /documentos/{id}/revelar (ADR-010 A4): valor real de un campo sensible; deja `dato_revelado` en la
+ * auditoria. Revisor y admin. La respuesta no se guarda en ningun sitio (ni storage ni cache) */
+export function revelarDato(id: string, datos: PeticionRevelar): Promise<RespuestaRevelar> {
+  return peticion<RespuestaRevelar>(`${documento(id)}/revelar`, { metodo: 'POST', cuerpo: datos })
 }
