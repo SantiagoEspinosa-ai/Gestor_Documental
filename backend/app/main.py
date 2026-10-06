@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+from app.core import logs
 from app.core.config import get_settings
 from app.core.cors import CorsDesdeSettings
 from app.core.db import SesionLocal, get_engine
@@ -14,6 +15,7 @@ from app.modulos.configuracion import servicio as configuracion
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logs.instalar()  # lo primero: tapa datos sensibles en cualquier log a partir de aqui (ADR-010 A5)
     # Settings al arrancar: un CORS_ORIGENES con "*" (u otro valor invalido) impide arrancar
     config_dir = get_settings().config_dir
     # Fichas primero: si alguna es invalida, ErrorConfiguracion con todos los errores y no arranca

@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { crearEstado, type EstadoMock } from './estado'
 import { crearHandlers } from './handlers'
-import { compararCampos, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
+import { compararCampos, enmascararDocumento, mascara, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
 
 const API = 'http://localhost:8000/api/v1'
 const CONTRATO = new URL('../../../docs/contratos/endpoints.md', import.meta.url)
@@ -256,7 +256,8 @@ describe('subida de documentos', () => {
     t += MS_HASTA_COMPLETADO - MS_HASTA_PROCESANDO
     const hecho = await estadoDoc()
     expect(hecho.estado_analisis).toBe('completado')
-    expect(hecho.datos_extraidos.curp).toBe('AEPA900101MDFXXX01') // mismo fichero que los datos -> mismos valores
+    // Mismo fichero que los datos -> mismos valores; la curp sale enmascarada (ADR-010)
+    expect(hecho.datos_extraidos.curp).toBe('****XX01')
     expect(hecho.recomendacion).toBe('aprobar')
     exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
     expect(exp001(exp)).toEqual(['comprobante_domicilio'])
@@ -467,7 +468,7 @@ describe('acciones del revisor', () => {
     t += MS_HASTA_COMPLETADO
     const reprocesado = await doc(b)
     expect(reprocesado.estado_analisis).toBe('completado')
-    expect(reprocesado.datos_extraidos.curp).toBe('AEPA900101MDFXXX01')
+    expect(reprocesado.datos_extraidos.curp).toBe('****XX01') // enmascarada (ADR-010)
     // Version nueva: las alertas del motor de la anterior (CLS-001 incluida) ya no se ven; DUP-001 (plataforma), si
     expect(codigos(reprocesado.alertas_encontradas)).not.toContain('CLS-001')
     expect(codigos(reprocesado.alertas_encontradas)).toContain('DUP-001')
@@ -749,6 +750,108 @@ describe('campos sin valor', () => {
     const informativas = documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa')
     expect(informativas.map((a) => [a.codigo, a.campo]).sort()).toEqual([
       ['EXP-002', 'desconocido'], ['VAL-003', 'nacionalidad'], ['VAL-003', 'sexo'], ['VAL-004', 'proveedor']])
+  })
+})
+
+describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
+  /** Documento completado de los datos con valor en un campo sensible, y su folio */
+  function conSensible() {
+    for (const folio of estado.folios.values()) {
+      const doc = folio.documentos.find((d) => d.estado_analisis === 'completado' && typeof d.datos_extraidos.curp === 'string')
+      if (doc) return { folio, doc, curp: doc.datos_extraidos.curp as string }
+    }
+    throw new Error('los datos no tienen una curp')
+  }
+  const sensibles = () => [...estado.folios.values()].flatMap((f) => f.documentos).flatMap((d) =>
+    ['curp', 'clave_elector', 'numero_pasaporte'].map((c) => d.datos_extraidos[c]).filter((v): v is string => typeof v === 'string'))
+
+  it('mascara como la API: **** + 4 ultimos; 4 o menos, ****; null sigue null', () => {
+    expect([mascara('ABCDEFGH1234'), mascara('12345'), mascara('1234'), mascara(''), mascara(null), mascara(123456)])
+      .toEqual(['****1234', '****2345', '****', '****', null, '****3456'])
+  })
+
+  it('ninguna respuesta de documento o expediente lleva un valor sensible en claro, con ningun rol', async () => {
+    const valores = sensibles()
+    expect(valores.length).toBeGreaterThan(0)
+    for (const usuario of ['admin.demo', 'revisor.demo', 'integrador.demo'] as const) {
+      const token = await entrar(usuario)
+      for (const folio of estado.folios.values()) {
+        const textos = [(await api('GET', `/folios/${folio.folio}`, { token })).texto]
+        for (const d of folio.documentos) textos.push((await api('GET', `/documentos/${d.identificador_unico_documento}`, { token })).texto)
+        for (const texto of textos) for (const v of valores) expect(texto.includes(v), `${usuario} ${folio.folio}`).toBe(false)
+      }
+    }
+  })
+
+  it('el estado guarda el valor real y la respuesta del PATCH sale enmascarada', async () => {
+    const { folio, doc } = conSensible()
+    folio.estado_general = 'en_revision'
+    const token = await entrar('revisor.demo')
+    const r = await api<ResultadoDocumento>('PATCH', `/documentos/${doc.identificador_unico_documento}/datos`,
+      { token, cuerpo: { curp: 'XEXX010101HNEXXXA4' } })
+    expect(r.status).toBe(200)
+    expect(r.cuerpo.datos_extraidos.curp).toBe('****XXA4')
+    expect(r.texto).not.toContain('XEXX010101HNEXXXA4')
+    expect(r.cuerpo.evidencia_por_campo.curp).toBe('correccion_revisor')
+    expect(doc.datos_extraidos.curp).toBe('XEXX010101HNEXXXA4') // por dentro, el valor real
+  })
+
+  it('evidencias: ubicacion conservada, otro texto tapado, literales y linea 2 de la MRZ', () => {
+    const { doc, curp } = conSensible()
+    const prueba = structuredClone(doc)
+    prueba.evidencia_por_campo = {
+      curp: 'pagina_1', clave_elector: `texto ${curp}`, nombre_completo: `pagina_1:${curp}`,
+      sexo: 'pagina_1:P<MEXEJEMPLO<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<\nG12345678<0MEX0101014F3001017<<<<<<<<<<<<<<02',
+    }
+    expect(enmascararDocumento(estado, prueba).evidencia_por_campo).toEqual({
+      curp: 'pagina_1', clave_elector: '****', nombre_completo: `pagina_1:${mascara(curp)}`,
+      sexo: 'pagina_1:P<MEXEJEMPLO<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<\n****',
+    })
+    expect(prueba.evidencia_por_campo.curp).toBe('pagina_1') // no muta la entrada
+  })
+
+  it('revelar: revisor y admin reciben el valor con no-store y dejan dato_revelado sin el valor', async () => {
+    const { doc, curp } = conSensible()
+    const id = doc.identificador_unico_documento
+    for (const usuario of ['revisor.demo', 'admin.demo'] as const) {
+      const token = await entrar(usuario)
+      const r = await fetch(`${API}/documentos/${id}/revelar`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ campo: 'curp' }),
+      })
+      expect(r.status).toBe(200)
+      expect(r.headers.get('Cache-Control')).toBe('no-store')
+      expect(await r.json()).toEqual({ campo: 'curp', valor: curp })
+    }
+    const entradas = estado.auditoria.filter((e) => e.accion === 'dato_revelado')
+    expect(entradas.map((e) => [e.usuario, e.documento_id, e.detalle])).toEqual([
+      ['revisor.demo', id, { campo: 'curp' }], ['admin.demo', id, { campo: 'curp' }]])
+    expect(JSON.stringify(entradas)).not.toContain(curp)
+  })
+
+  it('revelar: integrador 403, 422 por campo o cuerpo, 404, 409 y funciona con el folio cerrado', async () => {
+    const { folio, doc, curp } = conSensible()
+    const id = doc.identificador_unico_documento
+    const revelar = async (usuario: keyof typeof CONTRASENAS, docId: string, cuerpo: unknown) =>
+      api('POST', `/documentos/${docId}/revelar`, { token: await entrar(usuario), cuerpo })
+    const r403 = await revelar('integrador.demo', id, { campo: 'curp' })
+    expect([r403.status, r403.cuerpo.codigo]).toEqual([403, 'SIN_PERMISO'])
+    for (const cuerpo of [{ campo: 'no_existe' }, { campo: 'nombre_completo' }, { campo: 'numero_pasaporte' }, {}, { campo: 'curp', extra: 1 }]) {
+      const r = await revelar('revisor.demo', id, cuerpo)
+      expect([r.status, r.cuerpo.codigo], JSON.stringify(cuerpo)).toEqual([422, 'PETICION_INVALIDA'])
+    }
+    const r404 = await revelar('revisor.demo', 'no-existe', { campo: 'curp' })
+    expect([r404.status, r404.cuerpo.codigo]).toEqual([404, 'DOCUMENTO_NO_ENCONTRADO'])
+    const conError = [...estado.folios.values()].flatMap((f) => f.documentos).find((d) => d.estado_analisis === 'error')!
+    const r409 = await revelar('revisor.demo', conError.identificador_unico_documento, { campo: 'curp' })
+    expect([r409.status, r409.cuerpo.codigo]).toEqual([409, 'DOCUMENTO_CON_ERROR'])
+    doc.estado_analisis = 'procesando'
+    const enProceso = await revelar('revisor.demo', id, { campo: 'curp' })
+    expect([enProceso.status, enProceso.cuerpo.codigo]).toEqual([409, 'DOCUMENTO_EN_PROCESO'])
+    doc.estado_analisis = 'completado'
+    folio.estado_general = 'rechazado'
+    const cerrado = await revelar('revisor.demo', id, { campo: 'curp' })
+    expect([cerrado.status, cerrado.cuerpo]).toEqual([200, { campo: 'curp', valor: curp }])
+    expect(estado.auditoria.filter((e) => e.accion === 'dato_revelado')).toHaveLength(1) // solo la correcta
   })
 })
 

@@ -312,8 +312,9 @@ se queda solo con `pagina_<n>` (seccion 4).
         `test_fixtures_ocr.py`, `evaluar_fixtures.py` y `verificar_ocr_fixtures.py`, y comprobacion tras cambiarlo).
       - [x] H12: tiempo maximo por documento (seccion 13).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
-        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
-        y Pillow.
+        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`. Versiones de PyMuPDF (1.28.2) y Pillow
+        (12.3.0) fijadas con `==` en `backend/requirements.txt` (rama `chore/fijar-pymupdf-pillow`, PR #35, fusionado): son las del
+        contenedor y las de `sha256_fixtures_existentes.txt`.
       - [~] H14 (redefinido por ADR-010, PR #21): **ya no es `buscar_antecedentes`**. Hecho en la rama
         `feat/rag-memoria` (seccion 16): `rag.servicio.indexar_resumen(folio, resumen_md)` y `fragmento_resumen(folio)`,
         **sin embeddings**. Pendiente de PERSONA_1: la migracion de `memoria_folios` y que `avisar_reindexar` pase el
@@ -597,7 +598,9 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | H14 (seccion 16): memoria de folios en `rag` sin embeddings (decision y motivo), tabla `memoria_folios` con el modelo en `rag/modelos.py`, `indexar_resumen` y `fragmento_resumen`; migracion y `avisar_reindexar` pendientes de PERSONA_1 | este commit |
+| 2026-10-06 | Merge de `origin/main` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | este commit |
+| 2026-10-05 | H14 (seccion 16): memoria de folios en `rag` sin embeddings (decision y motivo), tabla `memoria_folios` con el modelo en `rag/modelos.py`, `indexar_resumen` y `fragmento_resumen`; migracion y `avisar_reindexar` pendientes de PERSONA_1 | `c170791` |
+| 2026-10-05 | H13: PyMuPDF 1.28.2 y Pillow 12.3.0 fijadas con `==` en `backend/requirements.txt` (las del contenedor y de `sha256_fixtures_existentes.txt`) | `8080f6f` |
 | 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |

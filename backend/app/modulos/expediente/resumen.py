@@ -14,6 +14,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from app.core.enmascaramiento import mascara
 from app.modulos.configuracion import servicio as configuracion
 from app.schemas.resultado import Alerta, ResultadoDocumento, ResultadoExpediente
 
@@ -41,10 +42,12 @@ def escapar(valor: Any) -> str:
 
 
 def enmascarar_para_resumen(datos: dict[str, Any], ficha: dict | None) -> dict[str, Any]:
-    """ADR-010 A5: aplicar la mascara a los campos sensible cuando llegue H15. Unico punto del resumen.
-    Con H15, este punto y `core/webhooks.enmascarar_para_webhook` usaran la MISMA funcion de mascara
-    (`****` + 4 ultimos caracteres), para que el resumen y el webhook no se separen."""
-    return datos
+    """ADR-010 A5: mascara de `core/enmascaramiento.py` (la misma de la API y el webhook) en los campos con
+    `sensible: true` en la ficha. `servicio.regenerar_resumen` ya pasa el expediente enmascarado; esto lo
+    repite (la mascara es idempotente) para que `generar` no saque nunca un valor sensible en claro."""
+    campos = (ficha or {}).get("campos") or {}
+    return {campo: mascara(valor) if (campos.get(campo) or {}).get("sensible") else valor
+            for campo, valor in datos.items()}
 
 
 def _fecha(valor: datetime | None) -> str:

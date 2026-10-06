@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import insert as insert_postgresql
 from sqlalchemy.dialects.sqlite import insert as insert_sqlite
 from sqlalchemy.orm import Session
 
-from app.core import auditoria, webhooks
+from app.core import auditoria, enmascaramiento, webhooks
 from app.core.almacenamiento import ObjetoNoEncontrado, clave_derivado, get_almacenamiento
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
@@ -234,7 +234,7 @@ def regenerar_resumen(sesion: Session, folio: str) -> None:
     """
     try:
         expediente = obtener_expediente(sesion, folio)
-        texto = resumen.generar(expediente, _fichas(), datetime.now(timezone.utc))
+        texto = resumen.generar(enmascarar(expediente), _fichas(), datetime.now(timezone.utc))
         _almacenamiento().subir_derivado(texto.encode("utf-8"), expediente.ruta_resumen_md, TIPO_RESUMEN)
     except Exception as e:  # noqa: BLE001  el resumen nunca hace fallar la accion que lo provoca
         log.warning("No se pudo regenerar el resumen del folio %s: %s", folio, type(e).__name__)
@@ -312,6 +312,13 @@ def obtener_expediente(sesion: Session, folio: str) -> ResultadoExpediente:
         # anterior a esta funcion, o con un fallo de S3 al crearlo, da 404 RESUMEN_NO_DISPONIBLE hasta el siguiente
         ruta_resumen_md=_ruta_resumen(fila),
     )
+
+
+def enmascarar(expediente: ResultadoExpediente) -> ResultadoExpediente:
+    """Copia del expediente con los campos sensibles enmascarados (ADR-010 A3 y A5): documentos,
+    evidencias, correcciones y comparaciones. Solo en el borde de salida (API, webhook y resumen)."""
+    return enmascaramiento.enmascarar_expediente(
+        expediente, {d.identificador_unico_documento: ingesta.campos_sensibles(d) for d in expediente.documentos})
 
 
 def listar_folios(sesion: Session, proceso: str | None = None,
@@ -634,7 +641,8 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
     sesion.expire(fila)  # el UPDATE no paso por el ORM: releer el folio
     resultado = obtener_expediente(sesion, folio)
     regenerar_resumen(sesion, folio)
-    # Webhook folio.estado_cambiado tras el commit y en segundo plano: un fallo no cambia la decision
+    # Webhook folio.estado_cambiado tras el commit y en segundo plano: un fallo no cambia la decision.
+    # Enmascarado como la respuesta de la API (ADR-010 A5)
     webhooks.enviar_en_segundo_plano(sesion.get(Proceso, fila.proceso).webhook_url, "folio.estado_cambiado",
-                                     folio, resultado)
+                                     folio, enmascarar(resultado))
     return resultado

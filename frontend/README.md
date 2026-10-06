@@ -400,9 +400,14 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
 - HECHO (H10): forma de `tiempos` (`{segundos_modelo}`) y `tokens` (`{entrada, salida}`) del motor real
   revisada; `describirDetalle` muestra tambien `modalidad`, `paginas`, el prompt de clasificacion y el
   numero de llamadas al modelo, sin enmascararlos por error.
-- Etapa 3: enmascaramiento de datos sensibles con "mostrar" auditado, en un ADR (el ADR-006, bloque 4,
-  descarta hacerlo solo en la UI); antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente
-  de ADR).
+- HECHO (ADR-010, PR A): la API y los mocks enmascaran los campos sensibles (`****` + 4 ultimos) en
+  todas las respuestas y para todos los roles. Los mocks (`mocks/logica.ts`: `mascara`,
+  `enmascararDocumento`, `enmascararExpediente`) aplican la MISMA mascara que `core/enmascaramiento.py` solo
+  al responder: el estado en memoria guarda el valor real, como la BD. `POST /documentos/{id}/revelar`
+  responde como la API (revisor y admin, 403 al integrador, 422/404/409, `Cache-Control: no-store` y
+  `dato_revelado` con `{campo}`). Al corregir un campo `sensible`, `EditorCampo` empieza vacio (el valor
+  llega enmascarado y no debe guardarse la mascara). Falta H17 (PR B): el boton "mostrar".
+- Etapa 3: antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente de ADR, H16).
 - HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
   "Procesos" en "Pantallas").
 - `resumen.md` (etapa 3, `ResumenExpediente.tsx`): el resumen usa solo listas (datos de cada documento y

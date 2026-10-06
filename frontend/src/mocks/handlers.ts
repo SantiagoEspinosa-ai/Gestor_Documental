@@ -7,9 +7,8 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  avanzarProcesamiento, bloqueantesSinResolver, enProceso, ficha, nuevaAlerta, recalcularExpediente, recalcularTiposDelProceso,
-  recomendarDocumento, resumenFolio,
-  resumenMarkdown, tipoExtraccion,
+  avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
+  recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
 import { emitirToken, validarToken } from './token'
@@ -146,6 +145,9 @@ function resolverAlerta(estado: EstadoMock, usuario: SesionMock, alerta: { aplic
 export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; rutas: RutaMock[] } {
   const rutas: RutaMock[] = []
   const handlers: HttpHandler[] = []
+  // ADR-010 A3: toda respuesta con un documento o un expediente sale enmascarada, para todos los roles
+  const documentoJson = (doc: ResultadoDocumento) => HttpResponse.json(enmascararDocumento(estado, doc))
+  const folioJson = (folio: ResultadoExpediente) => HttpResponse.json(enmascararExpediente(estado, folio))
 
   function ruta(metodo: Metodo, rutaContrato: string, roles: readonly Rol[] | null,
     manejador: (c: Contexto) => Response | Promise<Response>) {
@@ -228,7 +230,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return HttpResponse.json({ elementos: lista.slice((pagina - 1) * tamano, pagina * tamano), total: lista.length, pagina, tamano_pagina: tamano })
   })
 
-  ruta('GET', '/folios/{folio}', TODOS, ({ params }) => HttpResponse.json(folioOError(estado, params.folio)))
+  ruta('GET', '/folios/{folio}', TODOS, ({ params }) => folioJson(folioOError(estado, params.folio)))
 
   // ---------------------------------------------------------------- documentos
   ruta('POST', '/folios/{folio}/documentos', ['integrador', 'revisor'], async ({ request, params, usuario }) => {
@@ -295,7 +297,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return HttpResponse.json({ identificador_unico_documento: id, estado_analisis: 'pendiente' }, { status: 202 })
   })
 
-  ruta('GET', '/documentos/{id}', TODOS, ({ params }) => HttpResponse.json(documentoOError(estado, params.id).doc))
+  ruta('GET', '/documentos/{id}', TODOS, ({ params }) => documentoJson(documentoOError(estado, params.id).doc))
 
   ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params }) => {
     const { doc } = documentoOError(estado, params.id)
@@ -310,6 +312,19 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       : `${ORIGEN_FRONT()}/mock-originales/${encodeURIComponent(doc.referencia_archivo_original.nombre_archivo)}?firma=${siguiente(estado)}`
     estado.urls.set(id, url)
     return HttpResponse.json({ url })
+  })
+
+  // ADR-010 A4: el valor real y vigente de un campo sensible, con su entrada dato_revelado (sin el valor)
+  ruta('POST', '/documentos/{id}/revelar', ['revisor', 'admin'], async ({ request, params, usuario }) => {
+    const { campo } = await leerJson(request, ['campo'])
+    if (typeof campo !== 'string' || !campo || campo.length > 100) throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {campo}')
+    const { folio, doc } = documentoOError(estado, params.id)
+    exigirAnalizado(doc) // 409 en proceso o con error; el folio cerrado no importa: consultar no cambia nada
+    if (!ficha(estado, tipoExtraccion(doc))?.campos[campo]?.sensible) {
+      throw new FalloApi('PETICION_INVALIDA', 'El campo no existe en la ficha del documento o no es sensible')
+    }
+    auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento, { campo })
+    return HttpResponse.json({ campo, valor: doc.datos_extraidos[campo] ?? null }, { headers: { 'Cache-Control': 'no-store' } })
   })
 
   ruta('PATCH', '/documentos/{id}/datos', ['revisor'], async ({ request, params, usuario }) => {
@@ -344,7 +359,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     auditar(estado, usuario.usuario, 'dato_corregido', folio.folio, doc.identificador_unico_documento,
       { campos: Object.keys(cuerpo).sort() })
     recalcularExpediente(estado, folio)
-    return HttpResponse.json(doc)
+    return documentoJson(doc)
   })
 
   ruta('POST', '/documentos/{id}/confirmar-clasificacion', ['revisor'], async ({ request, params, usuario }) => {
@@ -374,7 +389,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       })
     }
     recalcularTiposDelProceso(estado, folio) // el tipo efectivo puede haber cambiado
-    return HttpResponse.json(doc)
+    return documentoJson(doc)
   })
 
   ruta('POST', '/documentos/{id}/alertas/{alerta_id}/resolver', ['revisor'], async ({ request, params, usuario }) => {
@@ -387,7 +402,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, doc.identificador_unico_documento,
       { alerta_id: alerta.id, codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
-    return HttpResponse.json(doc)
+    return documentoJson(doc)
   })
 
   ruta('POST', '/folios/{folio}/alertas/{alerta_id}/resolver', ['revisor'], async ({ request, params, usuario }) => {
@@ -398,7 +413,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
     auditar(estado, usuario.usuario, 'alerta_resuelta', folio.folio, null, { alerta_id: alerta.id, codigo: alerta.codigo, aplica: alerta.aplica })
     recalcularExpediente(estado, folio)
-    return HttpResponse.json(folio)
+    return folioJson(folio)
   })
 
   ruta('POST', '/folios/{folio}/decision', ['revisor'], async ({ request, params, usuario }) => {
@@ -421,7 +436,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       comentario_decision: (cuerpo.comentario as string | undefined) ?? null, usuario_decision: usuario.usuario, fecha_decision: fechaIso(estado),
     })
     auditar(estado, usuario.usuario, 'decision_tomada', folio.folio, null, { decision: cuerpo.decision })
-    return HttpResponse.json(folio)
+    return folioJson(folio)
   })
 
   // ---------------------------------------------------------------- expediente, RAG y catalogos

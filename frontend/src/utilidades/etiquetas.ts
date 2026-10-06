@@ -33,7 +33,7 @@ export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
   clasificacion_confirmada: 'Clasificación confirmada',
   alerta_resuelta: 'Alerta revisada',
   decision_tomada: 'Decisión del folio',
-  dato_revelado: 'Dato sensible mostrado',
+  dato_revelado: 'Dato revelado',
 }
 
 /** Estado de revision de una alerta (ADR-006 2.2): null = sin revisar; false = falso positivo */

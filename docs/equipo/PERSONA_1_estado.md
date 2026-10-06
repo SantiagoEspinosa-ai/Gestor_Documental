@@ -92,14 +92,18 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
 - [x] Webhooks firmados con HMAC-SHA256 y 3 intentos (`core/webhooks.py`, rama `feat/plataforma-etapa3`):
-      `documento.completado`, `documento.error` y `folio.estado_cambiado`. El enmascaramiento de `datos`
-      queda pendiente del ADR-010 y H15 (`enmascarar_para_webhook`).
+      `documento.completado`, `documento.error` y `folio.estado_cambiado`. `datos` enmascarado y
+      `X-Entrega-Id` (ver abajo).
 - [x] Resumen `.md` del expediente (rama `feat/plataforma-etapa3`): `expediente/resumen.py` y plantilla Jinja,
       con los datos extraidos (decision del usuario), regenerado tras cada cambio en S3 y `GET
       /folios/{folio}/resumen.md`. Decision: `ruta_resumen_md` se deriva del folio, sin migracion; un folio
       anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton y da 404
-      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. El enmascaramiento queda pendiente de H15.
-- [ ] Enmascaramiento en la API, en los logs y "mostrar" auditado (ADR-010, tras H15).
+      `RESUMEN_NO_DISPONIBLE` hasta el siguiente cambio. Enmascarado (ver abajo).
+- [x] Enmascaramiento ADR-010 A2-A6 (PR A, rama `feat/plataforma`): `core/enmascaramiento.py` (mascara unica),
+      respuestas de la API enmascaradas para todos los roles, webhook y `resumen.md` con la misma mascara,
+      `POST /documentos/{id}/revelar` con `dato_revelado`, filtro de logs (`core/logs.py`) y `X-Entrega-Id` en
+      los webhooks. Evidencia: ubicaciones conservadas (acordado con PERSONA_2). Mocks con la misma mascara.
+- [ ] H17: boton "mostrar" en la UI (PR B).
 
 ## H1 (2026-10-02)
 UI contra la API real, probada pantalla a pantalla con un navegador. Sin desviaciones del contrato.
@@ -135,7 +139,7 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 2 (sin esperar al motor)
 - [x] H1: UI contra la API real con el stub; issue por cada desviacion del contrato. Ver "H1 (2026-10-02)".
 - [x] H2: test de rutas de `app.openapi()` frente a `endpoints.md` (`tests/test_openapi_contrato.py`).
-- [x] H6 (humo): humo con stub HECHO; motor real pendiente. Proyecto aparte `playwright.real.config.ts`
+- [x] H6: humo con stub y e2e con el motor real HECHOS (hito del dia 8, 2026-10-05). Proyecto aparte `playwright.real.config.ts`
       (`npm run test:e2e:real`, carpeta `frontend/e2e-real/`), contra el backend y Vite locales.
 - [ ] H7: borrador del ADR-010 de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`)
       el dia 7; reservar antes el numero en el chat del equipo.
@@ -158,10 +162,22 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
 - [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
-- [ ] H17: enmascaramiento en la UI con "mostrar" (tras H7 y `sensible: true` de PERSONA_2).
+- [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
 
 ### Etapa 4
 - [ ] H19: guion de la demo, ensayo y `docker compose up` desde cero.
 - [ ] `frontend/README.md`: Node >= 22.22 y responsable.
 - [ ] `docs/arquitectura_solucion.md` (en `main` desde el PR #12): el reparto nuevo, en un PR pequeno
       cuando se fusione el #13 (comprometido en su revision).
+
+## Hito del dia 8 (2026-10-05): e2e con el motor real
+Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
+- Folio con los 3 documentos sanos: completado y "aprobar" en unos 3,5 min (~70 s por documento). El
+  primero no recarga el modelo gracias a `python -m app.modulos.motor_ia.calentar` (`num_ctx` igual que
+  el motor, PR #31).
+- D3 con el motor real: al corregir la fecha de vencimiento a una pasada aparecen `REG-vigencia_documento`
+  y `REG-vigencia_proxima` y el documento pasa a `revision_manual`; al restaurarla vuelve a `aprobar`.
+- Casos de error: `vencido` da `REG-vigencia`; `domicilio_distinto` da `CMP-001`.
+- Los 9 documentos de `fixtures/generados/INDICE.md` dan el resultado esperado.
+- Pendiente para la demo: el enmascaramiento (PR #32) aun no estaba en `main` durante el hito; repetir la
+  prueba con el #32 fusionado y anotar los tiempos por documento para el guion (H19).
