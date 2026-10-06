@@ -24,6 +24,7 @@ fixtures/       Documentos ficticios de prueba (nunca datos reales)
 cp .env.example .env   # rellenar con claves reales, NUNCA commitear .env
 docker compose up --build                   # Ollama instalado en el equipo
 docker compose --profile ollama up --build  # o Ollama en un contenedor
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build   # demo: backend sin --reload
 ```
 `OLLAMA_BASE_URL` vale por defecto `http://host.docker.internal:11434` (Ollama instalado en el equipo);
 con el perfil `ollama`, cambialo a `http://ollama:11434` (ver `.env.example`).

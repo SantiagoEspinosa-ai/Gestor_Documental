@@ -1,0 +1,6 @@
+# Demo: docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+# Solo cambia el arranque del backend: sin --reload (sin el proceso que vigila el codigo). exec: uvicorn recibe
+# SIGTERM y para limpio.
+services:
+  backend:
+    command: sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"
