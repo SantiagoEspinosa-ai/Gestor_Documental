@@ -12,6 +12,8 @@ en los de los loggers ya creados (uvicorn configura los suyos antes de cargar la
 """
 import logging
 import re
+from collections.abc import Mapping
+from typing import Any
 
 MASCARA = "****"
 _PATRONES = (
@@ -28,23 +30,53 @@ def tapar(texto: str) -> str:
     return texto
 
 
+def _tapar_valor(valor: Any) -> Any:
+    """Un argumento del mensaje, tapado sin cambiar su tipo cuando no hace falta: los numeros, booleanos y
+    None pasan tal cual (siguen valiendo para %d o %f); un str se tapa; cualquier otro objeto (una excepcion,
+    un objeto con __str__) se convierte a texto solo si ese texto lleva algo que tapar."""
+    if valor is None or isinstance(valor, (bool, int, float)):
+        return valor
+    if isinstance(valor, str):
+        return tapar(valor)
+    texto = str(valor)
+    tapado = tapar(texto)
+    return tapado if tapado != texto else valor
+
+
+def _tapar_args(args: Any) -> Any:
+    """Los args del registro con el mismo tipo: tupla -> tupla, Mapping -> dict (para %(clave)s) y uno solo
+    igual. Asi los formateadores que leen los args por posicion (uvicorn.access) siguen funcionando."""
+    if isinstance(args, tuple):
+        return tuple(_tapar_valor(a) for a in args)
+    if isinstance(args, Mapping):
+        return {clave: _tapar_valor(valor) for clave, valor in args.items()}
+    return _tapar_valor(args)
+
+
 class FiltroDatosSensibles(logging.Filter):
-    """Reescribe el registro con el mensaje ya formateado y tapado. Nunca descarta un registro."""
+    """Tapa el mensaje y cada argumento por separado, sin formatear el registro: el formateador de cada
+    handler (p. ej. el AccessFormatter de uvicorn, que lee los args por posicion) recibe los args con su forma.
+    Nunca lanza ni descarta un registro: si algo falla, lo ya tapado se queda y el resto sigue como estaba."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         try:
-            mensaje = record.getMessage()
-        except Exception:  # noqa: BLE001  argumentos que no casan: que lo trate el handler
-            return True
-        record.msg, record.args = tapar(mensaje), None
-        if record.exc_info:
-            # Se formatea aqui y se quita exc_info: asi ningun formateador vuelve a escribir la traza sin tapar
-            record.exc_text = record.exc_text or logging.Formatter().formatException(record.exc_info)
-            record.exc_info = None
-        if record.exc_text:
-            record.exc_text = tapar(record.exc_text)
-        if record.stack_info:
-            record.stack_info = tapar(record.stack_info)
+            if isinstance(record.msg, str):
+                record.msg = tapar(record.msg)
+            if record.args:
+                record.args = _tapar_args(record.args)
+        except Exception:  # noqa: BLE001  el filtro nunca rompe el log
+            pass
+        try:
+            if record.exc_info:
+                # Se formatea aqui y se quita exc_info: asi ningun formateador vuelve a escribir la traza sin tapar
+                record.exc_text = record.exc_text or logging.Formatter().formatException(record.exc_info)
+                record.exc_info = None
+            if record.exc_text:
+                record.exc_text = tapar(record.exc_text)
+            if record.stack_info:
+                record.stack_info = tapar(record.stack_info)
+        except Exception:  # noqa: BLE001
+            pass
         return True
 
 
