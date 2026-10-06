@@ -184,9 +184,9 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
       documento o de pantalla; errores por codigo. Vitest, e2e de mocks y e2e real (con "Dato revelado").
 
 ### Etapa 4
-- [x] H19: guion (`docs/demo/GUION_DEMO.md`, rama `docs/guion-demo`), arranque desde cero con
-      `docker-compose.demo.yml` (#42) y ensayo tecnico del 2026-10-06 con capturas del plan B. Pendiente: el ensayo
-      completo en la maquina de PERSONA_2 (la de la demo) con el modelo de vision.
+- [ ] H19 (en curso). Hecho: guion (`docs/demo/GUION_DEMO.md`, rama `docs/guion-demo`), arranque con
+      `docker-compose.demo.yml` (#42), ensayo tecnico del 2026-10-06 con capturas del plan B. Pendiente: ensayo
+      completo en el equipo de PERSONA_2 (con el modelo de vision) y demo del 2026-10-12.
 - [x] `frontend/README.md`: Node >= 22.22 (lo piden dependencias del `package-lock.json`) y responsable PERSONA_1.
 - [x] `docs/arquitectura_solucion.md`: reparto de 2 personas y traspaso de PERSONA_3 (PR #34).
 
