@@ -312,11 +312,13 @@ se queda solo con `pagina_<n>` (seccion 4).
         `test_fixtures_ocr.py`, `evaluar_fixtures.py` y `verificar_ocr_fixtures.py`, y comprobacion tras cambiarlo).
       - [x] H12: tiempo maximo por documento (seccion 13).
       - [ ] H13: mantener `generar_fixtures.py` (tipos de regla nuevos en su evaluador), `verificar_ocr_fixtures.py`
-        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`; PR pequeno para fijar PyMuPDF
-        y Pillow.
-      - [ ] H14 (redefinido por ADR-010, PR #21, aprobado por PERSONA_2): **ya no es `buscar_antecedentes`**. Solo
-        `rag.servicio.fragmento_resumen(folio) -> str | None`, con el texto ya enmascarado; PERSONA_1 elige los folios
-        relacionados con SQL. Etapa 3 (dias 9-11).
+        (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`. Versiones de PyMuPDF (1.28.2) y Pillow
+        (12.3.0) fijadas con `==` en `backend/requirements.txt` (rama `chore/fijar-pymupdf-pillow`, PR #35, fusionado): son las del
+        contenedor y las de `sha256_fixtures_existentes.txt`.
+      - [~] H14 (redefinido por ADR-010, PR #21): **ya no es `buscar_antecedentes`**. Hecho en la rama
+        `feat/rag-memoria` (seccion 16): `rag.servicio.indexar_resumen(folio, resumen_md)` y `fragmento_resumen(folio)`,
+        **sin embeddings**. Pendiente de PERSONA_1: la migracion de `memoria_folios` y que `avisar_reindexar` pase el
+        texto y llame a `indexar_resumen`.
       - [x] H15 (ADR-010, A1 y A6; rama `feat/sensible`, despues del PR de reglas de coherencia): `Campo.sensible`
         en el cargador (booleano, por defecto `false`) y `sensible: true` solo en `curp`, `clave_elector` y
         `numero_pasaporte` (R8). **Cambia el Contrato 2**: `sensible` siempre presente en `CampoFicha` de
@@ -328,12 +330,13 @@ se queda solo con `pagina_<n>` (seccion 4).
       Recortes aceptados que afectan al motor: R4 (`VIS-xxx` solo si el dia 11 el hito y la memoria estan en
       verde), R5 (no se repiten las fotos de especimenes descartadas), R6 (`openrouter.py` al final de la etapa 3,
       opcional en la demo) y R8 (enmascaramiento solo de CURP, numero de pasaporte y clave de elector; ADR-010).
-- [~] **Especimenes** (`fixtures/especimenes/`, 5 fotos de movil de los documentos sanos impresos): bloque 5 de
-      `evaluar_fixtures.py`, con el flujo completo (`procesar_documento`). Evaluados el 2026-10-05 los 4 que van por
-      texto: **23/23 campos**, tipo 4/4, sin alertas, recomendacion `aprobar`, 59-72 s cada uno (informe en
-      `pruebas_ollama/resultados/especimenes/`). Pendiente el comprobante "dificil" (14 caracteres de OCR, va por
-      vision): necesita 5,8 GB libres. **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante
-      dara `REG-antiguedad_maxima`** (critica).
+- [x] **Especimenes** (`fixtures/especimenes/`, 5 fotos de movil de los documentos sanos impresos): bloque 5 de
+      `evaluar_fixtures.py` con el flujo completo (`procesar_documento`), 2026-10-05: **27/27 campos**, tipo 5/5, 0
+      incorrectos (informe en `pruebas_ollama/resultados/especimenes/`). Los 4 con texto: `aprobar`, 59-72 s. El
+      comprobante "dificil" (13 caracteres de OCR) va por vision: 4/4 correctos en 225 s, pero `revision_manual` con
+      `CLS-002` y `VAL-002` en sus 4 campos: sin texto no se puede verificar nada (ADR-007). RAM libre minima 1,41 GB.
+      **Aviso: sus fechas impresas no cambian; desde el 2026-12-15 el comprobante dara `REG-antiguedad_maxima`**
+      (critica).
 - [x] **RAM con dos modelos cargados, confirmado en el bloque 3**: un documento con 15 caracteres de OCR fue directo
       a vision con `gemma4:e2b` aun cargado y la RAM bajo a 0,99 GB. En la evaluacion se descarga el otro modelo en
       cada cambio; en produccion, semaforo y `OLLAMA_MAX_LOADED_MODELS=1` del PR #9 de PERSONA_1.
@@ -572,13 +575,40 @@ aceptado en el PR #13; `codigos_alertas.md` no cambia). Mismas reglas que la rec
 - La plataforma puede recalcularla tras una correccion o al resolver alertas con el `ResultadoDocumento` vigente.
 - Tests: `test_recomendacion_documento.py`.
 
+## 16. Memoria de folios (`rag`, H14, ADR-010 C4)
+
+API publica (`rag/servicio.py`):
+- `indexar_resumen(folio, resumen_md, *, sesion=None, ahora=None) -> None`: guarda o sustituye el `resumen.md` del
+  folio (ya enmascarado, ADR-010 A5) y su fragmento. **Nunca lanza**: si falla, registra solo el folio y el tipo
+  de error, nunca el contenido; el siguiente cambio lo reindexa.
+- `fragmento_resumen(folio, *, sesion=None) -> str | None`: el fragmento, o `None` si el folio no esta indexado.
+  Sin `sesion`, cada funcion abre y cierra la suya.
+
+| Decision | Detalle |
+|---|---|
+| **Sin embeddings** (2026-10-05, decidido por PERSONA_2) | C4 solo pide un trozo del resumen de cada folio, y los folios relacionados los elige la plataforma con SQL (C2): no hace falta busqueda semantica. Calcular embeddings en cada regeneracion del resumen (en cada correccion, alerta resuelta o decision) cargaria otro modelo en Ollama y, con `OLLAMA_MAX_LOADED_MODELS=1`, descargaria `gemma4:e2b`: el siguiente documento volveria a pagar ~21-28 s de carga. Sin vectores, la tabla funciona tambien en SQLite (tests) y no necesita pgvector. Si se hace la base de conocimiento (`contexto_rag`), sus embeddings se calcularan fuera del analisis y en una tabla aparte |
+| Tabla | `memoria_folios` (`folio` PK y FK a `folios`, `resumen_md`, `fragmento`, `actualizado_en`). El modelo vive en `rag/modelos.py`, no en `core/modelos.py`. **La migracion la escribe PERSONA_1** (pendiente), y `alembic/env.py` tendra que importar `app.modulos.rag.modelos` |
+| Cuando se indexa | Al regenerar el resumen. **Pendiente de PERSONA_1**: que `expediente.servicio.avisar_reindexar(folio)` pase el texto y llame a `rag.servicio.indexar_resumen(folio, resumen_md)` (asi `rag` no lee S3) |
+| Fragmento | Determinista, sin modelo: cabecera (`# Expediente`, referencia opaca, proceso, fecha, estado, recomendacion global), la decision **sin el comentario libre**, de cada documento su titulo, estado y alertas, y las alertas del expediente. **Nunca** los `Datos:`, las comparaciones ni "Generado el": aunque el resumen llegue enmascarado, el fragmento no copia valores. Se corta en un final de linea antes de `LIMITE_FRAGMENTO` (800) caracteres, con `...` |
+| Formato que lee | El de `expediente/plantillas/resumen.md.j2` (listas, desde el #27): titulos `#`, `##`, `###`, lineas `- Clave: valor`, `Datos:` y los titulos de grupo de alertas acabados en `:`. Si la plantilla cambia, revisar `extraer_fragmento` y sus tests |
+| Tests | `test_memoria_folios.py`: SQLite temporal y un `resumen.md` de ejemplo enmascarado; fragmento con y sin decision, sin valores, corte, folio sin indexar, reindexado, fallo sin lanzar y sin contenido en el log |
+
 ## Registro de cambios
 
 El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | este commit |
+| 2026-10-06 | Merge de `origin/main` con el #33 (reanudar analisis) y el #36 (documentacion del motor) en `feat/rag-memoria`; conflicto del registro y del historial resuelto conservando todas las entradas | este commit |
+| 2026-10-06 | Merge de `origin/main` en `feat/rag-memoria` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `3c9aea3` |
+| 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `9444744` |
+| 2026-10-05 | H14 (seccion 16): memoria de folios en `rag` sin embeddings (decision y motivo), tabla `memoria_folios` con el modelo en `rag/modelos.py`, `indexar_resumen` y `fragmento_resumen`; migracion y `avisar_reindexar` pendientes de PERSONA_1 | `c170791` |
+| 2026-10-05 | `docs/motor_ia/ESTADO_SESION.md`: estado de las ramas, PR abiertos, pendientes en orden y reglas de trabajo, para retomar la proxima sesion | `c6350c7` |
+| 2026-10-05 | e2e del hito sobre `main` (H10 y D3) con Ollama real y S3: folio sano con los 3 `completado`, sin alertas, global `aprobar` en 210 s; el primer documento no recargo el modelo (`calentar` con `num_ctx`); D3 recalcula reglas y recomendacion al corregir; folios vencido (`REG-vigencia_documento`) y domicilio_distinto (`CMP-001`) como en `INDICE.md`. Resultado anadido a `CHECKLIST_E2E_HITO.md` | `b7cacb2` |
+| 2026-10-05 | `docs/motor_ia/CHECKLIST_E2E_HITO.md`: checklist del e2e del hito (preparacion, calentar, prueba con los 3 sanos, resultado esperado de la prueba local de H10 y que mirar si falla) | `00e9546` |
+| 2026-10-05 | Especimen "dificil" del comprobante (vision): 4/4 correctos, `revision_manual` con `CLS-002` y `VAL-002` (sin texto que verificar). Especimenes completos: 27/27, tipo 5/5 | `c8cf280` |
+| 2026-10-05 | H13: PyMuPDF 1.28.2 y Pillow 12.3.0 fijadas con `==` en `backend/requirements.txt` (las del contenedor y de `sha256_fixtures_existentes.txt`) | `8080f6f` |
+| 2026-10-05 | Prueba local de H10 (`feat/plataforma-motor`, `a1fc046`) con Ollama real y S3: folio `onboarding` con los 3 documentos sanos (pasaporte digital, credencial foto, comprobante escaneado), los tres `completado`, tipo y campos 17/17 con confianza 1,0, sin alertas, comparaciones coinciden, recomendacion global `aprobar`, 194 s en serie (72, 71 y 51 s). `calentar` pasa `num_ctx` = `NUM_CTX` (antes cargaba con 4096 y Ollama recargaba el modelo en la primera peticion) | `807c2d6` |
 | 2026-10-05 | Merge de `origin/main` con H15 (#26). Rama `chore/mocks-sensible` (`e24e757`, con permiso de PERSONA_1): `generar_datos_mock.py` pone `sensible` en todos los campos de `tipos_documentales.json`, igual que la API, y `test_contrato_frontend.py` lo comprueba | `bb5477a` |
 | 2026-10-05 | Aviso de los especimenes corregido: el comprobante da `REG-antiguedad_maxima` desde el **2026-12-15** (la regla compara emision >= hoy - 90 dias; el 14 aun cumple) | `7865d5b` |
 | 2026-10-05 | Especimenes (bloque 5, flujo completo): los 4 que van por texto, 23/23 campos, tipo 4/4, recomendacion `aprobar`; el comprobante dificil, pendiente de RAM. `evaluar_fixtures.py --margen-gb` (margen de RAM para `--solo` con casos de texto) y los fallos de especimenes en la tabla de campos que fallan. Merge de `origin/main` con el #23 | `1745d4a` |

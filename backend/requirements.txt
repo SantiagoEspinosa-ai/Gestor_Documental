@@ -15,9 +15,9 @@ pyyaml>=6.0
 tzdata>=2024.1
 jinja2>=3.1
 httpx>=0.27
-pymupdf>=1.24
+pymupdf==1.28.2  # fijada (H13): los bytes de los fixtures dependen de ella (tests/sha256_fixtures_existentes.txt)
 pytesseract>=0.3
-pillow>=10.4
+pillow==12.3.0   # fijada (H13): idem
 pytest>=8.3
 moto[s3]>=5
 pytest-asyncio>=0.24

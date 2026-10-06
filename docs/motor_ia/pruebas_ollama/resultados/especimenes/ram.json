@@ -3,11 +3,12 @@
     "auto__comprobante_domicilio_sano_especimen_buena": 2.7,
     "auto__credencial_elector_sano_especimen_buena": 2.61,
     "auto__credencial_elector_sano_especimen_dificil": 2.65,
-    "auto__pasaporte_sano_especimen_buena": 2.62
+    "auto__pasaporte_sano_especimen_buena": 2.62,
+    "auto__comprobante_domicilio_sano_especimen_dificil": 1.41
   },
   "bloques": {
     "5": {
-      "ram_libre_min_gb": 2.61,
+      "ram_libre_min_gb": 1.41,
       "abortado_por_ram": false
     }
   }

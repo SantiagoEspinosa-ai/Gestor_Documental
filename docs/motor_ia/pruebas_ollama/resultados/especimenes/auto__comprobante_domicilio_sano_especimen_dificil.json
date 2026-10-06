@@ -1,0 +1,205 @@
+{
+  "medida": {
+    "id": "auto__comprobante_domicilio_sano_especimen_dificil",
+    "ruta": "auto",
+    "archivo": "../especimenes/comprobante_domicilio_sano_especimen_dificil.jpg",
+    "declarado": "comprobante_domicilio",
+    "clasificacion_equivocada": false,
+    "caso": "sano",
+    "tipo": "comprobante_domicilio",
+    "modalidad_fixture": "foto",
+    "nivel": "especimen",
+    "obligatorios": [
+      "nombre_titular",
+      "domicilio",
+      "fecha_emision"
+    ],
+    "segundos_preparar": 1.9,
+    "modalidad_detectada": "imagen",
+    "caracteres_texto": 13,
+    "segundos_total": 225.1,
+    "estado": "completado",
+    "tipo_detectado": "comprobante_domicilio",
+    "confianza_clasificacion": 0.0,
+    "clasificacion_ok": true,
+    "alertas": [
+      "CLS-002",
+      "VAL-002[nombre_titular]",
+      "VAL-002[domicilio]",
+      "VAL-002[proveedor]",
+      "VAL-002[fecha_emision]"
+    ],
+    "recomendacion": "revision_manual",
+    "reglas_incumplidas": [],
+    "campos": {
+      "nombre_titular": {
+        "esperado": "ANA EJEMPLO PRUEBA",
+        "extraido": "ANA EJEMPLO PRUEBA",
+        "estado": "correcto",
+        "ok": true
+      },
+      "domicilio": {
+        "esperado": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "extraido": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+        "estado": "correcto",
+        "ok": true
+      },
+      "proveedor": {
+        "esperado": "SERVICIOS DE EJEMPLO S.A.",
+        "extraido": "SERVICIOS DE EJEMPLO S.A.",
+        "estado": "correcto",
+        "ok": true
+      },
+      "fecha_emision": {
+        "esperado": "2026-09-15",
+        "extraido": "2026-09-15",
+        "estado": "correcto",
+        "ok": true
+      }
+    },
+    "aciertos": 4,
+    "vacios": 0,
+    "incorrectos": 0,
+    "total_campos": 4,
+    "llamadas": [
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 168.64,
+        "tokens_entrada": 2147,
+        "tokens_salida": 64,
+        "reintentos": 0,
+        "lotes": 1
+      },
+      {
+        "modelo": "qwen2.5vl:3b",
+        "entrada": "vision",
+        "motivo": null,
+        "segundos": 54.48,
+        "tokens_entrada": 2450,
+        "tokens_salida": 250,
+        "reintentos": 0,
+        "lotes": 1
+      }
+    ],
+    "reintento_vision": false,
+    "uso_vision": true,
+    "motivos_vision": [],
+    "descarga_texto_antes_de_reintento": false,
+    "contrato_valido": true
+  },
+  "resultado": {
+    "folio_solicitud": "CLI-2026-000000",
+    "identificador_unico_documento": "99c3d1a9-0485-44bf-a90a-8d8dc6dbc0ab",
+    "tipo_documental_declarado": "comprobante_domicilio",
+    "tipo_documental_detectado": "comprobante_domicilio",
+    "tipo_documental_confirmado": null,
+    "confianza_clasificacion": 0.0,
+    "datos_extraidos": {
+      "nombre_titular": "ANA EJEMPLO PRUEBA",
+      "domicilio": "CALLE FICTICIA 123, COLONIA DEMO, CIUDAD EJEMPLO",
+      "proveedor": "SERVICIOS DE EJEMPLO S.A.",
+      "fecha_emision": "2026-09-15"
+    },
+    "nivel_confianza_por_campo": {
+      "nombre_titular": 0.4,
+      "domicilio": 0.4,
+      "proveedor": 0.4,
+      "fecha_emision": 0.4
+    },
+    "evidencia_por_campo": {
+      "nombre_titular": "pagina_1",
+      "domicilio": "pagina_1",
+      "proveedor": "pagina_1",
+      "fecha_emision": "pagina_1"
+    },
+    "reglas_cumplidas_e_incumplidas": {
+      "cumplidas": [
+        "antiguedad_maxima"
+      ],
+      "incumplidas": []
+    },
+    "alertas_encontradas": [
+      {
+        "id": null,
+        "codigo": "CLS-002",
+        "mensaje": "Confianza de clasificacion 0.00 menor que el minimo 0.80 de 'comprobante_domicilio'",
+        "severidad": "preventiva",
+        "confianza": 1.0,
+        "campo": null,
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      },
+      {
+        "id": null,
+        "codigo": "VAL-002",
+        "mensaje": "Confianza del campo 'nombre_titular' (0.40) menor que el minimo (0.75)",
+        "severidad": "preventiva",
+        "confianza": 1.0,
+        "campo": "nombre_titular",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      },
+      {
+        "id": null,
+        "codigo": "VAL-002",
+        "mensaje": "Confianza del campo 'domicilio' (0.40) menor que el minimo (0.75)",
+        "severidad": "preventiva",
+        "confianza": 1.0,
+        "campo": "domicilio",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      },
+      {
+        "id": null,
+        "codigo": "VAL-002",
+        "mensaje": "Confianza del campo 'proveedor' (0.40) menor que el minimo (0.75)",
+        "severidad": "preventiva",
+        "confianza": 1.0,
+        "campo": "proveedor",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      },
+      {
+        "id": null,
+        "codigo": "VAL-002",
+        "mensaje": "Confianza del campo 'fecha_emision' (0.40) menor que el minimo (0.75)",
+        "severidad": "preventiva",
+        "confianza": 1.0,
+        "campo": "fecha_emision",
+        "resuelta_por_revisor": false,
+        "aplica": null,
+        "comentario_revisor": null,
+        "resuelta_por": null,
+        "resuelta_en": null
+      }
+    ],
+    "correcciones": [],
+    "recomendacion": "revision_manual",
+    "estado_analisis": "completado",
+    "fecha_y_modelo_utilizado": {
+      "fecha_analisis": "2026-10-05T18:06:31.364108Z",
+      "proveedor": "ollama",
+      "modelo": "qwen2.5vl:3b",
+      "version_prompt": "extraccion_comprobante_domicilio@v3"
+    },
+    "referencia_archivo_original": {
+      "nombre_archivo": "comprobante_domicilio_sano_especimen_dificil.jpg",
+      "ruta": "local://comprobante_domicilio_sano_especimen_dificil.jpg",
+      "hash": "74e6b347f445e016e114c025e54cee3600704b12c83ae0c38d5ce8c29c388df5"
+    }
+  }
+}
