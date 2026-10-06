@@ -80,7 +80,7 @@ describe('pantalla de auditoría (admin)', () => {
     expect(procesado.textContent).toContain('Proveedor: ollama') // forma del PR #9: {proveedor, respaldo_usado}
     expect(procesado.textContent).toContain('Sin respaldo')
     expect(procesado.textContent).toContain('Sistema') // sin usuario: tarea en segundo plano
-    expect(procesado.textContent).toContain('gemma4:e2b · extraccion@v1')
+    expect(procesado.textContent).toMatch(/gemma4:e2b · extraccion_[a-z_]+@v3/) // un prompt por tipo, como el motor real
     expect(screen.getByRole('table').textContent).not.toMatch(/[{}"]/)
   })
 

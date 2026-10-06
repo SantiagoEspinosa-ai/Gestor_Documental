@@ -36,7 +36,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_pasaporte@v3",
     "creado_en": "2026-09-25T10:01:40Z"
   },
   {
@@ -65,7 +65,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_credencial_elector@v3",
     "creado_en": "2026-09-25T10:02:40Z"
   },
   {
@@ -94,7 +94,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_comprobante_domicilio@v3",
     "creado_en": "2026-09-25T10:03:40Z"
   },
   {
@@ -147,7 +147,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_pasaporte@v3",
     "creado_en": "2026-09-28T09:16:40Z"
   },
   {
@@ -176,7 +176,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_credencial_elector@v3",
     "creado_en": "2026-09-28T09:17:40Z"
   },
   {
@@ -205,7 +205,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_comprobante_domicilio@v3",
     "creado_en": "2026-09-28T09:18:40Z"
   },
   {
@@ -234,7 +234,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_comprobante_domicilio@v3",
     "creado_en": "2026-09-28T09:19:40Z"
   },
   {
@@ -274,7 +274,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_credencial_elector@v3",
     "creado_en": "2026-09-29T11:41:40Z"
   },
   {
@@ -303,7 +303,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_comprobante_domicilio@v3",
     "creado_en": "2026-09-29T11:42:40Z"
   },
   {
@@ -373,7 +373,7 @@
       "respaldo_usado": false
     },
     "modelo": "gemma4:e2b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_credencial_elector@v3",
     "creado_en": "2026-09-30T08:06:40Z"
   },
   {
@@ -402,7 +402,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "extraccion_pasaporte@v3",
     "creado_en": "2026-09-30T08:07:40Z"
   },
   {
@@ -446,7 +446,7 @@
       "respaldo_usado": false
     },
     "modelo": "qwen2.5vl:3b",
-    "version_prompt": "extraccion@v1",
+    "version_prompt": "clasificacion@v2",
     "creado_en": "2026-09-30T08:09:40Z"
   }
 ]

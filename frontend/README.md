@@ -1,4 +1,4 @@
-# frontend (responsable: PERSONA_3)
+# frontend (responsable: PERSONA_1; heredado de PERSONA_3, PR #13)
 
 React 18 + Vite. Consume el Contrato 2 (`docs/contratos/endpoints.md`) con los tipos del Contrato 1
 (`backend/app/schemas/resultado.py`). En desarrollo puede trabajar contra mocks de msw construidos
@@ -10,7 +10,8 @@ documentos del folio, detalle, datos extraidos con confianza, alertas por severi
 comparaciones), acciones del revisor, resumen del expediente y auditoria (admin).
 
 ## Arranque
-Requisitos: Node ^20.19 o >=22.12 (Vite 8).
+Requisitos: Node >= 22.22 (algunas dependencias del `package-lock.json` piden `^22.22.2`; la imagen de Docker
+y el CI usan Node 22).
 ```
 cd frontend
 cp .env.example .env      # VITE_API_URL y VITE_USAR_MOCKS; .env no se sube

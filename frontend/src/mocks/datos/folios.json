@@ -17,7 +17,7 @@
           "nombre_completo": "LUIS DEMO PRUEBAS",
           "numero_pasaporte": "ZX0000002",
           "fecha_nacimiento": "1985-06-15",
-          "fecha_expedicion": "2016-08-31",
+          "fecha_expedicion": "30 SEP 2021",
           "fecha_vencimiento": "2026-08-31",
           "nacionalidad": "UTOPICA",
           "sexo": "M"
@@ -32,13 +32,13 @@
           "sexo": 0.86
         },
         "evidencia_por_campo": {
-          "nombre_completo": "pagina_1",
-          "numero_pasaporte": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "fecha_expedicion": "pagina_1",
-          "fecha_vencimiento": "pagina_1",
-          "nacionalidad": "pagina_1",
-          "sexo": "pagina_1"
+          "nombre_completo": "pagina_1:seccion_central",
+          "numero_pasaporte": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "fecha_expedicion": "pagina_1:seccion_central",
+          "fecha_vencimiento": "pagina_1:seccion_central",
+          "nacionalidad": "pagina_1:seccion_central",
+          "sexo": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -110,10 +110,10 @@
         "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-28T09:16:40Z",
+          "fecha_analisis": "2026-09-28T09:16:40.060269Z",
           "proveedor": "ollama",
           "modelo": "qwen2.5vl:3b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_pasaporte@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "pasaporte_vencido_escaneado.pdf",
@@ -145,12 +145,12 @@
           "vigencia": 0.88
         },
         "evidencia_por_campo": {
-          "nombre_completo": "pagina_1",
-          "curp": "pagina_1",
-          "clave_elector": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "domicilio": "pagina_1",
-          "vigencia": "pagina_1"
+          "nombre_completo": "pagina_1:seccion_central",
+          "curp": "pagina_1:seccion_central",
+          "clave_elector": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "vigencia": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -179,10 +179,10 @@
         "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-28T09:17:40Z",
+          "fecha_analisis": "2026-09-28T09:17:40.285586Z",
           "proveedor": "ollama",
           "modelo": "qwen2.5vl:3b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_credencial_elector@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "credencial_elector_vencido_foto.jpg",
@@ -210,10 +210,10 @@
           "fecha_emision": 0.9
         },
         "evidencia_por_campo": {
-          "nombre_titular": "pagina_1",
-          "domicilio": "pagina_1",
-          "proveedor": "pagina_1",
-          "fecha_emision": "pagina_1"
+          "nombre_titular": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "proveedor": "pagina_1:seccion_central",
+          "fecha_emision": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -226,10 +226,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-28T09:18:40Z",
+          "fecha_analisis": "2026-09-28T09:18:40.376701Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_comprobante_domicilio@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
@@ -257,10 +257,10 @@
           "fecha_emision": 0.9
         },
         "evidencia_por_campo": {
-          "nombre_titular": "pagina_1",
-          "domicilio": "pagina_1",
-          "proveedor": "pagina_1",
-          "fecha_emision": "pagina_1"
+          "nombre_titular": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "proveedor": "pagina_1:seccion_central",
+          "fecha_emision": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -287,10 +287,10 @@
         "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-28T09:19:40Z",
+          "fecha_analisis": "2026-09-28T09:19:40.714013Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_comprobante_domicilio@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
@@ -366,11 +366,11 @@
         },
         "evidencia_por_campo": {
           "nombre_completo": "correccion_revisor",
-          "curp": "pagina_1",
-          "clave_elector": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "domicilio": "pagina_1",
-          "vigencia": "pagina_1"
+          "curp": "pagina_1:seccion_central",
+          "clave_elector": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "vigencia": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -393,10 +393,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-29T11:41:40Z",
+          "fecha_analisis": "2026-09-29T11:41:40.760865Z",
           "proveedor": "ollama",
           "modelo": "qwen2.5vl:3b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_credencial_elector@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "credencial_elector_domicilio_distinto_escaneado.pdf",
@@ -424,9 +424,9 @@
           "fecha_emision": 0.9
         },
         "evidencia_por_campo": {
-          "nombre_titular": "pagina_1",
-          "domicilio": "pagina_1",
-          "fecha_emision": "pagina_1"
+          "nombre_titular": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "fecha_emision": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -453,10 +453,10 @@
         "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-29T11:42:40Z",
+          "fecha_analisis": "2026-09-29T11:42:40.825723Z",
           "proveedor": "ollama",
           "modelo": "qwen2.5vl:3b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_comprobante_domicilio@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "comprobante_domicilio_domicilio_distinto_foto.jpg",
@@ -553,12 +553,12 @@
           "vigencia": 0.88
         },
         "evidencia_por_campo": {
-          "nombre_completo": "pagina_1",
-          "curp": "pagina_1",
-          "clave_elector": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "domicilio": "pagina_1",
-          "vigencia": "pagina_1"
+          "nombre_completo": "pagina_1:seccion_central",
+          "curp": "pagina_1:seccion_central",
+          "clave_elector": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "vigencia": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -573,10 +573,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-30T08:06:40Z",
+          "fecha_analisis": "2026-09-30T08:06:40.855172Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_credencial_elector@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "credencial_elector_sano_digital.pdf",
@@ -681,10 +681,10 @@
         "recomendacion": "revision_manual",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-30T08:09:40Z",
+          "fecha_analisis": "2026-09-30T08:09:40.500525Z",
           "proveedor": "ollama",
           "modelo": "qwen2.5vl:3b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "clasificacion@v2"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "pasaporte_sano_escaneado.pdf",
@@ -749,13 +749,13 @@
           "sexo": 0.86
         },
         "evidencia_por_campo": {
-          "nombre_completo": "pagina_1",
-          "numero_pasaporte": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "fecha_expedicion": "pagina_1",
-          "fecha_vencimiento": "pagina_1",
-          "nacionalidad": "pagina_1",
-          "sexo": "pagina_1"
+          "nombre_completo": "pagina_1:seccion_central",
+          "numero_pasaporte": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "fecha_expedicion": "pagina_1:seccion_central",
+          "fecha_vencimiento": "pagina_1:seccion_central",
+          "nacionalidad": "pagina_1:seccion_central",
+          "sexo": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -773,10 +773,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-25T10:01:40Z",
+          "fecha_analisis": "2026-09-25T10:01:40.858165Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_pasaporte@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "pasaporte_sano_digital.pdf",
@@ -808,12 +808,12 @@
           "vigencia": 0.88
         },
         "evidencia_por_campo": {
-          "nombre_completo": "pagina_1",
-          "curp": "pagina_1",
-          "clave_elector": "pagina_1",
-          "fecha_nacimiento": "pagina_1",
-          "domicilio": "pagina_1",
-          "vigencia": "pagina_1"
+          "nombre_completo": "pagina_1:seccion_central",
+          "curp": "pagina_1:seccion_central",
+          "clave_elector": "pagina_1:seccion_central",
+          "fecha_nacimiento": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "vigencia": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -828,10 +828,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-25T10:02:40Z",
+          "fecha_analisis": "2026-09-25T10:02:40.342330Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_credencial_elector@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "credencial_elector_sano_digital.pdf",
@@ -859,10 +859,10 @@
           "fecha_emision": 0.9
         },
         "evidencia_por_campo": {
-          "nombre_titular": "pagina_1",
-          "domicilio": "pagina_1",
-          "proveedor": "pagina_1",
-          "fecha_emision": "pagina_1"
+          "nombre_titular": "pagina_1:seccion_central",
+          "domicilio": "pagina_1:seccion_central",
+          "proveedor": "pagina_1:seccion_central",
+          "fecha_emision": "pagina_1:seccion_central"
         },
         "reglas_cumplidas_e_incumplidas": {
           "cumplidas": [
@@ -875,10 +875,10 @@
         "recomendacion": "aprobar",
         "estado_analisis": "completado",
         "fecha_y_modelo_utilizado": {
-          "fecha_analisis": "2026-09-25T10:03:40Z",
+          "fecha_analisis": "2026-09-25T10:03:40.742007Z",
           "proveedor": "ollama",
           "modelo": "gemma4:e2b",
-          "version_prompt": "extraccion@v1"
+          "version_prompt": "extraccion_comprobante_domicilio@v3"
         },
         "referencia_archivo_original": {
           "nombre_archivo": "comprobante_domicilio_sano_digital.pdf",
