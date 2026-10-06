@@ -163,10 +163,14 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
+- [x] H14, parte de la plataforma (rama `feat/plataforma-memoria`): migracion 0005 de `memoria_folios` (igual que
+      `rag.modelos.MemoriaFolio`), `alembic/env.py` registra `app.modulos.rag.modelos`, y `regenerar_resumen`
+      indexa el resumen enmascarado con `rag.servicio.indexar_resumen` (tambien si S3 falla; en un try).
+      **Tras desplegar, ejecutar una vez `scripts/reindexar_resumenes.py`** (ver README de expediente).
 - [x] H16: antecedentes (rama `feat/plataforma-antecedentes`): `expediente.listar_antecedentes` y
       `motivo_sin_antecedentes` (SQL sobre `folios`), `GET /folios/{folio}/antecedentes` para revisor y admin con el
       fragmento de `rag`, contrato (`endpoints.md`, `contrato.ts`, sin el xfail de H2), mocks generados y seccion
-      "Antecedentes" en el expediente. Se fusiona despues de H14 (necesita la tabla `memoria_folios`).
+      "Antecedentes" en el expediente. Va encima de H14 (usa la tabla `memoria_folios`).
 - [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
 
 ### Etapa 4

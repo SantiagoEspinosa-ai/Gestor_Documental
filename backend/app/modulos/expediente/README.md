@@ -78,8 +78,15 @@ Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
   Se llama al crear el folio (cabecera y "Sin documentos"), al terminar cada analisis (tambien los
   reprocesos y los documentos en error, desde `ingesta/procesamiento.py`), al corregir datos, al
   confirmar la clasificacion, al resolver una alerta y al decidir. Nunca lanza: si S3 falla se registra
-  (solo el folio y el tipo de error) y la accion sigue; el siguiente cambio lo regenera. Despues llama a
-  `avisar_reindexar(folio)`, que hoy no hace nada (H14, PERSONA_2: `rag` reindexa el resumen).
+  (solo el folio y el tipo de error) y la accion sigue; el siguiente cambio lo vuelve a subir. Despues, SIEMPRE
+  (tambien si S3 fallo), llama a `avisar_reindexar(sesion, folio, resumen_md)`.
+- `avisar_reindexar` (H14, ADR-010 C4): `rag.servicio.indexar_resumen(folio, resumen_md)` guarda en la tabla
+  `memoria_folios` (migracion 0005) el MISMO texto enmascarado que se sube a S3 y su fragmento para los
+  antecedentes (`rag` no lee S3). Va dentro de un try: un fallo de la memoria nunca rompe la accion.
+- Tras desplegar la memoria, ejecutar UNA vez `scripts/reindexar_resumenes.py` (desde `backend/`:
+  `PYTHONPATH=. python ../scripts/reindexar_resumenes.py [--solo-cerrados]`): regenera e indexa cada folio
+  (o solo los que tienen decision) e imprime cuantos ha procesado y los ids de los que fallaron, nunca
+  contenido. Usa la configuracion de la app y carga las fichas como el arranque.
 - `obtener_resumen(sesion, folio)`: el Markdown de S3 para `GET /folios/{folio}/resumen.md`.
 - `ruta_resumen_md` se deriva del folio, sin columna ni migracion: el expediente la devuelve siempre.
   Caso limite: un folio anterior a esta funcion, o con un fallo de S3 al crearlo, muestra el boton "Ver

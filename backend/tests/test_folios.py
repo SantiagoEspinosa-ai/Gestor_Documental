@@ -23,6 +23,7 @@ from app.core.modelos import AlertaBD, Auditoria, Documento, Folio, Proceso, Res
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio
+from app.modulos.rag.modelos import MemoriaFolio
 from app.schemas.resultado import DecisionHumana, EstadoGeneral, ResultadoExpediente
 
 SECRETO = "clave-ficticia-de-test"
@@ -350,6 +351,9 @@ def test_folios_concurrencia_postgres(monkeypatch):
         with Session(engine) as s:
             s.execute(delete(Auditoria).where(Auditoria.folio.like("CCT-%")))
             s.execute(delete(AlertaBD).where(AlertaBD.folio.like("CCT-%")))
+            # Memoria de folios (H14): crear o decidir un folio la indexa; su FK a folios exige borrarla antes
+            s.execute(delete(MemoriaFolio).where(
+                MemoriaFolio.folio.in_(select(Folio.folio).where(Folio.proceso == "concurrencia_test"))))
             s.execute(delete(Folio).where(Folio.proceso == "concurrencia_test"))
             s.execute(delete(SecuenciaFolio).where(SecuenciaFolio.proceso == "concurrencia_test"))
             s.execute(delete(Proceso).where(Proceso.nombre == "concurrencia_test"))
