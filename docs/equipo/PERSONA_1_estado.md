@@ -158,6 +158,8 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 - [x] D3: al corregir datos se vuelven a evaluar las reglas del documento (VAL-001/002/004 y REG-*, VAL-003 del
       campo corregido; falsos positivos conservados; rollback y 500 si falla), rama `feat/plataforma-motor`.
 - [ ] La nota del `anio` `"0999"` (del PR #9).
+- [x] Reanudar al arrancar los analisis interrumpidos por un reinicio (`ingesta.servicio.reanudar_pendientes`,
+      `REANUDAR_ANALISIS_AL_ARRANCAR`, por defecto true), rama `fix/reanudar-analisis`. Un solo proceso uvicorn.
 
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).

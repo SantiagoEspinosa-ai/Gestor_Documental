@@ -11,6 +11,7 @@ from app.core.errores import registrar_manejadores
 from app.core.procesos import leer_procesos, sincronizar_procesos
 from app.modulos.api import auditoria, auth, documentos, folios, procesos, revision, tipos_documentales
 from app.modulos.configuracion import servicio as configuracion
+from app.modulos.ingesta import servicio as ingesta
 
 
 @asynccontextmanager
@@ -24,6 +25,9 @@ async def lifespan(app: FastAPI):
     sesion = SesionLocal(bind=get_engine())
     try:
         sincronizar_procesos(sesion, procesos_yaml)
+        # Analisis que un reinicio dejo a medias: se relanzan en segundo plano, sin esperarlos
+        if get_settings().reanudar_analisis_al_arrancar:
+            ingesta.reanudar_pendientes(sesion)
     except (OperationalError, ProgrammingError) as e:
         raise RuntimeError("No se pudo cargar procesos.yaml en BD: ejecuta 'alembic upgrade head' "
                            "antes de arrancar") from e
