@@ -81,7 +81,10 @@ def indexar_resumen(folio: str, resumen_md: str, *, sesion: Session | None = Non
                     ahora: datetime | None = None) -> None:
     """Guarda (o sustituye) el resumen del folio y su fragmento. **Nunca lanza**: se llama despues de regenerar el
     resumen, y un fallo aqui no debe romper la accion del revisor. Si falla, se registra solo el folio y el tipo de
-    error (nunca el contenido) y el siguiente cambio lo reindexa."""
+    error (nunca el contenido) y el siguiente cambio lo reindexa.
+
+    Con `sesion`, hace **commit** sobre esa sesion (y rollback si falla, que descartaria tambien lo que el llamador
+    tenga pendiente): llamarla despues del commit del llamador. Sin `sesion`, abre y cierra la suya."""
     propia = sesion is None
     sesion = sesion or SesionLocal(bind=get_engine())
     try:

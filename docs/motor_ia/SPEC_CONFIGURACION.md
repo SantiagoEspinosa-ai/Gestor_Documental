@@ -315,10 +315,9 @@ se queda solo con `pagina_<n>` (seccion 4).
         (mismo preprocesado que `orquestador/ocr.py`) y `procesar_especimenes.py`. Versiones de PyMuPDF (1.28.2) y Pillow
         (12.3.0) fijadas con `==` en `backend/requirements.txt` (rama `chore/fijar-pymupdf-pillow`, PR #35, fusionado): son las del
         contenedor y las de `sha256_fixtures_existentes.txt`.
-      - [~] H14 (redefinido por ADR-010, PR #21): **ya no es `buscar_antecedentes`**. Hecho en la rama
-        `feat/rag-memoria` (seccion 16): `rag.servicio.indexar_resumen(folio, resumen_md)` y `fragmento_resumen(folio)`,
-        **sin embeddings**. Pendiente de PERSONA_1: la migracion de `memoria_folios` y que `avisar_reindexar` pase el
-        texto y llame a `indexar_resumen`.
+      - [x] H14 (redefinido por ADR-010, PR #21): **ya no es `buscar_antecedentes`**. `rag.servicio.indexar_resumen(folio,
+        resumen_md)` y `fragmento_resumen(folio)`, **sin embeddings** (seccion 16; PR #37). Conectado por PERSONA_1 en el
+        #39: migracion `0005`, `avisar_reindexar` llama a `indexar_resumen` y `scripts/reindexar_resumenes.py`.
       - [x] H15 (ADR-010, A1 y A6; rama `feat/sensible`, despues del PR de reglas de coherencia): `Campo.sensible`
         en el cargador (booleano, por defecto `false`) y `sensible: true` solo en `curp`, `clave_elector` y
         `numero_pasaporte` (R8). **Cambia el Contrato 2**: `sensible` siempre presente en `CampoFicha` de
@@ -580,15 +579,16 @@ aceptado en el PR #13; `codigos_alertas.md` no cambia). Mismas reglas que la rec
 API publica (`rag/servicio.py`):
 - `indexar_resumen(folio, resumen_md, *, sesion=None, ahora=None) -> None`: guarda o sustituye el `resumen.md` del
   folio (ya enmascarado, ADR-010 A5) y su fragmento. **Nunca lanza**: si falla, registra solo el folio y el tipo
-  de error, nunca el contenido; el siguiente cambio lo reindexa.
+  de error, nunca el contenido; el siguiente cambio lo reindexa. **Con `sesion`, hace `commit` sobre ella** (y
+  `rollback` si falla, que descartaria tambien lo pendiente del llamador): llamarla despues del commit del llamador.
 - `fragmento_resumen(folio, *, sesion=None) -> str | None`: el fragmento, o `None` si el folio no esta indexado.
   Sin `sesion`, cada funcion abre y cierra la suya.
 
 | Decision | Detalle |
 |---|---|
 | **Sin embeddings** (2026-10-05, decidido por PERSONA_2) | C4 solo pide un trozo del resumen de cada folio, y los folios relacionados los elige la plataforma con SQL (C2): no hace falta busqueda semantica. Calcular embeddings en cada regeneracion del resumen (en cada correccion, alerta resuelta o decision) cargaria otro modelo en Ollama y, con `OLLAMA_MAX_LOADED_MODELS=1`, descargaria `gemma4:e2b`: el siguiente documento volveria a pagar ~21-28 s de carga. Sin vectores, la tabla funciona tambien en SQLite (tests) y no necesita pgvector. Si se hace la base de conocimiento (`contexto_rag`), sus embeddings se calcularan fuera del analisis y en una tabla aparte |
-| Tabla | `memoria_folios` (`folio` PK y FK a `folios`, `resumen_md`, `fragmento`, `actualizado_en`). El modelo vive en `rag/modelos.py`, no en `core/modelos.py`. **La migracion la escribe PERSONA_1** (pendiente), y `alembic/env.py` tendra que importar `app.modulos.rag.modelos` |
-| Cuando se indexa | Al regenerar el resumen. **Pendiente de PERSONA_1**: que `expediente.servicio.avisar_reindexar(folio)` pase el texto y llame a `rag.servicio.indexar_resumen(folio, resumen_md)` (asi `rag` no lee S3) |
+| Tabla | `memoria_folios` (`folio` PK y FK a `folios`, `resumen_md`, `fragmento`, `actualizado_en`). El modelo vive en `rag/modelos.py`, no en `core/modelos.py`. Migracion `0005` e import de `app.modulos.rag.modelos` en `alembic/env.py`: PERSONA_1 (#39) |
+| Cuando se indexa | Al regenerar el resumen, despues del commit de la accion: `expediente.servicio.avisar_reindexar(sesion, folio, resumen_md)` llama a `rag.servicio.indexar_resumen(folio, resumen_md, sesion=sesion)` con el mismo texto enmascarado que va a S3 (asi `rag` no lee S3) (PERSONA_1, #39). Folios anteriores: `scripts/reindexar_resumenes.py` |
 | Fragmento | Determinista, sin modelo: cabecera (`# Expediente`, referencia opaca, proceso, fecha, estado, recomendacion global), la decision **sin el comentario libre**, de cada documento su titulo, estado y alertas, y las alertas del expediente. **Nunca** los `Datos:`, las comparaciones ni "Generado el": aunque el resumen llegue enmascarado, el fragmento no copia valores. Se corta en un final de linea antes de `LIMITE_FRAGMENTO` (800) caracteres, con `...` |
 | Formato que lee | El de `expediente/plantillas/resumen.md.j2` (listas, desde el #27): titulos `#`, `##`, `###`, lineas `- Clave: valor`, `Datos:` y los titulos de grupo de alertas acabados en `:`. Si la plantilla cambia, revisar `extraer_fragmento` y sus tests |
 | Tests | `test_memoria_folios.py`: SQLite temporal y un `resumen.md` de ejemplo enmascarado; fragmento con y sin decision, sin valores, corte, folio sin indexar, reindexado, fallo sin lanzar y sin contenido en el log |
@@ -599,9 +599,12 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-06 | Merge de `origin/main` con el #33 (reanudar analisis) y el #36 (documentacion del motor) en `feat/rag-memoria`; conflicto del registro y del historial resuelto conservando todas las entradas | este commit |
-| 2026-10-06 | Merge de `origin/main` en `feat/rag-memoria` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `3c9aea3` |
+| 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #42 (arranque de demo) y el #43 (filtro de logs). `CHECKLIST_E2E_HITO.md`: la plataforma se arranca con `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build` (backend sin `--reload`, frontend incluido) y el arranque de desarrollo queda como alternativa. `ESTADO_SESION.md` al dia (#42 y #43 fusionados; el aviso del log, resuelto por el #43) | este commit |
+| 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #38 (boton Mostrar), el #39 (H14 conectado), el #40 (CI en ubuntu-24.04) y el #41 (antecedentes); conflicto del registro resuelto conservando todas las entradas. `ESTADO_SESION.md` al dia (H14 completo; H16 y H17 en `main`; siguiente, el e2e por la web). Docstring de `indexar_resumen`: hace commit (o rollback) sobre la sesion recibida y se llama despues del commit del llamador | `6325c9d` |
+| 2026-10-06 | `ESTADO_SESION.md` al dia: H13 (#35), documentacion (#36) y enmascaramiento (#32) fusionados; H14 (#37) esperando aprobacion; siguiente paso, el e2e por la web con la mascara (plataforma preparada sin el override local y sin `revisor_hito`) | `6501bff` |
 | 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `9444744` |
+| 2026-10-06 | Merge de `origin/main` con el #33 (reanudar analisis) y el #36 (documentacion del motor) en `feat/rag-memoria`; conflicto del registro y del historial resuelto conservando todas las entradas | `959922b` |
+| 2026-10-06 | Merge de `origin/main` en `feat/rag-memoria` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `3c9aea3` |
 | 2026-10-05 | H14 (seccion 16): memoria de folios en `rag` sin embeddings (decision y motivo), tabla `memoria_folios` con el modelo en `rag/modelos.py`, `indexar_resumen` y `fragmento_resumen`; migracion y `avisar_reindexar` pendientes de PERSONA_1 | `c170791` |
 | 2026-10-05 | `docs/motor_ia/ESTADO_SESION.md`: estado de las ramas, PR abiertos, pendientes en orden y reglas de trabajo, para retomar la proxima sesion | `c6350c7` |
 | 2026-10-05 | e2e del hito sobre `main` (H10 y D3) con Ollama real y S3: folio sano con los 3 `completado`, sin alertas, global `aprobar` en 210 s; el primer documento no recargo el modelo (`calentar` con `num_ctx`); D3 recalcula reglas y recomendacion al corregir; folios vencido (`REG-vigencia_documento`) y domicilio_distinto (`CMP-001`) como en `INDICE.md`. Resultado anadido a `CHECKLIST_E2E_HITO.md` | `b7cacb2` |
