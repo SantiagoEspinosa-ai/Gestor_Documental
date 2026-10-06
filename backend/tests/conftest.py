@@ -3,6 +3,9 @@
 MOTOR_ANALISIS=stub en todos (H10): ningun test llama al motor real ni a Ollama sin querer. Los que prueban
 el motor real lo cambian y sustituyen el orquestador por uno falso.
 
+REANUDAR_ANALISIS_AL_ARRANCAR=false en todos: un `with TestClient(app)` no relanza analisis de la BD del
+test. Solo test_reanudar_analisis.py lo activa.
+
 `expediente.servicio` regenera el resumen.md en S3 despues de cada cambio (etapa 3). Para que ningun
 test llame a AWS sin querer, su almacenamiento se sustituye en cada test por uno en memoria. Solo ese
 punto: la ingesta (subidas y descargas de originales) y los tests que usan moto no cambian. Un test que
@@ -32,6 +35,7 @@ class AlmacenamientoEnMemoria:
 @pytest.fixture(autouse=True)
 def motor_stub(monkeypatch):
     monkeypatch.setenv("MOTOR_ANALISIS", "stub")
+    monkeypatch.setenv("REANUDAR_ANALISIS_AL_ARRANCAR", "false")
 
 
 @pytest.fixture(autouse=True)
