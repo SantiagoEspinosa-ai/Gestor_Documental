@@ -94,6 +94,14 @@ Solo listas, sin tablas: la web lo pinta con `react-markdown` sin plugins.
 - `_almacenamiento()` es el unico acceso a S3 del modulo; en los tests lo sustituye uno en memoria
   (`tests/conftest.py`).
 
+## Antecedentes (H16, ADR-010 C)
+- `motivo_sin_antecedentes(sesion, folio) -> str | None`: `"proceso_sin_antecedentes"` (el proceso tiene
+  `permitir_antecedentes=false`), `"folio_sin_referencia"` o `None`. 404 `FOLIO_NO_ENCONTRADO`.
+- `listar_antecedentes(sesion, folio, ahora=None) -> list[Folio]`: solo SQL sobre `folios` (C2): mismo proceso y
+  misma `referencia_externa`, cerrados (con `decision`), `decision_fecha` dentro de `caducidad_antecedentes_dias`
+  del proceso, sin el folio actual; orden `decision_fecha` desc (y folio desc), como mucho `MAX_ANTECEDENTES`
+  (10). Sin referencia, lista vacia. El fragmento de cada uno lo anade el router desde `rag`.
+
 ## Revision (E2.6)
 - `resolver_alerta_documento(sesion, documento_id, alerta_id, aplica, comentario, usuario) -> ResultadoDocumento`
   y `resolver_alerta_expediente(sesion, folio, alerta_id, aplica, comentario, usuario) -> ResultadoExpediente`.

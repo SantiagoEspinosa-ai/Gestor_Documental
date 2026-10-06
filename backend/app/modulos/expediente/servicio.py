@@ -2,7 +2,7 @@
 import logging
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select, update
@@ -366,6 +366,42 @@ def listar_folios(sesion: Session, proceso: str | None = None,
             n_bloqueantes_sin_resolver=len(_bloqueantes_sin_resolver(documentos, alertas_expediente)),
             fecha_solicitud=f.creado_en, referencia_externa=f.referencia_externa))  # ADR-008
     return elementos, total
+
+
+# --- antecedentes (H16, ADR-010 C) ---
+
+MAX_ANTECEDENTES = 10
+
+
+def motivo_sin_antecedentes(sesion: Session, folio: str) -> str | None:
+    """ADR-010 C3: por que el folio no tiene antecedentes, o None si se pueden buscar. 404 si no existe.
+    `proceso_sin_antecedentes` (permitir_antecedentes=false) va antes que `folio_sin_referencia`."""
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    if not sesion.get(Proceso, fila.proceso).permitir_antecedentes:
+        return "proceso_sin_antecedentes"
+    if not fila.referencia_externa:
+        return "folio_sin_referencia"
+    return None
+
+
+def listar_antecedentes(sesion: Session, folio: str, ahora: datetime | None = None) -> list[Folio]:
+    """ADR-010 C1 y C2: folios del mismo proceso y la misma `referencia_externa`, cerrados (con decision),
+    con `decision_fecha` dentro de `caducidad_antecedentes_dias` del proceso y sin el folio actual; del mas
+    reciente al mas antiguo, como mucho MAX_ANTECEDENTES. Sin referencia, ninguno. 404 si no existe.
+    Solo SQL sobre `folios`: el fragmento de cada uno lo anade quien llama (rag.servicio.fragmento_resumen)."""
+    fila = sesion.get(Folio, folio)
+    if fila is None:
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    if not fila.referencia_externa:
+        return []
+    caducidad = sesion.get(Proceso, fila.proceso).caducidad_antecedentes_dias
+    desde = (ahora or datetime.now(timezone.utc)) - timedelta(days=caducidad)
+    return list(sesion.scalars(
+        select(Folio).where(Folio.proceso == fila.proceso, Folio.referencia_externa == fila.referencia_externa,
+                            Folio.folio != fila.folio, Folio.decision.is_not(None), Folio.decision_fecha >= desde)
+        .order_by(Folio.decision_fecha.desc(), Folio.folio.desc()).limit(MAX_ANTECEDENTES)))
 
 
 # --- revision: resolver alertas (E2.6a) ---

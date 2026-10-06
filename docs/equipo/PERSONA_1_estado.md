@@ -167,7 +167,10 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
       `rag.modelos.MemoriaFolio`), `alembic/env.py` registra `app.modulos.rag.modelos`, y `regenerar_resumen`
       indexa el resumen enmascarado con `rag.servicio.indexar_resumen` (tambien si S3 falla; en un try).
       **Tras desplegar, ejecutar una vez `scripts/reindexar_resumenes.py`** (ver README de expediente).
-- [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
+- [x] H16: antecedentes (rama `feat/plataforma-antecedentes`): `expediente.listar_antecedentes` y
+      `motivo_sin_antecedentes` (SQL sobre `folios`), `GET /folios/{folio}/antecedentes` para revisor y admin con el
+      fragmento de `rag`, contrato (`endpoints.md`, `contrato.ts`, sin el xfail de H2), mocks generados y seccion
+      "Antecedentes" en el expediente. Va encima de H14 (usa la tabla `memoria_folios`).
 - [x] H17: boton "Mostrar" de los datos sensibles (PR B, rama `feat/plataforma-mostrar`): revisor y admin,
       tambien con el folio cerrado; valor solo en memoria del componente, oculto a los 60 s, al cambiar de
       documento o de pantalla; errores por codigo. Vitest, e2e de mocks y e2e real (con "Dato revelado").
