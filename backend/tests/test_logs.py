@@ -1,6 +1,7 @@
 """Tests de core/logs.py: el filtro tapa datos sensibles en mensajes y trazas. Datos ficticios."""
 import io
 import logging
+import sys
 import uuid
 
 import pytest
@@ -78,6 +79,63 @@ def test_mensajes_normales_intactos(salida):
 def test_argumentos_que_no_casan_no_rompen():
     # El filtro no lanza ni descarta: el handler informa del error de formato como siempre
     assert FiltroDatosSensibles().filter(logging.makeLogRecord({"msg": "%s %s", "args": ("x",)})) is True
+
+
+def test_linea_de_acceso_de_uvicorn_formateada_y_tapada():
+    """El AccessFormatter de uvicorn lee los args por posicion: el filtro no puede dejarlos en None."""
+    from uvicorn.logging import AccessFormatter
+    texto = io.StringIO()
+    handler = logging.StreamHandler(texto)
+    handler.setFormatter(AccessFormatter('%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s',
+                                         use_colors=False))
+    handler.addFilter(FiltroDatosSensibles())
+    logger = logging.getLogger("app.prueba_logs.access")
+    logger.addHandler(handler)
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+    errores = io.StringIO()
+    stderr, logging.raiseExceptions = sys.stderr, True
+    sys.stderr = errores
+    try:
+        # Mismo formato y args que uvicorn/protocols/http/httptools_impl.py
+        logger.info('%s - "%s %s HTTP/%s" %d', "172.18.0.1:47096", "GET", f"/api/v1/buscar/{CURP}", "1.1", 401)
+    finally:
+        sys.stderr = stderr
+        logger.removeHandler(handler)
+    assert "Logging error" not in errores.getvalue()
+    # El AccessFormatter anade la frase del estado HTTP
+    assert texto.getvalue().strip() == 'INFO:     172.18.0.1:47096 - "GET /api/v1/buscar/**** HTTP/1.1" 401 Unauthorized'
+
+
+def test_args_en_dict_tapados(salida):
+    logger, texto = salida
+    logger.info("curp %(curp)s del folio %(folio)s", {"curp": CURP, "folio": FOLIO})
+    assert texto.getvalue().strip() == f"INFO curp **** del folio {FOLIO}"
+
+
+def test_numeros_y_objetos_conservan_su_formato(salida):
+    logger, texto = salida
+
+    class Valor:
+        def __str__(self):
+            return f"valor {CURP}"
+    logger.info("intentos %d, tiempo %.1f s, ok %s, nada %s, objeto %s", 3, 2.25, True, None, Valor())
+    assert texto.getvalue().strip() == "INFO intentos 3, tiempo 2.2 s, ok True, nada None, objeto valor ****"
+
+
+def test_excepcion_como_argumento_tapada(salida):
+    logger, texto = salida
+    logger.warning("fallo: %s", ValueError(f"curp {CURP}"))
+    assert texto.getvalue().strip() == "WARNING fallo: curp ****"
+
+
+def test_el_filtro_no_rompe_si_un_argumento_falla_al_convertirse():
+    class Roto:
+        def __str__(self):
+            raise RuntimeError("no se puede")
+    registro = logging.makeLogRecord({"msg": f"curp {CURP} y %s", "args": (Roto(),)})
+    assert FiltroDatosSensibles().filter(registro) is True
+    assert registro.msg == "curp **** y %s"  # el mensaje se tapa aunque falle un argumento
 
 
 def test_instalar_en_el_raiz_sus_handlers_y_last_resort(caplog):
