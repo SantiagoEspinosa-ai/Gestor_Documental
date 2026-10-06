@@ -47,10 +47,8 @@ API = {(metodo.upper(), _normalizar(ruta)): operacion
        for ruta, operaciones in OPENAPI["paths"].items() if ruta.startswith(PREFIJO)
        for metodo, operacion in operaciones.items()}
 
-# Desviaciones conocidas de (a): endpoints del contrato que la API aun no tiene
-PENDIENTES = {
-    ("GET", "/api/v1/folios/{}/antecedentes"): "Etapa 3: antecedentes (RAG memoria), forma pendiente del ADR-010",
-}
+# Desviaciones conocidas de (a): endpoints del contrato que la API aun no tiene. Vacio desde H16 (antecedentes)
+PENDIENTES: dict[tuple[str, str], str] = {}
 
 
 def test_la_tabla_de_endpoints_se_lee():

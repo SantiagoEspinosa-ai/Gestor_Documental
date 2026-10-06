@@ -59,7 +59,7 @@ describe('vista de expediente', () => {
     montarExpediente('ONB-2026-000004')
     await screen.findByRole('heading', { name: /Expediente ONB-2026-000004/ })
     const cabecera = screen.getByRole('heading', { name: /Expediente/ }).closest('header')!
-    expect(within(cabecera).getByText('CLI-000104')).toBeTruthy()
+    expect(within(cabecera).getByText('CLI-000102')).toBeTruthy()
     expect(within(cabecera).getByText('onboarding')).toBeTruthy()
     expect(within(cabecera).getByText('Aprobado')).toBeTruthy() // estado_general
     const decision = within(cabecera).getByRole('status').textContent!

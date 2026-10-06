@@ -43,6 +43,16 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
 - Salida 200: el `resumen.md` guardado en S3, `text/markdown; charset=utf-8` (`expediente.obtener_resumen`).
 - Errores: 401; 404 `RESUMEN_NO_DISPONIBLE` si aun no se ha generado; 404 `FOLIO_NO_ENCONTRADO`.
 
+### GET /api/v1/folios/{folio}/antecedentes (revisor, admin; H16, ADR-010 C)
+- Salida 200 siempre: `{permitido, motivo, elementos}`. `permitir_antecedentes=false` en el proceso:
+  `permitido: false`, `motivo: "proceso_sin_antecedentes"`; folio sin `referencia_externa`: `permitido: false`,
+  `motivo: "folio_sin_referencia"` (el primero manda); si no, `permitido: true`, `motivo: null`.
+- `elementos`: los de `expediente.listar_antecedentes` (abajo); cada uno `{folio, fecha_solicitud, estado_general,
+  decision_humana, fecha_decision, fragmento_resumen}`, con el fragmento de `rag.servicio.fragmento_resumen`
+  (ya enmascarado; `null` si el folio no esta en la memoria). El router decide `permitido` y `motivo` (C3).
+- Errores: 401; 403 `SIN_PERMISO` (integrador); 404 `FOLIO_NO_ENCONTRADO`.
+- Necesita la tabla `memoria_folios` (migracion 0005, H14).
+
 ## documentos.py
 Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 

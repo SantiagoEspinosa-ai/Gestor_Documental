@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
+  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
   recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -446,11 +446,9 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return new HttpResponse(resumenMarkdown(folio), { headers: { 'Content-Type': 'text/markdown; charset=utf-8' } })
   })
 
-  // Forma pendiente de un ADR de la etapa 3: de momento, lista vacia
-  ruta('GET', '/folios/{folio}/antecedentes', ['revisor'], ({ params }) => {
-    folioOError(estado, params.folio)
-    return HttpResponse.json([])
-  })
+  // ADR-010 C: siempre 200 con {permitido, motivo, elementos}; revisor y admin
+  ruta('GET', '/folios/{folio}/antecedentes', ['revisor', 'admin'], ({ params }) =>
+    HttpResponse.json(antecedentes(estado, folioOError(estado, params.folio))))
 
   ruta('GET', '/tipos-documentales', TODOS, () => HttpResponse.json(estado.tipos))
 

@@ -1,7 +1,7 @@
 // Folios, procesos, tipos documentales y documentos (Contrato 2)
 import type {
-  FiltrosFolios, PaginaFolios, PeticionCrearFolio, Proceso, RespuestaCrearFolio, RespuestaOriginal, RespuestaSubidaDocumento,
-  ResultadoDocumento, ResultadoExpediente, TipoDocumental,
+  FiltrosFolios, PaginaFolios, PeticionCrearFolio, Proceso, RespuestaAntecedentes, RespuestaCrearFolio, RespuestaOriginal,
+  RespuestaSubidaDocumento, ResultadoDocumento, ResultadoExpediente, TipoDocumental,
 } from '../tipos/contrato'
 import { peticion } from './cliente'
 
@@ -13,6 +13,11 @@ export function listarFolios(filtros: FiltrosFolios, signal?: AbortSignal): Prom
 
 export function obtenerFolio(folio: string, signal?: AbortSignal): Promise<ResultadoExpediente> {
   return peticion<ResultadoExpediente>(`/folios/${encodeURIComponent(folio)}`, { signal })
+}
+
+/** GET /folios/{folio}/antecedentes (ADR-010 C): revisor y admin; siempre 200 con {permitido, motivo, elementos} */
+export function obtenerAntecedentes(folio: string, signal?: AbortSignal): Promise<RespuestaAntecedentes> {
+  return peticion<RespuestaAntecedentes>(`/folios/${encodeURIComponent(folio)}/antecedentes`, { signal })
 }
 
 export function crearFolio(datos: PeticionCrearFolio): Promise<RespuestaCrearFolio> {

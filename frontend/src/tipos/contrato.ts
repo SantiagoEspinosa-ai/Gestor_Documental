@@ -273,8 +273,27 @@ export interface PeticionDecision {
   comentario?: string
 }
 
-/** GET /folios/{folio}/antecedentes: forma pendiente de un ADR de la etapa 3 */
-export type RespuestaAntecedentes = unknown[]
+/** Por que un folio no tiene antecedentes (ADR-010 C3) */
+export const MOTIVOS_SIN_ANTECEDENTES = ['proceso_sin_antecedentes', 'folio_sin_referencia'] as const
+export type MotivoSinAntecedentes = (typeof MOTIVOS_SIN_ANTECEDENTES)[number]
+
+/** Elemento de GET /folios/{folio}/antecedentes (ADR-010 C4) */
+export interface Antecedente {
+  folio: string
+  fecha_solicitud: string | null
+  estado_general: EstadoGeneral
+  decision_humana: DecisionHumana | null
+  fecha_decision: string | null
+  /** Trozo del resumen.md del antecedente, ya enmascarado; null si no esta en la memoria de folios */
+  fragmento_resumen: string | null
+}
+
+/** GET /folios/{folio}/antecedentes (ADR-010 C3): siempre 200; permitido false con su motivo y lista vacia */
+export interface RespuestaAntecedentes {
+  permitido: boolean
+  motivo: MotivoSinAntecedentes | null
+  elementos: Antecedente[]
+}
 
 export interface CampoFicha {
   tipo: string

@@ -7,48 +7,50 @@ Punto de partida para la proxima sesion. El detalle de cada decision esta en
 
 | PR | Rama | Contenido |
 |---|---|---|
+| #32 | `feat/plataforma` (PERSONA_1) | Enmascaramiento de los campos sensibles (ADR-010) |
 | #35 | `chore/fijar-pymupdf-pillow` | H13: `pymupdf==1.28.2` y `pillow==12.3.0` en `backend/requirements.txt` |
 | #36 | `feat/motor-ia` | Checklist del e2e del hito y su resultado, especimen dificil del comprobante (vision, 27/27 en total), este documento |
-| #32 | `feat/plataforma` (PERSONA_1) | Enmascaramiento de los campos sensibles (ADR-010) |
+| #37 | `feat/rag-memoria` | H14, lado de PERSONA_2: `rag.servicio.indexar_resumen` y `fragmento_resumen`, modelo `MemoriaFolio`, sin embeddings (spec, seccion 16) |
+| #39 | `feat/plataforma-memoria` (PERSONA_1) | H14, lado de PERSONA_1: migracion `0005`, `avisar_reindexar` -> `indexar_resumen` y `scripts/reindexar_resumenes.py`. **H14 completo** |
+| #41 | `feat/plataforma-antecedentes` (PERSONA_1) | H16: antecedentes (ADR-010 C1-C4) con `fragmento_resumen` |
+| #38 | `feat/plataforma-mostrar` (PERSONA_1) | H17: boton "Mostrar" en los campos sensibles para revisor y admin |
+| #40 | `chore/ci-ubuntu-24` (PERSONA_1) | CI fijado a `ubuntu-24.04` |
 
 ## Ramas de PERSONA_2
 
 | Rama | Ultimo commit | Push | Contenido pendiente de llegar a `main` |
 |---|---|---|---|
-| `feat/motor-ia` | este commit | si | Solo este documento y su entrada en la spec |
-| `feat/rag-memoria` | `959922b` | si | H14: `rag.servicio.indexar_resumen` y `fragmento_resumen`, modelo `MemoriaFolio` en `rag/modelos.py`, sin embeddings (spec, seccion 16). Merges de `origin/main` con #32, #34 y #35 (`3c9aea3`) y con #33 y #36 (`959922b`); bateria 958 pasan, 2 saltados y 1 xfail |
+| `feat/motor-ia` | este commit | si | Merge de `origin/main` (#38-#41), este documento, la spec al dia (H14 hecho) y el docstring de `indexar_resumen` (commit sobre la sesion recibida). Sin PR todavia |
 
-## PR abiertos y que esperan
-
-| PR | Rama | Espera |
-|---|---|---|
-| #37 (H14) | `feat/rag-memoria` | Aprobacion de PERSONA_1. Nadie lo llama todavia: fusionarlo no cambia la plataforma. Si se fusiona algo antes en `main`, volver a hacer merge y pasar la bateria |
+`feat/rag-memoria` ya esta en `main` (#37).
 
 ## Pendiente, en orden
 
-1. **Siguiente paso: e2e por la web con la mascara**, con PERSONA_1 (los documentos se suben juntos). Seguir
-   `CHECKLIST_E2E_HITO.md` y comprobar ademas:
+1. **Siguiente paso: e2e por la web con la mascara, "Mostrar" y antecedentes**, con PERSONA_1 (los documentos se
+   suben juntos). Seguir `CHECKLIST_E2E_HITO.md` y comprobar ademas:
    - CURP, numero de pasaporte y clave de elector enmascarados (`****` + 4 ultimos) en la UI y en la API;
-   - "mostrar" para revisor y admin, y que deja `dato_revelado` en la auditoria (sin el valor);
-   - `resumen.md` del folio enmascarado (datos y comparaciones).
-   Plataforma preparada el 2026-10-06: `main` actualizado, imagen del backend reconstruida (H13), sin el
-   `docker-compose.override.yml` local (en `.env` del equipo: `OLLAMA_BASE_URL` a `host.docker.internal` y
-   `MOTOR_ANALISIS=real`), frontend con `VITE_USAR_MOCKS=false`, y `revisor_hito` y su contrasena temporal
-   borrados. El usuario revisor nuevo se crea con `scripts/crear_usuario.py`. Antes de subir: calentar el modelo
-   y, si hace falta, vaciar la cache de la VM de Docker. Recomendado `OLLAMA_MAX_LOADED_MODELS=1` en el equipo
-   (variable de usuario) y reiniciar Ollama.
-2. **H14 tras aprobar el #37, lo hace PERSONA_1**: migracion `0005` de `memoria_folios`, `import
-   app.modulos.rag.modelos` en `alembic/env.py`, que `expediente.servicio.avisar_reindexar` pase el texto del
-   resumen y llame a `rag.servicio.indexar_resumen(folio, resumen_md)`, y un script para reindexar los folios
-   cerrados.
+   - "Mostrar" (H17) para revisor y admin, y que deja `dato_revelado` en la auditoria (sin el valor);
+   - `resumen.md` del folio enmascarado (datos y comparaciones);
+   - antecedentes (H16): con dos folios del mismo proceso y la misma `referencia_externa`, cerrar el primero y ver
+     su fragmento en el segundo, sin valores de los datos; sin referencia o sin permiso, `permitido: false`.
+   Plataforma preparada el 2026-10-06 (sin el `docker-compose.override.yml` local; en `.env` del equipo,
+   `OLLAMA_BASE_URL` a `host.docker.internal` y `MOTOR_ANALISIS=real`; `revisor_hito` y su contrasena temporal
+   borrados; frontend con `VITE_USAR_MOCKS=false`). **Despues se paro Docker Desktop**: antes del e2e, arrancarlo,
+   `git pull` en `main`, `docker compose up -d --build db backend` (aplica la migracion `0005`), ejecutar una vez
+   `scripts/reindexar_resumenes.py` para los folios existentes, lanzar el frontend y crear el usuario revisor con
+   `scripts/crear_usuario.py`. Antes de subir: calentar el modelo y, si hace falta, vaciar la cache de la VM de
+   Docker. Recomendado `OLLAMA_MAX_LOADED_MODELS=1` en el equipo (variable de usuario) y reiniciar Ollama.
+2. **Aviso a PERSONA_1** (#32): `core/logs.py` (`FiltroDatosSensibles`) deja `record.args = None` y el log de
+   acceso de uvicorn lanza `TypeError` en cada peticion (las respuestas no cambian; se pierden las lineas de
+   acceso).
 3. **Limpiar despues del e2e por la web**: el usuario revisor creado para la prueba (BD local), si no se queda
    para la demo.
 
 ## No tocar sin aviso
 
-- La plataforma levantada desde `main` en el checkout principal (`db`, `backend` y el frontend con `npm run dev`)
-  y los folios del e2e del hito: `ONB-2026-000001` (sano), `ONB-2026-000002` (vencido) y `ONB-2026-000003`
-  (domicilio distinto). Se ensenan a PERSONA_1.
+- La plataforma del checkout principal (`db`, `backend` y el frontend con `npm run dev`) y los folios del e2e del
+  hito: `ONB-2026-000001` (sano), `ONB-2026-000002` (vencido) y `ONB-2026-000003` (domicilio distinto). Se
+  ensenan a PERSONA_1.
 - Los ficheros de `ONB-2026-000003` de la prueba local de H10 en el bucket S3 de desarrollo: los gestiona
   PERSONA_1.
 

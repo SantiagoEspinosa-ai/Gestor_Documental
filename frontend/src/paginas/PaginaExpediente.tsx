@@ -13,7 +13,9 @@ import { DetalleDocumento } from '../componentes/DetalleDocumento'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
 import { ResumenExpediente } from '../componentes/ResumenExpediente'
-import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
+import { Antecedentes } from '../componentes/Antecedentes'
+import { SoloRol } from '../componentes/SoloRol'
+import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
 import { alertasQueBloquean, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
@@ -21,6 +23,7 @@ import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/so
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 
 const ROLES_ORIGINAL = ['revisor', 'admin'] // GET /documentos/{id}/original
+const ROLES_ANTECEDENTES: readonly Rol[] = ['revisor', 'admin'] // GET /folios/{folio}/antecedentes
 
 const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
   pendiente: Clock, procesando: LoaderCircle, completado: CheckCircle2, error: CircleX,
@@ -252,6 +255,8 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
               ))}
             </ul>
           </section>
+          {/* H16: antecedentes del folio, solo revisor y admin (ADR-010 C5) */}
+          <SoloRol roles={ROLES_ANTECEDENTES}><Antecedentes key={expediente.folio} folio={expediente.folio} /></SoloRol>
         </aside>
       </div>
     </section>

@@ -22,7 +22,7 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) 
 | POST | /folios/{folio}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` sobre `alertas_expediente` | `ResultadoExpediente` |
 | POST | /folios/{folio}/decision | revisor | `{decision: aprobar\|rechazar, comentario?}`; guarda comentario, usuario y fecha y cierra el folio (ver "Reglas") | `ResultadoExpediente` |
 | GET | /folios/{folio}/resumen.md | todos | Memoria sintetica en Markdown; `404 RESUMEN_NO_DISPONIBLE` mientras no exista | text/markdown |
-| GET | /folios/{folio}/antecedentes | revisor | Folios previos relacionados (RAG memoria), si `permitir_antecedentes` | lista (forma pendiente de ADR de etapa 3) |
+| GET | /folios/{folio}/antecedentes | revisor, admin | Folios previos de la misma persona (misma `referencia_externa`) con un fragmento de su resumen (ADR-010 C; ver "Formas de respuesta") | `RespuestaAntecedentes` |
 | GET | /tipos-documentales | todos | Fichas cargadas desde config/tipos | lista de `TipoDocumental` |
 | GET | /auditoria?folio=&pagina=1&tamano_pagina=50 | admin | Registro de acciones, del mas reciente al mas antiguo, paginado (ADR-008) | `PaginaAuditoria` |
 
@@ -47,6 +47,16 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   `documento_procesado`, `dato_corregido`, `clasificacion_confirmada`, `alerta_resuelta`,
   `decision_tomada` (y `dato_revelado` en la etapa 3). `detalle` nunca contiene valores sensibles sin
   enmascarar.
+- `RespuestaAntecedentes` (ADR-010 C): siempre `200` (salvo `404 FOLIO_NO_ENCONTRADO`): `{permitido,
+  motivo: "proceso_sin_antecedentes" | "folio_sin_referencia" | null, elementos: [Antecedente]}`.
+  `permitir_antecedentes=false` en el proceso: `permitido: false` y `motivo: "proceso_sin_antecedentes"`;
+  folio sin `referencia_externa`: `permitido: false` y `motivo: "folio_sin_referencia"`; si no, `permitido:
+  true`, `motivo: null`. Elementos: los folios del mismo proceso y la misma `referencia_externa`, cerrados (con
+  decision), con `fecha_decision` dentro de `caducidad_antecedentes_dias` del proceso y sin el actual; del
+  mas reciente al mas antiguo, como mucho 10. `Antecedente`: `{folio, fecha_solicitud, estado_general,
+  decision_humana, fecha_decision, fragmento_resumen}`; `fragmento_resumen` es un trozo del `resumen.md` del
+  antecedente, ya enmascarado, o `null` si no esta en la memoria de folios. Roles: revisor y admin
+  (integrador `403 SIN_PERMISO`).
 - `PaginaAuditoria` (ADR-008, punto 1): `{elementos: [EntradaAuditoria], total, pagina,
   tamano_pagina}`, la misma forma que `PaginaFolios`. `pagina` >= 1 (por defecto 1) y `tamano_pagina`
   de 1 a 100 (por defecto 50); fuera de rango, `422 PETICION_INVALIDA`. Orden: `creado_en` desc y, en

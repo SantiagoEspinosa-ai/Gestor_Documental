@@ -1,11 +1,13 @@
 import { CircleX, Clock, Pencil } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { Correccion, ResultadoDocumento, TipoDocumental } from '../tipos/contrato'
+import type { Correccion, ResultadoDocumento, Rol, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
 import { enProceso, fichaDeTipo, nombreTipo, tipoExtraccion } from '../utilidades/expediente'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 import { BarraConfianza } from './BarraConfianza'
+import { DatoSensible } from './DatoSensible'
 import { TextoRecomendacion } from './Insignias'
+import { SoloRol } from './SoloRol'
 import { VisorOriginal } from './VisorOriginal'
 
 interface Props {
@@ -18,6 +20,9 @@ interface Props {
   /** Celda de valor editable (bloque H); sin ella, el valor formateado */
   celdaValor?: (campo: string, contenido: ReactNode) => ReactNode
 }
+
+/** POST /documentos/{id}/revelar (ADR-010 A4): el integrador nunca ve "Mostrar" */
+const ROLES_REVELAR: readonly Rol[] = ['revisor', 'admin']
 
 /** Ultima correccion de cada campo (ADR-006 2.4) */
 function ultimasCorrecciones(correcciones: Correccion[]): Map<string, Correccion> {
@@ -100,11 +105,27 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
               {campos.map((campo) => {
                 const correccion = correcciones.get(campo)
                 const tipo = fichaExtraccion?.campos[campo]?.tipo
+                const enmascarado = (
+                  <span className={doc.datos_extraidos[campo] == null ? 'italic text-slate-500' : ''}>
+                    {formatearValor(doc.datos_extraidos[campo], tipo)}
+                  </span>
+                )
+                // Dato sensible con valor (ADR-010): llega enmascarado; revisor y admin pueden "Mostrar" (H17).
+                // Solo aqui: comparaciones, evidencia y correcciones siguen enmascaradas
+                const sensible = fichaExtraccion?.campos[campo]?.sensible === true && doc.datos_extraidos[campo] != null
                 const valor = (
                   <>
-                    <span className={doc.datos_extraidos[campo] == null ? 'italic text-slate-500' : ''}>
-                      {formatearValor(doc.datos_extraidos[campo], tipo)}
-                    </span>
+                    {sensible
+                      ? (
+                        <SoloRol roles={ROLES_REVELAR} alternativa={enmascarado}>
+                          {/* key: cambiar de documento o que cambie el dato olvida lo revelado */}
+                          <DatoSensible key={`${doc.identificador_unico_documento}:${String(doc.datos_extraidos[campo])}`}
+                            documentoId={doc.identificador_unico_documento} campo={campo} tipo={tipo}>
+                            {enmascarado}
+                          </DatoSensible>
+                        </SoloRol>
+                      )
+                      : enmascarado}
                     {correccion && (
                       <span className="mt-0.5 flex items-center gap-1 text-xs text-violet-800">
                         <Pencil className="size-3" aria-hidden /> Corregido por revisor (antes: {formatearValor(correccion.valor_anterior, tipo)})

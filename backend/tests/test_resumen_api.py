@@ -131,7 +131,7 @@ def test_ruta_resumen_md_en_el_expediente_y_objeto_en_s3(sesion, s3):
 
 def test_se_regenera_tras_cada_accion(sesion, s3, monkeypatch):
     avisos = []
-    monkeypatch.setattr(expediente, "avisar_reindexar", avisos.append)
+    monkeypatch.setattr(expediente, "avisar_reindexar", lambda s, folio, texto: avisos.append((folio, texto)))
     folio = _crear_folio()
     assert s3.subidas == 1
 
@@ -154,7 +154,9 @@ def test_se_regenera_tras_cada_accion(sesion, s3, monkeypatch):
     assert s3.subidas == 5
     texto = _resumen(folio).text
     assert "## Decision" in texto and "- Decision: Rechazado" in texto
-    assert len(avisos) == s3.subidas and set(avisos) == {folio}  # avisar_reindexar tras cada regeneracion
+    # avisar_reindexar tras cada regeneracion, con el mismo texto que se sube a S3
+    assert len(avisos) == s3.subidas and {f for f, _ in avisos} == {folio}
+    assert avisos[-1][1] == texto
 
 
 def test_resolver_una_alerta_del_expediente_regenera(sesion, s3):
@@ -173,7 +175,7 @@ def test_un_fallo_de_s3_no_rompe_la_accion(sesion, monkeypatch, caplog):
         folio = _crear_folio(referencia="CLI-SECRETA-01")
         r = cliente().post(f"/api/v1/folios/{folio}/decision", json={"decision": "rechazar"})
     assert (r.status_code, r.json()["estado_general"]) == (200, "rechazado")
-    assert "No se pudo regenerar el resumen" in caplog.text
+    assert "No se pudo subir el resumen" in caplog.text
     assert "CLI-SECRETA-01" not in caplog.text and "Expediente" not in caplog.text  # sin datos del resumen
 
 

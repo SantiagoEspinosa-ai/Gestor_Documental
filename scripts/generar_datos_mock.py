@@ -18,7 +18,8 @@ procesos y tipos_documentales se copian de config/.
 Los 4 folios cubren: alertas de las 4 severidades (una bloqueante), CMP-001 de domicilio en
 alertas_expediente, EXP-001 (campo = tipo que falta), una correccion, dos documentos en error (uno con
 SYS-001 y otro por fallo de S3 o del motor, sin SYS-00x ni documento_procesado), uno pendiente y un
-folio cerrado (aprobado). Comparaciones, recomendacion global, mensajes de CMP-001 y EXP-001 y detalle
+folio cerrado (aprobado), que es antecedente del folio 2 (misma referencia_externa, ADR-010 C), y el folio
+3 sin referencia (sin antecedentes). Comparaciones, recomendacion global, mensajes de CMP-001 y EXP-001 y detalle
 de la auditoria, como la API del PR #9. Tres alertas informativas, todas posibles con
 la configuracion por defecto: dos VAL-003 (nacionalidad y sexo tomados de la MRZ) en el pasaporte
 escaneado del folio 1 y VAL-004 (proveedor opcional no leido, null) en el comprobante del folio 2.
@@ -341,12 +342,13 @@ class DatosMock:
             self.alerta("EXP-001", f"Falta el documento requerido: {self.fichas['comprobante_domicilio']['nombre_visible']}",
                         "bloqueante", "comprobante_domicilio")]))
 
-        # 4. Ana, todo correcto: folio cerrado (aprobado) con resumen
+        # 4. Ana, todo correcto: folio cerrado (aprobado) con resumen. Misma referencia que el folio 2: es su
+        # antecedente (ADR-010 C, H16)
         f, s, t0 = "ONB-2026-000004", 4, momento(25, 10, 0)
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         docs = [self.documento(f, s, i + 1, "sano", tipo, "digital", t0 + timedelta(minutes=i + 1))
                 for i, tipo in enumerate(("pasaporte", "credencial_elector", "comprobante_domicilio"))]
-        folios.append(self.expediente(f, "CLI-000104", t0, docs,
+        folios.append(self.expediente(f, "CLI-000102", t0, docs,
                                       decision=("aprobar", "Documentacion completa y coherente", momento(26, 12, 30)),
                                       resumen=True))
         return folios
