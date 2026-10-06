@@ -194,6 +194,12 @@ hace fallar el build si queda algun rastro.
   - Derecha: resultado global, `<ListaAlertas>` del documento y del expediente agrupadas por
     severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
     icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
+  - Antecedentes (H16, ADR-010 C, `componentes/Antecedentes.tsx`, solo revisor y admin): `GET
+    /folios/{folio}/antecedentes` (`api/folios.ts`, `obtenerAntecedentes`). Lista con el folio (enlace al
+    expediente), fechas de solicitud y decision, estado y decision, y el fragmento del resumen con el mismo
+    renderizado seguro que "Ver resumen" (react-markdown con `skipHtml`, sin enlaces ni imagenes). Estados:
+    cargando, error, no permitido con el motivo legible (`ETIQUETA_MOTIVO_SIN_ANTECEDENTES`: proceso sin
+    antecedentes o folio sin referencia), sin antecedentes y antecedente sin fragmento en la memoria.
   - Acciones del revisor (`componentes/AccionesRevisor.tsx`, `api/revision.ts`), solo rol revisor y
     folio abierto: corregir un dato inline mostrando el valor actual (`utilidades/valores.ts`,
     `prepararCorreccion`). En un campo opcional, vaciarlo envia `null`, nunca `""`. En uno obligatorio
@@ -288,8 +294,9 @@ npm run test:e2e                  # arranca `npm run dev` en el puerto 5174 con 
   `/auditoria?tamano_pagina=500`, tras el login como admin vuelve con los parametros y ve el 422;
   recargar mantiene la sesion y la URL completa; el revisor
   que entra por URL ve "Sin permiso"); correccion de datos (un obligatorio no se vacia, un opcional
-  vaciado queda en "no detectado", y un `anio` con menos de 4 cifras no se guarda).
-- 10 tests en 6 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
+  vaciado queda en "no detectado", y un `anio` con menos de 4 cifras no se guarda); antecedentes (el revisor
+  ve en el folio 2 su antecedente, el folio 4, y lo abre).
+- 11 tests en 7 ficheros; `e2e/ayudas.ts` tiene `entrar`, `cambiarDeUsuario` (sin recargar),
   `nuevoFolio`, `subir`, `filaCarga` y `abrirFolio`.
 - Salidas en `test-results/` y `playwright-report/` (fuera de git). Si falla, la traza:
   `npx playwright show-trace test-results/<test>/trace.zip`.
@@ -407,7 +414,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   responde como la API (revisor y admin, 403 al integrador, 422/404/409, `Cache-Control: no-store` y
   `dato_revelado` con `{campo}`). Al corregir un campo `sensible`, `EditorCampo` empieza vacio (el valor
   llega enmascarado y no debe guardarse la mascara). Falta H17 (PR B): el boton "mostrar".
-- Etapa 3: antecedentes (`GET /folios/{folio}/antecedentes`, forma pendiente de ADR, H16).
+- HECHO (H16): antecedentes del folio en el expediente (ver "Pantallas"). En los mocks, el folio 2 y el 4 tienen
+  la misma referencia (`scripts/generar_datos_mock.py`): el 4, cerrado, es el antecedente del 2; el 3 no tiene
+  referencia. El fragmento del mock es el principio de su `resumen.md` de mock.
 - HECHO (H8, 2026-10-02): pantalla de configuracion de procesos, en solo lectura (recorte R3; ver
   "Procesos" en "Pantallas").
 - `resumen.md` (etapa 3, `ResumenExpediente.tsx`): el resumen usa solo listas (datos de cada documento y

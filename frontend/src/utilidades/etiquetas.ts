@@ -1,6 +1,6 @@
 // Textos visibles de los valores del contrato
 import type {
-  AccionAuditoria, Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, Recomendacion, Rol, Severidad,
+  AccionAuditoria, Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, MotivoSinAntecedentes, Recomendacion, Rol, Severidad,
 } from '../tipos/contrato'
 
 export const ETIQUETA_ROL: Record<Rol, string> = { admin: 'Administración', revisor: 'Revisión', integrador: 'Integración' }
@@ -40,6 +40,12 @@ export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
 export function etiquetaRevision(alerta: Pick<Alerta, 'aplica'>): string {
   if (alerta.aplica === null) return 'Sin revisar'
   return alerta.aplica ? 'Aplica (confirmada por el revisor)' : 'Falso positivo'
+}
+
+/** Por que un folio no tiene antecedentes (ADR-010 C3) */
+export const ETIQUETA_MOTIVO_SIN_ANTECEDENTES: Record<MotivoSinAntecedentes, string> = {
+  proceso_sin_antecedentes: 'El proceso de este folio no consulta antecedentes.',
+  folio_sin_referencia: 'Este folio no tiene referencia externa: no se pueden relacionar antecedentes.',
 }
 
 /** Barra de confianza por campo (ADR-007): la calcula el codigo comprobando el dato, no el modelo */

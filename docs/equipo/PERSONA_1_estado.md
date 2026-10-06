@@ -163,7 +163,10 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 3
 - [x] H8: pantalla de procesos en solo lectura (`/procesos`, solo admin; webhook solo con el host).
-- [ ] H16: router y pantalla de antecedentes (tras H7 y `buscar_antecedentes` de PERSONA_2).
+- [x] H16: antecedentes (rama `feat/plataforma-antecedentes`): `expediente.listar_antecedentes` y
+      `motivo_sin_antecedentes` (SQL sobre `folios`), `GET /folios/{folio}/antecedentes` para revisor y admin con el
+      fragmento de `rag`, contrato (`endpoints.md`, `contrato.ts`, sin el xfail de H2), mocks generados y seccion
+      "Antecedentes" en el expediente. Se fusiona despues de H14 (necesita la tabla `memoria_folios`).
 - [ ] H17: boton "mostrar" en la UI (PR B). La API ya enmascara y tiene `POST /revelar` (PR A).
 
 ### Etapa 4

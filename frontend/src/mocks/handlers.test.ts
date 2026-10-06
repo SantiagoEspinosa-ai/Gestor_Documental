@@ -186,7 +186,8 @@ describe('consultas', () => {
     expect(resumen.status).toBe(200)
     expect(resumen.texto).toContain('# Expediente ONB-2026-000004')
     expect((await api('GET', '/folios/ONB-2026-000001/resumen.md', { token: revisor })).cuerpo.codigo).toBe('RESUMEN_NO_DISPONIBLE')
-    expect((await api('GET', '/folios/ONB-2026-000001/antecedentes', { token: revisor })).cuerpo).toEqual([])
+    expect((await api('GET', '/folios/ONB-2026-000001/antecedentes', { token: revisor })).cuerpo)
+      .toEqual({ permitido: true, motivo: null, elementos: [] })
     expect((await api<unknown[]>('GET', '/tipos-documentales', { token: revisor })).cuerpo).toHaveLength(3)
     const f4 = (await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000004', { token: revisor })).cuerpo
     const pedirUrl = async () => (await api<{ url: string }>('GET',
@@ -750,6 +751,37 @@ describe('campos sin valor', () => {
     const informativas = documentos.flatMap((d) => d.alertas_encontradas).filter((a) => a.severidad === 'informativa')
     expect(informativas.map((a) => [a.codigo, a.campo]).sort()).toEqual([
       ['EXP-002', 'desconocido'], ['VAL-003', 'nacionalidad'], ['VAL-003', 'sexo'], ['VAL-004', 'proveedor']])
+  })
+})
+
+describe('antecedentes (ADR-010 C, H16)', () => {
+  it('folio 2: el folio 4 cerrado de la misma referencia, con su fragmento; folio 3 sin referencia', async () => {
+    const revisor = await entrar('revisor.demo')
+    const r = await api<{ permitido: boolean; motivo: string | null; elementos: Record<string, unknown>[] }>(
+      'GET', '/folios/ONB-2026-000002/antecedentes', { token: revisor })
+    expect([r.status, r.cuerpo.permitido, r.cuerpo.motivo]).toEqual([200, true, null])
+    expect(r.cuerpo.elementos.map((e) => e.folio)).toEqual(['ONB-2026-000004'])
+    expect(r.cuerpo.elementos[0]).toMatchObject({ estado_general: 'aprobado', decision_humana: 'aprobar' })
+    expect(Object.keys(r.cuerpo.elementos[0]).sort()).toEqual(
+      ['decision_humana', 'estado_general', 'fecha_decision', 'fecha_solicitud', 'folio', 'fragmento_resumen'])
+    expect(String(r.cuerpo.elementos[0].fragmento_resumen)).toContain('Expediente ONB-2026-000004')
+    const sinReferencia = await api('GET', '/folios/ONB-2026-000003/antecedentes', { token: revisor })
+    expect(sinReferencia.cuerpo).toEqual({ permitido: false, motivo: 'folio_sin_referencia', elementos: [] })
+  })
+
+  it('proceso sin antecedentes, caducidad, admin si e integrador 403', async () => {
+    const admin = await entrar('admin.demo')
+    expect((await api('GET', '/folios/ONB-2026-000002/antecedentes', { token: admin })).status).toBe(200)
+    const integrador = await entrar('integrador.demo')
+    const r403 = await api('GET', '/folios/ONB-2026-000002/antecedentes', { token: integrador })
+    expect([r403.status, r403.cuerpo.codigo]).toEqual([403, 'SIN_PERMISO'])
+    t += 400 * 24 * 60 * 60 * 1000 // mas alla de caducidad_antecedentes_dias (365); el token tambien caduca
+    const otraVez = await entrar('admin.demo')
+    expect((await api('GET', '/folios/ONB-2026-000002/antecedentes', { token: otraVez })).cuerpo)
+      .toEqual({ permitido: true, motivo: null, elementos: [] })
+    estado.procesos.find((p) => p.nombre === 'onboarding')!.permitir_antecedentes = false
+    expect((await api('GET', '/folios/ONB-2026-000002/antecedentes', { token: otraVez })).cuerpo)
+      .toEqual({ permitido: false, motivo: 'proceso_sin_antecedentes', elementos: [] })
   })
 })
 

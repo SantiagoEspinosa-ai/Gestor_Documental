@@ -1,8 +1,8 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
 import {
-  TIPO_DESCONOCIDO, type Alerta, type ComparacionCampo, type Recomendacion, type ResultadoDocumento, type ResultadoExpediente,
-  type ResumenFolio, type Severidad, type TipoDocumental,
+  TIPO_DESCONOCIDO, type Alerta, type ComparacionCampo, type Recomendacion, type RespuestaAntecedentes, type ResultadoDocumento,
+  type ResultadoExpediente, type ResumenFolio, type Severidad, type TipoDocumental,
 } from '../tipos/contrato'
 import {
   alertasQueBloquean, bloquea, enProceso, fichaDeTipo, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
@@ -383,4 +383,33 @@ export function enmascararExpediente(estado: EstadoMock, folio: ResultadoExpedie
   copia.comparaciones = copia.comparaciones.map((c) => (Object.keys(c.valores).some((id) => sensibles.get(id)?.has(c.campo))
     ? { ...c, valores: Object.fromEntries(Object.entries(c.valores).map(([id, v]) => [id, mascara(v)])) } : c))
   return copia
+}
+
+// ---------------------------------------------------------------- antecedentes (ADR-010 C, H16)
+
+const MAX_ANTECEDENTES = 10
+const LIMITE_FRAGMENTO = 800
+const MS_DIA = 24 * 60 * 60 * 1000
+
+/**
+ * Como GET /folios/{folio}/antecedentes de la API: motivo si el proceso no los permite o el folio no tiene
+ * referencia; si no, los folios del mismo proceso y la misma referencia, cerrados, con la decision dentro de
+ * caducidad_antecedentes_dias y sin el actual, del mas reciente al mas antiguo (como mucho 10). El fragmento
+ * es el principio del resumen del mock de ese folio si tiene resumen (la API lo saca de la memoria de folios)
+ */
+export function antecedentes(estado: EstadoMock, folio: ResultadoExpediente): RespuestaAntecedentes {
+  const proceso = estado.procesos.find((p) => p.nombre === folio.proceso)
+  if (!proceso?.permitir_antecedentes) return { permitido: false, motivo: 'proceso_sin_antecedentes', elementos: [] }
+  if (!folio.referencia_externa) return { permitido: false, motivo: 'folio_sin_referencia', elementos: [] }
+  const desde = estado.ahora() - proceso.caducidad_antecedentes_dias * MS_DIA
+  const elementos = [...estado.folios.values()]
+    .filter((f) => f.folio !== folio.folio && f.proceso === folio.proceso && f.referencia_externa === folio.referencia_externa
+      && f.decision_humana !== null && f.fecha_decision !== null && Date.parse(f.fecha_decision) >= desde)
+    .sort((a, b) => b.fecha_decision!.localeCompare(a.fecha_decision!) || b.folio.localeCompare(a.folio))
+    .slice(0, MAX_ANTECEDENTES)
+    .map((f) => ({
+      folio: f.folio, fecha_solicitud: f.fecha_solicitud, estado_general: f.estado_general, decision_humana: f.decision_humana,
+      fecha_decision: f.fecha_decision, fragmento_resumen: f.ruta_resumen_md ? resumenMarkdown(f).slice(0, LIMITE_FRAGMENTO) : null,
+    }))
+  return { permitido: true, motivo: null, elementos }
 }
