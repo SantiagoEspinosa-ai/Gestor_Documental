@@ -580,7 +580,8 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
-| 2026-10-06 | Merge de `origin/main` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | este commit |
+| 2026-10-06 | `ESTADO_SESION.md` al dia: H13 (#35), documentacion (#36) y enmascaramiento (#32) fusionados; H14 (#37) esperando aprobacion; siguiente paso, el e2e por la web con la mascara (plataforma preparada sin el override local y sin `revisor_hito`) | este commit |
+| 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #32 (enmascaramiento), el #34 (arquitectura) y el #35 (H13); conflicto del registro y de la checklist resuelto conservando todas las entradas | `9444744` |
 | 2026-10-05 | `docs/motor_ia/ESTADO_SESION.md`: estado de las ramas, PR abiertos, pendientes en orden y reglas de trabajo, para retomar la proxima sesion | `c6350c7` |
 | 2026-10-05 | e2e del hito sobre `main` (H10 y D3) con Ollama real y S3: folio sano con los 3 `completado`, sin alertas, global `aprobar` en 210 s; el primer documento no recargo el modelo (`calentar` con `num_ctx`); D3 recalcula reglas y recomendacion al corregir; folios vencido (`REG-vigencia_documento`) y domicilio_distinto (`CMP-001`) como en `INDICE.md`. Resultado anadido a `CHECKLIST_E2E_HITO.md` | `b7cacb2` |
 | 2026-10-05 | `docs/motor_ia/CHECKLIST_E2E_HITO.md`: checklist del e2e del hito (preparacion, calentar, prueba con los 3 sanos, resultado esperado de la prueba local de H10 y que mirar si falla) | `00e9546` |
