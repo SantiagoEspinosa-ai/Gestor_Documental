@@ -14,7 +14,8 @@ from app.core import auditoria, enmascaramiento
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado
+from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado, Usuario
+from app.core.seguridad import es_folio_ajeno
 from app.modulos.ingesta import procesamiento, tipos
 from app.schemas.resultado import Correccion as CorreccionContrato
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
@@ -194,9 +195,22 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
     )
 
 
-def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
-    """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
-    return construir_resultado(sesion, obtener_documento(sesion, documento_id))
+def exigir_folio_visible(sesion: Session, folio: str, usuario: Usuario) -> Folio:
+    """El folio, o 404 FOLIO_NO_ENCONTRADO si no existe o es de otro integrador (ADR-012): la misma respuesta
+    en los dos casos, para no revelar que existe."""
+    fila = sesion.get(Folio, folio)
+    if fila is None or es_folio_ajeno(usuario, fila.creado_por):
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    return fila
+
+
+def obtener_resultado(sesion: Session, documento_id: str, usuario: Usuario | None = None) -> ResultadoDocumento:
+    """GET /documentos/{id}. 404 si no existe, el id no es un UUID o, con `usuario` integrador, el documento es
+    de un folio que no ha creado (ADR-012)."""
+    doc = obtener_documento(sesion, documento_id)
+    if usuario is not None and es_folio_ajeno(usuario, sesion.get(Folio, doc.folio).creado_por):
+        raise ErrorApi(404, "DOCUMENTO_NO_ENCONTRADO", "No existe el documento")
+    return construir_resultado(sesion, doc)
 
 
 def campos_sensibles(resultado: ResultadoDocumento) -> set[str]:

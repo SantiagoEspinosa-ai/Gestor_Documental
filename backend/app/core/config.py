@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     secret_key: SecretStr
     jwt_algoritmo: str = "HS256"
     jwt_expira_minutos: int = 480
+    # Limite de intentos de login (ADR-011): con login_max_fallidos fallos de un usuario dentro de la ventana,
+    # 429 DEMASIADOS_INTENTOS hasta que el mas antiguo salga de ella
+    login_max_fallidos: int = Field(5, gt=0)
+    login_ventana_minutos: int = Field(15, gt=0)
 
     # BD: SecretStr porque la cadena de conexion lleva la contrasena
     database_url: SecretStr

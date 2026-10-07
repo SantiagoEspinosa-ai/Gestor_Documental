@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
+  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, segundosBloqueado, enProceso, ficha, nuevaAlerta,
   recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -175,6 +175,13 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const cuerpo = await leerJson(request, ['usuario', 'contrasena'])
     if (typeof cuerpo.usuario !== 'string' || typeof cuerpo.contrasena !== 'string') {
       throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {usuario, contrasena}')
+    }
+    // ADR-011, como la API: antes de mirar el usuario y la contrasena; el intento bloqueado se audita y no cuenta
+    const segundos = segundosBloqueado(estado, cuerpo.usuario)
+    if (segundos !== null) {
+      auditar(estado, cuerpo.usuario, 'login', null, null, { resultado: 'bloqueado' })
+      return HttpResponse.json({ codigo: 'DEMASIADOS_INTENTOS', mensaje: 'Demasiados intentos fallidos; vuelve a intentarlo mas tarde' },
+        { status: 429, headers: { 'Retry-After': String(segundos) } })
     }
     const usuario = USUARIOS_DEMO.find((u) => u.usuario === cuerpo.usuario && u.contrasena === cuerpo.contrasena)
     auditar(estado, String(cuerpo.usuario), 'login', null, null, { resultado: usuario ? 'ok' : 'fallido' })
