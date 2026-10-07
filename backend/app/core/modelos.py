@@ -118,6 +118,8 @@ class Documento(Base):
     tipo_documental_confirmado: Mapped[str | None] = mapped_column(String(50))  # ADR-006 2.5
     estado_analisis: Mapped[str] = mapped_column(String(20), default=EstadoAnalisis.pendiente.value,
                                                  server_default=EstadoAnalisis.pendiente.value)
+    # Veces que el arranque ha relanzado su analisis interrumpido (migracion 0006); 0 al terminar un analisis
+    intentos_reanudar: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     creado_en: Mapped[datetime] = _creado_en()
 
 

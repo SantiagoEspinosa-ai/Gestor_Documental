@@ -3,6 +3,7 @@ el script de reindexado y la migracion 0005. Mismo entorno que test_enmascaramie
 moto, motor falso con datos sensibles ficticios). Datos ficticios."""
 import importlib.util
 import os
+import re
 import uuid
 from pathlib import Path
 
@@ -139,11 +140,18 @@ def _sube_y_baja(config: Config, url: str) -> None:
         assert inspect(engine).get_pk_constraint("memoria_folios")["constrained_columns"] == ["folio"]
         [fk] = inspect(engine).get_foreign_keys("memoria_folios")
         assert (fk["referred_table"], fk["referred_columns"]) == ("folios", ["folio"])
-        command.downgrade(config, "-1")
+        # 0006 (fix/reanudar-limite-reintentos): documentos.intentos_reanudar, NOT NULL y 0 por defecto
+        [intentos] = [c for c in inspect(engine).get_columns("documentos") if c["name"] == "intentos_reanudar"]
+        assert not intentos["nullable"] and str(intentos["default"]).strip("'") == "0"
+        command.downgrade(config, "0005")
+        assert "intentos_reanudar" not in {c["name"] for c in inspect(engine).get_columns("documentos")}
+        assert "memoria_folios" in inspect(engine).get_table_names()  # solo baja la 0006
+        command.downgrade(config, "0004")
         assert "memoria_folios" not in inspect(engine).get_table_names()
         assert "folios" in inspect(engine).get_table_names()  # solo baja la 0005
         command.upgrade(config, "head")
         assert "memoria_folios" in inspect(engine).get_table_names()
+        assert "intentos_reanudar" in {c["name"] for c in inspect(engine).get_columns("documentos")}
     finally:
         engine.dispose()
 
@@ -159,12 +167,15 @@ def test_migracion_0005_sube_y_baja_en_sqlite(monkeypatch, tmp_path):
 
 @pytest.mark.skipif(not os.environ.get("TEST_POSTGRES_URL"), reason="requiere TEST_POSTGRES_URL")
 def test_migraciones_suben_y_bajan_en_postgres(monkeypatch):
-    # BD propia y vacia: la de TEST_POSTGRES_URL la usan otros tests con create_all, sin alembic_version
+    # BD propia y vacia: la de TEST_POSTGRES_URL la usan otros tests con create_all, sin alembic_version. Su
+    # nombre sale del de TEST_POSTGRES_URL (<base>_migraciones): dos ejecuciones con BD de pruebas distintas
+    # (p. ej. gestor_test y gestor_test2) no se pisan
     base = make_url(os.environ["TEST_POSTGRES_URL"])
-    nombre = "gestor_migraciones_test"
+    nombre = f"{base.database}_migraciones"
+    assert re.fullmatch(r"[a-z][a-z0-9_]*", nombre), nombre  # va sin comillas en DROP/CREATE DATABASE
     admin = create_engine(base, isolation_level="AUTOCOMMIT")
     with admin.connect() as conexion:
-        conexion.execute(text(f"DROP DATABASE IF EXISTS {nombre}"))
+        conexion.execute(text(f"DROP DATABASE IF EXISTS {nombre} WITH (FORCE)"))
         conexion.execute(text(f"CREATE DATABASE {nombre}"))
     url = base.set(database=nombre).render_as_string(hide_password=False)
     try:
