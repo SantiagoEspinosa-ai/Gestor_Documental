@@ -71,6 +71,26 @@ def confirmar_clasificacion(documento_id: str, entrada: ConfirmarClasificacionEn
     return ingesta.enmascarar(resultado)
 
 
+class RetirarEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    motivo: str = Field(min_length=3, max_length=200)  # obligatorio; se guarda tapado (ADR-013)
+
+
+@router.post("/documentos/{documento_id}/retirar", response_model=ResultadoDocumento)
+def retirar_documento(documento_id: str, entrada: RetirarEntrada, sesion: Session = Depends(get_sesion),
+                      usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
+    """ADR-013: el documento deja de contar para el folio; nada se borra."""
+    return ingesta.enmascarar(expediente.retirar_documento(sesion, documento_id, entrada.motivo, usuario.usuario))
+
+
+@router.post("/documentos/{documento_id}/restaurar", response_model=ResultadoDocumento)
+def restaurar_documento(documento_id: str, sesion: Session = Depends(get_sesion),
+                        usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
+    """ADR-013: deshace la retirada; sin cuerpo."""
+    return ingesta.enmascarar(expediente.restaurar_documento(sesion, documento_id, usuario.usuario))
+
+
 class DecisionEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

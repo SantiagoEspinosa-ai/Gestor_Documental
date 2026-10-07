@@ -42,9 +42,13 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
   const nombre = doc.referencia_archivo_original.nombre_archivo
 
   return (
-    <article aria-labelledby="titulo-documento" className="space-y-4">
+    // ADR-013: un documento retirado sigue visible, atenuado y marcado
+    <article aria-labelledby="titulo-documento" className={`space-y-4 ${doc.retirado ? 'opacity-60' : ''}`}>
       <header>
-        <h2 id="titulo-documento" className="text-base font-semibold"><span className="font-mono">{nombre}</span></h2>
+        <h2 id="titulo-documento" className="text-base font-semibold">
+          <span className="font-mono">{nombre}</span>
+          {doc.retirado && <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs font-normal text-slate-700">Retirado</span>}
+        </h2>
         <p className="text-sm text-slate-600">
           Estado del análisis: <span className="font-medium">{ETIQUETA_ESTADO_ANALISIS[doc.estado_analisis]}</span>
           {doc.estado_analisis === 'completado' && <> · Recomendación: <TextoRecomendacion valor={doc.recomendacion} /></>}

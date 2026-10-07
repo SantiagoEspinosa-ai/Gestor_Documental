@@ -86,6 +86,12 @@ class Correccion(BaseModel):  # ADR-006, 2.4
     fecha: datetime
 
 
+class Retirada(BaseModel):  # ADR-013: documento retirado del folio (no cuenta; nada se borra)
+    en: datetime
+    por: str
+    motivo: str               # ya tapado (enmascarar_texto)
+
+
 class ResultadoDocumento(BaseModel):
     folio_solicitud: str = Field(..., examples=["ONB-2026-000001"])
     identificador_unico_documento: str  # UUID
@@ -103,6 +109,7 @@ class ResultadoDocumento(BaseModel):
     estado_analisis: EstadoAnalisis = EstadoAnalisis.pendiente
     fecha_y_modelo_utilizado: FechaYModelo | None = None
     referencia_archivo_original: ReferenciaArchivoOriginal
+    retirado: Retirada | None = None  # ADR-013: lo rellena la plataforma desde la BD; el motor no lo toca
 
 
 class ComparacionCampo(BaseModel):

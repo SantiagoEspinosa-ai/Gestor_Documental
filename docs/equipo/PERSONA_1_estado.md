@@ -215,15 +215,13 @@ Mejoras que se adelantaron a la demo tras la revision de seguridad, todas fusion
 - [x] #55 y #57: el integrador solo accede a los folios que ha creado (ADR-012, ACEPTADO; migracion 0007).
 - [x] #56: los mocks aplican la regla del integrador (el dueno sale de `folio_creado`).
 - [x] #58: CI con reintentos y timeouts en `apt`.
-- [ ] #59: retirar y restaurar documentos sin borrarlos (ADR-013, propuesto; migracion 0008). En revision: entra
-      antes de la demo solo si se aprueba hoy; si no, despues.
+- [x] #59: retirar y restaurar documentos sin borrarlos, solo el revisor (ADR-013, ACEPTADO; migracion 0008).
 
 ## Mejoras post-MVP
 Despues de la demo; ninguna la bloquea. Lo que sigue pendiente (ver tambien la seccion 12 de
 `docs/arquitectura_solucion.md`):
 - Contrasena propia de postgres en docker-compose (hoy la de desarrollo, gestor/gestor). Los puertos ya solo se publican
   en 127.0.0.1 (#48); cambiarla obliga a recrear el volumen, por eso se deja para despues de la demo.
-- Retirar documentos (#59), si no entra antes de la demo.
 - Fragmento de antecedentes que pega lineas ("Completado Criticas:"): `rag.memoria.extraer_fragmento` (PERSONA_2)
   no deja una linea en blanco antes de cada titulo de grupo y react-markdown las une. Cosmetico.
 

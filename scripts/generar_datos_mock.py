@@ -201,7 +201,8 @@ class DatosMock:
                "estado_analisis": estado, "fecha_y_modelo_utilizado": None,
                "referencia_archivo_original": {
                    "nombre_archivo": archivo, "ruta": f"onboarding/2026/{secuencia:06d}/{uid}.{ext}",
-                   "hash": hash_}}
+                   "hash": hash_},
+               "retirado": None}
         # Mismo detalle que la API real: sin nombre_archivo (los nombres de fichero suelen llevar el de la persona)
         self.auditar(self.duenos[folio], "documento_subido", folio, uid,
                      {"hash_sha256": hash_, "tamano_bytes": len(datos), "duplicado": duplicado}, subido)
@@ -275,7 +276,7 @@ class DatosMock:
             for otro, campos in (ficha.get("comparaciones") or {}).items():
                 for campo in campos or []:
                     relaciones.setdefault(campo, set()).add(frozenset((tipo, otro)))
-        completos = [d for d in documentos if d["estado_analisis"] == "completado"]
+        completos = [d for d in documentos if d["estado_analisis"] == "completado" and d["retirado"] is None]
         resultado = []
         for campo, pares in sorted(relaciones.items()):
             con_valor = [d for d in completos if tipo_efectivo(d) and not vacio(d["datos_extraidos"].get(campo))]
@@ -291,6 +292,12 @@ class DatosMock:
                               "valores": {d["identificador_unico_documento"]: d["datos_extraidos"][campo]
                                           for d in participantes}})
         return resultado
+
+    def retirar(self, doc, motivo, cuando) -> None:
+        """ADR-013: documento retirado por el revisor; el motivo ya tapado, como lo guarda la API."""
+        doc["retirado"] = {"en": iso(cuando), "por": REVISOR, "motivo": motivo}
+        self.auditar(REVISOR, "documento_retirado", doc["folio_solicitud"], doc["identificador_unico_documento"],
+                     {"motivo": motivo}, cuando)
 
     def crear_folio(self, folio, dueno, cuando) -> None:
         """folio_creado con su integrador: los mocks sacan de aqui el dueno del folio (ADR-012)."""
@@ -313,11 +320,13 @@ class DatosMock:
 
     def expediente(self, folio, referencia, solicitado, documentos, alertas_expediente=(), decision=None,
                    resumen=False) -> dict:
-        todas = [a for d in documentos for a in d["alertas_encontradas"]] + list(alertas_expediente)
+        # ADR-013: los retirados no cuentan para la recomendacion (ni sus alertas)
+        documentos_que_cuentan = [d for d in documentos if d["retirado"] is None]
+        todas = [a for d in documentos_que_cuentan for a in d["alertas_encontradas"]] + list(alertas_expediente)
         exp = {"folio": folio, "proceso": "onboarding", "referencia_externa": referencia,
                "fecha_solicitud": iso(solicitado), "estado_general": "en_revision", "documentos": documentos,
                "comparaciones": self.comparaciones(documentos), "alertas_expediente": list(alertas_expediente),
-               "recomendacion_global": self.recomendacion_global(documentos, todas), "decision_humana": None,
+               "recomendacion_global": self.recomendacion_global(documentos_que_cuentan, todas), "decision_humana": None,
                "comentario_decision": None, "usuario_decision": None, "fecha_decision": None,
                "ruta_resumen_md": f"onboarding/2026/{folio[-6:]}/resumen.md" if resumen else None}
         if decision:
@@ -344,6 +353,8 @@ class DatosMock:
         d4 = self.documento(f, s, 4, "vencido", "comprobante_domicilio", "digital", t0 + timedelta(minutes=4),
                             alertas_extra=[self.alerta("DUP-001", f"Mismo SHA-256 que el documento "
                                                        f"{d3['identificador_unico_documento']} del folio", "critica")])
+        # ADR-013: el duplicado se subio por error y el revisor lo retira (sigue en el folio, no cuenta)
+        self.retirar(d4, "Subido dos veces por error", t0 + timedelta(minutes=20))
         folios.append(self.expediente(f, "CLI-000101", t0, [d1, d2, d3, d4]))
 
         # 2. Ana, domicilio distinto: CMP-001 en alertas_expediente, una correccion y un documento pendiente

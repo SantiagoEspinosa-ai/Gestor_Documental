@@ -123,8 +123,13 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
     case 'decision_tomada':
       if (d.decision === 'aprobar' || d.decision === 'rechazar') usar('decision', `Decisión: ${ETIQUETA_DECISION[d.decision]}`)
       break
+    case 'documento_retirado':
+      // ADR-013: la API lo guarda ya tapado (enmascarar_texto), asi que se muestra entero
+      if (texto(d.motivo)) usar('motivo', `Motivo: “${d.motivo}”`)
+      break
     case 'folio_creado':
     case 'original_visto':
+    case 'documento_restaurado':
       break
   }
   for (const [clave, valor] of Object.entries(d)) {

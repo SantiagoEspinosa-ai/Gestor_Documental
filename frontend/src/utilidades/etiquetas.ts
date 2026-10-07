@@ -23,7 +23,7 @@ export const ETIQUETA_SEVERIDAD: Record<Severidad, string> = {
 
 export const ETIQUETA_DECISION: Record<DecisionHumana, string> = { aprobar: 'Aprobado', rechazar: 'Rechazado' }
 
-/** Lista cerrada de acciones de la auditoria (ADR-006 1.5; dato_revelado en la etapa 3; original_visto post-MVP) */
+/** Lista cerrada de acciones de la auditoria (ADR-006 1.5; dato_revelado en la etapa 3; original_visto post-MVP; documento_retirado/restaurado ADR-013) */
 export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
   login: 'Inicio de sesión',
   folio_creado: 'Folio creado',
@@ -35,6 +35,8 @@ export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
   decision_tomada: 'Decisión del folio',
   dato_revelado: 'Dato revelado',
   original_visto: 'Original consultado',
+  documento_retirado: 'Documento retirado',
+  documento_restaurado: 'Documento restaurado',
 }
 
 /** Estado de revision de una alerta (ADR-006 2.2): null = sin revisar; false = falso positivo */

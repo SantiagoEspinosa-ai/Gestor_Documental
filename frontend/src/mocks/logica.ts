@@ -5,7 +5,7 @@ import {
   type ResultadoExpediente, type ResumenFolio, type Severidad, type TipoDocumental,
 } from '../tipos/contrato'
 import {
-  alertasQueBloquean, bloquea, enProceso, fichaDeTipo, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
+  alertasQueBloquean, bloquea, cuentaEnElFolio, enProceso, fichaDeTipo, tipoEfectivo, tipoExtraccion, tipoNoPrevisto, tiposRequeridosQueFaltan,
 } from '../utilidades/expediente'
 import { sinValor } from '../utilidades/valores'
 import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } from './estado'
@@ -90,7 +90,7 @@ export function recomendarDocumento(estado: EstadoMock, doc: ResultadoDocumento)
  * No usa la recomendacion por documento.
  */
 export function recomendacionGlobal(estado: EstadoMock, folio: ResultadoExpediente): Recomendacion {
-  const documentos = folio.documentos
+  const documentos = folio.documentos.filter(cuentaEnElFolio) // ADR-013: sin los retirados
   if (!documentos.length || documentos.some((d) => d.estado_analisis !== 'completado')) return 'revision_manual'
   if ([...folio.alertas_expediente, ...documentos.flatMap((d) => d.alertas_encontradas)].some(pesa)) return 'revision_manual'
   for (const d of documentos) {
@@ -139,7 +139,7 @@ export function compararCampos(estado: EstadoMock, documentos: ResultadoDocument
       }
     }
   }
-  const completos = documentos.filter((d) => d.estado_analisis === 'completado')
+  const completos = documentos.filter((d) => d.estado_analisis === 'completado' && cuentaEnElFolio(d))
   const resultado: ComparacionCampo[] = []
   for (const campo of [...relaciones.keys()].sort()) {
     const conValor = completos.filter((d) => tipoEfectivo(d) && !sinValor(d.datos_extraidos[campo]))
@@ -175,7 +175,7 @@ export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoEx
 
   // EXP-001 como la API: solo cuentan los documentos completados (uno pendiente, procesando o en error
   // no cubre su tipo). El aviso de la pantalla de carga si cuenta todos los subidos.
-  const completados = { documentos: folio.documentos.filter((d) => d.estado_analisis === 'completado') }
+  const completados = { documentos: folio.documentos.filter((d) => d.estado_analisis === 'completado' && cuentaEnElFolio(d)) }
   const faltan = new Set(tiposRequeridosQueFaltan(completados, proceso))
   const esExp001 = (a: Alerta) => a.codigo === 'EXP-001'
   const conExp001 = new Set(folio.alertas_expediente.filter(esExp001).map((a) => a.campo))
@@ -188,7 +188,7 @@ export function recalcularTiposDelProceso(estado: EstadoMock, folio: ResultadoEx
   })
 
   for (const doc of folio.documentos) {
-    if (doc.estado_analisis !== 'completado') continue
+    if (doc.estado_analisis !== 'completado' || !cuentaEnElFolio(doc)) continue
     const noPrevisto = tipoNoPrevisto(doc, proceso)
     doc.alertas_encontradas = doc.alertas_encontradas.filter((a) =>
       a.codigo !== 'EXP-002' || a.campo === noPrevisto || a.aplica === false)
@@ -224,6 +224,24 @@ export function recalcularExpediente(estado: EstadoMock, folio: ResultadoExpedie
   })
 
   folio.recomendacion_global = recomendacionGlobal(estado, folio)
+}
+
+/**
+ * DUP-001 como ingesta.recalcular_dup001 de la API (ADR-013): solo entre los documentos no retirados, en orden de
+ * subida. El primero de cada SHA-256 pierde la suya (salvo un falso positivo); los siguientes la tienen.
+ */
+export function recalcularDuplicados(estado: EstadoMock, folio: ResultadoExpediente): void {
+  const primero = new Map<string, string>()
+  for (const doc of folio.documentos.filter(cuentaEnElFolio)) {
+    const hash = doc.referencia_archivo_original.hash
+    const anterior = primero.get(hash)
+    if (anterior === undefined) {
+      primero.set(hash, doc.identificador_unico_documento)
+      doc.alertas_encontradas = doc.alertas_encontradas.filter((a) => a.codigo !== 'DUP-001' || a.aplica === false)
+    } else if (!doc.alertas_encontradas.some((a) => a.codigo === 'DUP-001')) {
+      doc.alertas_encontradas.push(nuevaAlerta(estado, 'DUP-001', `Mismo SHA-256 que el documento ${anterior} del folio`, 'critica'))
+    }
+  }
 }
 
 export function resumenFolio(folio: ResultadoExpediente): ResumenFolio {
@@ -319,7 +337,9 @@ export function avanzarProcesamiento(estado: EstadoMock, folio: ResultadoExpedie
 }
 
 export function resumenMarkdown(folio: ResultadoExpediente): string {
-  const alertas = [...folio.alertas_expediente, ...folio.documentos.flatMap((d) => d.alertas_encontradas)]
+  const vigentes = folio.documentos.filter(cuentaEnElFolio)
+  const retirados = folio.documentos.filter((d) => !cuentaEnElFolio(d))
+  const alertas = [...folio.alertas_expediente, ...vigentes.flatMap((d) => d.alertas_encontradas)]
   return [
     `# Expediente ${folio.folio} (datos ficticios, mock)`, '',
     `- Proceso: ${folio.proceso}`,
@@ -328,9 +348,12 @@ export function resumenMarkdown(folio: ResultadoExpediente): string {
     `- Estado: ${folio.estado_general}; recomendacion: ${folio.recomendacion_global ?? '-'}`,
     `- Decision: ${folio.decision_humana ?? '-'} (${folio.usuario_decision ?? '-'}, ${folio.fecha_decision ?? '-'})`, '',
     '## Documentos', '',
-    ...folio.documentos.map((d) => `- ${d.tipo_documental_detectado ?? d.tipo_documental_declarado}: ${d.estado_analisis}`), '',
+    ...vigentes.map((d) => `- ${d.tipo_documental_detectado ?? d.tipo_documental_declarado}: ${d.estado_analisis}`), '',
     '## Alertas', '',
     ...(alertas.length ? alertas.map((a) => `- ${a.codigo} (${a.severidad}): ${a.mensaje}`) : ['- Ninguna']), '',
+    // ADR-013: al final, como la API; el motivo ya se guardo tapado
+    ...(retirados.length ? ['## Documentos retirados', '', ...retirados.map((d) =>
+      `- ${d.tipo_documental_detectado ?? d.tipo_documental_declarado}: retirado el ${d.retirado!.en} por ${d.retirado!.por}. Motivo: ${d.retirado!.motivo}`), ''] : []),
   ].join('\n')
 }
 

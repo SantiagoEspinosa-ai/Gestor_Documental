@@ -32,6 +32,11 @@ NOMBRE_RESUMEN = "resumen.md"
 TIPO_RESUMEN = "text/markdown; charset=utf-8"
 
 
+# ADR-013: un documento retirado no cuenta para el folio (EXP-001, EXP-002, comparaciones, CMP-001,
+# recomendacion, bloqueantes y duplicados), pero se conserva y sigue saliendo en el expediente
+_NO_RETIRADO = Documento.retirado_en.is_(None)
+
+
 def _siguiente_secuencia(sesion: Session, proceso: str, anio: int) -> int:
     """Siguiente numero de (proceso, anio) con una sola sentencia: atomico sin FOR UPDATE."""
     insert = insert_postgresql if sesion.get_bind().dialect.name == "postgresql" else insert_sqlite
@@ -80,7 +85,7 @@ def recalcular_exp001(sesion: Session, folio: str) -> None:
         return
 
     completados = sesion.scalars(select(Documento).where(
-        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value))
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value, _NO_RETIRADO))
     presentes = {_tipo_efectivo(sesion, d) for d in completados.all()}
     existentes = sesion.scalars(select(AlertaBD).where(
         AlertaBD.folio == folio, AlertaBD.documento_id.is_(None), AlertaBD.codigo == "EXP-001")).all()
@@ -115,7 +120,7 @@ def recalcular_exp002(sesion: Session, folio: str) -> None:
     proceso = sesion.get(Proceso, sesion.get(Folio, folio).proceso)
     previstos = set(proceso.tipos_requeridos or []) | set(proceso.tipos_opcionales or [])
     completados = sesion.scalars(select(Documento).where(
-        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value)).all()
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value, _NO_RETIRADO)).all()
     for doc in completados:
         tipo = _tipo_efectivo(sesion, doc)
         no_previsto = tipo if tipo and tipo not in previstos else None
@@ -145,7 +150,7 @@ def _resultado_vigente(sesion: Session, documento: Documento) -> dict:
 def comparaciones_actuales(sesion: Session, folio: str) -> list[ComparacionCampo]:
     """Comparaciones entre los documentos `completado` del folio, calculadas al vuelo (no se guardan)."""
     completados = sesion.scalars(select(Documento).where(
-        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value)
+        Documento.folio == folio, Documento.estado_analisis == EstadoAnalisis.completado.value, _NO_RETIRADO)
         .order_by(Documento.creado_en, Documento.id)).all()
     # Con los datos ya corregidos por el revisor (construir_resultado aplica las correcciones)
     armados = [ingesta.construir_resultado(sesion, d) for d in completados]
@@ -267,7 +272,8 @@ def obtener_resumen(sesion: Session, folio: str) -> str:
 
 
 def _documentos_y_alertas(sesion: Session, folio: str) -> tuple[list[ResultadoDocumento], list[Alerta]]:
-    """Todos los documentos del folio armados como GET /documentos/{id} y las alertas de expediente."""
+    """Todos los documentos del folio (tambien los retirados) armados como GET /documentos/{id} y las alertas
+    de expediente."""
     documentos = sesion.scalars(select(Documento).where(Documento.folio == folio)
                                 .order_by(Documento.creado_en, Documento.id)).all()
     # Alertas de expediente = las del folio sin documento (ADR-006 2.1)
@@ -283,13 +289,15 @@ def _bloqueantes_sin_resolver(documentos: list[ResultadoDocumento],
     """Regla ADR-006 2.2 sobre las alertas VISIBLES (las de documento como construir_resultado, de
     plataforma y del motor de la version vigente, y las de expediente): bloqueantes con aplica distinto
     de False. La usan la lista de folios y la decision."""
-    visibles = [a for d in documentos for a in d.alertas_encontradas] + alertas_expediente
+    visibles = [a for d in documentos if d.retirado is None for a in d.alertas_encontradas] + alertas_expediente
     return [a for a in visibles if a.severidad == Severidad.bloqueante and a.aplica is not False]
 
 
 def _recomendar(documentos: list[ResultadoDocumento], alertas_expediente: list[Alerta],
                 fichas: dict[str, dict]) -> Recomendacion:
-    """Recomendacion global a partir del expediente ya armado (la por documento es del motor)."""
+    """Recomendacion global a partir del expediente ya armado (la por documento es del motor). Sin los
+    documentos retirados (ADR-013)."""
+    documentos = [d for d in documentos if d.retirado is None]
     para_recomendar = [DocumentoParaRecomendar(
         estado=d.estado_analisis,
         tipo=d.tipo_documental_confirmado or d.tipo_documental_detectado or d.tipo_documental_declarado,
@@ -453,6 +461,7 @@ def resolver_alerta_documento(sesion: Session, documento_id: str, alerta_id: str
     # En error si se puede resolver (decision del usuario); pendiente o procesando no
     if doc.estado_analisis in (EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value):
         raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
+    _exigir_no_retirado(doc)
     _guardar_resolucion(sesion, alerta, aplica, comentario, usuario)
     return ingesta.construir_resultado(sesion, doc)
 
@@ -478,6 +487,13 @@ def _exigir_documento_revisable(sesion: Session, doc: Documento) -> None:
         raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
     if doc.estado_analisis == EstadoAnalisis.error.value:
         raise ErrorApi(409, "DOCUMENTO_CON_ERROR", "El documento no se pudo procesar; vuelve a subirlo")
+    _exigir_no_retirado(doc)
+
+
+def _exigir_no_retirado(doc: Documento) -> None:
+    """ADR-013: sobre un documento retirado no se revisa nada (se consulta, y se puede restaurar)."""
+    if doc.retirado_en is not None:
+        raise ErrorApi(409, "DOCUMENTO_RETIRADO", "El documento esta retirado del folio; restauralo antes")
 
 
 _INVALIDO = object()
@@ -664,7 +680,7 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
         raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
     _exigir_folio_abierto(fila)
     en_proceso = sesion.scalar(select(func.count()).select_from(Documento).where(
-        Documento.folio == folio,
+        Documento.folio == folio, _NO_RETIRADO,
         Documento.estado_analisis.in_([EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value])))
     if en_proceso:  # al aprobar y al rechazar (decidido con PERSONA_3)
         raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "Hay documentos del folio que todavia se estan procesando")
@@ -695,3 +711,49 @@ def decidir_folio(sesion: Session, folio: str, decision: DecisionHumana, comenta
     webhooks.enviar_en_segundo_plano(sesion.get(Proceso, fila.proceso).webhook_url, "folio.estado_cambiado",
                                      folio, enmascarar(resultado))
     return resultado
+
+
+# --- retirar y restaurar un documento (ADR-013) ---
+
+def _recalcular_tras_retirar(sesion: Session, folio: str) -> None:
+    """Lo que depende de que documentos cuentan: EXP-001, EXP-002, CMP-001 y DUP-001. Sin commit."""
+    recalcular_exp001(sesion, folio)
+    recalcular_exp002(sesion, folio)
+    recalcular_cmp001(sesion, folio)
+    ingesta.recalcular_dup001(sesion, folio)
+
+
+def retirar_documento(sesion: Session, documento_id: str, motivo: str, usuario: str) -> ResultadoDocumento:
+    """POST /documentos/{id}/retirar (ADR-013): marca el documento como retirado; deja de contar para el folio.
+    Nada se borra (BD ni S3). El motivo se guarda tapado (texto libre). Folio abierto y documento analizado o
+    en error; uno ya retirado da 409 DOCUMENTO_RETIRADO. Sin webhook: el estado del folio no cambia."""
+    doc = ingesta.obtener_documento(sesion, documento_id)
+    _exigir_folio_abierto(sesion.get(Folio, doc.folio))
+    if doc.estado_analisis in (EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value):
+        raise ErrorApi(409, "DOCUMENTO_EN_PROCESO", "El documento todavia se esta procesando")
+    _exigir_no_retirado(doc)
+    tapado = ingesta.tapar_texto_libre(ingesta.construir_resultado(sesion, doc), motivo)
+    doc.retirado_en = datetime.now(timezone.utc)
+    doc.retirado_por = usuario
+    doc.motivo_retirada = tapado
+    _recalcular_tras_retirar(sesion, doc.folio)
+    auditoria.registrar(sesion, "documento_retirado", usuario=usuario, folio=doc.folio, documento_id=doc.id,
+                        detalle={"motivo": tapado})
+    sesion.commit()
+    regenerar_resumen(sesion, doc.folio)
+    return ingesta.construir_resultado(sesion, doc)
+
+
+def restaurar_documento(sesion: Session, documento_id: str, usuario: str) -> ResultadoDocumento:
+    """POST /documentos/{id}/restaurar (ADR-013): deshace la retirada; el documento vuelve a contar. Folio
+    abierto; uno no retirado da 409 DOCUMENTO_NO_RETIRADO. Sin motivo (detalle vacio en la auditoria)."""
+    doc = ingesta.obtener_documento(sesion, documento_id)
+    _exigir_folio_abierto(sesion.get(Folio, doc.folio))
+    if doc.retirado_en is None:
+        raise ErrorApi(409, "DOCUMENTO_NO_RETIRADO", "El documento no esta retirado")
+    doc.retirado_en = doc.retirado_por = doc.motivo_retirada = None
+    _recalcular_tras_retirar(sesion, doc.folio)
+    auditoria.registrar(sesion, "documento_restaurado", usuario=usuario, folio=doc.folio, documento_id=doc.id)
+    sesion.commit()
+    regenerar_resumen(sesion, doc.folio)
+    return ingesta.construir_resultado(sesion, doc)

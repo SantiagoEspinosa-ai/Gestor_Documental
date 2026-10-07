@@ -146,6 +146,13 @@ def _sube_y_baja(config: Config, url: str) -> None:
         # 0007 (ADR-012): folios.creado_por, NULL
         [creado_por] = [c for c in inspect(engine).get_columns("folios") if c["name"] == "creado_por"]
         assert creado_por["nullable"]
+        # 0008 (ADR-013): documentos.retirado_en, retirado_por y motivo_retirada, NULL
+        retirada = {"retirado_en", "retirado_por", "motivo_retirada"}
+        columnas_documentos = {c["name"]: c for c in inspect(engine).get_columns("documentos")}
+        assert retirada <= set(columnas_documentos) and all(columnas_documentos[c]["nullable"] for c in retirada)
+        command.downgrade(config, "0007")
+        assert not retirada & {c["name"] for c in inspect(engine).get_columns("documentos")}
+        assert "creado_por" in {c["name"] for c in inspect(engine).get_columns("folios")}  # solo baja la 0008
         command.downgrade(config, "0006")
         assert "creado_por" not in {c["name"] for c in inspect(engine).get_columns("folios")}
         assert "intentos_reanudar" in {c["name"] for c in inspect(engine).get_columns("documentos")}  # solo baja la 0007

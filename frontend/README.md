@@ -434,6 +434,12 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   llega enmascarado y no debe guardarse la mascara).
 - HECHO (H17, PR B): boton "Mostrar" de los datos sensibles para revisor y admin, con auto-ocultado a los
   60 s (ver "Expediente" en "Pantallas").
+- ADR-013 (aceptado): en el detalle del documento, el revisor con el folio abierto ve "Retirar"
+  (`componentes/RetirarDocumento.tsx`): motivo obligatorio de 3 a 200 caracteres y confirmacion. El retirado sale
+  atenuado y marcado "Retirado" (tambien en la lista), con su motivo y "Restaurar"; sin acciones de revision. No
+  cuenta para la cobertura, las comparaciones, la recomendacion ni las bloqueantes (`cuentaEnElFolio` en
+  `utilidades/expediente.ts`). Los mocks lo implementan como la API (`recalcularDuplicados` y los filtros de
+  `mocks/logica.ts`); en los datos, el comprobante duplicado de ONB-2026-000001 esta retirado.
 - Post-MVP (ADR-010 A4c, aceptada): junto a "Mostrar", un campo corto "Motivo (opcional)" que no bloquea; se
   envia como `motivo` si tiene de 3 a 200 caracteres. La API (y `enmascararTexto` en los mocks) lo guarda
   tapado en `dato_revelado`, y la auditoria lo muestra como "Motivo: ...".

@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { crearEstado, type EstadoMock } from './estado'
 import { crearHandlers } from './handlers'
-import { compararCampos, enmascararDocumento, mascara, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO } from './logica'
+import { compararCampos, enmascararDocumento, mascara, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO, resumenMarkdown } from './logica'
 
 const API = 'http://localhost:8000/api/v1'
 const CONTRATO = new URL('../../../docs/contratos/endpoints.md', import.meta.url)
@@ -961,6 +961,86 @@ describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
       { campo: 'curp' },
     ])
     expect(JSON.stringify(detalles).toUpperCase()).not.toContain(curp)
+  })
+})
+
+describe('retirar y restaurar documentos (ADR-013)', () => {
+  const doc = (f: ResultadoExpediente, tipo: string) => f.documentos.find((d) => d.tipo_documental_declarado === tipo)!
+  const folio = async (token: string, id: string) => (await api<ResultadoExpediente>('GET', `/folios/${id}`, { token })).cuerpo
+  const codigos = (f: ResultadoExpediente) => f.alertas_expediente.map((a) => a.codigo).sort()
+
+  it('roles, 422 del motivo, 409 y que nada se borra', async () => {
+    const revisor = await entrar('revisor.demo')
+    const comprobante = doc(await folio(revisor, 'ONB-2026-000002'), 'comprobante_domicilio').identificador_unico_documento
+    const retirar = async (token: string, id: string, cuerpo: unknown = { motivo: 'Subido por error' }) =>
+      api<ResultadoDocumento>('POST', `/documentos/${id}/retirar`, { token, cuerpo })
+    const integrador = await entrar('integrador.demo')
+    expect((await retirar(integrador, comprobante)).cuerpo).toMatchObject({ codigo: 'SIN_PERMISO' })
+    expect((await api('POST', `/documentos/${comprobante}/restaurar`, { token: integrador })).status).toBe(403)
+    for (const cuerpo of [{}, { motivo: 'ab' }, { motivo: 'x'.repeat(201) }, { motivo: 'valido', extra: 1 }]) {
+      expect((await retirar(revisor, comprobante, cuerpo)).cuerpo, JSON.stringify(cuerpo)).toMatchObject({ codigo: 'PETICION_INVALIDA' })
+    }
+    expect((await api('POST', `/documentos/${comprobante}/restaurar`, { token: revisor })).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_NO_RETIRADO' })
+    const pendiente = doc(await folio(revisor, 'ONB-2026-000002'), 'pasaporte').identificador_unico_documento
+    expect((await retirar(revisor, pendiente)).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_EN_PROCESO' })
+    // Solo el revisor (ADR-013): el admin consulta
+    const admin = await entrar('admin.demo')
+    expect((await retirar(admin, comprobante)).cuerpo).toMatchObject({ codigo: 'SIN_PERMISO' })
+    expect((await api('POST', `/documentos/${comprobante}/restaurar`, { token: admin })).status).toBe(403)
+    const r = await retirar(revisor, comprobante)
+    expect(r.cuerpo.retirado).toEqual({ en: expect.any(String), por: 'revisor.demo', motivo: 'Subido por error' })
+    expect((await retirar(revisor, comprobante)).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_RETIRADO' })
+    // Sobre un retirado no se revisa
+    expect((await api('PATCH', `/documentos/${comprobante}/datos`, { token: revisor, cuerpo: { proveedor: 'Otra' } })).cuerpo)
+      .toMatchObject({ codigo: 'DOCUMENTO_RETIRADO' })
+    // Sigue en el folio
+    expect((await folio(revisor, 'ONB-2026-000002')).documentos.some((d) => d.identificador_unico_documento === comprobante)).toBe(true)
+    const cerrado = (await folio(revisor, 'ONB-2026-000004')).documentos[0].identificador_unico_documento
+    expect((await retirar(revisor, cerrado)).cuerpo).toMatchObject({ codigo: 'FOLIO_CERRADO' })
+  })
+
+  it('el retirado no cuenta: EXP-001 vuelve, CMP-001 y las comparaciones se van; al restaurar, al reves', async () => {
+    const token = await entrar('revisor.demo')
+    const antes = await folio(token, 'ONB-2026-000002')
+    expect(codigos(antes)).toEqual(['CMP-001'])
+    const comprobante = doc(antes, 'comprobante_domicilio').identificador_unico_documento
+    await api('POST', `/documentos/${comprobante}/retirar`, { token, cuerpo: { motivo: 'Comprobante de otra persona' } })
+    const retirado = await folio(token, 'ONB-2026-000002')
+    expect(codigos(retirado)).toEqual(['EXP-001'])
+    expect(retirado.alertas_expediente[0].campo).toBe('comprobante_domicilio')
+    expect(retirado.comparaciones.map((c) => c.campo)).not.toContain('domicilio')
+    await api('POST', `/documentos/${comprobante}/restaurar`, { token })
+    expect(codigos(await folio(token, 'ONB-2026-000002'))).toEqual(['CMP-001'])
+  })
+
+  it('DUP-001: un retirado no hace duplicado a otro', async () => {
+    const token = await entrar('revisor.demo')
+    const f1 = await folio(token, 'ONB-2026-000001')
+    const [original, duplicado] = f1.documentos.filter((d) => d.tipo_documental_declarado === 'comprobante_domicilio')
+    expect(duplicado.retirado?.motivo).toBe('Subido dos veces por error') // de los datos generados
+    await api('POST', `/documentos/${duplicado.identificador_unico_documento}/restaurar`, { token })
+    await api('POST', `/documentos/${original.identificador_unico_documento}/retirar`, { token, cuerpo: { motivo: 'El bueno es el otro' } })
+    const dups = (await folio(token, 'ONB-2026-000001')).documentos.find((d) => d.identificador_unico_documento === duplicado.identificador_unico_documento)!
+      .alertas_encontradas.filter((a) => a.codigo === 'DUP-001')
+    expect(dups).toEqual([])
+  })
+
+  it('motivo tapado, resumen.md y auditoria', async () => {
+    const token = await entrar('revisor.demo')
+    const credencial = doc(await folio(token, 'ONB-2026-000002'), 'credencial_elector')
+    const curp = estado.folios.get('ONB-2026-000002')!.documentos
+      .find((d) => d.identificador_unico_documento === credencial.identificador_unico_documento)!.datos_extraidos.curp as string
+    const r = await api<ResultadoDocumento>('POST', `/documentos/${credencial.identificador_unico_documento}/retirar`,
+      { token, cuerpo: { motivo: `Es de otra persona: ${curp.toLowerCase()} y XAXX020202MDFYYYA5` } })
+    expect(r.cuerpo.retirado!.motivo).toBe(`Es de otra persona: ${mascara(curp)} y ****`)
+    // El folio 2 no tiene resumen.md en los mocks: la misma funcion que lo genera en los que si
+    const resumen = resumenMarkdown(estado.folios.get('ONB-2026-000002')!)
+    expect(resumen.split('## Documentos retirados')[1]).toContain(`Motivo: Es de otra persona: ${mascara(curp)} y ****`)
+    await api('POST', `/documentos/${credencial.identificador_unico_documento}/restaurar`, { token })
+    const entradas = estado.auditoria.filter((e) => e.accion === 'documento_retirado' || e.accion === 'documento_restaurado').slice(-2)
+    expect(entradas.map((e) => [e.accion, e.detalle])).toEqual([
+      ['documento_retirado', { motivo: `Es de otra persona: ${mascara(curp)} y ****` }], ['documento_restaurado', {}]])
+    expect(JSON.stringify(estado.auditoria).toUpperCase()).not.toContain(curp)
   })
 })
 

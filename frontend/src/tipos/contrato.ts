@@ -80,6 +80,13 @@ export interface Correccion {
   fecha: FechaIso
 }
 
+/** ADR-013: documento retirado del folio (no cuenta; nada se borra). `motivo` llega ya tapado */
+export interface Retirada {
+  en: FechaIso
+  por: string
+  motivo: string
+}
+
 export interface ResultadoDocumento {
   folio_solicitud: string
   /** UUID */
@@ -102,6 +109,8 @@ export interface ResultadoDocumento {
   estado_analisis: EstadoAnalisis
   fecha_y_modelo_utilizado: FechaYModelo | null
   referencia_archivo_original: ReferenciaArchivoOriginal
+  /** ADR-013: null si cuenta para el folio */
+  retirado: Retirada | null
 }
 
 export interface ComparacionCampo {
@@ -242,6 +251,11 @@ export interface RespuestaOriginal {
   url: string
 }
 
+/** POST /documentos/{id}/retirar (ADR-013): solo revisor; motivo obligatorio de 3 a 200 caracteres */
+export interface PeticionRetirar {
+  motivo: string
+}
+
 /** POST /documentos/{id}/revelar (ADR-010 A4): solo revisor y admin; deja `dato_revelado` en la auditoria */
 export interface PeticionRevelar {
   campo: string
@@ -341,6 +355,8 @@ export const ACCIONES_AUDITORIA = [
   'decision_tomada',
   'dato_revelado', // etapa 3
   'original_visto', // post-MVP: GET /documentos/{id}/original
+  'documento_retirado', // ADR-013
+  'documento_restaurado', // ADR-013
 ] as const
 export type AccionAuditoria = (typeof ACCIONES_AUDITORIA)[number]
 

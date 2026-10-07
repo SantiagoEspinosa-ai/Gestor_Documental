@@ -75,4 +75,13 @@ Sin alertas del expediente.
 Sin comparaciones.
 {% endif %}
 
+{% if retirados %}
+## Documentos retirados
+
+{#- ADR-013: al final, para que el fragmento de la memoria (rag) casi nunca llegue aqui; no cuentan para el folio #}
+{% for doc in retirados %}
+- {{ doc.tipo }}: retirado el {{ doc.fecha }} por {{ doc.usuario }}. Motivo: {{ doc.motivo }}
+{% endfor %}
+
+{% endif %}
 Generado el {{ generado_en }}

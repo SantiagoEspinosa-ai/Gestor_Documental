@@ -1,7 +1,7 @@
 // Acciones del revisor sobre documentos y expedientes (Contrato 2, reglas del ADR-006). Solo rol revisor,
 // salvo revelar (revisor y admin, ADR-010 A4).
 import type {
-  PeticionConfirmarClasificacion, PeticionCorregirDatos, PeticionDecision, PeticionResolverAlerta, PeticionRevelar,
+  PeticionConfirmarClasificacion, PeticionCorregirDatos, PeticionDecision, PeticionResolverAlerta, PeticionRetirar, PeticionRevelar,
   RespuestaRevelar, ResultadoDocumento, ResultadoExpediente,
 } from '../tipos/contrato'
 import { peticion } from './cliente'
@@ -36,4 +36,14 @@ export function decidir(idFolio: string, datos: PeticionDecision): Promise<Resul
  * auditoria. Revisor y admin. La respuesta no se guarda en ningun sitio (ni storage ni cache) */
 export function revelarDato(id: string, datos: PeticionRevelar): Promise<RespuestaRevelar> {
   return peticion<RespuestaRevelar>(`${documento(id)}/revelar`, { metodo: 'POST', cuerpo: datos })
+}
+
+/** POST /documentos/{id}/retirar (ADR-013): solo revisor; el documento deja de contar, nada se borra */
+export function retirarDocumento(id: string, datos: PeticionRetirar): Promise<ResultadoDocumento> {
+  return peticion<ResultadoDocumento>(`${documento(id)}/retirar`, { metodo: 'POST', cuerpo: datos })
+}
+
+/** POST /documentos/{id}/restaurar (ADR-013): deshace la retirada; sin cuerpo */
+export function restaurarDocumento(id: string): Promise<ResultadoDocumento> {
+  return peticion<ResultadoDocumento>(`${documento(id)}/restaurar`, { metodo: 'POST' })
 }

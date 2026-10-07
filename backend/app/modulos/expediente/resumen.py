@@ -100,8 +100,20 @@ def _documento(n: int, doc: ResultadoDocumento, fichas: dict[str, dict]) -> dict
             "filas": filas, "alertas": _alertas(doc.alertas_encontradas)}
 
 
+def _vigentes(expediente: ResultadoExpediente) -> list[ResultadoDocumento]:
+    """Los documentos que cuentan para el folio (ADR-013: sin los retirados), numerados en este orden."""
+    return [d for d in expediente.documentos if d.retirado is None]
+
+
+def _retirado(doc: ResultadoDocumento, fichas: dict[str, dict]) -> dict:
+    """ADR-013: solo tipo, fecha, quien y el motivo (ya tapado al guardarlo); ni datos ni alertas, no cuentan."""
+    efectivo = doc.tipo_documental_confirmado or doc.tipo_documental_detectado or doc.tipo_documental_declarado
+    return {"tipo": _nombre_tipo(efectivo, fichas), "fecha": _fecha(doc.retirado.en),
+            "usuario": escapar(doc.retirado.por), "motivo": escapar(doc.retirado.motivo)}
+
+
 def _comparaciones(expediente: ResultadoExpediente, fichas: dict[str, dict]) -> list[dict]:
-    por_id = {d.identificador_unico_documento: (i, d) for i, d in enumerate(expediente.documentos, start=1)}
+    por_id = {d.identificador_unico_documento: (i, d) for i, d in enumerate(_vigentes(expediente), start=1)}
     resultado = []
     for comparacion in expediente.comparaciones:
         valores = []
@@ -135,9 +147,10 @@ def generar(expediente: ResultadoExpediente, fichas: dict[str, dict], generado_e
         "recomendacion": _RECOMENDACION.get(expediente.recomendacion_global.value, "—")
         if expediente.recomendacion_global else "—",
         "decision": decision,
-        "documentos": [_documento(i, d, fichas) for i, d in enumerate(expediente.documentos, start=1)],
+        "documentos": [_documento(i, d, fichas) for i, d in enumerate(_vigentes(expediente), start=1)],
         "alertas_expediente": _alertas(expediente.alertas_expediente),
         "comparaciones": _comparaciones(expediente, fichas),
+        "retirados": [_retirado(d, fichas) for d in expediente.documentos if d.retirado is not None],
         "generado_en": _fecha(generado_en),
     }
     return _entorno.get_template("resumen.md.j2").render(**contexto)

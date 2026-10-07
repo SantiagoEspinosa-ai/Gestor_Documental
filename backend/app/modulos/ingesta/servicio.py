@@ -4,6 +4,7 @@ import logging
 import threading
 import uuid
 from collections.abc import Callable
+from datetime import timezone
 from pathlib import PurePath
 from typing import Any
 
@@ -19,7 +20,7 @@ from app.core.seguridad import es_folio_ajeno
 from app.modulos.ingesta import procesamiento, tipos
 from app.schemas.resultado import Correccion as CorreccionContrato
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
-                                   ResultadoDocumento, Severidad)
+                                   ResultadoDocumento, Retirada, Severidad)
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +83,8 @@ def ingestar(sesion: Session, almacenamiento: Almacenamiento, folio: str, nombre
     # d) hash y duplicado en el mismo folio
     hash_sha256 = hashlib.sha256(datos).hexdigest()
     anterior = sesion.scalar(select(Documento.id).where(Documento.folio == folio,
-                                                        Documento.hash_sha256 == hash_sha256)
+                                                        Documento.hash_sha256 == hash_sha256,
+                                                        Documento.retirado_en.is_(None))  # ADR-013
                              .order_by(Documento.creado_en).limit(1))
 
     # e) documento, subida y registro
@@ -179,6 +181,7 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
             "estado_analisis": estado,
             "tipo_documental_confirmado": documento.tipo_documental_confirmado,
             "alertas_encontradas": alertas,
+            "retirado": _retirada(documento),
         })
         return _aplicar_correcciones(sesion, resultado, documento.id, fila.version)
     return ResultadoDocumento(
@@ -192,7 +195,18 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
         referencia_archivo_original=ReferenciaArchivoOriginal(nombre_archivo=documento.nombre_archivo,
                                                               ruta=documento.ruta_s3,
                                                               hash=documento.hash_sha256),
+        retirado=_retirada(documento),
     )
+
+
+def _retirada(documento: Documento) -> Retirada | None:
+    """ADR-013: la retirada del documento desde sus columnas, o None si no esta retirado."""
+    if documento.retirado_en is None:
+        return None
+    en = documento.retirado_en
+    if en.tzinfo is None:  # SQLite la devuelve sin zona; se guardo en UTC
+        en = en.replace(tzinfo=timezone.utc)
+    return Retirada(en=en, por=documento.retirado_por, motivo=documento.motivo_retirada)
 
 
 def exigir_folio_visible(sesion: Session, folio: str, usuario: Usuario) -> Folio:
@@ -227,6 +241,37 @@ def enmascarar(resultado: ResultadoDocumento) -> ResultadoDocumento:
     return enmascaramiento.enmascarar_resultado(resultado, campos_sensibles(resultado))
 
 
+def tapar_texto_libre(resultado: ResultadoDocumento, texto: str) -> str:
+    """Texto libre sobre un documento (motivo de mostrar o de retirar) listo para guardar: sus valores sensibles
+    y todo lo que tenga forma de dato sensible tapados (`enmascaramiento.enmascarar_texto`, ADR-010 A4c)."""
+    literales = enmascaramiento.literales_sensibles(resultado, campos_sensibles(resultado))
+    return enmascaramiento.enmascarar_texto(texto, literales)
+
+
+def recalcular_dup001(sesion: Session, folio: str) -> None:
+    """DUP-001 de los documentos NO retirados del folio (ADR-013: un retirado no hace que otro sea duplicado).
+    Sin commit; idempotente. Con un no retirado anterior con el mismo SHA-256: se crea si no tiene ninguna.
+    Sin el: se borran las sin revisar y las confirmadas; solo se conservan los falsos positivos (aplica False).
+    """
+    sesion.flush()  # autoflush=False: ver los cambios pendientes de quien llama
+    vigentes = sesion.scalars(select(Documento).where(Documento.folio == folio, Documento.retirado_en.is_(None))
+                              .order_by(Documento.creado_en, Documento.id)).all()
+    primero_por_hash: dict[str, uuid.UUID] = {}
+    for doc in vigentes:
+        anterior = primero_por_hash.setdefault(doc.hash_sha256, doc.id)
+        existentes = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id,
+                                                           AlertaBD.codigo == "DUP-001")).all()
+        if anterior == doc.id:
+            for alerta in existentes:
+                if alerta.aplica is not False:
+                    sesion.delete(alerta)
+        elif not existentes:
+            sesion.add(AlertaBD(folio=folio, documento_id=doc.id, codigo="DUP-001",
+                                severidad=Severidad.critica.value, confianza=1.0,
+                                mensaje=f"Este archivo ya se subio en este folio (documento {anterior})"))
+    sesion.flush()
+
+
 def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str, motivo: str | None = None) -> Any:
     """POST /documentos/{id}/revelar (ADR-010 A4): el valor real y vigente (el corregido, si lo hay) de un
     campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor). El motivo
@@ -247,8 +292,7 @@ def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str, m
         raise ErrorApi(422, "PETICION_INVALIDA", "El campo no existe en la ficha del documento o no es sensible")
     detalle = {"campo": campo}
     if motivo is not None:
-        literales = enmascaramiento.literales_sensibles(resultado, campos_sensibles(resultado))
-        detalle["motivo"] = enmascaramiento.enmascarar_texto(motivo, literales)
+        detalle["motivo"] = tapar_texto_libre(resultado, motivo)
     auditoria.registrar(sesion, "dato_revelado", usuario=usuario, folio=doc.folio, documento_id=doc.id,
                         detalle=detalle)
     sesion.commit()

@@ -4,7 +4,8 @@ import { Link, useParams } from 'react-router'
 import { ErrorApi } from '../api/cliente'
 import { listarTiposDocumentales, obtenerFolio } from '../api/folios'
 import {
-  confirmarClasificacion, corregirDatos, decidir, resolverAlertaDocumento, resolverAlertaExpediente,
+  confirmarClasificacion, corregirDatos, decidir, resolverAlertaDocumento, resolverAlertaExpediente, restaurarDocumento,
+  retirarDocumento,
 } from '../api/revision'
 import { ConfirmarClasificacion, EditorCampo, PanelDecision, RevisarAlerta } from '../componentes/AccionesRevisor'
 import { useRol } from '../componentes/contextoSesion'
@@ -13,17 +14,19 @@ import { DetalleDocumento } from '../componentes/DetalleDocumento'
 import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
 import { ResumenExpediente } from '../componentes/ResumenExpediente'
+import { RetirarDocumento } from '../componentes/RetirarDocumento'
 import { Antecedentes } from '../componentes/Antecedentes'
 import { SoloRol } from '../componentes/SoloRol'
 import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
-import { alertasQueBloquean, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
+import { alertasQueBloquean, cuentaEnElFolio, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
 import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
 import { formatearValor, nombreCampo } from '../utilidades/valores'
 
 const ROLES_ORIGINAL = ['revisor', 'admin'] // GET /documentos/{id}/original
 const ROLES_ANTECEDENTES: readonly Rol[] = ['revisor', 'admin'] // GET /folios/{folio}/antecedentes
+const ROLES_RETIRAR: readonly Rol[] = ['revisor'] // POST /documentos/{id}/retirar y /restaurar (ADR-013): como las demas acciones de revision
 
 const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
   pendiente: Clock, procesando: LoaderCircle, completado: CheckCircle2, error: CircleX,
@@ -119,7 +122,10 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
   const bloqueantes = alertasQueBloquean(expediente)
   // Acciones solo para el revisor y con el folio abierto; la API vuelve a comprobarlo
   const puedeActuar = rol === 'revisor' && !cerrado
+  // ADR-013: sobre un retirado no se revisa nada (la API responde 409 DOCUMENTO_RETIRADO)
+  const docRevisable = puedeActuar && !doc?.retirado
   const docAnalizado = doc?.estado_analisis === 'completado' // corregir y reclasificar: ni en curso ni en error
+  const puedeRetirar = rol !== null && ROLES_RETIRAR.includes(rol) && !cerrado && !!doc && !enProceso(doc)
   const fichaDoc = doc ? fichas.find((t) => t.nombre === tipoExtraccion(doc)) : undefined
   const idDoc = doc?.identificador_unico_documento ?? ''
 
@@ -172,8 +178,11 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
               return (
                 <li key={d.identificador_unico_documento}>
                   <button type="button" onClick={() => setSeleccionado(d.identificador_unico_documento)} aria-current={activo ? 'true' : undefined}
-                    className={`w-full rounded border px-2 py-1.5 text-left text-sm ${activo ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-                    <span className="block font-medium">{nombreVisible(tipoEfectivo(d))}</span>
+                    className={`w-full rounded border px-2 py-1.5 text-left text-sm ${activo ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:bg-slate-50'} ${d.retirado ? 'opacity-60' : ''}`}>
+                    <span className="block font-medium">
+                      {nombreVisible(tipoEfectivo(d))}
+                      {d.retirado && <span className="ml-1 rounded bg-slate-200 px-1 text-xs font-normal text-slate-700">Retirado</span>}
+                    </span>
                     <span className="block truncate font-mono text-xs text-slate-600">{d.referencia_archivo_original.nombre_archivo}</span>
                     <span className="mt-0.5 inline-flex items-center gap-1 text-xs" data-testid={`estado-${d.identificador_unico_documento}`}>
                       <Icono className={`size-3.5 ${d.estado_analisis === 'procesando' ? 'animate-spin' : ''}`} aria-hidden />
@@ -187,15 +196,22 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
         </nav>
 
         <div>
+          {doc && (
+            <div className="mb-3">
+              <RetirarDocumento key={doc.identificador_unico_documento} doc={doc} puedeActuar={puedeRetirar} deshabilitado={ocupado}
+                alRetirar={(motivo) => ejecutar(() => retirarDocumento(idDoc, { motivo }), aplicarDocumento, 'Documento retirado del folio.', true)}
+                alRestaurar={() => ejecutar(() => restaurarDocumento(idDoc), aplicarDocumento, 'Documento restaurado.', true)} />
+            </div>
+          )}
           {doc
             ? <DetalleDocumento key={doc.identificador_unico_documento} doc={doc} fichas={fichas}
                 puedeVerOriginal={rol !== null && ROLES_ORIGINAL.includes(rol)}
-                accionesClasificacion={puedeActuar && docAnalizado ? (
+                accionesClasificacion={docRevisable && docAnalizado ? (
                   <ConfirmarClasificacion fichas={fichas} actual={tipoExtraccion(doc)} deshabilitado={ocupado}
                     alConfirmar={(tipo) => ejecutar(() => confirmarClasificacion(idDoc, { tipo_documental: tipo }), aplicarDocumento,
                       'Clasificación confirmada.', true)} />
                 ) : undefined}
-                celdaValor={puedeActuar && docAnalizado ? (campo, contenido) => (
+                celdaValor={docRevisable && docAnalizado ? (campo, contenido) => (
                   <EditorCampo campo={campo} valor={doc.datos_extraidos[campo]} tipo={fichaDoc?.campos[campo]?.tipo}
                     obligatorio={fichaDoc?.campos[campo]?.obligatorio ?? false}
                     sensible={fichaDoc?.campos[campo]?.sensible ?? false} deshabilitado={ocupado}
@@ -215,14 +231,14 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
             <p className="mt-1 text-xs text-slate-500">La IA recomienda; la decisión final es del revisor.</p>
           </section>
           {puedeActuar && (
-            <PanelDecision bloqueantes={bloqueantes} enCurso={expediente.documentos.some(enProceso)} deshabilitado={ocupado}
+            <PanelDecision bloqueantes={bloqueantes} enCurso={expediente.documentos.filter(cuentaEnElFolio).some(enProceso)} deshabilitado={ocupado}
               alDecidir={(decision, comentario) => ejecutar(
                 () => decidir(expediente.folio, { decision, ...(comentario ? { comentario } : {}) }), setCargado,
                 `Folio ${decision === 'aprobar' ? 'aprobado' : 'rechazado'}.`)} />
           )}
           {doc && (
             <ListaAlertas titulo="Alertas del documento seleccionado" alertas={doc.alertas_encontradas}
-              acciones={puedeActuar && !enProceso(doc) ? (a) => (
+              acciones={docRevisable && !enProceso(doc) ? (a) => (
                 <RevisarAlerta alerta={a} deshabilitado={ocupado}
                   alResolver={(aplica, comentario) => ejecutar(
                     () => resolverAlertaDocumento(idDoc, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), aplicarDocumento,

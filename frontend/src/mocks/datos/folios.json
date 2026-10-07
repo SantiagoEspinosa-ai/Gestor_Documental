@@ -119,7 +119,8 @@
           "nombre_archivo": "pasaporte_vencido_escaneado.pdf",
           "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000001.pdf",
           "hash": "34e4b2f91a6b515f2759b3d807116c42755614b2d680164e798e8c9db56ba489"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000001",
@@ -188,7 +189,8 @@
           "nombre_archivo": "credencial_elector_vencido_foto.jpg",
           "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000002.jpg",
           "hash": "22311aa31b84acd5fd808df72094bb0723531f91593dbc422f26d2ea17e4d86e"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000001",
@@ -235,7 +237,8 @@
           "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
           "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000003.pdf",
           "hash": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000001",
@@ -296,6 +299,11 @@
           "nombre_archivo": "comprobante_domicilio_vencido_digital.pdf",
           "ruta": "onboarding/2026/000001/00000000-0000-4000-8000-000001000004.pdf",
           "hash": "792ab4fefe58e342a1571a697f2d1a2d5bb73ea3d1e258f61f543bc846c17cb2"
+        },
+        "retirado": {
+          "en": "2026-09-28T09:35:00Z",
+          "por": "revisor.demo",
+          "motivo": "Subido dos veces por error"
         }
       }
     ],
@@ -305,8 +313,7 @@
         "coincide": true,
         "valores": {
           "00000000-0000-4000-8000-000001000002": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "00000000-0000-4000-8000-000001000003": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO",
-          "00000000-0000-4000-8000-000001000004": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO"
+          "00000000-0000-4000-8000-000001000003": "AVENIDA INVENTADA 456, COLONIA TEST, CIUDAD EJEMPLO"
         }
       },
       {
@@ -402,7 +409,8 @@
           "nombre_archivo": "credencial_elector_domicilio_distinto_escaneado.pdf",
           "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000001.pdf",
           "hash": "ce0e2ac91a272e9215b1d6114a9b8569a1212dde9d06e3ce728ad6afefdef398"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000002",
@@ -462,7 +470,8 @@
           "nombre_archivo": "comprobante_domicilio_domicilio_distinto_foto.jpg",
           "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000002.jpg",
           "hash": "c0cef4f378646a6c23c4c2eb546c733fbb6b4f0a3f5b7078673f2b447b09adf5"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000002",
@@ -487,7 +496,8 @@
           "nombre_archivo": "pasaporte_domicilio_distinto_digital.pdf",
           "ruta": "onboarding/2026/000002/00000000-0000-4000-8000-000002000003.pdf",
           "hash": "8573f96ba1982a3fc848902d3be366a8c0f51cb2f96445e42a12bf09d9965b90"
-        }
+        },
+        "retirado": null
       }
     ],
     "comparaciones": [
@@ -582,7 +592,8 @@
           "nombre_archivo": "credencial_elector_sano_digital.pdf",
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000001.pdf",
           "hash": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000003",
@@ -621,7 +632,8 @@
           "nombre_archivo": "pasaporte_sano_foto.jpg",
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000002.jpg",
           "hash": "de8469e84785466615ab18fefb645b6d0e6edb16264b43cc18474dc80b567480"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000003",
@@ -646,7 +658,8 @@
           "nombre_archivo": "comprobante_domicilio_sano_escaneado.pdf",
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000003.pdf",
           "hash": "541ef9c2127ae43c43d5728360a32d2dcc32764d0a7fee057057ac9b7cf24b6c"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000003",
@@ -690,7 +703,8 @@
           "nombre_archivo": "pasaporte_sano_escaneado.pdf",
           "ruta": "onboarding/2026/000003/00000000-0000-4000-8000-000003000004.pdf",
           "hash": "0b30d434cb47098788f021f943b201b2f1f5a8577a902dbc169d4775e091bacc"
-        }
+        },
+        "retirado": null
       }
     ],
     "comparaciones": [],
@@ -782,7 +796,8 @@
           "nombre_archivo": "pasaporte_sano_digital.pdf",
           "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000001.pdf",
           "hash": "44a92b42e7d1e55944ea5a7d250abbc49fa0c79792cda02f87c77c3eb8c06d6c"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000004",
@@ -837,7 +852,8 @@
           "nombre_archivo": "credencial_elector_sano_digital.pdf",
           "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000002.pdf",
           "hash": "bd48c2167db4a02d6f2f11b3a8c0d4ffae27c31def2b56f7a15689bfd253c019"
-        }
+        },
+        "retirado": null
       },
       {
         "folio_solicitud": "ONB-2026-000004",
@@ -884,7 +900,8 @@
           "nombre_archivo": "comprobante_domicilio_sano_digital.pdf",
           "ruta": "onboarding/2026/000004/00000000-0000-4000-8000-000004000003.pdf",
           "hash": "b59751ccf862284e16643d0004d1d2e74f262036b2f55d8c1508774055ff184a"
-        }
+        },
+        "retirado": null
       }
     ],
     "comparaciones": [

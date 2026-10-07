@@ -98,6 +98,7 @@ EQUIVALENTES = {
     "DocumentoAceptado": "RespuestaSubidaDocumento",
     "UrlOriginal": "RespuestaOriginal",
     "RevelarEntrada": "PeticionRevelar",
+    "RetirarEntrada": "PeticionRetirar",  # ADR-013
     "DatoRevelado": "RespuestaRevelar",
     "ConfirmarClasificacionEntrada": "PeticionConfirmarClasificacion",
     "ResolverAlertaEntrada": "PeticionResolverAlerta",
