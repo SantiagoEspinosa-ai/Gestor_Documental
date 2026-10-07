@@ -25,7 +25,7 @@ from app.modulos.ingesta.servicio import ingestar
 from app.modulos.validacion import servicio as validacion
 from app.modulos.validacion.comparaciones import DocumentoComparable, normalizar_texto
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 

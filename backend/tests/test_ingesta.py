@@ -23,7 +23,7 @@ from app.modulos.ingesta.procesamiento import procesar
 from app.modulos.ingesta.servicio import ingestar, obtener_resultado
 from app.schemas.resultado import Alerta, EstadoAnalisis, ReferenciaArchivoOriginal, ResultadoDocumento
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 PDF = b"%PDF-1.4 documento ficticio"

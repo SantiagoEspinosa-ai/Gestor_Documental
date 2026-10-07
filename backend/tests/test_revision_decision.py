@@ -26,7 +26,7 @@ from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
 from app.schemas.resultado import Alerta, DecisionHumana
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 

@@ -119,9 +119,9 @@ def test_el_script_informa_de_los_fallidos_sin_contenido(entorno, monkeypatch, c
 
 def _alembic(monkeypatch, url: str) -> Config:
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test", "DATABASE_URL": url,
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test", "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
-        "S3_BUCKET": "bucket-de-test", "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres", "DATABASE_URL": url,
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres", "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
+        "S3_BUCKET": "bucket-de-test", "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
     }.items():
         monkeypatch.setenv(nombre, valor)
     get_settings.cache_clear()
