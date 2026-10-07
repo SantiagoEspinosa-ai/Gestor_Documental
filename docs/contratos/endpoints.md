@@ -6,7 +6,7 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) 
 
 | Metodo | Ruta | Rol | Descripcion | Respuesta |
 |---|---|---|---|---|
-| POST | /auth/login | - | JSON `{usuario, contrasena}` (no formulario OAuth2) | `{access_token, rol, expires_in}` (segundos) |
+| POST | /auth/login | - | JSON `{usuario, contrasena}` (no formulario OAuth2); `429 DEMASIADOS_INTENTOS` con `Retry-After` tras demasiados fallos (ADR-011) | `{access_token, rol, expires_in}` (segundos) |
 | GET | /auth/yo | todos | Recuperar la sesion al recargar | `{usuario, rol}` |
 | GET | /procesos | admin, integrador, revisor | Procesos configurados | lista de `Proceso` (ver "Formas de respuesta") |
 | POST | /folios | integrador, revisor | `{proceso, referencia_externa?}` | `{folio, estado_general}` |
