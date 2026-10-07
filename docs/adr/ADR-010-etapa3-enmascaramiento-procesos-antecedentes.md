@@ -171,3 +171,20 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
   nuevos.
 - Si se rechaza: el enmascaramiento queda solo en la UI (sin proteccion real) y `/antecedentes` sigue
   sin forma, lo que bloquea H16 y H17.
+
+## Adenda post-MVP (PROPUESTA, pendiente de aceptar en el PR)
+No cambia nada de lo aceptado arriba; solo anade puntos.
+
+| Punto | Descripcion | Implementa | Decision |
+|---|---|---|---|
+| A4b | Accion de auditoria `original_visto` en `GET /documentos/{id}/original` | PERSONA_1 | Propuesta |
+
+- **A4b, que**: cada `GET /documentos/{id}/original` correcto deja `original_visto` con el usuario, el
+  folio y el `documento_id` en sus columnas y `detalle` vacio: nada del contenido del documento. Con `403`
+  o `404` no deja registro.
+- **A4b, por que**: el original muestra los campos sensibles sin mascara. Sin este registro, la
+  trazabilidad de A4 ("cada uso queda auditado con el campo y el usuario") queda incompleta: se puede ver
+  la CURP abriendo el original sin dejar rastro. Lo detecto la revision de seguridad.
+- **A4b, que no cambia**: sin migracion (la columna `accion` no tiene CHECK en BD) y la lista de acciones
+  sigue cerrada: se anade a `ACCIONES_AUDITORIA`, `endpoints.md` y `contrato.ts`, que
+  `test_contrato_frontend` mantiene iguales.
