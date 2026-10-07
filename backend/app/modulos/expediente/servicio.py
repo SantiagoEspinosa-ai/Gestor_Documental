@@ -195,7 +195,8 @@ def crear_folio(sesion: Session, proceso: str, referencia_externa: str | None, u
                        f"Se ha agotado la numeracion de folios de '{proceso}' en {anio}")
 
     folio = Folio(folio=f"{fila_proceso.prefijo_folio}-{anio}-{secuencia:06d}", proceso=proceso,
-                  anio=anio, secuencia=secuencia, referencia_externa=referencia_externa)
+                  anio=anio, secuencia=secuencia, referencia_externa=referencia_externa,
+                  creado_por=usuario)  # ADR-012: el integrador solo accede a los suyos
     sesion.add(folio)
     # flush antes de las alertas: sin relationship, SQLAlchemy no ordena los INSERT por la FK
     sesion.flush()

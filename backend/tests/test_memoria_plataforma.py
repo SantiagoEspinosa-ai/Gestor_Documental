@@ -142,6 +142,12 @@ def _sube_y_baja(config: Config, url: str) -> None:
         # 0006 (fix/reanudar-limite-reintentos): documentos.intentos_reanudar, NOT NULL y 0 por defecto
         [intentos] = [c for c in inspect(engine).get_columns("documentos") if c["name"] == "intentos_reanudar"]
         assert not intentos["nullable"] and str(intentos["default"]).strip("'") == "0"
+        # 0007 (ADR-012): folios.creado_por, NULL
+        [creado_por] = [c for c in inspect(engine).get_columns("folios") if c["name"] == "creado_por"]
+        assert creado_por["nullable"]
+        command.downgrade(config, "0006")
+        assert "creado_por" not in {c["name"] for c in inspect(engine).get_columns("folios")}
+        assert "intentos_reanudar" in {c["name"] for c in inspect(engine).get_columns("documentos")}  # solo baja la 0007
         command.downgrade(config, "0005")
         assert "intentos_reanudar" not in {c["name"] for c in inspect(engine).get_columns("documentos")}
         assert "memoria_folios" in inspect(engine).get_table_names()  # solo baja la 0006
@@ -151,6 +157,7 @@ def _sube_y_baja(config: Config, url: str) -> None:
         command.upgrade(config, "head")
         assert "memoria_folios" in inspect(engine).get_table_names()
         assert "intentos_reanudar" in {c["name"] for c in inspect(engine).get_columns("documentos")}
+        assert "creado_por" in {c["name"] for c in inspect(engine).get_columns("folios")}
     finally:
         engine.dispose()
 

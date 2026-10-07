@@ -44,6 +44,8 @@ def subir(folio: str, background_tasks: BackgroundTasks, archivo: UploadFile = F
           tipo_declarado: str | None = Form(None), sesion: Session = Depends(get_sesion),
           almacenamiento: Almacenamiento = Depends(get_almacenamiento),
           usuario: Usuario = Depends(requiere_rol("integrador", "revisor"))) -> DocumentoAceptado:
+    # ADR-012: subir al folio de otro integrador da 404, antes de leer el fichero
+    ingesta.exigir_folio_visible(sesion, folio, usuario)
     maximo_mb = get_settings().tamano_maximo_archivo_mb
     limite = maximo_mb * 1024 * 1024
     datos = archivo.file.read(limite + 1)  # nunca mas de limite + 1 bytes en memoria
@@ -59,8 +61,9 @@ def subir(folio: str, background_tasks: BackgroundTasks, archivo: UploadFile = F
 
 @router.get("/documentos/{documento_id}", response_model=ResultadoDocumento)
 def obtener(documento_id: str, sesion: Session = Depends(get_sesion),
-            _: Usuario = Depends(usuario_actual)) -> ResultadoDocumento:
-    return ingesta.enmascarar(ingesta.obtener_resultado(sesion, documento_id))  # ADR-010 A3
+            usuario: Usuario = Depends(usuario_actual)) -> ResultadoDocumento:
+    # ADR-010 A3 (enmascarado) y ADR-012 (el documento de un folio de otro integrador da 404)
+    return ingesta.enmascarar(ingesta.obtener_resultado(sesion, documento_id, usuario))
 
 
 @router.get("/documentos/{documento_id}/original", response_model=UrlOriginal)
