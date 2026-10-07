@@ -902,16 +902,17 @@ describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
       const r = await revelar({ campo: 'curp', motivo })
       expect([r.status, r.cuerpo.codigo], String(motivo)).toEqual([422, 'PETICION_INVALIDA'])
     }
-    const motivos = ['URGENTE: lo pide el cliente', `Dicta ${curp} y XAXX020202MDFYYYA5`]
+    const motivos = ['URGENTE: lo pide el cliente', `Dicta ${curp} y XAXX020202MDFYYYA5`, `en minusculas: ${curp.toLowerCase()} y xaxx020202mdfyyya5`]
     for (const motivo of motivos) expect((await revelar({ campo: 'curp', motivo })).status).toBe(200)
     expect((await revelar({ campo: 'curp', motivo: null })).status).toBe(200)
     const detalles = estado.auditoria.filter((e) => e.accion === 'dato_revelado').map((e) => e.detalle)
     expect(detalles).toEqual([
       { campo: 'curp', motivo: 'URGENTE: lo pide el cliente' },
       { campo: 'curp', motivo: `Dicta ${mascara(curp)} y ****` }, // el literal del documento con cola, como la API
+      { campo: 'curp', motivo: `en minusculas: ${mascara(curp)} y ****` },
       { campo: 'curp' },
     ])
-    expect(JSON.stringify(detalles)).not.toContain(curp)
+    expect(JSON.stringify(detalles).toUpperCase()).not.toContain(curp)
   })
 })
 

@@ -61,10 +61,11 @@ def enmascarar_texto(texto: str, literales: list[str]) -> str:
     sensible del documento (`literales_sensibles`) pasa por `mascara`, y despues `logs.tapar`, la misma
     barrera que los logs (A5), tapa lo que tenga forma de CURP, clave de elector, pasaporte o MRZ, sea o no
     del documento. Lo que tapa `logs.tapar` queda en `****` sin los 4 ultimos: en un texto libre no hacen
-    falta y es mas seguro."""
+    falta y es mas seguro. Las dos cosas sin distinguir mayusculas: una persona puede escribir la CURP en
+    minusculas."""
     for literal in literales:
-        texto = texto.replace(literal, mascara(literal))
-    return logs.tapar(texto)
+        texto = re.sub(re.escape(literal), lambda _, literal=literal: mascara(literal), texto, flags=re.IGNORECASE)
+    return logs.tapar(texto, ignorar_mayusculas=True)
 
 
 def enmascarar_resultado(resultado: ResultadoDocumento, sensibles: set[str]) -> ResultadoDocumento:

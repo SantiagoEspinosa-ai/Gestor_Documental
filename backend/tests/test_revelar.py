@@ -155,13 +155,15 @@ def test_motivo_null_es_como_sin_motivo(entorno):
     assert [e.detalle for e in _entradas(entorno[0])] == [{"campo": "curp"}]
 
 
-@pytest.mark.parametrize("motivo", ["Verificar con el cliente por telefono", "URGENTE: lo pide auditoria"])
+@pytest.mark.parametrize("motivo", ["Verificar con el cliente por telefono", "URGENTE: lo pide auditoria",
+                                    "urgente: lo pide auditoria"])
 def test_motivo_normal_intacto(entorno, motivo):
     assert _motivo(entorno, motivo) == {"campo": "curp", "motivo": motivo}
 
 
-@pytest.mark.parametrize("sensible", [CURP_AJENA, CURP_LEIDA, CLAVE_ELECTOR],
-                         ids=["curp-ajena", "curp-del-documento", "clave-elector-del-documento"])
+@pytest.mark.parametrize("sensible", [CURP_AJENA, CURP_LEIDA, CLAVE_ELECTOR, CURP_AJENA.lower(), CURP_LEIDA.lower()],
+                         ids=["curp-ajena", "curp-del-documento", "clave-elector-del-documento",
+                              "curp-ajena-en-minusculas", "curp-del-documento-en-minusculas"])
 def test_motivo_con_un_dato_sensible_sale_tapado(entorno, sensible):
     detalle = _motivo(entorno, f"El cliente dicta {sensible} por telefono")
     assert sensible not in json.dumps(detalle) and "****" in detalle["motivo"]

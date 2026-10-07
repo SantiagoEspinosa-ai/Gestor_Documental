@@ -129,3 +129,5 @@ def test_enmascarar_texto_literales_del_documento_y_la_barrera_de_los_logs():
     texto = "Clave ab12cd34 y CURP XAXX020202MDFYYYA5; URGENTE"
     assert enmascarar_texto(texto, ["ab12cd34"]) == "Clave ****cd34 y CURP ****; URGENTE"
     assert enmascarar_texto("texto normal", []) == "texto normal"
+    # Sin distinguir mayusculas: el literal del documento y la barrera de los logs
+    assert enmascarar_texto("clave AB12CD34 y curp xaxx020202mdfyyya5, urgente", ["ab12cd34"]) ==         "clave ****cd34 y curp ****, urgente"

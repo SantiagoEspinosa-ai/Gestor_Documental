@@ -194,6 +194,7 @@ No cambia nada de lo aceptado arriba; solo anade puntos.
   un campo corto opcional junto a "Mostrar" que nunca bloquea.
 - **A4c, como se protege**: es texto libre, asi que el motivo se guarda tapado con la misma barrera que los
   logs (A5): `enmascaramiento.enmascarar_texto` tapa los valores sensibles del documento y, con
-  `logs.tapar`, cualquier CURP, clave de elector, pasaporte o MRZ, sea o no del documento.
+  `logs.tapar`, cualquier CURP, clave de elector, pasaporte o MRZ, sea o no del documento; sin distinguir
+  mayusculas (tapa de mas, p. ej. "abc12345", lo que en un texto libre se prefiere).
 - **A4c, que no cambia**: compatible hacia atras (sin `motivo`, todo igual que en A4); sin migracion; el
   motivo no es obligatorio. Pedirlo obligatorio seria otra decision.

@@ -372,20 +372,24 @@ function literalesSensibles(doc: ResultadoDocumento, sensibles: Set<string>): st
     .sort((a, b) => b.length - a.length)
 }
 
-/** Los patrones de backend/app/core/logs.py (_PATRONES): MRZ, CURP, clave de elector y pasaporte */
-const PATRONES_LOGS = [
-  /(?<![A-Z0-9<])[A-Z0-9<]{30,}(?![A-Z0-9<])/g,
-  /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/g,
-  /[A-Z]{6}\d{8}[HM]\d{3}/g,
-  /\b(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{8,9}\b/g,
+/** Los patrones de backend/app/core/logs.py (_PATRONES): MRZ, CURP, clave de elector y pasaporte. Con el flag i,
+ * como logs.tapar(texto, ignorar_mayusculas=True): para texto libre */
+const PATRONES_LOGS_SIN_MAYUSCULAS = [
+  /(?<![A-Z0-9<])[A-Z0-9<]{30,}(?![A-Z0-9<])/gi,
+  /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/gi,
+  /[A-Z]{6}\d{8}[HM]\d{3}/gi,
+  /\b(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{8,9}\b/gi,
 ]
+const escaparRegex = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 /** Texto libre tapado como enmascarar_texto de la API (ADR-010 A4c): literales del documento con `mascara` y
- * despues lo que tenga forma de dato sensible, con `****` sin cola (como logs.tapar) */
+ * despues lo que tenga forma de dato sensible, con `****` sin cola (como logs.tapar); sin distinguir mayusculas */
 export function enmascararTexto(estado: EstadoMock, doc: ResultadoDocumento, texto: string): string {
   let tapado = texto
-  for (const literal of literalesSensibles(doc, camposSensibles(estado, doc))) tapado = tapado.split(literal).join(mascara(literal)!)
-  for (const patron of PATRONES_LOGS) tapado = tapado.replace(patron, MASCARA)
+  for (const literal of literalesSensibles(doc, camposSensibles(estado, doc))) {
+    tapado = tapado.replace(new RegExp(escaparRegex(literal), 'gi'), () => mascara(literal)!)
+  }
+  for (const patron of PATRONES_LOGS_SIN_MAYUSCULAS) tapado = tapado.replace(patron, MASCARA)
   return tapado
 }
 

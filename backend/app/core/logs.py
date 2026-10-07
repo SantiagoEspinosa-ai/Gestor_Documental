@@ -23,9 +23,13 @@ _PATRONES = (
     re.compile(r"\b(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{8,9}\b"),  # numero de pasaporte (palabra completa)
 )
 
+# Los mismos sin distinguir mayusculas: para texto libre escrito por personas (enmascaramiento.enmascarar_texto).
+# Tapan de mas (p. ej. una palabra como "abc12345"), lo que en un texto libre se prefiere
+_PATRONES_SIN_MAYUSCULAS = tuple(re.compile(p.pattern, re.IGNORECASE) for p in _PATRONES)
 
-def tapar(texto: str) -> str:
-    for patron in _PATRONES:
+
+def tapar(texto: str, ignorar_mayusculas: bool = False) -> str:
+    for patron in _PATRONES_SIN_MAYUSCULAS if ignorar_mayusculas else _PATRONES:
         texto = patron.sub(MASCARA, texto)
     return texto
 
