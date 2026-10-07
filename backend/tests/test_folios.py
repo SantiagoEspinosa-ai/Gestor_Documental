@@ -26,7 +26,7 @@ from app.modulos.expediente import servicio
 from app.modulos.rag.modelos import MemoriaFolio
 from app.schemas.resultado import DecisionHumana, EstadoGeneral, ResultadoExpediente
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 URL = "/api/v1/folios"
 UTC = timezone.utc
 ANIO = datetime.now(UTC).astimezone(ZoneInfo("America/Mexico_City")).year

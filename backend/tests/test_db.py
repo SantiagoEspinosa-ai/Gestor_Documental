@@ -17,12 +17,12 @@ BACKEND = Path(__file__).resolve().parents[1]
 @pytest.fixture
 def sqlite_en_memoria(monkeypatch):
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "DATABASE_URL": "sqlite://",
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "S3_BUCKET": "bucket-de-test",
-        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
     }.items():
         monkeypatch.setenv(nombre, valor)
     get_settings.cache_clear()

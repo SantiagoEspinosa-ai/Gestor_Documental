@@ -21,7 +21,7 @@ from app.core.modelos import Usuario
 from app.core.seguridad import (crear_token, hash_contrasena, requiere_rol, usuario_actual,
                                 verificar_contrasena)
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 CONTRASENA = "contrasena-ficticia"
 
 _spec = importlib.util.spec_from_file_location(

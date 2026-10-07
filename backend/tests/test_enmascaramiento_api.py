@@ -25,7 +25,7 @@ from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta import servicio as ingesta
 from app.modulos.ingesta.servicio import ingestar
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 URL = "https://receptor.ejemplo.test/hooks"

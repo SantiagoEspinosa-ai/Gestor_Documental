@@ -39,13 +39,13 @@ jobs:
       # Valores ficticios para que Settings arranque; los tests fijan los suyos
       APP_ENV: dev
       MOTOR_ANALISIS: stub
-      SECRET_KEY: clave-ficticia-de-ci
+      SECRET_KEY: clave-ficticia-de-ci-de-32-caracteres-o-mas
       DATABASE_URL: sqlite://
       AWS_ACCESS_KEY_ID: clave-ficticia-de-ci
       AWS_SECRET_ACCESS_KEY: clave-ficticia-de-ci
       AWS_REGION: us-east-1
       S3_BUCKET: bucket-de-ci
-      WEBHOOK_SECRET_HMAC: clave-ficticia-de-ci
+      WEBHOOK_SECRET_HMAC: clave-ficticia-de-ci-de-32-caracteres-o-mas
       # Los 2 tests de concurrencia (test_folios, test_revision_decision) solo corren contra PostgreSQL
       TEST_POSTGRES_URL: postgresql+psycopg://gestor:gestor@localhost:5432/gestor_test
     steps:

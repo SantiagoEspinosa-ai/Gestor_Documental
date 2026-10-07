@@ -27,12 +27,12 @@ def bd(monkeypatch, tmp_path):
     """BD SQLite migrada con `alembic upgrade head`. Devuelve (config de alembic, engine)."""
     url = f"sqlite:///{tmp_path / 'test.db'}"
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "DATABASE_URL": url,
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "S3_BUCKET": "bucket-de-test",
-        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
     }.items():
         monkeypatch.setenv(nombre, valor)
     get_settings.cache_clear()

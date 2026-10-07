@@ -139,12 +139,12 @@ def test_no_se_cambia_el_prefijo_si_hay_folios(sesion, tmp_path):
 def test_lifespan_carga_los_procesos(monkeypatch, tmp_path):
     url = f"sqlite:///{tmp_path / 'app.db'}"
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "DATABASE_URL": url,
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "S3_BUCKET": "bucket-de-test",
-        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
         "CONFIG_DIR": str(escribir_config(tmp_path / "config", {"onboarding": ONBOARDING})),
     }.items():
         monkeypatch.setenv(nombre, valor)
@@ -173,12 +173,12 @@ def test_lifespan_no_arranca_con_una_ficha_invalida(monkeypatch, tmp_path):
     with (config_dir / "tipos" / "pasaporte.yaml").open("a", encoding="utf-8") as f:
         f.write("clave_inventada: 1\n")
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "DATABASE_URL": f"sqlite:///{tmp_path / 'app.db'}",
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "S3_BUCKET": "bucket-de-test",
-        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
         "CONFIG_DIR": str(config_dir),
     }.items():
         monkeypatch.setenv(nombre, valor)
@@ -199,12 +199,12 @@ def test_lifespan_no_arranca_con_una_ficha_invalida(monkeypatch, tmp_path):
 
 def test_lifespan_sin_tablas_pide_alembic(monkeypatch, tmp_path):
     for nombre, valor in {
-        "SECRET_KEY": "clave-ficticia-de-test",
+        "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "DATABASE_URL": f"sqlite:///{tmp_path / 'vacia.db'}",
-        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+        "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+        "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
         "S3_BUCKET": "bucket-de-test",
-        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+        "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
         "CONFIG_DIR": str(CONFIG_REPO),
     }.items():
         monkeypatch.setenv(nombre, valor)
