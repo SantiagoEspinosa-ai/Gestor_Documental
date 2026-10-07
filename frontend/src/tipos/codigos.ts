@@ -67,6 +67,7 @@ export const ALERTAS = {
   'SYS-002': { emisor: 'motor_ia', severidad: 'critica', cuando: 'JSON del modelo invalido tras el reintento de correccion' },
   'SYS-003': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Texto recortado por MAX_CARACTERES_TEXTO; pueden faltar campos de las paginas finales' },
   'SYS-005': { emisor: 'motor_ia', severidad: 'informativa', cuando: 'Fallo el proveedor principal y se uso el de respaldo' },
+  'SYS-007': { emisor: 'ingesta', severidad: 'critica', cuando: 'Reintentos agotados al reanudar el analisis; estado_analisis=error' },
   'VIS-001': { emisor: 'motor_ia', severidad: 'preventiva', cuando: 'Baja legibilidad o resolucion (extra 2)' },
   'VIS-002': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Pagina incompleta o recortada (extra 2)' },
   'VIS-003': { emisor: 'motor_ia', severidad: 'critica', cuando: 'Alteracion o anomalia visible (extra 2)' },
