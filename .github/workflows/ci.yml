@@ -55,7 +55,10 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
+      - name: apt sin cuelgues (reintentos y timeouts cortos; el mirror de Azure a veces no responde)
+        run: echo 'Acquire::Retries "3"; Acquire::http::Timeout "20"; Acquire::https::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts
       - name: Tesseract (para que el test de OCR no se salte)
+        timeout-minutes: 8
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-spa
       - name: Dependencias
         run: pip install -r backend/requirements.txt
@@ -83,7 +86,10 @@ jobs:
         run: npm run build
       - name: Vitest
         run: npm test
+      - name: apt sin cuelgues (reintentos y timeouts cortos; el mirror de Azure a veces no responde)
+        run: echo 'Acquire::Retries "3"; Acquire::http::Timeout "20"; Acquire::https::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts
       - name: Playwright (solo Chromium)
+        timeout-minutes: 8
         run: npx playwright install --with-deps chromium
       - name: e2e sobre los mocks
         run: npm run test:e2e
