@@ -31,6 +31,7 @@ de FastAPI y los de rutas o metodos inexistentes. Nunca el `{"detail": ...}` por
 | 413 | `ARCHIVO_DEMASIADO_GRANDE` | El archivo supera 20 MB |
 | 415 | `FORMATO_NO_PERMITIDO` | Extension fuera de `formatos_permitidos` del tipo, o contenido que no corresponde a la extension (firma del fichero) |
 | 422 | `PETICION_INVALIDA` | Cuerpo o parametros invalidos |
+| 429 | `DEMASIADOS_INTENTOS` | Login de un usuario con demasiados intentos fallidos recientes (ADR-011); lleva `Retry-After` en segundos |
 | 500 | `ERROR_INTERNO` | Error no controlado |
 
 Un duplicado no es un error: la subida devuelve 202 y el documento lleva la alerta `DUP-001`

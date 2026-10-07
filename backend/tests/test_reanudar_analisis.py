@@ -164,8 +164,8 @@ def test_tras_max_arranques_pasa_a_error_y_no_se_reintenta_mas(sesion, llamadas,
     sesion.expire_all()
     assert sesion.get(Documento, doc.id).estado_analisis == "error"
     [alerta] = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)).all()
-    assert (alerta.codigo, alerta.severidad, alerta.version_resultado) == ("SYS-001", "critica", None)
-    assert "reintentos agotados" in alerta.mensaje
+    assert (alerta.codigo, alerta.severidad, alerta.version_resultado) == ("SYS-007", "critica", None)
+    assert alerta.mensaje.startswith("Reintentos agotados al reanudar el analisis (3 de 3)")
     assert "reintentos agotados pasan a error" in caplog.text and "p.pdf" not in caplog.text  # solo ids
     assert ingesta.reanudar_pendientes(sesion) == [] and len(llamadas) == 3  # ni se relanza ni se vuelve a tocar
     assert len(sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)).all()) == 1

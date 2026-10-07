@@ -116,7 +116,7 @@ daemon: respeta el semaforo, un reproceso por confirmar otro tipo sigue con ese 
 espera. `completado` y `error` no se tocan. El log solo lleva el numero de documentos y sus ids.
 Limite de reintentos (`MAX_REINTENTOS_REANUDAR`, 3 por defecto): cada relanzamiento suma 1 a
 `documentos.intentos_reanudar` (migracion 0006) y un analisis que termina lo vuelve a 0. Un documento que ya se
-relanzo esas veces no se relanza mas: pasa a `error` con una `SYS-001` de plataforma ("reintentos agotados", sin
+relanzo esas veces no se relanza mas: pasa a `error` con una `SYS-007` ("reintentos agotados al reanudar el analisis", sin
 `version_resultado`), se regenera el resumen y sale el webhook `documento.error`. Asi un documento que tumba la API
 (p. ej. por RAM) no la tumba en cada arranque. Vale
 para un solo proceso uvicorn: con varios workers cada uno relanzaria los mismos documentos (haria falta

@@ -7,7 +7,7 @@ ADR-013 (retirar documentos, propuesta).
 
 | Metodo | Ruta | Rol | Descripcion | Respuesta |
 |---|---|---|---|---|
-| POST | /auth/login | - | JSON `{usuario, contrasena}` (no formulario OAuth2) | `{access_token, rol, expires_in}` (segundos) |
+| POST | /auth/login | - | JSON `{usuario, contrasena}` (no formulario OAuth2); `429 DEMASIADOS_INTENTOS` con `Retry-After` tras demasiados fallos (ADR-011) | `{access_token, rol, expires_in}` (segundos) |
 | GET | /auth/yo | todos | Recuperar la sesion al recargar | `{usuario, rol}` |
 | GET | /procesos | admin, integrador, revisor | Procesos configurados | lista de `Proceso` (ver "Formas de respuesta") |
 | POST | /folios | integrador, revisor | `{proceso, referencia_externa?}` | `{folio, estado_general}` |
@@ -100,7 +100,7 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   `Cache-Control: no-store`; funciona con el folio cerrado; `422 PETICION_INVALIDA` si el campo no esta en
   la ficha o no es sensible, `409 DOCUMENTO_EN_PROCESO` o `DOCUMENTO_CON_ERROR`, `404
   DOCUMENTO_NO_ENCONTRADO`. Cada llamada correcta deja `dato_revelado` con `detalle: {campo}`, nunca el valor.
-  `motivo` es opcional (ADR-010 A4c, propuesta): texto de 3 a 200 caracteres (fuera de rango, `422
+  `motivo` es opcional (ADR-010 A4c): texto de 3 a 200 caracteres (fuera de rango, `422
   PETICION_INVALIDA`); si viene, va en `detalle.motivo` tapado con la misma barrera que los logs (A5).
 
 - Documentos retirados (ADR-013, propuesta): `POST /documentos/{id}/retirar` con `{motivo}` (obligatorio, 3 a

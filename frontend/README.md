@@ -159,6 +159,8 @@ hace fallar el build si queda algun rastro.
   (pathname, search y hash: `RutaProtegida` la guarda, en todas las rutas protegidas), pero solo si es
   interna (`utilidades/navegacion.ts`, `rutaInternaSegura`): empieza por una sola `/`, sin `//`, URL
   absoluta, barras invertidas ni caracteres de control, y no es `/login`. Si no, va a `/folios`.
+  Tras 5 fallos de un usuario en 15 minutos la API responde `429 DEMASIADOS_INTENTOS` (ADR-011) y el login
+  muestra "Demasiados intentos fallidos..."; los mocks aplican el mismo limite (`mocks/logica.ts`).
 - Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
@@ -435,7 +437,7 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   cuenta para la cobertura, las comparaciones, la recomendacion ni las bloqueantes (`cuentaEnElFolio` en
   `utilidades/expediente.ts`). Los mocks lo implementan como la API (`recalcularDuplicados` y los filtros de
   `mocks/logica.ts`); en los datos, el comprobante duplicado de ONB-2026-000001 esta retirado.
-- Post-MVP (ADR-010 A4c, propuesta): junto a "Mostrar", un campo corto "Motivo (opcional)" que no bloquea; se
+- Post-MVP (ADR-010 A4c, aceptada): junto a "Mostrar", un campo corto "Motivo (opcional)" que no bloquea; se
   envia como `motivo` si tiene de 3 a 200 caracteres. La API (y `enmascararTexto` en los mocks) lo guarda
   tapado en `dato_revelado`, y la auditoria lo muestra como "Motivo: ...".
 - HECHO (H16): antecedentes del folio en el expediente (ver "Pantallas"). En los mocks, el folio 2 y el 4 tienen

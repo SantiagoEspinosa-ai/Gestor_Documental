@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     secret_key: SecretStr
     jwt_algoritmo: str = "HS256"
     jwt_expira_minutos: int = 480
+    # Limite de intentos de login (ADR-011): con login_max_fallidos fallos de un usuario dentro de la ventana,
+    # 429 DEMASIADOS_INTENTOS hasta que el mas antiguo salga de ella
+    login_max_fallidos: int = Field(5, gt=0)
+    login_ventana_minutos: int = Field(15, gt=0)
 
     # BD: SecretStr porque la cadena de conexion lleva la contrasena
     database_url: SecretStr
@@ -56,7 +60,7 @@ class Settings(BaseSettings):
     max_procesamientos_simultaneos: int = Field(1, gt=0)
     # Al arrancar, relanzar los analisis que un reinicio dejo en pendiente o procesando (ingesta.servicio)
     reanudar_analisis_al_arrancar: bool = True
-    # Veces que se relanza un mismo analisis interrumpido; al superarlo, el documento pasa a error (SYS-001)
+    # Veces que se relanza un mismo analisis interrumpido; al superarlo, el documento pasa a error (SYS-007)
     max_reintentos_reanudar: int = Field(3, ge=1)
 
     # Motor de analisis (H10): real = orquestador de PERSONA_2 (Ollama); stub = sin Ollama, solo pruebas (e2e de humo).
