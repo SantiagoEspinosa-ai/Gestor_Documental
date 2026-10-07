@@ -323,7 +323,10 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | ADR-007 | La confianza de campo y de clasificación la calcula el código, no el modelo | Aceptado |
 | ADR-008 | Auditoría paginada y `referencia_externa` en la lista de folios | Aceptado |
 | ADR-009 | Valor reservado `desconocido` en `tipo_documental_detectado`; un documento `desconocido` no cubre ningún requerido y genera EXP-002 informativa | Aceptado (PR #14 y #17) |
-| ADR-010 | Etapa 3: enmascaramiento en la API con "mostrar" auditado, procesos en solo lectura y forma de los antecedentes | Aceptado (PR #21 y #24) |
+| ADR-010 | Etapa 3: enmascaramiento en la API con "mostrar" auditado, procesos en solo lectura y forma de los antecedentes | Aceptado (PR #21 y #24); adenda A4b y A4c aceptada (PR #50 y #51) |
+| ADR-011 | Límite de intentos de login: `429 DEMASIADOS_INTENTOS` tras 5 fallos de un usuario en 15 minutos | Aceptado (PR #52) |
+| ADR-012 | El integrador solo accede a los folios que ha creado | Aceptado (PR #55 y #57) |
+| ADR-013 | Retirar y restaurar documentos sin borrarlos | Propuesto (PR #59, en revisión) |
 
 ## 12. Limitaciones conocidas y evolución después del MVP
 
@@ -332,8 +335,7 @@ demo; todas tienen un camino de evolución.
 
 | Limitación hoy | Por qué se acepta en el MVP | Evolución propuesta |
 | --- | --- | --- |
-| El análisis corre en el mismo proceso de la API (BackgroundTask con semáforo); al arrancar se reanudan los análisis interrumpidos (sin límite de intentos: fila siguiente) | Un solo servidor y un análisis a la vez bastan para la demo; sin piezas nuevas que desplegar | Un worker aparte con una cola persistente de trabajos, que permita varios procesos y reintentos con límite |
-| Al arrancar se reanudan los análisis interrumpidos sin límite de intentos | Evita documentos atascados tras un reinicio | Contador de intentos por documento que lo pase a `error` tras N fallos, para que un documento que tumba el backend (p. ej. por RAM) no lo tumbe en bucle |
+| El análisis corre en el mismo proceso de la API (BackgroundTask con semáforo); al arrancar se reanudan los análisis interrumpidos, como mucho `MAX_REINTENTOS_REANUDAR` veces (después, `error` con `SYS-007`, PR #54) | Un solo servidor y un análisis a la vez bastan para la demo; sin piezas nuevas que desplegar | Un worker aparte con una cola persistente de trabajos, que permita varios procesos |
 | La web se sirve con el servidor de desarrollo de Vite dentro de Compose | Arranque rápido y recarga en caliente durante el desarrollo | Un proxy (nginx o Caddy) con TLS que sirva el build estático y haga de entrada única a la API |
 | Webhooks sin outbox: si la API se reinicia en mitad de los reintentos, ese aviso se pierde | Los reintentos (1, 5 y 25 s) cubren los fallos breves del receptor; el estado siempre se puede consultar por la API | Una tabla outbox en la misma transacción, con reintentos persistentes y una cola de fallidos (dead letter) |
 | El mismo JWT para las personas y para el integrador | Un solo mecanismo de autenticación, con roles comprobados en cada petición | Credenciales de servicio con scopes para el integrador y cookie httpOnly en el navegador |
@@ -341,6 +343,12 @@ demo; todas tienen un camino de evolución.
 | S3 con SSE-S3 y la no-sobrescritura garantizada por el código; región `us-east-2` | Cifrado en reposo sin coste ni gestión de claves; el usuario IAM no puede borrar | SSE-KMS, Versioning u Object Lock; revisar la región por residencia de datos |
 | Memoria de folios con un fragmento de texto del `resumen.md` enmascarado | Suficiente para los antecedentes del MVP | Retención definida y borrado del fragmento junto con el folio |
 | OpenRouter bloqueado por defecto y solo con datos ficticios (ADR-003) | Los datos reales nunca salen del equipo | Si se activa con datos reales, definir antes qué se envía y con qué garantías |
+| El bloqueo del login cuenta por nombre de usuario: un tercero puede bloquear a propósito a un usuario conocido durante 15 minutos | Aceptado en el ADR-011: es mejor que permitir la fuerza bruta | Contar por usuario e IP, o pedir un CAPTCHA tras varios fallos |
+| PostgreSQL con la contraseña de desarrollo (`gestor/gestor`) | Mitigado: los puertos solo se publican en `127.0.0.1` (PR #48); cambiarla exige recrear el volumen | Contraseña propia en `.env` y volumen recreado después de la demo |
+| En Windows, `localhost` resuelve antes `::1` y los puertos solo escuchan en IPv4 | Basta con usar `127.0.0.1` (README, PR #53) | Publicar también los puertos en `[::1]` |
+| Sin `SYS-006` "documento demasiado grande" (pendiente de PERSONA_2): un documento que supera el límite de páginas o de píxeles queda en `error` sin alerta visible | Los límites protegen la memoria del equipo; el caso no sale en la demo | Alerta `SYS-006` con el motivo, para que el revisor sepa por qué falló |
+| La base de conocimiento con embeddings está fuera del MVP (R10); el RAG es la memoria de folios | La memoria de folios cubre los antecedentes de la demo | Base de conocimiento con pgvector, si se necesita |
+| El integrador no tiene listado de folios (`GET /folios` da 403, ADR-012) | Solo consulta los folios que crea, por su número | Un listado filtrado por dueño, que cambia el contrato y la UI |
 
 ### Arquitectura objetivo (post-MVP): PROPUESTA
 
