@@ -280,7 +280,7 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
 
     Limite de reintentos: cada relanzamiento suma 1 a `intentos_reanudar` (un analisis que termina lo vuelve a
     0). Un documento que ya se relanzo MAX_REINTENTOS_REANUDAR veces no se relanza mas: pasa a `error` con una
-    SYS-001 de plataforma ("reintentos agotados"), se regenera el resumen y se avisa por webhook
+    SYS-007 ("reintentos agotados al reanudar el analisis"), se regenera el resumen y se avisa por webhook
     (`documento.error`). Asi un documento que tumba la API (p. ej. por RAM) no la tumba en cada arranque.
 
     Limitacion conocida: vale para un solo proceso uvicorn. Con varios workers, cada uno relanzaria los
@@ -296,10 +296,10 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
     relanzar = [d for d in documentos if d.intentos_reanudar < maximo]
     for doc in agotados:
         doc.estado_analisis = EstadoAnalisis.error.value
-        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-001",
+        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-007",
                             severidad=Severidad.critica.value, confianza=1.0,
-                            mensaje=f"Analisis no completado: reintentos agotados al reanudar ({doc.intentos_reanudar} "
-                                    f"de {maximo}); vuelve a subir el documento"))
+                            mensaje=f"Reintentos agotados al reanudar el analisis ({doc.intentos_reanudar} de {maximo}); "
+                                    "vuelve a subir el documento"))
     for doc in relanzar:
         doc.intentos_reanudar += 1
     pendientes = [(d.id, d.tipo_documental_confirmado) for d in relanzar]
