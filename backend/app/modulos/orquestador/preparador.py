@@ -3,6 +3,8 @@ Prepara un documento para el motor de IA: modalidad, texto y render de cada pagi
 - pdf_digital: capa de texto de cada pagina + PNG a 150 dpi.
 - pdf_escaneado: PNG a 200 dpi; por pagina, capa de texto si supera el umbral (PDF mixto) y OCR si no.
 - imagen: la propia imagen (orientada segun EXIF, en PNG) + OCR.
+Antes de renderizar o decodificar nada se comprueban MAX_PAGINAS_DOCUMENTO y MAX_PIXELES_PAGINA (modalidad.py):
+si se superan, DocumentoDemasiadoGrande (un FormatoNoSoportado).
 Sin Tesseract, las paginas que necesitaban OCR quedan con texto None y se avisa en el log.
 """
 from __future__ import annotations
@@ -15,7 +17,14 @@ import pymupdf
 from PIL import Image, ImageOps
 
 from app.modulos.motor_ia.interfaces import DocumentoPreparado, Modalidad, Pagina
-from app.modulos.orquestador.modalidad import UMBRAL_CARACTERES_POR_PAGINA, FormatoNoSoportado, detectar
+from app.modulos.orquestador.modalidad import (
+    UMBRAL_CARACTERES_POR_PAGINA,
+    DocumentoDemasiadoGrande,
+    FormatoNoSoportado,
+    comprobar_paginas,
+    comprobar_pixeles,
+    detectar,
+)
 from app.modulos.orquestador.ocr import ErrorOCR, OCRProvider, TesseractOCR
 
 logger = logging.getLogger(__name__)
@@ -62,6 +71,10 @@ def _paginas_pdf(contenido: bytes, modalidad: Modalidad, lector: _LectorOCR) -> 
     dpi = DPI_DIGITAL if modalidad is Modalidad.pdf_digital else DPI_ESCANEADO
     paginas = []
     with pymupdf.open(stream=contenido, filetype="pdf") as documento:
+        comprobar_paginas(documento.page_count)
+        escala = dpi / 72  # el tamano de la pagina va en puntos (1/72 de pulgada)
+        for pagina in documento:
+            comprobar_pixeles(pagina.rect.width * escala, pagina.rect.height * escala)
         for numero, pagina in enumerate(documento, start=1):
             texto = pagina.get_text()
             png = pagina.get_pixmap(dpi=dpi, colorspace=pymupdf.csRGB, alpha=False).tobytes("png")
@@ -73,8 +86,11 @@ def _paginas_pdf(contenido: bytes, modalidad: Modalidad, lector: _LectorOCR) -> 
 
 def _pagina_imagen(contenido: bytes, lector: _LectorOCR) -> Pagina:
     try:
-        with Image.open(io.BytesIO(contenido)) as original:
+        with Image.open(io.BytesIO(contenido)) as original:  # solo lee la cabecera: aun no decodifica
+            comprobar_pixeles(*original.size)
             imagen = ImageOps.exif_transpose(original).convert("RGB")
+    except Image.DecompressionBombError as e:  # Pillow la lanza al abrir mas de 2 x MAX_IMAGE_PIXELS (~179 MP)
+        raise DocumentoDemasiadoGrande("imagen demasiado grande (Pillow la rechaza al abrirla)") from e
     except OSError as e:
         raise FormatoNoSoportado("imagen corrupta o ilegible") from e
     salida = io.BytesIO()
