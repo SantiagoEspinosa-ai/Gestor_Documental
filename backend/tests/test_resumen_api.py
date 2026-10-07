@@ -22,7 +22,7 @@ from app.modulos.expediente import servicio as expediente
 from app.modulos.ingesta import procesamiento
 from app.modulos.ingesta.servicio import ingestar
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 

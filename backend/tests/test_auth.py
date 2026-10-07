@@ -19,7 +19,7 @@ from app.core.modelos import Auditoria
 from app.main import app
 from app.modulos.api import auth
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 CONTRASENA = "contrasena-ficticia"
 LOGIN = "/api/v1/auth/login"
 

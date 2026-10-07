@@ -21,7 +21,7 @@ from app.modulos.rag import servicio as rag
 from tests import test_enmascaramiento_api as base
 from tests.test_enmascaramiento_api import entorno  # noqa: F401
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 AHORA = datetime.now(timezone.utc)
 REFERENCIA = "CLI-000101"
 

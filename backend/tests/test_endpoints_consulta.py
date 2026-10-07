@@ -15,7 +15,7 @@ from app.core.modelos import Auditoria, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 
 _spec = importlib.util.spec_from_file_location(
     "crear_usuario", Path(__file__).resolve().parents[2] / "scripts" / "crear_usuario.py")

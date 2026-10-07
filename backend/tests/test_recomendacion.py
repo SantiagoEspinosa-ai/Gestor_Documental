@@ -89,7 +89,7 @@ def test_nunca_rechazar(documentos, alertas):
 
 # --- en la API ---
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 

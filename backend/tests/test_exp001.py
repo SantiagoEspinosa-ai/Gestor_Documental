@@ -23,7 +23,7 @@ from app.modulos.expediente import servicio as expediente
 from app.modulos.ingesta import motor_stub, procesamiento
 from app.modulos.ingesta.servicio import ingestar
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 PDF = b"%PDF-1.4 documento ficticio"
