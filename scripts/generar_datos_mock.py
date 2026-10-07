@@ -58,6 +58,8 @@ HOY_MOCKS = date(2026, 9, 30)
 # ADR-009: valor reservado de tipo_documental_detectado (clasificado, pero sin ficha); nunca es una ficha
 TIPO_DESCONOCIDO = "desconocido"
 REVISOR, INTEGRADOR = "revisor.demo", "integrador.demo"  # usuarios de frontend/src/mocks/usuarios.ts
+# ADR-012: otro integrador ficticio, sin usuario para entrar; sus folios dan 404 a integrador.demo
+INTEGRADOR_OTRO = "integrador.otro"
 # Modelos de .env.example y docs/motor_ia/pruebas_ollama.md (PERSONA_2): texto para pdf_digital y vision
 # para pdf_escaneado e imagen. Siempre Ollama: con PERMITIR_PROVEEDORES_NO_PRIVADOS=false (ADR-003) el
 # respaldo comercial no se usa nunca, asi que los mocks no tienen SYS-005.
@@ -156,6 +158,7 @@ class DatosMock:
         self.contador_alertas = 0
         self.auditoria: list[dict] = []
         self.hashes_por_folio: dict[str, set[str]] = {}  # para `duplicado` en la auditoria de la subida
+        self.duenos: dict[str, str] = {}  # folio -> integrador que lo creo (ADR-012): sube sus documentos
 
     def alerta(self, codigo, mensaje, severidad, campo=None, confianza=1.0) -> dict:
         self.contador_alertas += 1
@@ -200,7 +203,7 @@ class DatosMock:
                    "nombre_archivo": archivo, "ruta": f"onboarding/2026/{secuencia:06d}/{uid}.{ext}",
                    "hash": hash_}}
         # Mismo detalle que la API real: sin nombre_archivo (los nombres de fichero suelen llevar el de la persona)
-        self.auditar(INTEGRADOR, "documento_subido", folio, uid,
+        self.auditar(self.duenos[folio], "documento_subido", folio, uid,
                      {"hash_sha256": hash_, "tamano_bytes": len(datos), "duplicado": duplicado}, subido)
         if estado != "completado":
             if estado == "error" and not fallo_plataforma:  # el motor devolvio un resultado en error (SYS-00x)
@@ -289,6 +292,11 @@ class DatosMock:
                                           for d in participantes}})
         return resultado
 
+    def crear_folio(self, folio, dueno, cuando) -> None:
+        """folio_creado con su integrador: los mocks sacan de aqui el dueno del folio (ADR-012)."""
+        self.duenos[folio] = dueno
+        self.auditar(dueno, "folio_creado", folio, None, {}, cuando)
+
     def recomendacion_global(self, documentos, alertas) -> str:
         """Como expediente/recomendacion.py (PR #9); no usa la recomendacion por documento (es del motor)."""
         if not documentos or any(d["estado_analisis"] != "completado" for d in documentos):
@@ -323,7 +331,7 @@ class DatosMock:
         folios = []
         # 1. Luis, pasaporte vencido: alertas de las 4 severidades (bloqueante, critica, preventiva, informativa)
         f, s, t0 = "ONB-2026-000001", 1, momento(28, 9, 15)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
+        self.crear_folio(f, INTEGRADOR, t0)
         d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1),
                             alertas_extra=[self.alerta("VAL-003", f"Valor de {c} tomado de la MRZ: no se leyo en la "
                                                        "zona visual", "informativa", c) for c in ("nacionalidad", "sexo")],
@@ -340,7 +348,7 @@ class DatosMock:
 
         # 2. Ana, domicilio distinto: CMP-001 en alertas_expediente, una correccion y un documento pendiente
         f, s, t0 = "ONB-2026-000002", 2, momento(29, 11, 40)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
+        self.crear_folio(f, INTEGRADOR, t0)
         d1 = self.documento(f, s, 1, "domicilio_distinto", "credencial_elector", "escaneado", t0 + timedelta(minutes=1),
                             correcciones=[("nombre_completo", "ANA EJEMPL0 PRUEBA", t0 + timedelta(minutes=25))])
         d2 = self.documento(f, s, 2, "domicilio_distinto", "comprobante_domicilio", "foto", t0 + timedelta(minutes=2),
@@ -355,7 +363,7 @@ class DatosMock:
         # comprobante en error no cubre su tipo: EXP-001 sigue (solo cuentan los completados). Y un documento
         # sin tipo declarado que el motor no reconoce (ADR-009): EXP-002 y no cubre ningun requerido
         f, s, t0 = "ONB-2026-000003", 3, momento(30, 8, 5)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
+        self.crear_folio(f, INTEGRADOR_OTRO, t0)
         d1 = self.documento(f, s, 1, "sano", "credencial_elector", "digital", t0 + timedelta(minutes=1))
         d2 = self.documento(f, s, 2, "sano", "pasaporte", "foto", t0 + timedelta(minutes=2), estado="error",
                             alertas_extra=[self.alerta("SYS-001", "Fallo del proveedor principal y sin respaldo", "critica")])
@@ -371,7 +379,7 @@ class DatosMock:
         # 4. Ana, todo correcto: folio cerrado (aprobado) con resumen. Misma referencia que el folio 2: es su
         # antecedente (ADR-010 C, H16)
         f, s, t0 = "ONB-2026-000004", 4, momento(25, 10, 0)
-        self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
+        self.crear_folio(f, INTEGRADOR_OTRO, t0)
         docs = [self.documento(f, s, i + 1, "sano", tipo, "digital", t0 + timedelta(minutes=i + 1))
                 for i, tipo in enumerate(("pasaporte", "credencial_elector", "comprobante_domicilio"))]
         # El revisor abre el original del pasaporte antes de decidir: original_visto, sin detalle

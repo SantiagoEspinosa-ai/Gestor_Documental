@@ -65,6 +65,9 @@ navegador. Un `npm run build` nunca los incluye, aunque `.env` diga `true`: la c
 hace fallar el build si queda algun rastro.
 - Usuarios ficticios (`src/mocks/usuarios.ts`): `admin.demo` / `demo-admin`, `revisor.demo` /
   `demo-revisor`, `integrador.demo` / `demo-integrador`. Token de 3600 s.
+  ADR-012: el integrador solo accede a los folios que ha creado (el dueno es el usuario de su `folio_creado` en la
+  auditoria): en los datos, ONB-2026-000001 y 000002 son de `integrador.demo` y 000003 y 000004 de
+  `integrador.otro` (ficticio, sin usuario); un folio ajeno da el mismo 404 que uno inexistente, como la API.
 - Token ficticio (`src/mocks/token.ts`): como un JWT, lleva dentro el usuario y la caducidad
   (`mock.<carga base64url>.<firma>`) y el mock lo valida sin memoria de lo que emitio. Por eso, igual
   que con la API real, la sesion sobrevive a una recarga o a escribir una URL en la barra. La "firma"
