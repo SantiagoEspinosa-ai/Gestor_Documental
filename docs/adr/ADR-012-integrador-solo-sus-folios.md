@@ -1,6 +1,6 @@
 # ADR-012: El integrador solo accede a los folios que ha creado
 
-Fecha: 2026-10-07. Estado: PROPUESTO (post-demo). Propone: PERSONA_1. Revisa: PERSONA_2.
+Fecha: 2026-10-07. Estado: ACEPTADO (2026-10-07, PERSONA_1 y PERSONA_2, PR #55). Propone: PERSONA_1. Revisa: PERSONA_2.
 Afecta al Contrato 2 (`docs/contratos/endpoints.md`) solo con una nota en las filas afectadas: no cambian ni
 los roles ni la forma de las respuestas.
 

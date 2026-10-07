@@ -1,6 +1,6 @@
 # ADR-011: Limite de intentos de login
 
-Fecha: 2026-10-07. Estado: PROPUESTO (pendiente de aceptar en el PR).
+Fecha: 2026-10-07. Estado: ACEPTADO (2026-10-07, PR #52).
 Propone: PERSONA_1. Afecta al Contrato 2 (`docs/contratos/endpoints.md`, linea de `POST /auth/login`) y al
 catalogo de errores (`docs/contratos/codigos_error.md`, codigo nuevo). No cambia el Contrato 1 ni la BD.
 
@@ -8,9 +8,9 @@ catalogo de errores (`docs/contratos/codigos_error.md`, codigo nuevo). No cambia
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| 1 | Tras 5 fallos de un usuario en 15 minutos, `429 DEMASIADOS_INTENTOS` con `Retry-After` | PERSONA_1 (`api/auth.py`) | Propuesta |
-| 2 | Se cuentan los `login` fallidos de la auditoria; sin estado nuevo ni migracion | PERSONA_1 | Propuesta |
-| 3 | El intento bloqueado se audita como `login` `{resultado: "bloqueado"}` y no cuenta | PERSONA_1 (API, UI y mocks) | Propuesta |
+| 1 | Tras 5 fallos de un usuario en 15 minutos, `429 DEMASIADOS_INTENTOS` con `Retry-After` | PERSONA_1 (`api/auth.py`) | Aceptada |
+| 2 | Se cuentan los `login` fallidos de la auditoria; sin estado nuevo ni migracion | PERSONA_1 | Aceptada |
+| 3 | El intento bloqueado se audita como `login` `{resultado: "bloqueado"}` y no cuenta | PERSONA_1 (API, UI y mocks) | Aceptada |
 
 ## Contexto
 - La revision de seguridad detecto que `POST /auth/login` no limita los intentos: se puede probar
@@ -32,6 +32,8 @@ catalogo de errores (`docs/contratos/codigos_error.md`, codigo nuevo). No cambia
 ## Riesgo aceptado
 - Al bloquear por usuario, cualquiera que conozca un nombre de usuario puede dejarlo sin entrar 15 minutos
   con 5 intentos. Para el MVP se acepta: es mejor que permitir fuerza bruta.
+- Nota de PERSONA_2 en la revision: al contar por nombre de usuario, un tercero podria bloquear a
+  proposito a un usuario conocido. Aceptable para el MVP.
 - Evolucion: limitar por usuario e IP, o pedir un CAPTCHA tras varios fallos.
 
 ## Consecuencias
