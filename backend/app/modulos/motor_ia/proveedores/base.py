@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
@@ -27,8 +28,10 @@ ANCHO_MAX_IMAGEN = 1000              # px; sube aciertos y ahorra ~20 % de tiemp
 MAX_PAGINAS_POR_LLAMADA_VISION = 4   # mas paginas se procesan por lotes
 MAX_CARACTERES_TEXTO = 20000
 TIMEOUT_TEXTO_S = 120
-# Vision: medido en CPU, 1 pagina A4 = 133 s y 4 paginas = 499 s solo de lectura del prompt.
-TIMEOUT_VISION_BASE_S = 60
+# Vision: medido en CPU, 1 pagina A4 = 133 s y 4 paginas = 499 s solo de lectura del prompt. La base cubre ademas el
+# primer uso con OLLAMA_MAX_LOADED_MODELS=1: cambiar de modelo y cargar qwen2.5vl:3b (40 s) + inferir (~132 s) =
+# 172 s medidos, y en la plataforma paso de 210 s (spec, seccion 13). Configurable: OLLAMA_TIMEOUT_VISION_BASE_S.
+TIMEOUT_VISION_BASE_S = 180
 TIMEOUT_VISION_POR_PAGINA_S = 150
 KEEP_ALIVE = "10m"
 # Regla del enrutador (spec, seccion 3): modelo de texto si TODAS las paginas tienen al menos estos caracteres
@@ -328,8 +331,24 @@ def postprocesar_clasificacion(respuesta: _Clasificacion, tipos_posibles: Iterab
 # --- Imagenes y texto ---
 
 def timeout_vision(n_imagenes: int) -> float:
-    """Timeout de una peticion de vision: base + un margen por imagen (4 imagenes -> 660 s)."""
-    return TIMEOUT_VISION_BASE_S + TIMEOUT_VISION_POR_PAGINA_S * max(n_imagenes, 1)
+    """Timeout de una peticion de vision: base + un margen por imagen (por defecto, 1 imagen -> 330 s y
+    4 imagenes -> 780 s)."""
+    return timeout_vision_base() + TIMEOUT_VISION_POR_PAGINA_S * max(n_imagenes, 1)
+
+
+def timeout_vision_base() -> float:
+    """`OLLAMA_TIMEOUT_VISION_BASE_S` del entorno (segundos > 0) o `TIMEOUT_VISION_BASE_S`. Se lee en cada llamada,
+    como `ZONA_HORARIA` (ADR-005: sin `core.config`). Un valor no numerico o <= 0 es un error de configuracion."""
+    valor = os.environ.get("OLLAMA_TIMEOUT_VISION_BASE_S")
+    if not valor:
+        return TIMEOUT_VISION_BASE_S
+    try:
+        segundos = float(valor)
+    except ValueError:
+        segundos = 0.0
+    if not segundos > 0:  # tambien NaN
+        raise ValueError(f"OLLAMA_TIMEOUT_VISION_BASE_S: debe ser un numero de segundos mayor que 0: {valor!r}")
+    return segundos
 
 
 def reducir_imagen(png: bytes, ancho_max: int = ANCHO_MAX_IMAGEN) -> bytes:

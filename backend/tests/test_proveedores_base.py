@@ -266,8 +266,23 @@ def test_recortar_texto():
     assert [p.numero for p in salida] == [1, 2, 3, 4]
 
 
-def test_timeout_vision():
-    assert timeout_vision(4) == 660 and timeout_vision(1) == 210 and timeout_vision(0) == 210
+def test_timeout_vision(monkeypatch):
+    monkeypatch.delenv("OLLAMA_TIMEOUT_VISION_BASE_S", raising=False)
+    # Base de 180 s: cubre el primer uso de vision con el modelo de texto cargado (172 s medidos)
+    assert timeout_vision(4) == 780 and timeout_vision(1) == 330 and timeout_vision(0) == 330
+
+
+@pytest.mark.parametrize("valor, base", [("90", 90.0), ("240.5", 240.5), ("", 180.0)])
+def test_timeout_vision_configurable(monkeypatch, valor, base):
+    monkeypatch.setenv("OLLAMA_TIMEOUT_VISION_BASE_S", valor)
+    assert timeout_vision(1) == base + 150
+
+
+@pytest.mark.parametrize("valor", ["0", "-5", "abc", "nan"])
+def test_timeout_vision_invalido_es_error_de_configuracion(monkeypatch, valor):
+    monkeypatch.setenv("OLLAMA_TIMEOUT_VISION_BASE_S", valor)
+    with pytest.raises(ValueError, match="OLLAMA_TIMEOUT_VISION_BASE_S"):
+        timeout_vision(1)
 
 
 # --- Regla de texto suficiente y reintento con vision ---

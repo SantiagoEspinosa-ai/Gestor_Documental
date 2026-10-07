@@ -5,6 +5,7 @@ El contenido manda sobre la extension: se mira la firma de los primeros bytes.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import PurePath
 
 import pymupdf
@@ -24,8 +25,53 @@ _FIRMAS = {
 _EXTENSIONES = {"pdf": "pdf", "png": "png", "jpg": "jpeg", "jpeg": "jpeg"}
 
 
+# Limites antes de procesar (seguridad): un PDF con miles de paginas o una pagina gigante agotaria la RAM al
+# renderizar. Configurables en el entorno, como ZONA_HORARIA (ADR-005: sin core.config). Los documentos del MVP
+# tienen 1-4 paginas; 50 MP admite la foto de un movil de 48 MP (8000 x 6000) y un A4 a 200 dpi son 3,9 MP.
+MAX_PAGINAS_DOCUMENTO_POR_DEFECTO = 20
+MAX_PIXELES_PAGINA_POR_DEFECTO = 50_000_000
+
+
 class FormatoNoSoportado(ValueError):
     """El archivo no es un PDF, PNG o JPEG legible."""
+
+
+class DocumentoDemasiadoGrande(FormatoNoSoportado):
+    """Supera MAX_PAGINAS_DOCUMENTO o MAX_PIXELES_PAGINA: se rechaza sin renderizarlo. Es un FormatoNoSoportado,
+    asi que la plataforma lo trata igual (documento en `error`) y el CLI sale con 2."""
+
+
+def _limite(nombre: str, por_defecto: int) -> int:
+    """Entero > 0 del entorno o el valor por defecto. Otro valor es un error de configuracion."""
+    valor = os.environ.get(nombre)
+    if not valor:
+        return por_defecto
+    try:
+        numero = int(valor)
+    except ValueError:
+        numero = 0
+    if numero <= 0:
+        raise ValueError(f"{nombre}: debe ser un entero mayor que 0: {valor!r}")
+    return numero
+
+
+def max_paginas_documento() -> int:
+    return _limite("MAX_PAGINAS_DOCUMENTO", MAX_PAGINAS_DOCUMENTO_POR_DEFECTO)
+
+
+def max_pixeles_pagina() -> int:
+    return _limite("MAX_PIXELES_PAGINA", MAX_PIXELES_PAGINA_POR_DEFECTO)
+
+
+def comprobar_paginas(n_paginas: int) -> None:
+    if n_paginas > (maximo := max_paginas_documento()):
+        raise DocumentoDemasiadoGrande(f"el PDF tiene {n_paginas} paginas; el maximo es {maximo} (MAX_PAGINAS_DOCUMENTO)")
+
+
+def comprobar_pixeles(ancho: float, alto: float) -> None:
+    if ancho * alto > (maximo := max_pixeles_pagina()):
+        raise DocumentoDemasiadoGrande(
+            f"una pagina de {int(ancho)} x {int(alto)} px supera {maximo} px (MAX_PIXELES_PAGINA)")
 
 
 def _formato_por_contenido(contenido: bytes) -> str | None:
@@ -46,6 +92,7 @@ def caracteres_por_pagina(contenido: bytes) -> list[int]:
             raise FormatoNoSoportado("PDF protegido con contrasena")
         if documento.page_count == 0:
             raise FormatoNoSoportado("PDF sin paginas")
+        comprobar_paginas(documento.page_count)  # antes de recorrer las paginas
         return [len("".join(pagina.get_text().split())) for pagina in documento]
 
 
