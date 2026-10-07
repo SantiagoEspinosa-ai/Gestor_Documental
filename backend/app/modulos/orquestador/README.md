@@ -1,7 +1,7 @@
 # orquestador  (responsable: PERSONA_2)
 
 Prepara cada documento y orquesta su analisis. Los demas modulos solo importan `servicio.py`
-(`procesar_documento`, `preparar`, `detectar`, `FormatoNoSoportado`, `buscar_mrz`, `validar_digitos`, `Mrz`).
+(`procesar_documento`, `preparar`, `detectar`, `FormatoNoSoportado`, `DocumentoDemasiadoGrande`, `buscar_mrz`, `validar_digitos`, `Mrz`).
 
 ## `procesamiento.py`: `procesar_documento` (lo conecta la plataforma)
 `procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia,
@@ -25,7 +25,12 @@ Salida: `DocumentoPreparado` (Contrato 3), con las paginas en orden y numeradas 
   inyectan uno falso.
 - Sin Tesseract (p. ej. Windows fuera de Docker): las paginas que necesitaban OCR quedan con
   `texto=None` y se avisa una vez en el log, sin el nombre del archivo. La vision sigue funcionando.
-- Imagen corrupta: `FormatoNoSoportado`. Sin limite de paginas (el proveedor trabaja por lotes).
+- Imagen corrupta: `FormatoNoSoportado`.
+- Limites (seguridad), antes de renderizar o decodificar nada: `MAX_PAGINAS_DOCUMENTO` (por defecto 20) y
+  `MAX_PIXELES_PAGINA` (por defecto 50 000 000; en un PDF, el tamano de la pagina al dpi del render). Si se
+  superan: `DocumentoDemasiadoGrande`, que es un `FormatoNoSoportado` (la plataforma deja el documento en
+  `error` y el CLI sale con 2). Un valor no entero o <= 0 en el entorno es un `ValueError` de configuracion.
+  Tambien la `DecompressionBombError` de Pillow pasa a `DocumentoDemasiadoGrande`.
 
 ## `ocr.py`
 `OCRProvider` (Protocol): `extraer_texto(imagen: bytes) -> str`. `TesseractOCR`: idiomas de
