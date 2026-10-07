@@ -24,6 +24,8 @@ de FastAPI y los de rutas o metodos inexistentes. Nunca el `{"detail": ...}` por
 | 409 | `DECISION_BLOQUEADA` | `aprobar` con una bloqueante que impide aprobar (ADR-006, 2.2) |
 | 409 | `DOCUMENTO_EN_PROCESO` | Accion del revisor sobre un documento `pendiente` o `procesando` |
 | 409 | `DOCUMENTO_CON_ERROR` | Corregir datos o confirmar la clasificacion de un documento en `error`: "El documento no se pudo procesar; vuelve a subirlo" |
+| 409 | `DOCUMENTO_RETIRADO` | Retirar un documento ya retirado, o corregir, confirmar la clasificacion o resolver alertas de un documento retirado (ADR-013) |
+| 409 | `DOCUMENTO_NO_RETIRADO` | Restaurar un documento que no esta retirado (ADR-013) |
 | 409 | `FOLIO_CERRADO` | Accion sobre un folio `aprobado` o `rechazado` (ADR-006, G) |
 | 409 | `SECUENCIA_AGOTADA` | Un proceso supera 999999 folios en un anio (POST /folios) |
 | 413 | `ARCHIVO_DEMASIADO_GRANDE` | El archivo supera 20 MB |

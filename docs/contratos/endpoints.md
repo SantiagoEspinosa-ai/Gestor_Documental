@@ -2,7 +2,8 @@
 
 Base: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Roles: `admin`, `revisor`, `integrador`.
 Errores: `{ "codigo": "...", "mensaje": "..." }`, catalogo en `docs/contratos/codigos_error.md`.
-Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) y ADR-010 (enmascaramiento).
+Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30), ADR-010 (enmascaramiento) y
+ADR-013 (retirar documentos, propuesta).
 
 | Metodo | Ruta | Rol | Descripcion | Respuesta |
 |---|---|---|---|---|
@@ -16,6 +17,8 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) 
 | GET | /documentos/{id} | todos | Resultado del documento | `ResultadoDocumento` |
 | GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream); audita `original_visto` | `{url}` |
 | POST | /documentos/{id}/revelar | revisor, admin | `{campo, motivo?}`: valor real y vigente de un campo sensible (ADR-010 A4 y A4c; ver "Reglas") | `{campo, valor}` |
+| POST | /documentos/{id}/retirar | revisor, admin | `{motivo}` (3 a 200 caracteres, se guarda tapado): el documento deja de contar para el folio; nada se borra (ADR-013; ver "Reglas") | `ResultadoDocumento` |
+| POST | /documentos/{id}/restaurar | revisor, admin | Sin cuerpo: deshace la retirada (ADR-013; ver "Reglas") | `ResultadoDocumento` |
 | PATCH | /documentos/{id}/datos | revisor | `{campo: valor}` corrige datos; se guarda en `correcciones` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/confirmar-clasificacion | revisor | `{tipo_documental}` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` | `ResultadoDocumento` |
@@ -46,8 +49,9 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   creado_en}`. `accion` es una lista cerrada: `login`, `folio_creado`, `documento_subido`,
   `documento_procesado`, `dato_corregido`, `clasificacion_confirmada`, `alerta_resuelta`,
   `decision_tomada` (y `dato_revelado` en la etapa 3), `original_visto` (post-MVP: cada
-  `GET /documentos/{id}/original` correcto, con `detalle` vacio). `detalle` nunca contiene valores sensibles sin
-  enmascarar.
+  `GET /documentos/{id}/original` correcto), `documento_retirado` y `documento_restaurado` (ADR-013).
+  `detalle` va vacio en `original_visto` y `documento_restaurado`; en `documento_retirado`, `{motivo}` tapado.
+  `detalle` nunca contiene valores sensibles sin enmascarar.
 - `RespuestaAntecedentes` (ADR-010 C): siempre `200` (salvo `404 FOLIO_NO_ENCONTRADO`): `{permitido,
   motivo: "proceso_sin_antecedentes" | "folio_sin_referencia" | null, elementos: [Antecedente]}`.
   `permitir_antecedentes=false` en el proceso: `permitido: false` y `motivo: "proceso_sin_antecedentes"`;
@@ -98,6 +102,17 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   DOCUMENTO_NO_ENCONTRADO`. Cada llamada correcta deja `dato_revelado` con `detalle: {campo}`, nunca el valor.
   `motivo` es opcional (ADR-010 A4c, propuesta): texto de 3 a 200 caracteres (fuera de rango, `422
   PETICION_INVALIDA`); si viene, va en `detalle.motivo` tapado con la misma barrera que los logs (A5).
+
+- Documentos retirados (ADR-013, propuesta): `POST /documentos/{id}/retirar` con `{motivo}` (obligatorio, 3 a
+  200 caracteres; se guarda tapado como el de "mostrar") y `POST /documentos/{id}/restaurar`, para revisor y
+  admin (integrador `403 SIN_PERMISO`). Solo con el folio `en_revision` (`409 FOLIO_CERRADO`); retirar exige
+  que el documento no este `pendiente` ni `procesando` (`409 DOCUMENTO_EN_PROCESO`; en `error` si se puede) y
+  que no este ya retirado (`409 DOCUMENTO_RETIRADO`); restaurar uno no retirado, `409 DOCUMENTO_NO_RETIRADO`.
+  El documento sigue en el expediente con `retirado: {en, por, motivo}` (`null` si cuenta), pero no cuenta para
+  EXP-001, EXP-002, las comparaciones ni CMP-001, la recomendacion global, las bloqueantes ni los duplicados
+  (`DUP-001`). Sobre un retirado no se corrige, ni se confirma la clasificacion, ni se resuelven sus alertas
+  (`409 DOCUMENTO_RETIRADO`); si se consulta. Nada se borra (BD ni S3). `resumen.md` lo lista al final, en
+  "Documentos retirados", con el motivo tapado. Sin webhook: el estado del folio no cambia.
 
 ## Webhook (salida)
 Configurable por proceso. `POST <url>` con cabecera `X-Firma: sha256=<HMAC(cuerpo, WEBHOOK_SECRET_HMAC)>`

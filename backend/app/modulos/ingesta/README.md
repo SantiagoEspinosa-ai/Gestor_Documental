@@ -31,7 +31,12 @@ minimo con el estado de la fila y sus alertas (con `id`). La tabla `alertas` es 
 de las alertas; en la etapa 2 las alertas del motor se guardan en ella al guardar el resultado.
 Encima del resultado vigente aplica las correcciones del revisor de ESA version, en orden: gana el
 ultimo valor, confianza 1.0, evidencia `correccion_revisor` y la lista en `correcciones` (ADR-006 2.4).
-Las correcciones de versiones anteriores no se aplican.
+Las correcciones de versiones anteriores no se aplican. `retirado` (ADR-013) sale de las columnas del
+documento, nunca del resultado del motor.
+
+`recalcular_dup001(sesion, folio)` (ADR-013): DUP-001 de los documentos no retirados; un retirado no hace
+duplicado a otro (la subida tampoco lo cuenta). `tapar_texto_libre(resultado, texto)`: texto libre sobre un
+documento (motivo de mostrar o de retirar) tapado con `enmascaramiento.enmascarar_texto`.
 
 `obtener_resultado(sesion, documento_id) -> ResultadoDocumento`: `construir_resultado` del documento;
 404 `DOCUMENTO_NO_ENCONTRADO` si no existe o el id no es un UUID.

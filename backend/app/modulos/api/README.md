@@ -149,6 +149,19 @@ Acciones del revisor (E2.6). Solo rol revisor (403 para el resto; 401 sin token)
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`, `DOCUMENTO_EN_PROCESO`,
   `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA` (nombra el campo, nunca el valor).
 
+### POST /api/v1/documentos/{id}/retirar y /restaurar (revisor, admin; ADR-013, propuesta)
+- Retirar: `{motivo}` obligatorio (3 a 200 caracteres, sin campos extra), guardado tapado con
+  `enmascarar_texto`. El documento sigue en el folio con `retirado: {en, por, motivo}` pero no cuenta para
+  EXP-001/EXP-002, comparaciones y CMP-001, recomendacion global, bloqueantes ni DUP-001. Nada se borra.
+- Restaurar: sin cuerpo; deshace la retirada y vuelve a contar.
+- Salida 200: `ResultadoDocumento` (enmascarado). Regenera `resumen.md`. Sin webhook. Audita
+  `documento_retirado` con `{motivo}` tapado y `documento_restaurado` sin detalle.
+- Errores: 403 `SIN_PERMISO` (integrador); 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `FOLIO_CERRADO`,
+  `DOCUMENTO_EN_PROCESO` (retirar uno pendiente o procesando; en `error` si se puede), `DOCUMENTO_RETIRADO`
+  (ya retirado) y `DOCUMENTO_NO_RETIRADO` (restaurar uno que no lo esta); 422 `PETICION_INVALIDA`.
+- Sobre un retirado, corregir datos, confirmar la clasificacion y resolver sus alertas dan 409
+  `DOCUMENTO_RETIRADO`.
+
 ### POST /api/v1/documentos/{id}/confirmar-clasificacion (ADR-006 2.5)
 - Entrada: `{tipo_documental}` (tiene que existir su ficha).
 - Mismo tipo con el que se extrajo: guarda `tipo_documental_confirmado` y resuelve las `CLS-001`
@@ -183,4 +196,6 @@ ni contrasenas.
 | `alerta_resuelta` | `{alerta_id, codigo, aplica}` |
 | `decision_tomada` | `{decision}` |
 | `dato_revelado` | `{campo, motivo?}` (ADR-010 A4 y A4c; nunca el valor; `motivo` tapado) |
+| `documento_retirado` | `{motivo}` tapado (ADR-013) |
+| `documento_restaurado` | sin detalle (`{}`) (ADR-013) |
 | `original_visto` | sin detalle (`{}`): usuario, folio y documento van en sus columnas |

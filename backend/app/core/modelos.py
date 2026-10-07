@@ -26,11 +26,11 @@ ROLES = ("admin", "revisor", "integrador")
 ESTADOS_FOLIO = tuple(e.value for e in EstadoGeneral)
 DECISIONES = tuple(e.value for e in DecisionHumana)
 
-# ADR-006 1.5, ADR-010 A4 (dato_revelado) y original_visto (post-MVP). Sin CHECK en BD: anadir una accion no necesita migracion
+# ADR-006 1.5, ADR-010 A4 (dato_revelado), original_visto y documento_retirado/restaurado (ADR-013, post-MVP). Sin CHECK en BD: anadir una accion no necesita migracion
 ACCIONES_AUDITORIA = (
     "login", "folio_creado", "documento_subido", "documento_procesado", "dato_corregido",
     "clasificacion_confirmada", "alerta_resuelta", "decision_tomada", "dato_revelado",
-    "original_visto",
+    "original_visto", "documento_retirado", "documento_restaurado",
 )
 
 
@@ -119,6 +119,11 @@ class Documento(Base):
     estado_analisis: Mapped[str] = mapped_column(String(20), default=EstadoAnalisis.pendiente.value,
                                                  server_default=EstadoAnalisis.pendiente.value)
     creado_en: Mapped[datetime] = _creado_en()
+    # ADR-013: retirado = retirado_en no nulo. No cuenta para el folio; nada se borra (ni de la BD ni de S3).
+    # motivo_retirada se guarda ya tapado (enmascaramiento.enmascarar_texto)
+    retirado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retirado_por: Mapped[str | None] = mapped_column(String(100))
+    motivo_retirada: Mapped[str | None] = mapped_column(Text)
 
 
 class Resultado(Base):

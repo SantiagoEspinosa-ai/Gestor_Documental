@@ -23,6 +23,8 @@ export const MENSAJES_ERROR: Record<CodigoError | CodigoLocal, string> = {
   PETICION_INVALIDA: 'Los datos enviados no son válidos.',
   ERROR_INTERNO: 'Error interno del servidor. Inténtalo de nuevo más tarde.',
   DOCUMENTO_CON_ERROR: 'El documento terminó en error: no se puede corregir ni reclasificar.',
+  DOCUMENTO_RETIRADO: 'El documento está retirado del folio. Restáuralo antes de revisarlo.',
+  DOCUMENTO_NO_RETIRADO: 'El documento no está retirado.',
   SECUENCIA_AGOTADA: 'No quedan números de folio libres este año para el proceso.',
   SIN_CONEXION: 'No se pudo conectar con el servidor.',
   RESPUESTA_NO_VALIDA: 'La respuesta del servidor no tiene el formato esperado.',

@@ -9,6 +9,11 @@ Responsable: PERSONA_1. API publica: `servicio.py` (ADR-005). Los errores son `E
   Crea una `EXP-001` por cada tipo de `tipos_requeridos` del proceso (bloqueante, alerta de expediente
   con `documento_id` NULL, `campo` = tipo, mensaje con el `nombre_visible` de la ficha). Todo en la
   misma transaccion; audita `folio_creado`. Errores: 404 `PROCESO_NO_ENCONTRADO`, 409 `SECUENCIA_AGOTADA`.
+- ADR-013: los documentos retirados no cuentan para `recalcular_exp001`, `recalcular_exp002`, las
+  comparaciones y `recalcular_cmp001`, la recomendacion global ni las bloqueantes (siguen en el expediente).
+  `retirar_documento(sesion, documento_id, motivo, usuario)` y `restaurar_documento(sesion, documento_id,
+  usuario)` los marcan o desmarcan, recalculan EXP, CMP y DUP (`ingesta.recalcular_dup001`), auditan y
+  regeneran el resumen (con la seccion final "Documentos retirados").
 - `recalcular_exp001(sesion, folio)`: ajusta las EXP-001 a los documentos `completado` del folio. Tipo
   efectivo de cada documento: `tipo_documental_confirmado` > `tipo_documental_detectado` del resultado
   vigente > `tipo_declarado`. Tipo presente: borra sus EXP-001 sin revisar o confirmadas (`aplica` NULL o
