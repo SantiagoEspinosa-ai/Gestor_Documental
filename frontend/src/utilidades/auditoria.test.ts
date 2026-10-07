@@ -61,6 +61,9 @@ describe('detalle de la auditoria legible por accion', () => {
     expect(de('dato_revelado', { campo: 'clave_elector' })).toEqual(['Campo: clave elector'])
     expect(de('dato_revelado', { campo: 'curp', motivo: 'Lo pide el cliente: ****' })).toEqual(['Campo: curp', 'Motivo: “Lo pide el cliente: ****”'])
     expect(etiquetaAccion('dato_revelado')).toBe('Dato revelado')
+    expect(de('documento_retirado', { motivo: 'Subido por error ****' })).toEqual(['Motivo: “Subido por error ****”'])
+    expect(de('documento_restaurado', {})).toEqual([])
+    expect(etiquetaAccion('documento_retirado')).toBe('Documento retirado')
   })
 
   it('nunca muestra completos los valores que no son de la forma conocida', () => {

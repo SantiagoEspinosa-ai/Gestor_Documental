@@ -22,9 +22,14 @@ export function nombreTipo(tipo: string | null | undefined, fichas: readonly { n
 /** Regla 2.2 del ADR-006: una bloqueante impide aprobar mientras `aplica` no sea false (falso positivo) */
 export const bloquea = (a: Alerta) => a.severidad === 'bloqueante' && a.aplica !== false
 
-/** Alertas que impiden aprobar el folio, de documento y de expediente (regla 2.2) */
+/** ADR-013: un documento retirado sigue en el folio pero no cuenta (cobertura, comparaciones, recomendacion,
+ * bloqueantes, duplicados) */
+export const cuentaEnElFolio = (d: Pick<ResultadoDocumento, 'retirado'>) => !d.retirado
+
+/** Alertas que impiden aprobar el folio, de documento y de expediente (regla 2.2); sin las de los retirados */
 export function alertasQueBloquean(expediente: Pick<ResultadoExpediente, 'documentos' | 'alertas_expediente'>): Alerta[] {
-  return [...expediente.alertas_expediente, ...expediente.documentos.flatMap((d) => d.alertas_encontradas)].filter(bloquea)
+  return [...expediente.alertas_expediente, ...expediente.documentos.filter(cuentaEnElFolio).flatMap((d) => d.alertas_encontradas)]
+    .filter(bloquea)
 }
 
 /** Tipo con cuya ficha se extrajo (regla 2.5): confirmado; si no, declarado; si no, detectado */
@@ -47,7 +52,7 @@ export function tipoEfectivo(doc: ResultadoDocumento): string | null {
 export function tiposRequeridosQueFaltan(
   expediente: Pick<ResultadoExpediente, 'documentos'>, proceso: Pick<Proceso, 'tipos_requeridos'>,
 ): string[] {
-  const presentes = new Set(expediente.documentos.map(tipoEfectivo))
+  const presentes = new Set(expediente.documentos.filter(cuentaEnElFolio).map(tipoEfectivo))
   return proceso.tipos_requeridos.filter((tipo) => !presentes.has(tipo))
 }
 

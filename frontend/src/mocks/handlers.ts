@@ -7,9 +7,10 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enmascararTexto, enProceso, ficha, nuevaAlerta,
+  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enmascararTexto, recalcularDuplicados, enProceso, ficha, nuevaAlerta,
   recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
+import { cuentaEnElFolio } from '../utilidades/expediente'
 import { error, FalloApi, leerJson } from './respuestas'
 import { emitirToken, validarToken } from './token'
 import { USUARIOS_DEMO } from './usuarios'
@@ -123,6 +124,12 @@ function exigirAnalizado(doc: ResultadoDocumento): void {
   if (doc.estado_analisis === 'error') {
     throw new FalloApi('DOCUMENTO_CON_ERROR', 'El documento termino en error: no se puede corregir ni reclasificar (reprocesar queda fuera del MVP)')
   }
+  exigirNoRetirado(doc)
+}
+
+/** ADR-013: sobre un retirado no se revisa nada (se consulta y se puede restaurar) */
+function exigirNoRetirado(doc: ResultadoDocumento): void {
+  if (doc.retirado) throw new FalloApi('DOCUMENTO_RETIRADO', 'El documento esta retirado del folio; restauralo antes')
 }
 
 function sha256Hex(datos: ArrayBuffer): Promise<string> {
@@ -266,7 +273,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
     const hash = await sha256Hex(bytes)
     const id = `00000000-0000-4000-9000-${String(siguiente(estado)).padStart(12, '0')}`
-    const repetido = folio.documentos.find((d) => d.referencia_archivo_original.hash === hash)
+    const repetido = folio.documentos.find((d) => d.referencia_archivo_original.hash === hash && cuentaEnElFolio(d)) // ADR-013
     // Clasificador simulado: mismo SHA-256 que un documento de los datos, o por el nombre del fichero
     const origen = [...estado.folios.values()].flatMap((f) => f.documentos)
       .find((d) => d.referencia_archivo_original.hash === hash && d.estado_analisis === 'completado')
@@ -284,6 +291,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       referencia_archivo_original: {
         nombre_archivo: nombre, ruta: `${folio.proceso}/${folio.folio.split('-')[1]}/${folio.folio.slice(-6)}/${id}.${extension}`, hash,
       },
+      retirado: null,
     }
     folio.documentos.push(doc)
     estado.archivos.set(id, archivo)
@@ -331,6 +339,35 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento,
       typeof motivo === 'string' ? { campo, motivo: enmascararTexto(estado, doc, motivo) } : { campo })
     return HttpResponse.json({ campo, valor: doc.datos_extraidos[campo] ?? null }, { headers: { 'Cache-Control': 'no-store' } })
+  })
+
+  // ADR-013: retirar (motivo obligatorio, guardado tapado) y restaurar; nada se borra
+  ruta('POST', '/documentos/{id}/retirar', ['revisor', 'admin'], async ({ request, params, usuario }) => {
+    const { motivo } = await leerJson(request, ['motivo'])
+    if (typeof motivo !== 'string' || motivo.length < 3 || motivo.length > 200) {
+      throw new FalloApi('PETICION_INVALIDA', 'motivo: obligatorio, de 3 a 200 caracteres')
+    }
+    const { folio, doc } = documentoOError(estado, params.id)
+    exigirAbierto(folio)
+    if (enProceso(doc)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'El documento aun se esta analizando')
+    exigirNoRetirado(doc)
+    const tapado = enmascararTexto(estado, doc, motivo)
+    doc.retirado = { en: fechaIso(estado), por: usuario.usuario, motivo: tapado }
+    recalcularDuplicados(estado, folio)
+    recalcularTiposDelProceso(estado, folio)
+    auditar(estado, usuario.usuario, 'documento_retirado', folio.folio, doc.identificador_unico_documento, { motivo: tapado })
+    return documentoJson(doc)
+  })
+
+  ruta('POST', '/documentos/{id}/restaurar', ['revisor', 'admin'], ({ params, usuario }) => {
+    const { folio, doc } = documentoOError(estado, params.id)
+    exigirAbierto(folio)
+    if (!doc.retirado) throw new FalloApi('DOCUMENTO_NO_RETIRADO', 'El documento no esta retirado')
+    doc.retirado = null
+    recalcularDuplicados(estado, folio)
+    recalcularTiposDelProceso(estado, folio)
+    auditar(estado, usuario.usuario, 'documento_restaurado', folio.folio, doc.identificador_unico_documento)
+    return documentoJson(doc)
   })
 
   ruta('PATCH', '/documentos/{id}/datos', ['revisor'], async ({ request, params, usuario }) => {
@@ -402,6 +439,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const { folio, doc } = documentoOError(estado, params.id)
     exigirAbierto(folio)
     if (enProceso(doc)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'El documento aun se esta analizando')
+    exigirNoRetirado(doc)
     const alerta = doc.alertas_encontradas.find((a) => a.id === params.alerta_id)
     if (!alerta) throw new FalloApi('ALERTA_NO_ENCONTRADA', `No existe la alerta ${params.alerta_id} en el documento`)
     resolverAlerta(estado, usuario, alerta, await leerJson(request, ['aplica', 'comentario']))
@@ -432,7 +470,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (cuerpo.comentario !== undefined && typeof cuerpo.comentario !== 'string') {
       throw new FalloApi('PETICION_INVALIDA', '`comentario` debe ser texto')
     }
-    if (folio.documentos.some(enProceso)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'Hay documentos que aun se estan analizando')
+    if (folio.documentos.filter(cuentaEnElFolio).some(enProceso)) throw new FalloApi('DOCUMENTO_EN_PROCESO', 'Hay documentos que aun se estan analizando')
     const bloqueantes = bloqueantesSinResolver(folio)
     if (cuerpo.decision === 'aprobar' && bloqueantes.length) {
       throw new FalloApi('DECISION_BLOQUEADA', `No se puede aprobar: bloqueantes sin descartar (${bloqueantes.map((a) => a.codigo).join(', ')})`)

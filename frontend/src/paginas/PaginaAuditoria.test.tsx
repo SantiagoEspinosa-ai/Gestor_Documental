@@ -18,14 +18,14 @@ describe('pantalla de auditoría (admin)', () => {
     await entrarComo('admin.demo') // su login es la entrada mas reciente
     montar('/auditoria')
     expect(await screen.findByText('Cargando auditoría…')).toBeTruthy()
-    expect(await screen.findByText('Página 1 de 1 (34 entradas)')).toBeTruthy()
+    expect(await screen.findByText('Página 1 de 1 (35 entradas)')).toBeTruthy()
     expect(consultasAuditoria()).toEqual(['GET /auditoria?pagina=1&tamano_pagina=50'])
     expect(screen.getByRole('table').getAttribute('aria-busy')).toBe('false')
-    expect(filas()).toHaveLength(34)
+    expect(filas()).toHaveLength(35)
     expect(within(filas()[0]).getByRole('rowheader').textContent).toContain('Inicio de sesión')
     expect(filas()[0].textContent).toContain('admin.demo')
     expect(filas()[0].textContent).toContain('Acceso correcto')
-    expect(within(filas()[33]).getByRole('rowheader').textContent).toContain('Folio creado') // la primera de todas
+    expect(within(filas()[34]).getByRole('rowheader').textContent).toContain('Folio creado') // la primera de todas
     const cabeceras = screen.getAllByRole('columnheader').map((c) => c.textContent)
     expect(cabeceras).toEqual(['Fecha', 'Usuario', 'Acción', 'Folio', 'Documento', 'Detalle', 'Modelo'])
   })
@@ -33,25 +33,25 @@ describe('pantalla de auditoría (admin)', () => {
   it('pagina con Anterior y Siguiente y cambia el tamaño de página', async () => {
     await entrarComo('admin.demo')
     montar('/auditoria?tamano_pagina=20')
-    expect(await screen.findByText('Página 1 de 2 (34 entradas)')).toBeTruthy()
+    expect(await screen.findByText('Página 1 de 2 (35 entradas)')).toBeTruthy()
     expect(filas()).toHaveLength(20)
     const u = userEvent.setup()
     expect((screen.getByRole('button', { name: 'Anterior' }) as HTMLButtonElement).disabled).toBe(true)
     await u.click(screen.getByRole('button', { name: 'Siguiente' }))
-    expect(await screen.findByText('Página 2 de 2 (34 entradas)')).toBeTruthy()
-    expect(filas()).toHaveLength(14)
+    expect(await screen.findByText('Página 2 de 2 (35 entradas)')).toBeTruthy()
+    expect(filas()).toHaveLength(15)
     expect((screen.getByRole('button', { name: 'Siguiente' }) as HTMLButtonElement).disabled).toBe(true)
     expect(consultasAuditoria()).toContain('GET /auditoria?pagina=2&tamano_pagina=20')
     // cambiar el tamano vuelve a la pagina 1
     await u.selectOptions(screen.getByLabelText('Entradas por página'), '100')
-    expect(await screen.findByText('Página 1 de 1 (34 entradas)')).toBeTruthy()
+    expect(await screen.findByText('Página 1 de 1 (35 entradas)')).toBeTruthy()
     expect(consultasAuditoria().at(-1)).toBe('GET /auditoria?pagina=1&tamano_pagina=100')
   })
 
   it('filtra por folio (normalizado), enlaza al expediente y quita el filtro', async () => {
     await entrarComo('admin.demo')
     montar('/auditoria')
-    await screen.findByText('Página 1 de 1 (34 entradas)')
+    await screen.findByText('Página 1 de 1 (35 entradas)')
     const u = userEvent.setup()
     await u.type(screen.getByLabelText('Folio'), ' onb-2026-000004 ')
     await u.click(screen.getByRole('button', { name: 'Filtrar' }))
@@ -61,7 +61,7 @@ describe('pantalla de auditoría (admin)', () => {
     expect(within(filas()[0]).getByRole('link', { name: 'ONB-2026-000004' }).getAttribute('href')).toBe('/folios/ONB-2026-000004')
     expect(screen.getByText(/Mostrando solo el folio/).textContent).toContain('ONB-2026-000004')
     await u.click(screen.getByRole('button', { name: 'Quitar filtro' }))
-    expect(await screen.findByText('Página 1 de 1 (34 entradas)')).toBeTruthy()
+    expect(await screen.findByText('Página 1 de 1 (35 entradas)')).toBeTruthy()
     expect((screen.getByLabelText('Folio') as HTMLInputElement).value).toBe('')
   })
 
@@ -131,7 +131,7 @@ describe('pantalla de auditoría (admin)', () => {
     expect(alerta.textContent).toContain('Los datos enviados no son válidos.')
     expect(screen.queryByRole('table')).toBeNull()
     await userEvent.setup().click(within(alerta).getByRole('link', { name: 'Volver a la auditoría sin filtros' }))
-    expect(await screen.findByText('Página 1 de 1 (34 entradas)')).toBeTruthy()
+    expect(await screen.findByText('Página 1 de 1 (35 entradas)')).toBeTruthy()
   })
 
   it('403 SIN_PERMISO de la API', async () => {
