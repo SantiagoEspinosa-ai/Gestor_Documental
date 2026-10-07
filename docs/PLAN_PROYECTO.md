@@ -108,7 +108,7 @@ el id de la tarea en `docs/equipo/PERSONA_3_estado.md`.
 ### Etapa 3 - Dias 9-12: expediente, RAG, salida y extras
 | PERSONA_1 | PERSONA_2 | Linea de PERSONA_3 (repartida) |
 |---|---|---|
-| Resumen `.md` con Jinja, regeneracion, S3, `GET /resumen.md` | Base de conocimiento: `docs/conocimiento/*.md` -> chunks -> embeddings pgvector -> `contexto_rag` | PERSONA_2 (H14): memoria de folios, indexar cada `.md`, `rag/embeddings.py`, `buscar_antecedentes` con permisos y caducidad. PERSONA_1 (H16): endpoint y pantalla |
+| Resumen `.md` con Jinja, regeneracion, S3, `GET /resumen.md` | Base de conocimiento: `docs/conocimiento/*.md` -> chunks -> embeddings pgvector -> `contexto_rag` (R10 ACEPTADO: fuera del MVP; el RAG del MVP es la memoria de folios, H14) | PERSONA_2 (H14): memoria de folios, indexar cada `.md`, `rag/embeddings.py`, `buscar_antecedentes` con permisos y caducidad. PERSONA_1 (H16): endpoint y pantalla |
 | Webhooks HMAC, reintentos, eventos del contrato | Extra 2: `extraccion_v2.md` con observaciones visuales -> alertas `VIS-xxx` (R4 ACEPTADO: solo si el dia 11 esta en verde) | PERSONA_1 (H7, H17): ADR-010 de la etapa 3 y extra 1 (UI): enmascaramiento parcial con "mostrar" auditado. PERSONA_2 (H15): `sensible: true` |
 | Extra 1 (backend): enmascaramiento en logs y prompts; tabla `correcciones` | Proveedor OpenRouter como respaldo (ADR-003) (R6 ACEPTADO: al final y opcional en la demo) | PERSONA_1 (H8): pantalla de configuracion de procesos en solo lectura (R3 ACEPTADO) |
 | Auditoria completa y `GET /auditoria` | | Extra 3 y 4: fuera (R1 y R2 ACEPTADOS) |
@@ -175,6 +175,7 @@ PERSONA_2). PERSONA_2 da prioridad a la ruta critica de la etapa 2 y deja la mem
 | R7 | Antecedentes por `referencia_externa` del folio (opcion a de ADR-006), sin HMAC de la CURP | ACEPTADO |
 | R8 | Enmascaramiento solo de CURP, numero de pasaporte y clave de elector; las correcciones del extra 1 ya se guardan (PR #9) | ACEPTADO |
 | R9 | e2e reales: humo en cada cambio; los folios de `INDICE.md` solo antes de cada PR de etapa | ACEPTADO |
+| R10 | Base de conocimiento con embeddings (`docs/conocimiento` -> embeddings -> `contexto_rag`): fuera del MVP (2026-10-07). Motivo medido: con `OLLAMA_MAX_LOADED_MODELS=1`, el modelo de embeddings expulsa a `gemma4:e2b` de la memoria y cada documento tardaria ~25 s mas (lo que tarda en volver a cargarse). **El requisito RAG del MVP lo cubre la memoria de folios** (H14: `rag.servicio.indexar_resumen` y `fragmento_resumen`) con los antecedentes (H16). Evolucion futura, sin cambiar la arquitectura: spec de PERSONA_2, seccion 16 | ACEPTADO (PERSONA_1 y PERSONA_2) |
 
 ### Efecto de los PR #11, #12, #14 y #15
 - PR #11 (etapa 1 del motor, FUSIONADO el 2026-10-02): usa los fixtures de PERSONA_3 y convierte

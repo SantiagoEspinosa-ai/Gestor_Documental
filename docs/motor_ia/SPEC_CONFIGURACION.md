@@ -39,7 +39,7 @@ Estados: **implementado** (en el codigo de `feat/motor-ia`), **decidido** (acord
 | Texto (clasificacion y extraccion de `pdf_digital`) | `gemma4:e2b` | `OLLAMA_MODELO_TEXTO=gemma4:e2b` | 7/7 campos en 2 de 2 ejecuciones; ~37 s por documento | decidido |
 | Vision (`pdf_escaneado`, `imagen`) | `qwen2.5vl:3b` | `OLLAMA_MODELO_VISION=qwen2.5vl:3b` | 7/7 tras normalizar fechas en 4 de 4; ~110 s por pagina nueva | decidido |
 | URL de Ollama | - | `OLLAMA_BASE_URL`: depende de donde corre el backend (ver tabla siguiente) | - | decidido |
-| Embeddings (RAG, etapa 3) | `nomic-embed-text` (plan) | `OLLAMA_MODELO_EMBEDDINGS` (propuesta) | sin probar | pendiente |
+| Embeddings (base de conocimiento) | `nomic-embed-text` (plan) | `OLLAMA_MODELO_EMBEDDINGS` (propuesta) | sin probar | fuera del MVP (R10, seccion 16) |
 
 Valor de `OLLAMA_BASE_URL` segun donde corre el backend (o el CLI) y donde corre Ollama:
 
@@ -212,7 +212,7 @@ se queda solo con `pagina_<n>` (seccion 4).
 | Perfiles de modelos de `procesos.yaml` | `modelos: default` significa usar `modelos.yaml` tal cual; los perfiles por proceso **no se implementan** (reservados, fuera del MVP) | tarea 8 | decidido |
 | Ficha para extraer | Se extrae con la ficha del tipo declarado; si no hay, con la del detectado. `tipo_confirmado` en `procesar_documento` manda sobre ambos (etapa 2) | ADR-006, 2.5 | decidido |
 | `/tipos-documentales` | `configuracion/servicio.py` serializa `TipoDocumental` para el router de PERSONA_1 | ADR-006, 1.5 | pendiente (ver seccion 7) |
-| RAG | Toda la carpeta `modulos/rag` es de PERSONA_2 desde el traspaso de PERSONA_3 (PR #13): `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`), `rag/embeddings.py` (Ollama `nomic-embed-text`) y, por ADR-010 (PR #21), **solo** `rag.servicio.fragmento_resumen(folio) -> str | None`, ya enmascarado; los folios relacionados los elige PERSONA_1 con SQL (ya no hay `buscar_antecedentes` en `rag`) (H14) | ADR-006, coordinacion, PR #13, ADR-010 | pendiente (etapa 3; la ruta critica de la etapa 2 va antes) |
+| RAG | Toda la carpeta `modulos/rag` es de PERSONA_2 desde el traspaso de PERSONA_3 (PR #13): `rag/conocimiento.py` (`buscar(consulta, k)` para `contexto_rag`), `rag/embeddings.py` (Ollama `nomic-embed-text`) y, por ADR-010 (PR #21), **solo** `rag.servicio.fragmento_resumen(folio) -> str | None`, ya enmascarado; los folios relacionados los elige PERSONA_1 con SQL (ya no hay `buscar_antecedentes` en `rag`) (H14) | ADR-006, coordinacion, PR #13, ADR-010 | memoria de folios hecha (H14, seccion 16); `rag/conocimiento.py` y `rag/embeddings.py` fuera del MVP (R10) |
 
 ## 7. Pendientes y riesgos
 
@@ -591,6 +591,7 @@ API publica (`rag/servicio.py`):
 | Cuando se indexa | Al regenerar el resumen, despues del commit de la accion: `expediente.servicio.avisar_reindexar(sesion, folio, resumen_md)` llama a `rag.servicio.indexar_resumen(folio, resumen_md, sesion=sesion)` con el mismo texto enmascarado que va a S3 (asi `rag` no lee S3) (PERSONA_1, #39). Folios anteriores: `scripts/reindexar_resumenes.py` |
 | Fragmento | Determinista, sin modelo: cabecera (`# Expediente`, referencia opaca, proceso, fecha, estado, recomendacion global), la decision **sin el comentario libre**, de cada documento su titulo, estado y alertas, y las alertas del expediente. **Nunca** los `Datos:`, las comparaciones ni "Generado el": aunque el resumen llegue enmascarado, el fragmento no copia valores. Se corta en un final de linea antes de `LIMITE_FRAGMENTO` (800) caracteres, con `...` |
 | Formato que lee | El de `expediente/plantillas/resumen.md.j2` (listas, desde el #27): titulos `#`, `##`, `###`, lineas `- Clave: valor`, `Datos:` y los titulos de grupo de alertas acabados en `:`. Si la plantilla cambia, revisar `extraer_fragmento` y sus tests |
+| **Base de conocimiento** (R10, 2026-10-07, ACEPTADO por PERSONA_1 y PERSONA_2) | Fuera del MVP: con `OLLAMA_MAX_LOADED_MODELS=1`, el modelo de embeddings expulsa a `gemma4:e2b` y cada documento tardaria ~25 s mas en volver a cargarlo. El requisito RAG del MVP lo cubre la memoria de folios (esta seccion) con los antecedentes (H16). **Evolucion futura**, activable con GPU o mas RAM (dos modelos cargados a la vez) **sin cambiar la arquitectura**: el motor ya recibe `DocumentoPreparado.contexto_rag` y los prompts ya tienen su hueco (`formatear_contexto_rag`, hoy `(sin contexto)`); bastaria `rag/conocimiento.py` (`buscar(consulta, k)`) y `rag/embeddings.py`, con los embeddings calculados fuera del analisis y en una tabla aparte. **Opcion barata posterior**: `contexto_rag` sin embeddings, con un `.md` de conocimiento por tipo documental (`docs/conocimiento/<tipo>.md`) que se pasa entero segun el tipo; no carga ningun modelo |
 | Tests | `test_memoria_folios.py`: SQLite temporal y un `resumen.md` de ejemplo enmascarado; fragmento con y sin decision, sin valores, corte, folio sin indexar, reindexado, fallo sin lanzar y sin contenido en el log |
 
 ## Registro de cambios
@@ -599,6 +600,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-07 | R10 (ACEPTADO por PERSONA_1 y PERSONA_2): base de conocimiento con embeddings fuera del MVP (con `OLLAMA_MAX_LOADED_MODELS=1` expulsaria a `gemma4:e2b`: ~25 s mas por documento). El RAG del MVP es la memoria de folios (H14). Seccion 16: evolucion futura con GPU o mas RAM sin cambiar la arquitectura (`contexto_rag` ya existe) y opcion barata sin embeddings (un `.md` por tipo). Modelos (seccion 2) y RAG (seccion 6) al dia | este commit |
 | 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #42 (arranque de demo) y el #43 (filtro de logs). `CHECKLIST_E2E_HITO.md`: la plataforma se arranca con `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build` (backend sin `--reload`, frontend incluido) y el arranque de desarrollo queda como alternativa. `ESTADO_SESION.md` al dia (#42 y #43 fusionados; el aviso del log, resuelto por el #43) | este commit |
 | 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #38 (boton Mostrar), el #39 (H14 conectado), el #40 (CI en ubuntu-24.04) y el #41 (antecedentes); conflicto del registro resuelto conservando todas las entradas. `ESTADO_SESION.md` al dia (H14 completo; H16 y H17 en `main`; siguiente, el e2e por la web). Docstring de `indexar_resumen`: hace commit (o rollback) sobre la sesion recibida y se llama despues del commit del llamador | `6325c9d` |
 | 2026-10-06 | `ESTADO_SESION.md` al dia: H13 (#35), documentacion (#36) y enmascaramiento (#32) fusionados; H14 (#37) esperando aprobacion; siguiente paso, el e2e por la web con la mascara (plataforma preparada sin el override local y sin `revisor_hito`) | `6501bff` |
