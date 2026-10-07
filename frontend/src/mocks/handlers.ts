@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
+  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enmascararTexto, enProceso, ficha, nuevaAlerta,
   recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -317,14 +317,19 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   // ADR-010 A4: el valor real y vigente de un campo sensible, con su entrada dato_revelado (sin el valor)
   ruta('POST', '/documentos/{id}/revelar', ['revisor', 'admin'], async ({ request, params, usuario }) => {
-    const { campo } = await leerJson(request, ['campo'])
+    const { campo, motivo } = await leerJson(request, ['campo', 'motivo'])
     if (typeof campo !== 'string' || !campo || campo.length > 100) throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {campo}')
+    // ADR-010 A4c: motivo opcional de 3 a 200 caracteres
+    if (motivo !== undefined && motivo !== null && (typeof motivo !== 'string' || motivo.length < 3 || motivo.length > 200)) {
+      throw new FalloApi('PETICION_INVALIDA', 'motivo: de 3 a 200 caracteres')
+    }
     const { folio, doc } = documentoOError(estado, params.id)
     exigirAnalizado(doc) // 409 en proceso o con error; el folio cerrado no importa: consultar no cambia nada
     if (!ficha(estado, tipoExtraccion(doc))?.campos[campo]?.sensible) {
       throw new FalloApi('PETICION_INVALIDA', 'El campo no existe en la ficha del documento o no es sensible')
     }
-    auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento, { campo })
+    auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento,
+      typeof motivo === 'string' ? { campo, motivo: enmascararTexto(estado, doc, motivo) } : { campo })
     return HttpResponse.json({ campo, valor: doc.datos_extraidos[campo] ?? null }, { headers: { 'Cache-Control': 'no-store' } })
   })
 

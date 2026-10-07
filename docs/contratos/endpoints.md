@@ -15,7 +15,7 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) 
 | POST | /folios/{folio}/documentos | integrador, revisor | multipart: `archivo` (max. 20 MB), `tipo_declarado?` -> lanza BackgroundTask | `202 {identificador_unico_documento, estado_analisis: "pendiente"}` |
 | GET | /documentos/{id} | todos | Resultado del documento | `ResultadoDocumento` |
 | GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream); audita `original_visto` | `{url}` |
-| POST | /documentos/{id}/revelar | revisor, admin | `{campo}`: valor real y vigente de un campo sensible (ADR-010 A4; ver "Reglas") | `{campo, valor}` |
+| POST | /documentos/{id}/revelar | revisor, admin | `{campo, motivo?}`: valor real y vigente de un campo sensible (ADR-010 A4 y A4c; ver "Reglas") | `{campo, valor}` |
 | PATCH | /documentos/{id}/datos | revisor | `{campo: valor}` corrige datos; se guarda en `correcciones` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/confirmar-clasificacion | revisor | `{tipo_documental}` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` | `ResultadoDocumento` |
@@ -96,6 +96,8 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   `Cache-Control: no-store`; funciona con el folio cerrado; `422 PETICION_INVALIDA` si el campo no esta en
   la ficha o no es sensible, `409 DOCUMENTO_EN_PROCESO` o `DOCUMENTO_CON_ERROR`, `404
   DOCUMENTO_NO_ENCONTRADO`. Cada llamada correcta deja `dato_revelado` con `detalle: {campo}`, nunca el valor.
+  `motivo` es opcional (ADR-010 A4c, propuesta): texto de 3 a 200 caracteres (fuera de rango, `422
+  PETICION_INVALIDA`); si viene, va en `detalle.motivo` tapado con la misma barrera que los logs (A5).
 
 ## Webhook (salida)
 Configurable por proceso. `POST <url>` con cabecera `X-Firma: sha256=<HMAC(cuerpo, WEBHOOK_SECRET_HMAC)>`
