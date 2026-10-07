@@ -134,7 +134,7 @@ def test_retirar_y_restaurar_revisor(entorno):
     assert r.status_code == 200
     retirado = r.json()["retirado"]
     assert (retirado["por"], retirado["motivo"]) == ("revisor_ficticio", "Subido por error")
-    for rol in ("revisor", "admin", "integrador"):  # todos lo consultan
+    for rol in ("revisor", "admin"):  # el admin consulta (el integrador solo ve sus folios, ADR-012)
         assert _cliente(rol).get(f"/api/v1/documentos/{credencial}").json()["retirado"] == retirado
     r = _restaurar(credencial)
     assert r.status_code == 200 and r.json()["retirado"] is None
