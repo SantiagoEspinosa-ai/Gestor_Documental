@@ -364,13 +364,39 @@ function taparEvidencia(campo: string, texto: string, literales: string[], sensi
   return tapado
 }
 
+/** Valores sensibles del documento que pueden aparecer escritos (vigente, leido y corregidos), los mas largos primero */
+function literalesSensibles(doc: ResultadoDocumento, sensibles: Set<string>): string[] {
+  const valores = [...sensibles].map((c) => doc.datos_extraidos[c])
+    .concat(doc.correcciones.filter((c) => sensibles.has(c.campo)).flatMap((c) => [c.valor_anterior, c.valor_nuevo]))
+  return [...new Set(valores.filter((v) => v !== null && v !== undefined && String(v)).map(String))]
+    .sort((a, b) => b.length - a.length)
+}
+
+/** Los patrones de backend/app/core/logs.py (_PATRONES): MRZ, CURP, clave de elector y pasaporte. Con el flag i,
+ * como logs.tapar(texto, ignorar_mayusculas=True): para texto libre */
+const PATRONES_LOGS_SIN_MAYUSCULAS = [
+  /(?<![A-Z0-9<])[A-Z0-9<]{30,}(?![A-Z0-9<])/gi,
+  /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/gi,
+  /[A-Z]{6}\d{8}[HM]\d{3}/gi,
+  /\b(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{8,9}\b/gi,
+]
+const escaparRegex = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** Texto libre tapado como enmascarar_texto de la API (ADR-010 A4c): literales del documento con `mascara` y
+ * despues lo que tenga forma de dato sensible, con `****` sin cola (como logs.tapar); sin distinguir mayusculas */
+export function enmascararTexto(estado: EstadoMock, doc: ResultadoDocumento, texto: string): string {
+  let tapado = texto
+  for (const literal of literalesSensibles(doc, camposSensibles(estado, doc))) {
+    tapado = tapado.replace(new RegExp(escaparRegex(literal), 'gi'), () => mascara(literal)!)
+  }
+  for (const patron of PATRONES_LOGS_SIN_MAYUSCULAS) tapado = tapado.replace(patron, MASCARA)
+  return tapado
+}
+
 /** Copia del documento enmascarada: datos, evidencias y correcciones de los campos sensibles */
 export function enmascararDocumento(estado: EstadoMock, doc: ResultadoDocumento): ResultadoDocumento {
   const sensibles = camposSensibles(estado, doc)
-  const valores = [...sensibles].map((c) => doc.datos_extraidos[c])
-    .concat(doc.correcciones.filter((c) => sensibles.has(c.campo)).flatMap((c) => [c.valor_anterior, c.valor_nuevo]))
-  const literales = [...new Set(valores.filter((v) => v !== null && v !== undefined && String(v)).map(String))]
-    .sort((a, b) => b.length - a.length)
+  const literales = literalesSensibles(doc, sensibles)
   const copia = structuredClone(doc)
   for (const campo of sensibles) if (campo in copia.datos_extraidos) copia.datos_extraidos[campo] = mascara(copia.datos_extraidos[campo])
   copia.evidencia_por_campo = Object.fromEntries(Object.entries(copia.evidencia_por_campo)

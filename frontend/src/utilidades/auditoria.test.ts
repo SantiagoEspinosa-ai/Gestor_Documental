@@ -60,6 +60,7 @@ describe('detalle de la auditoria legible por accion', () => {
     expect(de('decision_tomada', { decision: 'rechazar' })).toEqual(['Decisión: Rechazado'])
     expect(de('dato_revelado', { campo: 'curp' })).toEqual(['Campo: curp'])
     expect(de('dato_revelado', { campo: 'clave_elector' })).toEqual(['Campo: clave elector'])
+    expect(de('dato_revelado', { campo: 'curp', motivo: 'Lo pide el cliente: ****' })).toEqual(['Campo: curp', 'Motivo: “Lo pide el cliente: ****”'])
     expect(etiquetaAccion('dato_revelado')).toBe('Dato revelado')
   })
 

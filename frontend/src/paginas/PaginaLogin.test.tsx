@@ -136,7 +136,7 @@ describe('sesión', () => {
     const u = await escribirCredenciales('admin.demo', 'demo-admin')
     await u.keyboard('{Enter}')
     await waitFor(() => expect(screen.getByTestId('ubicacion').textContent).toBe(pedida))
-    expect(await screen.findByText('Página 1 de 1 (8 entradas)')).toBeTruthy() // el filtro y el tamano se aplican
+    expect(await screen.findByText('Página 1 de 1 (9 entradas)')).toBeTruthy() // el filtro y el tamano se aplican
     expect((screen.getByLabelText('Entradas por página') as HTMLSelectElement).value).toBe('20')
   })
 

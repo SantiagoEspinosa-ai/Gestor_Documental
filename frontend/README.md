@@ -431,6 +431,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   llega enmascarado y no debe guardarse la mascara).
 - HECHO (H17, PR B): boton "Mostrar" de los datos sensibles para revisor y admin, con auto-ocultado a los
   60 s (ver "Expediente" en "Pantallas").
+- Post-MVP (ADR-010 A4c, aceptada): junto a "Mostrar", un campo corto "Motivo (opcional)" que no bloquea; se
+  envia como `motivo` si tiene de 3 a 200 caracteres. La API (y `enmascararTexto` en los mocks) lo guarda
+  tapado en `dato_revelado`, y la auditoria lo muestra como "Motivo: ...".
 - HECHO (H16): antecedentes del folio en el expediente (ver "Pantallas"). En los mocks, el folio 2 y el 4 tienen
   la misma referencia (`scripts/generar_datos_mock.py`): el 4, cerrado, es el antecedente del 2; el 3 no tiene
   referencia. El fragmento del mock es el principio de su `resumen.md` de mock.

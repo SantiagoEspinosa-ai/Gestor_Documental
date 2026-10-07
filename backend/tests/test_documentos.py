@@ -14,7 +14,7 @@ from app.core import db
 from app.core.almacenamiento import AlmacenamientoS3, get_almacenamiento
 from app.core.config import get_settings
 from app.core.db import Base
-from app.core.modelos import AlertaBD, Documento, Proceso
+from app.core.modelos import AlertaBD, Auditoria, Documento, Proceso
 from app.core.seguridad import crear_token
 from app.main import app
 from app.modulos.expediente import servicio as expediente
@@ -142,10 +142,16 @@ def test_admin_no_sube(cliente, folio):
     assert _subir(cliente, folio, rol="admin").status_code == 403
 
 
-def test_integrador_no_pide_el_original(cliente, folio):
+def _vistos(sesion) -> list[Auditoria]:
+    sesion.expire_all()
+    return list(sesion.scalars(select(Auditoria).where(Auditoria.accion == "original_visto")))
+
+
+def test_integrador_no_pide_el_original(cliente, folio, sesion):
     doc_id = _subir(cliente, folio).json()["identificador_unico_documento"]
     r = cliente.get(f"/api/v1/documentos/{doc_id}/original", headers=_cab("integrador"))
     assert (r.status_code, r.json()["codigo"]) == (403, "SIN_PERMISO")
+    assert _vistos(sesion) == []  # sin permiso no deja registro
 
 
 def test_sin_token(cliente, folio):
@@ -182,6 +188,22 @@ def test_original_devuelve_url_firmada(cliente, folio, sesion):
     ruta = sesion.get(Documento, uuid.UUID(doc_id)).ruta_s3
     assert BUCKET in url and ruta in url
     assert "X-Amz-Signature=" in url or "Signature=" in url
+
+
+def test_pedir_el_original_deja_original_visto(cliente, folio, sesion):
+    doc_id = _subir(cliente, folio).json()["identificador_unico_documento"]
+    for rol in ("revisor", "admin"):
+        assert cliente.get(f"/api/v1/documentos/{doc_id}/original", headers=_cab(rol)).status_code == 200
+    # usuario, folio y documento en sus columnas; nada del contenido en el detalle
+    assert [(e.usuario, e.folio, e.documento_id, e.detalle) for e in _vistos(sesion)] == [
+        ("revisor_ficticio", folio, uuid.UUID(doc_id), {}), ("admin_ficticio", folio, uuid.UUID(doc_id), {})]
+    entradas = cliente.get("/api/v1/auditoria", headers=_cab("admin")).json()["elementos"]
+    assert sum(e["accion"] == "original_visto" for e in entradas) == 2
+
+
+def test_original_inexistente_no_deja_registro(cliente, sesion):
+    assert cliente.get(f"/api/v1/documentos/{uuid.uuid4()}/original", headers=_cab("revisor")).status_code == 404
+    assert _vistos(sesion) == []
 
 
 # --- mismo armado en GET /documentos/{id} y en GET /folios/{folio} (BD como fuente de verdad) ---

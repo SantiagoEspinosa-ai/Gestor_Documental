@@ -89,14 +89,15 @@ resultado vigente lleva los datos de la ficha anterior). El valor real solo sale
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO` (tambien si el id no es un UUID).
 
 ### GET /api/v1/documentos/{id}/original (revisor, admin)
-- Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Sin auditoria hasta la etapa 3.
+- Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Cada llamada correcta deja
+  `original_visto` (usuario, folio y documento; `detalle` vacio).
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`.
 
 ### POST /api/v1/documentos/{id}/revelar (revisor, admin; ADR-010 A4)
-- Entrada (JSON, sin campos extra): `{campo}`.
+- Entrada (JSON, sin campos extra): `{campo, motivo?}`; `motivo` opcional de 3 a 200 caracteres (ADR-010 A4c).
 - Salida 200: `{campo, valor}` con el valor real y vigente (el corregido, si lo hay; `null` si no se
   detecto) y la cabecera `Cache-Control: no-store`. Funciona tambien con el folio cerrado.
-- Audita `dato_revelado` con `{campo}`, nunca el valor. Es `POST` porque tiene efecto (la auditoria).
+- Audita `dato_revelado` con `{campo}` (y `motivo` tapado con `enmascarar_texto`, si viene), nunca el valor. Es `POST` porque tiene efecto (la auditoria).
 - Errores: 403 `SIN_PERMISO` (integrador); 404 `DOCUMENTO_NO_ENCONTRADO`; 409 `DOCUMENTO_EN_PROCESO` /
   `DOCUMENTO_CON_ERROR`; 422 `PETICION_INVALIDA` (cuerpo invalido, o el campo no esta en la ficha de
   extraccion o no es sensible).
@@ -191,4 +192,5 @@ ni contrasenas.
 | `clasificacion_confirmada` | `{tipo, reproceso}` |
 | `alerta_resuelta` | `{alerta_id, codigo, aplica}` |
 | `decision_tomada` | `{decision}` |
-| `dato_revelado` | `{campo}` (ADR-010 A4; nunca el valor) |
+| `dato_revelado` | `{campo, motivo?}` (ADR-010 A4 y A4c; nunca el valor; `motivo` tapado) |
+| `original_visto` | sin detalle (`{}`): usuario, folio y documento van en sus columnas |

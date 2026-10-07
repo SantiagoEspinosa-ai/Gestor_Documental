@@ -1,7 +1,7 @@
 """Tests de core/enmascaramiento.py (ADR-010 A2 y A5). Todos los datos son ficticios."""
 from datetime import datetime, timezone
 
-from app.core.enmascaramiento import enmascarar_expediente, enmascarar_resultado, mascara
+from app.core.enmascaramiento import enmascarar_expediente, enmascarar_resultado, enmascarar_texto, mascara
 from app.schemas.resultado import (ComparacionCampo, Correccion, ReferenciaArchivoOriginal, ResultadoDocumento,
                                    ResultadoExpediente)
 
@@ -121,3 +121,13 @@ def test_expediente_documentos_y_comparaciones():
     assert salida.documentos[1].datos_extraidos["curp"] == CURP  # en d2 no es sensible
     assert salida.comparaciones[0].valores == {"d1": "****XXA4", "d2": "****XXA4"}
     assert salida.comparaciones[1].valores == {"d1": "Calle Uno", "d2": "Calle Uno"}
+
+
+def test_enmascarar_texto_literales_del_documento_y_la_barrera_de_los_logs():
+    # Un literal sin forma de dato sensible solo se tapa por ser del documento (mascara, con su cola);
+    # lo que tiene forma de CURP se tapa siempre, con **** sin cola (logs.tapar)
+    texto = "Clave ab12cd34 y CURP XAXX020202MDFYYYA5; URGENTE"
+    assert enmascarar_texto(texto, ["ab12cd34"]) == "Clave ****cd34 y CURP ****; URGENTE"
+    assert enmascarar_texto("texto normal", []) == "texto normal"
+    # Sin distinguir mayusculas: el literal del documento y la barrera de los logs
+    assert enmascarar_texto("clave AB12CD34 y curp xaxx020202mdfyyya5, urgente", ["ab12cd34"]) ==         "clave ****cd34 y curp ****, urgente"

@@ -104,6 +104,8 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       break
     case 'dato_revelado':
       if (nombreTecnico(d.campo)) usar('campo', `Campo: ${legible(d.campo)}`)
+      // ADR-010 A4c: la API lo guarda ya tapado (enmascarar_texto), asi que se muestra entero
+      if (texto(d.motivo)) usar('motivo', `Motivo: “${d.motivo}”`)
       break
     case 'clasificacion_confirmada':
       if (nombreTecnico(d.tipo)) usar('tipo', `Tipo confirmado: ${nombreTipo(d.tipo)}`)
@@ -122,6 +124,7 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       if (d.decision === 'aprobar' || d.decision === 'rechazar') usar('decision', `Decisión: ${ETIQUETA_DECISION[d.decision]}`)
       break
     case 'folio_creado':
+    case 'original_visto':
       break
   }
   for (const [clave, valor] of Object.entries(d)) {
