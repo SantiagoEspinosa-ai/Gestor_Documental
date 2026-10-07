@@ -21,6 +21,7 @@ export const MENSAJES_ERROR: Record<CodigoError | CodigoLocal, string> = {
   ARCHIVO_DEMASIADO_GRANDE: 'El archivo supera los 20 MB.',
   FORMATO_NO_PERMITIDO: 'El archivo no es válido: su formato o su contenido no corresponde a los formatos permitidos.',
   PETICION_INVALIDA: 'Los datos enviados no son válidos.',
+  DEMASIADOS_INTENTOS: 'Demasiados intentos fallidos. Espera unos minutos y vuelve a intentarlo.',
   ERROR_INTERNO: 'Error interno del servidor. Inténtalo de nuevo más tarde.',
   DOCUMENTO_CON_ERROR: 'El documento terminó en error: no se puede corregir ni reclasificar.',
   SECUENCIA_AGOTADA: 'No quedan números de folio libres este año para el proceso.',

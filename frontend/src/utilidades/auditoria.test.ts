@@ -16,6 +16,7 @@ describe('detalle de la auditoria legible por accion', () => {
   it('login, folio creado y documento subido', () => {
     expect(de('login', { resultado: 'ok' })).toEqual(['Acceso correcto'])
     expect(de('login', { resultado: 'fallido' })).toEqual(['Intento fallido'])
+    expect(de('login', { resultado: 'bloqueado' })).toEqual(['Acceso bloqueado'])
     expect(de('folio_creado', {})).toEqual([])
     expect(de('documento_subido', { hash_sha256: '44a92b42e7d1e55944ea5a7d250abbc49fa0c79792cda02f87c77c3eb8c06d6c',
       tamano_bytes: 5950, duplicado: false })).toEqual(['SHA-256 44a92b42e7d1…', '5,8 KB', 'No duplicado'])
@@ -59,6 +60,7 @@ describe('detalle de la auditoria legible por accion', () => {
     expect(de('decision_tomada', { decision: 'rechazar' })).toEqual(['Decisión: Rechazado'])
     expect(de('dato_revelado', { campo: 'curp' })).toEqual(['Campo: curp'])
     expect(de('dato_revelado', { campo: 'clave_elector' })).toEqual(['Campo: clave elector'])
+    expect(de('dato_revelado', { campo: 'curp', motivo: 'Lo pide el cliente: ****' })).toEqual(['Campo: curp', 'Motivo: “Lo pide el cliente: ****”'])
     expect(etiquetaAccion('dato_revelado')).toBe('Dato revelado')
   })
 

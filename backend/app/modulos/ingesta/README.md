@@ -39,7 +39,8 @@ Las correcciones de versiones anteriores no se aplican.
 `obtener_documento(sesion, documento_id) -> Documento`: 404 si no existe o el id no es un UUID.
 `existe_tipo(tipo) -> bool`: si hay ficha para ese tipo.
 
-`url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.
+`url_original(sesion, almacenamiento, documento_id, usuario) -> str`: URL prefirmada del original; deja
+`original_visto` en la auditoria (usuario, folio y documento, `detalle` vacio) y hace commit.
 
 `procesar_documento(documento_id, tipo_confirmado=None)`: lo que lanza la API como BackgroundTask;
 delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).
@@ -110,7 +111,7 @@ daemon: respeta el semaforo, un reproceso por confirmar otro tipo sigue con ese 
 espera. `completado` y `error` no se tocan. El log solo lleva el numero de documentos y sus ids.
 Limite de reintentos (`MAX_REINTENTOS_REANUDAR`, 3 por defecto): cada relanzamiento suma 1 a
 `documentos.intentos_reanudar` (migracion 0006) y un analisis que termina lo vuelve a 0. Un documento que ya se
-relanzo esas veces no se relanza mas: pasa a `error` con una `SYS-001` de plataforma ("reintentos agotados", sin
+relanzo esas veces no se relanza mas: pasa a `error` con una `SYS-007` ("reintentos agotados al reanudar el analisis", sin
 `version_resultado`), se regenera el resumen y sale el webhook `documento.error`. Asi un documento que tumba la API
 (p. ej. por RAM) no la tumba en cada arranque. Vale
 para un solo proceso uvicorn: con varios workers cada uno relanzaria los mismos documentos (haria falta

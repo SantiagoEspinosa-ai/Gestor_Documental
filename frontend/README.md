@@ -162,6 +162,8 @@ hace fallar el build si queda algun rastro.
   (pathname, search y hash: `RutaProtegida` la guarda, en todas las rutas protegidas), pero solo si es
   interna (`utilidades/navegacion.ts`, `rutaInternaSegura`): empieza por una sola `/`, sin `//`, URL
   absoluta, barras invertidas ni caracteres de control, y no es `/login`. Si no, va a `/folios`.
+  Tras 5 fallos de un usuario en 15 minutos la API responde `429 DEMASIADOS_INTENTOS` (ADR-011) y el login
+  muestra "Demasiados intentos fallidos..."; los mocks aplican el mismo limite (`mocks/logica.ts`).
 - Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".
@@ -432,6 +434,9 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   llega enmascarado y no debe guardarse la mascara).
 - HECHO (H17, PR B): boton "Mostrar" de los datos sensibles para revisor y admin, con auto-ocultado a los
   60 s (ver "Expediente" en "Pantallas").
+- Post-MVP (ADR-010 A4c, aceptada): junto a "Mostrar", un campo corto "Motivo (opcional)" que no bloquea; se
+  envia como `motivo` si tiene de 3 a 200 caracteres. La API (y `enmascararTexto` en los mocks) lo guarda
+  tapado en `dato_revelado`, y la auditoria lo muestra como "Motivo: ...".
 - HECHO (H16): antecedentes del folio en el expediente (ver "Pantallas"). En los mocks, el folio 2 y el 4 tienen
   la misma referencia (`scripts/generar_datos_mock.py`): el 4, cerrado, es el antecedente del 2; el 3 no tiene
   referencia. El fragmento del mock es el principio de su `resumen.md` de mock.

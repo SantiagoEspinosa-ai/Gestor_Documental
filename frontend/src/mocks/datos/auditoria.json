@@ -100,6 +100,17 @@
   {
     "id": 8,
     "usuario": "revisor.demo",
+    "accion": "original_visto",
+    "folio": "ONB-2026-000004",
+    "documento_id": "00000000-0000-4000-8000-000004000001",
+    "detalle": {},
+    "modelo": null,
+    "version_prompt": null,
+    "creado_en": "2026-09-26T12:20:00Z"
+  },
+  {
+    "id": 9,
+    "usuario": "revisor.demo",
     "accion": "decision_tomada",
     "folio": "ONB-2026-000004",
     "documento_id": null,
@@ -111,7 +122,7 @@
     "creado_en": "2026-09-26T12:30:00Z"
   },
   {
-    "id": 9,
+    "id": 10,
     "usuario": "integrador.demo",
     "accion": "folio_creado",
     "folio": "ONB-2026-000001",
@@ -122,7 +133,7 @@
     "creado_en": "2026-09-28T09:15:00Z"
   },
   {
-    "id": 10,
+    "id": 11,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000001",
@@ -137,7 +148,7 @@
     "creado_en": "2026-09-28T09:16:00Z"
   },
   {
-    "id": 11,
+    "id": 12,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000001",
@@ -151,7 +162,7 @@
     "creado_en": "2026-09-28T09:16:40Z"
   },
   {
-    "id": 12,
+    "id": 13,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000001",
@@ -166,7 +177,7 @@
     "creado_en": "2026-09-28T09:17:00Z"
   },
   {
-    "id": 13,
+    "id": 14,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000001",
@@ -180,7 +191,7 @@
     "creado_en": "2026-09-28T09:17:40Z"
   },
   {
-    "id": 14,
+    "id": 15,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000001",
@@ -195,7 +206,7 @@
     "creado_en": "2026-09-28T09:18:00Z"
   },
   {
-    "id": 15,
+    "id": 16,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000001",
@@ -209,7 +220,7 @@
     "creado_en": "2026-09-28T09:18:40Z"
   },
   {
-    "id": 16,
+    "id": 17,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000001",
@@ -224,7 +235,7 @@
     "creado_en": "2026-09-28T09:19:00Z"
   },
   {
-    "id": 17,
+    "id": 18,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000001",
@@ -238,7 +249,7 @@
     "creado_en": "2026-09-28T09:19:40Z"
   },
   {
-    "id": 18,
+    "id": 19,
     "usuario": "integrador.demo",
     "accion": "folio_creado",
     "folio": "ONB-2026-000002",
@@ -249,7 +260,7 @@
     "creado_en": "2026-09-29T11:40:00Z"
   },
   {
-    "id": 19,
+    "id": 20,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000002",
@@ -264,7 +275,7 @@
     "creado_en": "2026-09-29T11:41:00Z"
   },
   {
-    "id": 20,
+    "id": 21,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000002",
@@ -278,7 +289,7 @@
     "creado_en": "2026-09-29T11:41:40Z"
   },
   {
-    "id": 21,
+    "id": 22,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000002",
@@ -293,7 +304,7 @@
     "creado_en": "2026-09-29T11:42:00Z"
   },
   {
-    "id": 22,
+    "id": 23,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000002",
@@ -307,7 +318,7 @@
     "creado_en": "2026-09-29T11:42:40Z"
   },
   {
-    "id": 23,
+    "id": 24,
     "usuario": "revisor.demo",
     "accion": "dato_corregido",
     "folio": "ONB-2026-000002",
@@ -322,7 +333,7 @@
     "creado_en": "2026-09-29T12:05:00Z"
   },
   {
-    "id": 24,
+    "id": 25,
     "usuario": "integrador.demo",
     "accion": "documento_subido",
     "folio": "ONB-2026-000002",
@@ -337,7 +348,7 @@
     "creado_en": "2026-09-29T12:10:00Z"
   },
   {
-    "id": 25,
+    "id": 26,
     "usuario": "integrador.otro",
     "accion": "folio_creado",
     "folio": "ONB-2026-000003",
@@ -348,7 +359,7 @@
     "creado_en": "2026-09-30T08:05:00Z"
   },
   {
-    "id": 26,
+    "id": 27,
     "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
@@ -363,7 +374,7 @@
     "creado_en": "2026-09-30T08:06:00Z"
   },
   {
-    "id": 27,
+    "id": 28,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000003",
@@ -377,7 +388,7 @@
     "creado_en": "2026-09-30T08:06:40Z"
   },
   {
-    "id": 28,
+    "id": 29,
     "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
@@ -392,7 +403,7 @@
     "creado_en": "2026-09-30T08:07:00Z"
   },
   {
-    "id": 29,
+    "id": 30,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000003",
@@ -406,7 +417,7 @@
     "creado_en": "2026-09-30T08:07:40Z"
   },
   {
-    "id": 30,
+    "id": 31,
     "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
@@ -421,7 +432,7 @@
     "creado_en": "2026-09-30T08:08:00Z"
   },
   {
-    "id": 31,
+    "id": 32,
     "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
@@ -436,7 +447,7 @@
     "creado_en": "2026-09-30T08:09:00Z"
   },
   {
-    "id": 32,
+    "id": 33,
     "usuario": null,
     "accion": "documento_procesado",
     "folio": "ONB-2026-000003",

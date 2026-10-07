@@ -74,6 +74,27 @@ describe('botón Mostrar de los datos sensibles', () => {
     escrituras.mockRestore()
   })
 
+  it('el motivo es opcional y no bloquea: se envia si tiene 3 caracteres o mas y se vacia tras mostrar', async () => {
+    const curp = documentoMock('ONB-2026-000001', CREDENCIAL).datos_extraidos.curp as string
+    await entrarComo('revisor.demo')
+    const datos = await abrir('ONB-2026-000001', CREDENCIAL)
+    const celda = fila(datos, 'Curp')
+    const u = userEvent.setup()
+    // Muy corto: se muestra igual, sin motivo
+    await u.type(within(celda).getByRole('textbox', { name: 'Motivo para mostrar Curp (opcional)' }), 'ab')
+    await u.click(within(celda).getByRole('button', { name: 'Mostrar Curp' }))
+    expect(await within(celda).findByText(curp)).toBeTruthy()
+    expect(mock.estado.auditoria.at(-1)!.detalle).toEqual({ campo: 'curp' })
+    await u.click(within(celda).getByRole('button', { name: 'Ocultar Curp' }))
+    const motivo = within(celda).getByRole('textbox', { name: 'Motivo para mostrar Curp (opcional)' }) as HTMLInputElement
+    expect(motivo.value).toBe('') // al mostrar se vacio
+    expect(motivo.maxLength).toBe(200)
+    await u.type(motivo, '  Lo pide el cliente  ')
+    await u.click(within(celda).getByRole('button', { name: 'Mostrar Curp' }))
+    expect(await within(celda).findByText(curp)).toBeTruthy()
+    expect(mock.estado.auditoria.at(-1)!.detalle).toEqual({ campo: 'curp', motivo: 'Lo pide el cliente' })
+  })
+
   it('al cambiar de documento se oculta', async () => {
     const curp = documentoMock('ONB-2026-000001', CREDENCIAL).datos_extraidos.curp as string
     await entrarComo('revisor.demo')

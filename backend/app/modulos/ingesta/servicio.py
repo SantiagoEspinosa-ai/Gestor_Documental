@@ -227,9 +227,10 @@ def enmascarar(resultado: ResultadoDocumento) -> ResultadoDocumento:
     return enmascaramiento.enmascarar_resultado(resultado, campos_sensibles(resultado))
 
 
-def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -> Any:
+def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str, motivo: str | None = None) -> Any:
     """POST /documentos/{id}/revelar (ADR-010 A4): el valor real y vigente (el corregido, si lo hay) de un
-    campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor).
+    campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor). El motivo
+    opcional (A4c) se guarda en el detalle tapado con `enmascarar_texto`.
 
     Funciona tambien con el folio cerrado: consultar no cambia el folio. El rol lo comprueba el router.
     """
@@ -244,18 +245,25 @@ def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -
                   or resultado.tipo_documental_detectado)
     if campo not in tipos.campos_sensibles(extraccion):
         raise ErrorApi(422, "PETICION_INVALIDA", "El campo no existe en la ficha del documento o no es sensible")
+    detalle = {"campo": campo}
+    if motivo is not None:
+        literales = enmascaramiento.literales_sensibles(resultado, campos_sensibles(resultado))
+        detalle["motivo"] = enmascaramiento.enmascarar_texto(motivo, literales)
     auditoria.registrar(sesion, "dato_revelado", usuario=usuario, folio=doc.folio, documento_id=doc.id,
-                        detalle={"campo": campo})
+                        detalle=detalle)
     sesion.commit()
     return resultado.datos_extraidos.get(campo)
 
 
-def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
-    """URL prefirmada y temporal del original.
-
-    Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
+def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str, usuario: str) -> str:
+    """URL prefirmada y temporal del original, con su entrada `original_visto` (usuario, folio y documento;
+    `detalle` vacio, nada del contenido). El rol lo comprueba el router.
     """
-    return almacenamiento.url_prefirmada(obtener_documento(sesion, documento_id).ruta_s3)
+    doc = obtener_documento(sesion, documento_id)
+    url = almacenamiento.url_prefirmada(doc.ruta_s3)
+    auditoria.registrar(sesion, "original_visto", usuario=usuario, folio=doc.folio, documento_id=doc.id)
+    sesion.commit()
+    return url
 
 
 def listar_tipos() -> list[dict]:
@@ -294,7 +302,7 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
 
     Limite de reintentos: cada relanzamiento suma 1 a `intentos_reanudar` (un analisis que termina lo vuelve a
     0). Un documento que ya se relanzo MAX_REINTENTOS_REANUDAR veces no se relanza mas: pasa a `error` con una
-    SYS-001 de plataforma ("reintentos agotados"), se regenera el resumen y se avisa por webhook
+    SYS-007 ("reintentos agotados al reanudar el analisis"), se regenera el resumen y se avisa por webhook
     (`documento.error`). Asi un documento que tumba la API (p. ej. por RAM) no la tumba en cada arranque.
 
     Limitacion conocida: vale para un solo proceso uvicorn. Con varios workers, cada uno relanzaria los
@@ -310,10 +318,10 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
     relanzar = [d for d in documentos if d.intentos_reanudar < maximo]
     for doc in agotados:
         doc.estado_analisis = EstadoAnalisis.error.value
-        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-001",
+        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-007",
                             severidad=Severidad.critica.value, confianza=1.0,
-                            mensaje=f"Analisis no completado: reintentos agotados al reanudar ({doc.intentos_reanudar} "
-                                    f"de {maximo}); vuelve a subir el documento"))
+                            mensaje=f"Reintentos agotados al reanudar el analisis ({doc.intentos_reanudar} de {maximo}); "
+                                    "vuelve a subir el documento"))
     for doc in relanzar:
         doc.intentos_reanudar += 1
     pendientes = [(d.id, d.tipo_documental_confirmado) for d in relanzar]

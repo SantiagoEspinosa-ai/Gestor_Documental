@@ -108,6 +108,24 @@ describe('sesion y roles', () => {
     expect([caducado.status, caducado.cuerpo.codigo]).toEqual([401, 'TOKEN_CADUCADO'])
   })
 
+  it('limite de intentos (ADR-011): 5 fallidos dan 429 con Retry-After; el bloqueado se audita y no cuenta', async () => {
+    const intentar = (usuario: string, contrasena = 'mal') => fetch(`${API}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario, contrasena }) })
+    for (let i = 0; i < 4; i++) expect((await intentar('revisor.demo')).status).toBe(401)
+    expect((await intentar('revisor.demo', 'demo-revisor')).status).toBe(200) // un ok reinicia la cuenta
+    for (const usuario of ['revisor.demo', 'nadie.demo']) {
+      for (let i = 0; i < 5; i++) expect((await intentar(usuario)).status).toBe(401)
+      const bloqueado = await intentar(usuario, usuario === 'revisor.demo' ? 'demo-revisor' : 'mal')
+      expect([bloqueado.status, (await bloqueado.json()).codigo, bloqueado.headers.get('Retry-After')])
+        .toEqual([429, 'DEMASIADOS_INTENTOS', String(15 * 60)]) // igual exista o no el usuario
+    }
+    expect(estado.auditoria.filter((e) => e.detalle.resultado === 'bloqueado').map((e) => e.usuario)).toEqual(['revisor.demo', 'nadie.demo'])
+    t += 10 * 60 * 1000
+    expect((await intentar('revisor.demo')).headers.get('Retry-After')).toBe(String(5 * 60)) // el bloqueado no alarga
+    t += 5 * 60 * 1000 + 1
+    expect((await intentar('revisor.demo', 'demo-revisor')).status).toBe(200) // pasada la ventana
+  })
+
   it('el token sigue valido tras reiniciar msw (recargar la pagina), como un JWT', async () => {
     const token = await entrar('admin.demo')
     // Reinicio: estado nuevo y handlers nuevos, sin memoria de lo emitido
@@ -230,6 +248,10 @@ describe('consultas', () => {
     expect([auditoria.cuerpo.pagina, auditoria.cuerpo.tamano_pagina, auditoria.cuerpo.total]).toEqual([1, 50, entradas.length])
     expect(entradas.every((e) => e.folio === 'ONB-2026-000004')).toBe(true)
     expect(entradas.map((e) => e.creado_en)).toEqual([...entradas.map((e) => e.creado_en)].sort().reverse())
+    // Cada peticion del original deja original_visto (como la API: usuario, folio y documento; detalle vacio)
+    const vistos = entradas.filter((e) => e.accion === 'original_visto' && e.usuario === 'revisor.demo')
+    expect(vistos.map((e) => [e.documento_id, e.detalle])).toEqual( // las 2 de aqui y la de los datos iniciales
+      Array(3).fill([f4.documentos[0].identificador_unico_documento, {}]))
   })
 
   it('GET /auditoria segun ADR-008: 50 por defecto, 1 a 100, creado_en desc e id desc, 422 fuera de rango', async () => {
@@ -917,6 +939,28 @@ describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
     const cerrado = await revelar('revisor.demo', id, { campo: 'curp' })
     expect([cerrado.status, cerrado.cuerpo]).toEqual([200, { campo: 'curp', valor: curp }])
     expect(estado.auditoria.filter((e) => e.accion === 'dato_revelado')).toHaveLength(1) // solo la correcta
+  })
+
+  it('revelar con motivo (ADR-010 A4c): opcional, de 3 a 200 caracteres y guardado tapado como la API', async () => {
+    const { doc, curp } = conSensible()
+    const id = doc.identificador_unico_documento
+    const token = await entrar('revisor.demo')
+    const revelar = (cuerpo: unknown) => api('POST', `/documentos/${id}/revelar`, { token, cuerpo })
+    for (const motivo of ['ab', 'x'.repeat(201), 5]) {
+      const r = await revelar({ campo: 'curp', motivo })
+      expect([r.status, r.cuerpo.codigo], String(motivo)).toEqual([422, 'PETICION_INVALIDA'])
+    }
+    const motivos = ['URGENTE: lo pide el cliente', `Dicta ${curp} y XAXX020202MDFYYYA5`, `en minusculas: ${curp.toLowerCase()} y xaxx020202mdfyyya5`]
+    for (const motivo of motivos) expect((await revelar({ campo: 'curp', motivo })).status).toBe(200)
+    expect((await revelar({ campo: 'curp', motivo: null })).status).toBe(200)
+    const detalles = estado.auditoria.filter((e) => e.accion === 'dato_revelado').map((e) => e.detalle)
+    expect(detalles).toEqual([
+      { campo: 'curp', motivo: 'URGENTE: lo pide el cliente' },
+      { campo: 'curp', motivo: `Dicta ${mascara(curp)} y ****` }, // el literal del documento con cola, como la API
+      { campo: 'curp', motivo: `en minusculas: ${mascara(curp)} y ****` },
+      { campo: 'curp' },
+    ])
+    expect(JSON.stringify(detalles).toUpperCase()).not.toContain(curp)
   })
 })
 

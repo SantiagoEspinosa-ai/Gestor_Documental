@@ -7,7 +7,8 @@ import {
 } from '../tipos/contrato'
 import { auditar, buscarDocumento, fechaIso, siguiente, type EstadoMock, type SesionMock } from './estado'
 import {
-  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enProceso, ficha, nuevaAlerta,
+  antecedentes, avanzarProcesamiento, bloqueantesSinResolver, enmascararDocumento, enmascararExpediente, enmascararTexto, enProceso, ficha, nuevaAlerta,
+  segundosBloqueado,
   recalcularExpediente, recalcularTiposDelProceso, recomendarDocumento, resumenFolio, resumenMarkdown, tipoExtraccion,
 } from './logica'
 import { error, FalloApi, leerJson } from './respuestas'
@@ -185,6 +186,13 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     if (typeof cuerpo.usuario !== 'string' || typeof cuerpo.contrasena !== 'string') {
       throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {usuario, contrasena}')
     }
+    // ADR-011, como la API: antes de mirar el usuario y la contrasena; el intento bloqueado se audita y no cuenta
+    const segundos = segundosBloqueado(estado, cuerpo.usuario)
+    if (segundos !== null) {
+      auditar(estado, cuerpo.usuario, 'login', null, null, { resultado: 'bloqueado' })
+      return HttpResponse.json({ codigo: 'DEMASIADOS_INTENTOS', mensaje: 'Demasiados intentos fallidos; vuelve a intentarlo mas tarde' },
+        { status: 429, headers: { 'Retry-After': String(segundos) } })
+    }
     const usuario = USUARIOS_DEMO.find((u) => u.usuario === cuerpo.usuario && u.contrasena === cuerpo.contrasena)
     auditar(estado, String(cuerpo.usuario), 'login', null, null, { resultado: usuario ? 'ok' : 'fallido' })
     if (!usuario) return error('CREDENCIALES_INVALIDAS', 'Usuario o contrasena incorrectos')
@@ -308,8 +316,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/documentos/{id}', TODOS, ({ params, usuario }) => documentoJson(documentoOError(estado, params.id, usuario).doc))
 
-  ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params }) => {
-    const { doc } = documentoOError(estado, params.id)
+  ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params, usuario }) => {
+    const { folio, doc } = documentoOError(estado, params.id)
     const id = doc.identificador_unico_documento
     const archivo = estado.archivos.get(id)
     // Como la URL prefirmada real (caduca a los 300 s): una nueva en cada peticion y la anterior deja de valer,
@@ -320,19 +328,25 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const url = archivo ? URL.createObjectURL(archivo)
       : `${ORIGEN_FRONT()}/mock-originales/${encodeURIComponent(doc.referencia_archivo_original.nombre_archivo)}?firma=${siguiente(estado)}`
     estado.urls.set(id, url)
+    auditar(estado, usuario.usuario, 'original_visto', folio.folio, id, {}) // como la API: detalle vacio
     return HttpResponse.json({ url })
   })
 
   // ADR-010 A4: el valor real y vigente de un campo sensible, con su entrada dato_revelado (sin el valor)
   ruta('POST', '/documentos/{id}/revelar', ['revisor', 'admin'], async ({ request, params, usuario }) => {
-    const { campo } = await leerJson(request, ['campo'])
+    const { campo, motivo } = await leerJson(request, ['campo', 'motivo'])
     if (typeof campo !== 'string' || !campo || campo.length > 100) throw new FalloApi('PETICION_INVALIDA', 'Se esperaba {campo}')
+    // ADR-010 A4c: motivo opcional de 3 a 200 caracteres
+    if (motivo !== undefined && motivo !== null && (typeof motivo !== 'string' || motivo.length < 3 || motivo.length > 200)) {
+      throw new FalloApi('PETICION_INVALIDA', 'motivo: de 3 a 200 caracteres')
+    }
     const { folio, doc } = documentoOError(estado, params.id)
     exigirAnalizado(doc) // 409 en proceso o con error; el folio cerrado no importa: consultar no cambia nada
     if (!ficha(estado, tipoExtraccion(doc))?.campos[campo]?.sensible) {
       throw new FalloApi('PETICION_INVALIDA', 'El campo no existe en la ficha del documento o no es sensible')
     }
-    auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento, { campo })
+    auditar(estado, usuario.usuario, 'dato_revelado', folio.folio, doc.identificador_unico_documento,
+      typeof motivo === 'string' ? { campo, motivo: enmascararTexto(estado, doc, motivo) } : { campo })
     return HttpResponse.json({ campo, valor: doc.datos_extraidos[campo] ?? null }, { headers: { 'Cache-Control': 'no-store' } })
   })
 
