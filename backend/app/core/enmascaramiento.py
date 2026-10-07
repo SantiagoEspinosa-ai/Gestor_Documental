@@ -10,6 +10,7 @@ comparaciones, recomendacion) siguen con los valores reales; esto es solo para l
 import re
 from typing import Any
 
+from app.core import logs
 from app.schemas.resultado import ResultadoDocumento, ResultadoExpediente
 
 MASCARA = "****"
@@ -32,8 +33,8 @@ def _tapar_mrz(texto: str) -> str:
     return _MRZ.sub(lambda m: m.group(0) if m.group(0).startswith("P<") else MASCARA, texto)
 
 
-def _literales(resultado: ResultadoDocumento, sensibles: set[str]) -> list[str]:
-    """Valores sensibles que pueden aparecer escritos en una evidencia: el vigente, el leido por el motor
+def literales_sensibles(resultado: ResultadoDocumento, sensibles: set[str]) -> list[str]:
+    """Valores sensibles que pueden aparecer escritos en una evidencia o en un texto libre: el vigente, el leido por el motor
     (antes de corregir) y cada corregido. Los mas largos primero, para no dejar trozos."""
     valores = [resultado.datos_extraidos.get(campo) for campo in sensibles]
     for correccion in resultado.correcciones:
@@ -55,12 +56,23 @@ def _evidencia(campo: str, texto: str, literales: list[str], sensibles: set[str]
     return texto
 
 
+def enmascarar_texto(texto: str, literales: list[str]) -> str:
+    """Texto libre (p. ej. el motivo de "mostrar", ADR-010 A4c) listo para guardar o devolver: cada literal
+    sensible del documento (`literales_sensibles`) pasa por `mascara`, y despues `logs.tapar`, la misma
+    barrera que los logs (A5), tapa lo que tenga forma de CURP, clave de elector, pasaporte o MRZ, sea o no
+    del documento. Lo que tapa `logs.tapar` queda en `****` sin los 4 ultimos: en un texto libre no hacen
+    falta y es mas seguro."""
+    for literal in literales:
+        texto = texto.replace(literal, mascara(literal))
+    return logs.tapar(texto)
+
+
 def enmascarar_resultado(resultado: ResultadoDocumento, sensibles: set[str]) -> ResultadoDocumento:
     """Copia de `resultado` con los campos sensibles enmascarados en datos, evidencias y correcciones.
 
     En TODAS las evidencias se tapa ademas la linea 2 de la MRZ, aunque el documento no tenga campos
     sensibles: contiene el numero de pasaporte aunque no coincida letra a letra con el valor leido."""
-    literales = _literales(resultado, sensibles)
+    literales = literales_sensibles(resultado, sensibles)
     datos = {campo: mascara(valor) if campo in sensibles else valor
              for campo, valor in resultado.datos_extraidos.items()}
     evidencias = {campo: _evidencia(campo, texto, literales, sensibles)

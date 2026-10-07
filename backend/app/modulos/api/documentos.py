@@ -31,6 +31,7 @@ class RevelarEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     campo: str = Field(min_length=1, max_length=100)
+    motivo: str | None = Field(None, min_length=3, max_length=200)  # ADR-010 A4c, opcional
 
 
 class DatoRevelado(BaseModel):
@@ -75,6 +76,6 @@ def original(documento_id: str, sesion: Session = Depends(get_sesion),
 def revelar(documento_id: str, entrada: RevelarEntrada, response: Response, sesion: Session = Depends(get_sesion),
             usuario: Usuario = Depends(requiere_rol("revisor", "admin"))) -> DatoRevelado:
     """ADR-010 A4: POST y no GET porque deja auditoria; la respuesta no se guarda en ninguna cache."""
-    valor = ingesta.revelar_dato(sesion, documento_id, entrada.campo, usuario.usuario)
+    valor = ingesta.revelar_dato(sesion, documento_id, entrada.campo, usuario.usuario, entrada.motivo)
     response.headers["Cache-Control"] = "no-store"
     return DatoRevelado(campo=entrada.campo, valor=valor)

@@ -892,6 +892,27 @@ describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
     expect([cerrado.status, cerrado.cuerpo]).toEqual([200, { campo: 'curp', valor: curp }])
     expect(estado.auditoria.filter((e) => e.accion === 'dato_revelado')).toHaveLength(1) // solo la correcta
   })
+
+  it('revelar con motivo (ADR-010 A4c): opcional, de 3 a 200 caracteres y guardado tapado como la API', async () => {
+    const { doc, curp } = conSensible()
+    const id = doc.identificador_unico_documento
+    const token = await entrar('revisor.demo')
+    const revelar = (cuerpo: unknown) => api('POST', `/documentos/${id}/revelar`, { token, cuerpo })
+    for (const motivo of ['ab', 'x'.repeat(201), 5]) {
+      const r = await revelar({ campo: 'curp', motivo })
+      expect([r.status, r.cuerpo.codigo], String(motivo)).toEqual([422, 'PETICION_INVALIDA'])
+    }
+    const motivos = ['URGENTE: lo pide el cliente', `Dicta ${curp} y XAXX020202MDFYYYA5`]
+    for (const motivo of motivos) expect((await revelar({ campo: 'curp', motivo })).status).toBe(200)
+    expect((await revelar({ campo: 'curp', motivo: null })).status).toBe(200)
+    const detalles = estado.auditoria.filter((e) => e.accion === 'dato_revelado').map((e) => e.detalle)
+    expect(detalles).toEqual([
+      { campo: 'curp', motivo: 'URGENTE: lo pide el cliente' },
+      { campo: 'curp', motivo: `Dicta ${mascara(curp)} y ****` }, // el literal del documento con cola, como la API
+      { campo: 'curp' },
+    ])
+    expect(JSON.stringify(detalles)).not.toContain(curp)
+  })
 })
 
 describe('modelos de los analisis (configuracion de PERSONA_2)', () => {

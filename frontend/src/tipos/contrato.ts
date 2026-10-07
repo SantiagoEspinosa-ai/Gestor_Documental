@@ -245,6 +245,8 @@ export interface RespuestaOriginal {
 /** POST /documentos/{id}/revelar (ADR-010 A4): solo revisor y admin; deja `dato_revelado` en la auditoria */
 export interface PeticionRevelar {
   campo: string
+  /** Opcional (ADR-010 A4c): de 3 a 200 caracteres; se guarda enmascarado en `dato_revelado` */
+  motivo?: string
 }
 
 /** Respuesta de POST /documentos/{id}/revelar: el valor real y vigente (el corregido, si lo hay). No se guarda */

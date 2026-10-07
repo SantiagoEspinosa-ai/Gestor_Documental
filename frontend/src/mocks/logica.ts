@@ -364,13 +364,35 @@ function taparEvidencia(campo: string, texto: string, literales: string[], sensi
   return tapado
 }
 
+/** Valores sensibles del documento que pueden aparecer escritos (vigente, leido y corregidos), los mas largos primero */
+function literalesSensibles(doc: ResultadoDocumento, sensibles: Set<string>): string[] {
+  const valores = [...sensibles].map((c) => doc.datos_extraidos[c])
+    .concat(doc.correcciones.filter((c) => sensibles.has(c.campo)).flatMap((c) => [c.valor_anterior, c.valor_nuevo]))
+  return [...new Set(valores.filter((v) => v !== null && v !== undefined && String(v)).map(String))]
+    .sort((a, b) => b.length - a.length)
+}
+
+/** Los patrones de backend/app/core/logs.py (_PATRONES): MRZ, CURP, clave de elector y pasaporte */
+const PATRONES_LOGS = [
+  /(?<![A-Z0-9<])[A-Z0-9<]{30,}(?![A-Z0-9<])/g,
+  /[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d/g,
+  /[A-Z]{6}\d{8}[HM]\d{3}/g,
+  /\b(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{8,9}\b/g,
+]
+
+/** Texto libre tapado como enmascarar_texto de la API (ADR-010 A4c): literales del documento con `mascara` y
+ * despues lo que tenga forma de dato sensible, con `****` sin cola (como logs.tapar) */
+export function enmascararTexto(estado: EstadoMock, doc: ResultadoDocumento, texto: string): string {
+  let tapado = texto
+  for (const literal of literalesSensibles(doc, camposSensibles(estado, doc))) tapado = tapado.split(literal).join(mascara(literal)!)
+  for (const patron of PATRONES_LOGS) tapado = tapado.replace(patron, MASCARA)
+  return tapado
+}
+
 /** Copia del documento enmascarada: datos, evidencias y correcciones de los campos sensibles */
 export function enmascararDocumento(estado: EstadoMock, doc: ResultadoDocumento): ResultadoDocumento {
   const sensibles = camposSensibles(estado, doc)
-  const valores = [...sensibles].map((c) => doc.datos_extraidos[c])
-    .concat(doc.correcciones.filter((c) => sensibles.has(c.campo)).flatMap((c) => [c.valor_anterior, c.valor_nuevo]))
-  const literales = [...new Set(valores.filter((v) => v !== null && v !== undefined && String(v)).map(String))]
-    .sort((a, b) => b.length - a.length)
+  const literales = literalesSensibles(doc, sensibles)
   const copia = structuredClone(doc)
   for (const campo of sensibles) if (campo in copia.datos_extraidos) copia.datos_extraidos[campo] = mascara(copia.datos_extraidos[campo])
   copia.evidencia_por_campo = Object.fromEntries(Object.entries(copia.evidencia_por_campo)

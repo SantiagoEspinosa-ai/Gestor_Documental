@@ -3,6 +3,7 @@ Mismo entorno que test_enmascaramiento_api (SQLite temporal + moto, motor falso)
 import json
 import uuid
 
+import pytest
 from sqlalchemy import select
 
 from app.core.modelos import Auditoria, Documento
@@ -133,3 +134,45 @@ def test_pasaporte(entorno):
     procesamiento.procesar(doc.id)
     assert _revelar("revisor", doc.id, {"campo": "numero_pasaporte"}).json()["valor"] == PASAPORTE
     assert _revelar("revisor", doc.id, {"campo": "curp"}).status_code == 422  # no esta en la ficha del pasaporte
+
+
+# --- motivo opcional (ADR-010 A4c): se guarda tapado con la misma barrera que los logs (A5) ---
+
+CURP_AJENA = "XAXX020202MDFYYYA5"  # ficticia, de nadie del documento
+
+
+def _motivo(entorno, motivo):
+    _, doc = _credencial(entorno)
+    respuesta = _revelar("revisor", doc.id, {"campo": "curp", "motivo": motivo})
+    assert respuesta.status_code == 200 and respuesta.json()["valor"] == CURP_LEIDA
+    [entrada] = _entradas(entorno[0])
+    return entrada.detalle
+
+
+def test_motivo_null_es_como_sin_motivo(entorno):
+    _, doc = _credencial(entorno)
+    assert _revelar("revisor", doc.id, {"campo": "curp", "motivo": None}).status_code == 200
+    assert [e.detalle for e in _entradas(entorno[0])] == [{"campo": "curp"}]
+
+
+@pytest.mark.parametrize("motivo", ["Verificar con el cliente por telefono", "URGENTE: lo pide auditoria"])
+def test_motivo_normal_intacto(entorno, motivo):
+    assert _motivo(entorno, motivo) == {"campo": "curp", "motivo": motivo}
+
+
+@pytest.mark.parametrize("sensible", [CURP_AJENA, CURP_LEIDA, CLAVE_ELECTOR],
+                         ids=["curp-ajena", "curp-del-documento", "clave-elector-del-documento"])
+def test_motivo_con_un_dato_sensible_sale_tapado(entorno, sensible):
+    detalle = _motivo(entorno, f"El cliente dicta {sensible} por telefono")
+    assert sensible not in json.dumps(detalle) and "****" in detalle["motivo"]
+    assert detalle["motivo"].startswith("El cliente dicta ****") and detalle["motivo"].endswith(" por telefono")
+    auditoria = _cliente("admin").get("/api/v1/auditoria")
+    assert sensible not in auditoria.text
+
+
+@pytest.mark.parametrize("motivo", ["ab", "x" * 201, 5])
+def test_motivo_invalido_422_sin_auditoria(entorno, motivo):
+    _, doc = _credencial(entorno)
+    respuesta = _revelar("revisor", doc.id, {"campo": "curp", "motivo": motivo})
+    assert (respuesta.status_code, respuesta.json()["codigo"]) == (422, "PETICION_INVALIDA")
+    assert _entradas(entorno[0]) == []

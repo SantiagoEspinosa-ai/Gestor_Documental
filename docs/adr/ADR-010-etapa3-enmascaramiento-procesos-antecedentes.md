@@ -178,6 +178,7 @@ No cambia nada de lo aceptado arriba; solo anade puntos.
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
 | A4b | Accion de auditoria `original_visto` en `GET /documentos/{id}/original` | PERSONA_1 | Propuesta |
+| A4c | `motivo` opcional en `POST /documentos/{id}/revelar`, guardado tapado en `dato_revelado` | PERSONA_1 | Propuesta |
 
 - **A4b, que**: cada `GET /documentos/{id}/original` correcto deja `original_visto` con el usuario, el
   folio y el `documento_id` en sus columnas y `detalle` vacio: nada del contenido del documento. Con `403`
@@ -188,3 +189,11 @@ No cambia nada de lo aceptado arriba; solo anade puntos.
 - **A4b, que no cambia**: sin migracion (la columna `accion` no tiene CHECK en BD) y la lista de acciones
   sigue cerrada: se anade a `ACCIONES_AUDITORIA`, `endpoints.md` y `contrato.ts`, que
   `test_contrato_frontend` mantiene iguales.
+- **A4c, que**: `POST /documentos/{id}/revelar` acepta `motivo` opcional (texto de 3 a 200 caracteres; fuera
+  de rango, `422 PETICION_INVALIDA`). Si viene, se guarda en `detalle.motivo` de `dato_revelado`. En la UI,
+  un campo corto opcional junto a "Mostrar" que nunca bloquea.
+- **A4c, como se protege**: es texto libre, asi que el motivo se guarda tapado con la misma barrera que los
+  logs (A5): `enmascaramiento.enmascarar_texto` tapa los valores sensibles del documento y, con
+  `logs.tapar`, cualquier CURP, clave de elector, pasaporte o MRZ, sea o no del documento.
+- **A4c, que no cambia**: compatible hacia atras (sin `motivo`, todo igual que en A4); sin migracion; el
+  motivo no es obligatorio. Pedirlo obligatorio seria otra decision.

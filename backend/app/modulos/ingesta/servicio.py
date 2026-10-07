@@ -213,9 +213,10 @@ def enmascarar(resultado: ResultadoDocumento) -> ResultadoDocumento:
     return enmascaramiento.enmascarar_resultado(resultado, campos_sensibles(resultado))
 
 
-def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -> Any:
+def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str, motivo: str | None = None) -> Any:
     """POST /documentos/{id}/revelar (ADR-010 A4): el valor real y vigente (el corregido, si lo hay) de un
-    campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor).
+    campo sensible, con su entrada `dato_revelado` (solo el nombre del campo, nunca el valor). El motivo
+    opcional (A4c) se guarda en el detalle tapado con `enmascarar_texto`.
 
     Funciona tambien con el folio cerrado: consultar no cambia el folio. El rol lo comprueba el router.
     """
@@ -230,8 +231,12 @@ def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -
                   or resultado.tipo_documental_detectado)
     if campo not in tipos.campos_sensibles(extraccion):
         raise ErrorApi(422, "PETICION_INVALIDA", "El campo no existe en la ficha del documento o no es sensible")
+    detalle = {"campo": campo}
+    if motivo is not None:
+        literales = enmascaramiento.literales_sensibles(resultado, campos_sensibles(resultado))
+        detalle["motivo"] = enmascaramiento.enmascarar_texto(motivo, literales)
     auditoria.registrar(sesion, "dato_revelado", usuario=usuario, folio=doc.folio, documento_id=doc.id,
-                        detalle={"campo": campo})
+                        detalle=detalle)
     sesion.commit()
     return resultado.datos_extraidos.get(campo)
 
