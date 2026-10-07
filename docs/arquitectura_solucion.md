@@ -326,7 +326,7 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | ADR-010 | Etapa 3: enmascaramiento en la API con "mostrar" auditado, procesos en solo lectura y forma de los antecedentes | Aceptado (PR #21 y #24); adenda A4b y A4c aceptada (PR #50 y #51) |
 | ADR-011 | Límite de intentos de login: `429 DEMASIADOS_INTENTOS` tras 5 fallos de un usuario en 15 minutos | Aceptado (PR #52) |
 | ADR-012 | El integrador solo accede a los folios que ha creado | Aceptado (PR #55 y #57) |
-| ADR-013 | Retirar y restaurar documentos sin borrarlos | Propuesto (PR #59, en revisión) |
+| ADR-013 | Retirar y restaurar documentos sin borrarlos (solo el revisor) | Aceptado (PR #59) |
 
 ## 12. Limitaciones conocidas y evolución después del MVP
 

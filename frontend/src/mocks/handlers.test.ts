@@ -983,9 +983,12 @@ describe('retirar y restaurar documentos (ADR-013)', () => {
     expect((await api('POST', `/documentos/${comprobante}/restaurar`, { token: revisor })).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_NO_RETIRADO' })
     const pendiente = doc(await folio(revisor, 'ONB-2026-000002'), 'pasaporte').identificador_unico_documento
     expect((await retirar(revisor, pendiente)).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_EN_PROCESO' })
+    // Solo el revisor (ADR-013): el admin consulta
     const admin = await entrar('admin.demo')
-    const r = await retirar(admin, comprobante)
-    expect(r.cuerpo.retirado).toEqual({ en: expect.any(String), por: 'admin.demo', motivo: 'Subido por error' })
+    expect((await retirar(admin, comprobante)).cuerpo).toMatchObject({ codigo: 'SIN_PERMISO' })
+    expect((await api('POST', `/documentos/${comprobante}/restaurar`, { token: admin })).status).toBe(403)
+    const r = await retirar(revisor, comprobante)
+    expect(r.cuerpo.retirado).toEqual({ en: expect.any(String), por: 'revisor.demo', motivo: 'Subido por error' })
     expect((await retirar(revisor, comprobante)).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_RETIRADO' })
     // Sobre un retirado no se revisa
     expect((await api('PATCH', `/documentos/${comprobante}/datos`, { token: revisor, cuerpo: { proveedor: 'Otra' } })).cuerpo)

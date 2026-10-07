@@ -128,26 +128,30 @@ def _codigos_expediente(folio):
 
 # --- retirar y restaurar ---
 
-def test_retirar_y_restaurar_revisor_y_admin(entorno):
+def test_retirar_y_restaurar_revisor(entorno):
     _, credencial, _ = _folio(entorno)
-    for rol in ("revisor", "admin"):
-        r = _retirar(credencial, rol=rol)
-        assert r.status_code == 200
-        retirado = r.json()["retirado"]
-        assert (retirado["por"], retirado["motivo"]) == (f"{rol}_ficticio", "Subido por error")
+    r = _retirar(credencial)
+    assert r.status_code == 200
+    retirado = r.json()["retirado"]
+    assert (retirado["por"], retirado["motivo"]) == ("revisor_ficticio", "Subido por error")
+    for rol in ("revisor", "admin", "integrador"):  # todos lo consultan
         assert _cliente(rol).get(f"/api/v1/documentos/{credencial}").json()["retirado"] == retirado
-        r = _restaurar(credencial, rol=rol)
-        assert r.status_code == 200 and r.json()["retirado"] is None
+    r = _restaurar(credencial)
+    assert r.status_code == 200 and r.json()["retirado"] is None
     # Nada se borra: el documento y su original siguen
     sesion, s3 = entorno
     doc = sesion.get(Documento, uuid.UUID(credencial))
     assert doc is not None and s3.descargar(doc.ruta_s3)
 
 
-def test_integrador_403(entorno):
+@pytest.mark.parametrize("rol", ["admin", "integrador"])
+def test_admin_e_integrador_403(entorno, rol):
     _, credencial, _ = _folio(entorno)
-    for respuesta in (_retirar(credencial, rol="integrador"), _restaurar(credencial, rol="integrador")):
+    for respuesta in (_retirar(credencial, rol=rol), _restaurar(credencial, rol=rol)):
         assert (respuesta.status_code, respuesta.json()["codigo"]) == (403, "SIN_PERMISO")
+    assert _retirar(credencial).status_code == 200
+    respuesta = _restaurar(credencial, rol=rol)  # tampoco restaura uno retirado
+    assert (respuesta.status_code, respuesta.json()["codigo"]) == (403, "SIN_PERMISO")
 
 
 def test_409_ya_retirado_no_retirado_y_folio_cerrado(entorno):
@@ -322,10 +326,10 @@ def test_auditoria_retirado_con_motivo_tapado_y_restaurado_sin_detalle(entorno):
     sesion, _ = entorno
     folio, credencial, _ = _folio(entorno)
     _retirar(credencial, f"Duplicado {CURP_AJENA}")
-    _restaurar(credencial, rol="admin")
+    _restaurar(credencial)
     sesion.expire_all()
     entradas = sesion.scalars(select(Auditoria).where(
         Auditoria.accion.in_(["documento_retirado", "documento_restaurado"])).order_by(Auditoria.id)).all()
     assert [(e.accion, e.usuario, e.folio, str(e.documento_id), e.detalle) for e in entradas] == [
         ("documento_retirado", "revisor_ficticio", folio, credencial, {"motivo": "Duplicado ****"}),
-        ("documento_restaurado", "admin_ficticio", folio, credencial, {})]
+        ("documento_restaurado", "revisor_ficticio", folio, credencial, {})]

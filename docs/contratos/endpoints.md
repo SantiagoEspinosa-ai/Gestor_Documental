@@ -3,7 +3,7 @@
 Base: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Roles: `admin`, `revisor`, `integrador`.
 Errores: `{ "codigo": "...", "mensaje": "..." }`, catalogo en `docs/contratos/codigos_error.md`.
 Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30), ADR-010 (enmascaramiento) y
-ADR-013 (retirar documentos, propuesta).
+ADR-013 (retirar documentos).
 
 | Metodo | Ruta | Rol | Descripcion | Respuesta |
 |---|---|---|---|---|
@@ -17,8 +17,8 @@ ADR-013 (retirar documentos, propuesta).
 | GET | /documentos/{id} | todos | Resultado del documento; integrador: solo sus folios, el resto da 404 (ADR-012) | `ResultadoDocumento` |
 | GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream); audita `original_visto` | `{url}` |
 | POST | /documentos/{id}/revelar | revisor, admin | `{campo, motivo?}`: valor real y vigente de un campo sensible (ADR-010 A4 y A4c; ver "Reglas") | `{campo, valor}` |
-| POST | /documentos/{id}/retirar | revisor, admin | `{motivo}` (3 a 200 caracteres, se guarda tapado): el documento deja de contar para el folio; nada se borra (ADR-013; ver "Reglas") | `ResultadoDocumento` |
-| POST | /documentos/{id}/restaurar | revisor, admin | Sin cuerpo: deshace la retirada (ADR-013; ver "Reglas") | `ResultadoDocumento` |
+| POST | /documentos/{id}/retirar | revisor | `{motivo}` (3 a 200 caracteres, se guarda tapado): el documento deja de contar para el folio; nada se borra (ADR-013; ver "Reglas") | `ResultadoDocumento` |
+| POST | /documentos/{id}/restaurar | revisor | Sin cuerpo: deshace la retirada (ADR-013; ver "Reglas") | `ResultadoDocumento` |
 | PATCH | /documentos/{id}/datos | revisor | `{campo: valor}` corrige datos; se guarda en `correcciones` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/confirmar-clasificacion | revisor | `{tipo_documental}` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` | `ResultadoDocumento` |
@@ -103,9 +103,9 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   `motivo` es opcional (ADR-010 A4c): texto de 3 a 200 caracteres (fuera de rango, `422
   PETICION_INVALIDA`); si viene, va en `detalle.motivo` tapado con la misma barrera que los logs (A5).
 
-- Documentos retirados (ADR-013, propuesta): `POST /documentos/{id}/retirar` con `{motivo}` (obligatorio, 3 a
-  200 caracteres; se guarda tapado como el de "mostrar") y `POST /documentos/{id}/restaurar`, para revisor y
-  admin (integrador `403 SIN_PERMISO`). Solo con el folio `en_revision` (`409 FOLIO_CERRADO`); retirar exige
+- Documentos retirados (ADR-013): `POST /documentos/{id}/retirar` con `{motivo}` (obligatorio, 3 a
+  200 caracteres; se guarda tapado como el de "mostrar") y `POST /documentos/{id}/restaurar`, solo para el
+  revisor, como las demas operaciones de revision (admin e integrador `403 SIN_PERMISO`). Solo con el folio `en_revision` (`409 FOLIO_CERRADO`); retirar exige
   que el documento no este `pendiente` ni `procesando` (`409 DOCUMENTO_EN_PROCESO`; en `error` si se puede) y
   que no este ya retirado (`409 DOCUMENTO_RETIRADO`); restaurar uno no retirado, `409 DOCUMENTO_NO_RETIRADO`.
   El documento sigue en el expediente con `retirado: {en, por, motivo}` (`null` si cuenta), pero no cuenta para

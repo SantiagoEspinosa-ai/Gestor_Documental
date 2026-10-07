@@ -38,7 +38,7 @@ export function revelarDato(id: string, datos: PeticionRevelar): Promise<Respues
   return peticion<RespuestaRevelar>(`${documento(id)}/revelar`, { metodo: 'POST', cuerpo: datos })
 }
 
-/** POST /documentos/{id}/retirar (ADR-013): revisor y admin; el documento deja de contar, nada se borra */
+/** POST /documentos/{id}/retirar (ADR-013): solo revisor; el documento deja de contar, nada se borra */
 export function retirarDocumento(id: string, datos: PeticionRetirar): Promise<ResultadoDocumento> {
   return peticion<ResultadoDocumento>(`${documento(id)}/retirar`, { metodo: 'POST', cuerpo: datos })
 }

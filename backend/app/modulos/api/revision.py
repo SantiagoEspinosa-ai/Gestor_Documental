@@ -79,14 +79,14 @@ class RetirarEntrada(BaseModel):
 
 @router.post("/documentos/{documento_id}/retirar", response_model=ResultadoDocumento)
 def retirar_documento(documento_id: str, entrada: RetirarEntrada, sesion: Session = Depends(get_sesion),
-                      usuario: Usuario = Depends(requiere_rol("revisor", "admin"))) -> ResultadoDocumento:
+                      usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
     """ADR-013: el documento deja de contar para el folio; nada se borra."""
     return ingesta.enmascarar(expediente.retirar_documento(sesion, documento_id, entrada.motivo, usuario.usuario))
 
 
 @router.post("/documentos/{documento_id}/restaurar", response_model=ResultadoDocumento)
 def restaurar_documento(documento_id: str, sesion: Session = Depends(get_sesion),
-                        usuario: Usuario = Depends(requiere_rol("revisor", "admin"))) -> ResultadoDocumento:
+                        usuario: Usuario = Depends(requiere_rol("revisor"))) -> ResultadoDocumento:
     """ADR-013: deshace la retirada; sin cuerpo."""
     return ingesta.enmascarar(expediente.restaurar_documento(sesion, documento_id, usuario.usuario))
 

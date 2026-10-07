@@ -26,7 +26,7 @@ import { formatearValor, nombreCampo } from '../utilidades/valores'
 
 const ROLES_ORIGINAL = ['revisor', 'admin'] // GET /documentos/{id}/original
 const ROLES_ANTECEDENTES: readonly Rol[] = ['revisor', 'admin'] // GET /folios/{folio}/antecedentes
-const ROLES_RETIRAR: readonly Rol[] = ['revisor', 'admin'] // POST /documentos/{id}/retirar y /restaurar (ADR-013)
+const ROLES_RETIRAR: readonly Rol[] = ['revisor'] // POST /documentos/{id}/retirar y /restaurar (ADR-013): como las demas acciones de revision
 
 const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
   pendiente: Clock, procesando: LoaderCircle, completado: CheckCircle2, error: CircleX,

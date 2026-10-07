@@ -359,7 +359,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
   })
 
   // ADR-013: retirar (motivo obligatorio, guardado tapado) y restaurar; nada se borra
-  ruta('POST', '/documentos/{id}/retirar', ['revisor', 'admin'], async ({ request, params, usuario }) => {
+  ruta('POST', '/documentos/{id}/retirar', ['revisor'], async ({ request, params, usuario }) => {
     const { motivo } = await leerJson(request, ['motivo'])
     if (typeof motivo !== 'string' || motivo.length < 3 || motivo.length > 200) {
       throw new FalloApi('PETICION_INVALIDA', 'motivo: obligatorio, de 3 a 200 caracteres')
@@ -376,7 +376,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return documentoJson(doc)
   })
 
-  ruta('POST', '/documentos/{id}/restaurar', ['revisor', 'admin'], ({ params, usuario }) => {
+  ruta('POST', '/documentos/{id}/restaurar', ['revisor'], ({ params, usuario }) => {
     const { folio, doc } = documentoOError(estado, params.id)
     exigirAbierto(folio)
     if (!doc.retirado) throw new FalloApi('DOCUMENTO_NO_RETIRADO', 'El documento no esta retirado')

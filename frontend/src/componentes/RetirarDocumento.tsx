@@ -11,7 +11,7 @@ export const MOTIVO_RETIRAR_MAX = 200
 
 interface Props {
   doc: ResultadoDocumento
-  /** Folio abierto y rol revisor o admin; sin ello solo se informa de la retirada */
+  /** Folio abierto y rol revisor; sin ello solo se informa de la retirada */
   puedeActuar: boolean
   deshabilitado: boolean
   alRetirar: (motivo: string) => Promise<boolean>

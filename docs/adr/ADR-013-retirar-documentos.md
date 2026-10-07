@@ -1,6 +1,6 @@
 # ADR-013: Retirar un documento del folio en lugar de borrarlo
 
-Fecha: 2026-10-07. Estado: PROPUESTO (pendiente de aceptar en el PR).
+Fecha: 2026-10-07. Estado: ACEPTADO (2026-10-07, PERSONA_1 y PERSONA_2, PR #59).
 Propone: PERSONA_2 (la idea) y PERSONA_1 (el diseno y la implementacion). Afecta al Contrato 1
 (`backend/app/schemas/resultado.py`: campo opcional `retirado` en `ResultadoDocumento`), al Contrato 2
 (`docs/contratos/endpoints.md`: dos rutas nuevas y la nota en "Reglas"), al catalogo de errores (dos codigos
@@ -10,10 +10,10 @@ nuevos) y a la BD (migracion 0008: tres columnas en `documentos`).
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| 1 | `POST /documentos/{id}/retirar {motivo}` y `POST /documentos/{id}/restaurar`, para revisor y admin | PERSONA_1 | Propuesta |
-| 2 | Un retirado sigue en el folio pero no cuenta: EXP-001, EXP-002, comparaciones y CMP-001, recomendacion global, bloqueantes y duplicados | PERSONA_1 (expediente e ingesta) | Propuesta |
-| 3 | Nada se borra (BD ni S3); el motivo se guarda tapado; auditoria `documento_retirado` y `documento_restaurado` | PERSONA_1 | Propuesta |
-| 4 | `ResultadoDocumento.retirado: {en, por, motivo} \| null`, opcional y `None` por defecto: el motor no cambia | PERSONA_1 (lo rellena la plataforma) | Propuesta |
+| 1 | `POST /documentos/{id}/retirar {motivo}` y `POST /documentos/{id}/restaurar`, solo para el revisor | PERSONA_1 | Aceptada |
+| 2 | Un retirado sigue en el folio pero no cuenta: EXP-001, EXP-002, comparaciones y CMP-001, recomendacion global, bloqueantes y duplicados | PERSONA_1 (expediente e ingesta) | Aceptada |
+| 3 | Nada se borra (BD ni S3); el motivo se guarda tapado; auditoria `documento_retirado` y `documento_restaurado` | PERSONA_1 | Aceptada |
+| 4 | `ResultadoDocumento.retirado: {en, por, motivo} \| null`, opcional y `None` por defecto: el motor no cambia | PERSONA_1 (lo rellena la plataforma) | Aceptada |
 
 ## Contexto
 - PERSONA_2 propuso poder quitar un documento subido por error (otro fichero, duplicado, de otra persona). Hoy
@@ -26,8 +26,8 @@ nuevos) y a la BD (migracion 0008: tres columnas en `documentos`).
    en `documentos`; retirado = `retirado_en` no nulo), es reversible (`restaurar`) y nada se borra.
 2. Condiciones: folio `en_revision` (`409 FOLIO_CERRADO`); retirar exige un documento que no este `pendiente`
    ni `procesando` (`409 DOCUMENTO_EN_PROCESO`; en `error` si se puede, es el caso tipico) y no retirado ya
-   (`409 DOCUMENTO_RETIRADO`); restaurar exige que este retirado (`409 DOCUMENTO_NO_RETIRADO`). Integrador,
-   `403 SIN_PERMISO`.
+   (`409 DOCUMENTO_RETIRADO`); restaurar exige que este retirado (`409 DOCUMENTO_NO_RETIRADO`). Solo revisor,
+   como las demas operaciones de revision; el admin consulta. Admin e integrador, `403 SIN_PERMISO`.
 3. `motivo` obligatorio al retirar (3 a 200 caracteres). Es texto libre: se guarda tapado con la misma barrera
    que el motivo de "mostrar" (ADR-010 A4c, `enmascaramiento.enmascarar_texto`). Restaurar no lleva motivo.
 4. Un retirado no cuenta para EXP-001 ni EXP-002, las comparaciones ni CMP-001, la recomendacion global, las

@@ -434,7 +434,7 @@ y, tras entrar, se vuelve a la ruta completa si es interna (ver "Login" en "Pant
   llega enmascarado y no debe guardarse la mascara).
 - HECHO (H17, PR B): boton "Mostrar" de los datos sensibles para revisor y admin, con auto-ocultado a los
   60 s (ver "Expediente" en "Pantallas").
-- Post-MVP (ADR-013, propuesta): en el detalle del documento, revisor y admin con el folio abierto ven "Retirar"
+- ADR-013 (aceptado): en el detalle del documento, el revisor con el folio abierto ve "Retirar"
   (`componentes/RetirarDocumento.tsx`): motivo obligatorio de 3 a 200 caracteres y confirmacion. El retirado sale
   atenuado y marcado "Retirado" (tambien en la lista), con su motivo y "Restaurar"; sin acciones de revision. No
   cuenta para la cobertura, las comparaciones, la recomendacion ni las bloqueantes (`cuentaEnElFolio` en

@@ -251,7 +251,7 @@ export interface RespuestaOriginal {
   url: string
 }
 
-/** POST /documentos/{id}/retirar (ADR-013): solo revisor y admin; motivo obligatorio de 3 a 200 caracteres */
+/** POST /documentos/{id}/retirar (ADR-013): solo revisor; motivo obligatorio de 3 a 200 caracteres */
 export interface PeticionRetirar {
   motivo: string
 }

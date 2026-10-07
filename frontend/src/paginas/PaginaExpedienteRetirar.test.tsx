@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Retirar y restaurar un documento (ADR-013) en el expediente: revisor y admin con el folio abierto; motivo
+// Retirar y restaurar un documento (ADR-013) en el expediente: solo el revisor con el folio abierto; motivo
 // obligatorio y confirmacion; el retirado sale atenuado, marcado y sin acciones de revision. Datos ficticios.
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -50,10 +50,13 @@ describe('retirar y restaurar documentos', () => {
     expect(screen.getByRole('button', { name: 'Retirar' })).toBeTruthy()
   })
 
-  it('admin también puede retirar', async () => {
-    await abrir('ONB-2026-000001', 'admin.demo')
-    expect(within(documentos()).getByText('Retirado')).toBeTruthy() // el duplicado retirado de los datos
-    expect(screen.getByRole('button', { name: 'Retirar' })).toBeTruthy()
+  it('el admin ve el retirado pero no los botones (solo el revisor retira)', async () => {
+    const u = await abrir('ONB-2026-000001', 'admin.demo')
+    const retirado = within(documentos()).getByText('Retirado').closest('button')! // el duplicado retirado de los datos
+    expect(screen.queryByRole('button', { name: 'Retirar' })).toBeNull()
+    await u.click(retirado)
+    expect(screen.getByRole('region', { name: 'Documento retirado' }).textContent).toContain('Subido dos veces por error')
+    expect(screen.queryByRole('button', { name: 'Restaurar' })).toBeNull()
   })
 
   it('el integrador ve el retirado pero no los botones', async () => {
