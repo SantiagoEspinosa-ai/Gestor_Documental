@@ -69,10 +69,10 @@ test('con mocks, recargar o escribir una URL mantiene la sesion (como con la API
   await entrar(page, 'admin.demo')
   await page.goto('/auditoria?folio=ONB-2026-000004&tamano_pagina=20#tabla') // carga nueva de la pagina
   await expect(page.getByTestId('usuario-actual')).toContainText('admin.demo')
-  await expect(page.getByText('Página 1 de 1 (8 entradas)')).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 (9 entradas)')).toBeVisible()
   await page.reload()
   await expect(page).toHaveURL(/\/auditoria\?folio=ONB-2026-000004&tamano_pagina=20#tabla$/)
   await expect(page.getByTestId('usuario-actual')).toContainText('admin.demo')
   await expect(page.getByLabel('Entradas por página')).toHaveValue('20')
-  await expect(page.getByText('Página 1 de 1 (8 entradas)')).toBeVisible()
+  await expect(page.getByText('Página 1 de 1 (9 entradas)')).toBeVisible()
 })

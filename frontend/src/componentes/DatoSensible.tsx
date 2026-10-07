@@ -13,6 +13,10 @@ interface Props {
   children: ReactNode
 }
 
+/** Motivo opcional de "Mostrar" (ADR-010 A4c): de 3 a 200 caracteres; mas corto, no se envia */
+const MOTIVO_MIN = 3
+const MOTIVO_MAX = 200
+
 const boton = 'inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50'
 
 /**
@@ -21,11 +25,13 @@ const boton = 'inline-flex items-center gap-1 rounded border border-slate-300 px
  * este componente: nada de storage, URL ni consola. Quien lo usa le pone una `key` con el documento y el
  * valor enmascarado, asi que cambiar de documento (o que cambie el dato) lo desmonta y lo olvida.
  * Solo para revisor y admin: lo decide quien lo pinta (SoloRol); la API lo vuelve a comprobar.
+ * El motivo es opcional y nunca bloquea: se envia si tiene al menos MOTIVO_MIN caracteres (ADR-010 A4c).
  */
 export function DatoSensible({ documentoId, campo, tipo, children }: Props) {
   const [revelado, setRevelado] = useState<{ valor: unknown } | null>(null)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [motivo, setMotivo] = useState('')
   const nombre = nombreCampo(campo)
 
   // Se vuelve a ocultar solo; el temporizador se limpia al ocultar antes o al desmontar
@@ -39,8 +45,10 @@ export function DatoSensible({ documentoId, campo, tipo, children }: Props) {
     setCargando(true)
     setError(null)
     try {
-      const respuesta = await revelarDato(documentoId, { campo })
+      const texto = motivo.trim()
+      const respuesta = await revelarDato(documentoId, texto.length >= MOTIVO_MIN ? { campo, motivo: texto } : { campo })
       setRevelado({ valor: respuesta.valor })
+      setMotivo('')
     } catch (causa) {
       setError(mensajeRevelar(causa))
     } finally {
@@ -58,9 +66,14 @@ export function DatoSensible({ documentoId, campo, tipo, children }: Props) {
           </button>
         )
         : (
-          <button type="button" onClick={mostrar} disabled={cargando} aria-label={`Mostrar ${nombre}`} className={boton}>
-            <Eye className="size-3" aria-hidden /> {cargando ? 'Mostrando…' : 'Mostrar'}
-          </button>
+          <>
+            <input type="text" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={MOTIVO_MAX}
+              placeholder="Motivo (opcional)" aria-label={`Motivo para mostrar ${nombre} (opcional)`}
+              className="w-40 rounded border border-slate-300 px-1.5 py-0.5 text-xs" />
+            <button type="button" onClick={mostrar} disabled={cargando} aria-label={`Mostrar ${nombre}`} className={boton}>
+              <Eye className="size-3" aria-hidden /> {cargando ? 'Mostrando…' : 'Mostrar'}
+            </button>
+          </>
         )}
       <span aria-live="polite" className="sr-only">
         {revelado ? `Se muestra ${nombre}; se ocultará en ${SEGUNDOS_DATO_REVELADO} segundos.` : ''}

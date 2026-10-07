@@ -374,6 +374,8 @@ class DatosMock:
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         docs = [self.documento(f, s, i + 1, "sano", tipo, "digital", t0 + timedelta(minutes=i + 1))
                 for i, tipo in enumerate(("pasaporte", "credencial_elector", "comprobante_domicilio"))]
+        # El revisor abre el original del pasaporte antes de decidir: original_visto, sin detalle
+        self.auditar(REVISOR, "original_visto", f, docs[0]["identificador_unico_documento"], {}, momento(26, 12, 20))
         folios.append(self.expediente(f, "CLI-000102", t0, docs,
                                       decision=("aprobar", "Documentacion completa y coherente", momento(26, 12, 30)),
                                       resumen=True))
