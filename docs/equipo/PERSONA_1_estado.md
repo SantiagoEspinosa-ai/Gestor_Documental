@@ -1,7 +1,7 @@
 # PERSONA_1 - Estado y siguientes pasos (traspaso)
 
-Actualizado: 2026-10-01. Etapa 1 CERRADA: el PR #3 (`feat/plataforma` -> `main`) se aprobo y fusiono
-el 2026-09-30. En curso: la etapa 2. Sirve para retomar el trabajo en
+Actualizado: 2026-10-07. Etapas 1 a 3 CERRADAS; en curso la etapa 4 (H19, demo del 2026-10-12). Lo hecho el
+2026-10-07 esta en "Cierre del 2026-10-07". Sirve para retomar el trabajo en
 otra maquina o en otro chat de Claude Code. La especificacion completa sigue en
 `docs/equipo/PERSONA_1_plataforma.md`; este fichero dice en que punto estamos y que toca ahora.
 
@@ -185,8 +185,9 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 
 ### Etapa 4
 - [ ] H19 (en curso). Hecho: guion (`docs/demo/GUION_DEMO.md`, rama `docs/guion-demo`), arranque con
-      `docker-compose.demo.yml` (#42), ensayo tecnico del 2026-10-06 con capturas del plan B. Pendiente: ensayo
-      completo en el equipo de PERSONA_2 (con el modelo de vision) y demo del 2026-10-12.
+      `docker-compose.demo.yml` (#42), ensayo tecnico del 2026-10-06 con capturas del plan B. El 2026-10-07 se repite
+      el ensayo tecnico con el `main` nuevo. Pendiente: ensayo completo el 2026-10-08 en el equipo de PERSONA_2 (con el
+      modelo de vision) y demo del 2026-10-12.
 - [x] `frontend/README.md`: Node >= 22.22 (lo piden dependencias del `package-lock.json`) y responsable PERSONA_1.
 - [x] `docs/arquitectura_solucion.md`: reparto de 2 personas y traspaso de PERSONA_3 (PR #34).
 
@@ -202,14 +203,27 @@ Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
 - Pendiente para la demo: el enmascaramiento (PR #32) aun no estaba en `main` durante el hito; repetir la
   prueba con el #32 fusionado y anotar los tiempos por documento para el guion (H19).
 
+## Cierre del 2026-10-07 (en `main`)
+Mejoras que se adelantaron a la demo tras la revision de seguridad, todas fusionadas:
+- [x] #46: cierre de la etapa 3 (documentacion y mocks como el motor real).
+- [x] #48: seguridad de la demo: secretos de al menos 32 caracteres en cualquier entorno y puertos solo en 127.0.0.1.
+- [x] #50 y #51: auditoria `original_visto` al pedir el original y `motivo` opcional en "Mostrar", guardado tapado
+      con `enmascarar_texto` (adenda A4b y A4c del ADR-010, ACEPTADA).
+- [x] #52: limite de intentos de login, `429 DEMASIADOS_INTENTOS` con `Retry-After` (ADR-011, ACEPTADO).
+- [x] #53: tests locales (BD de migraciones derivada de `TEST_POSTGRES_URL`; `127.0.0.1` en Windows).
+- [x] #54: limite de reintentos al reanudar los analisis (`MAX_REINTENTOS_REANUDAR`, migracion 0006, `SYS-007`).
+- [x] #55 y #57: el integrador solo accede a los folios que ha creado (ADR-012, ACEPTADO; migracion 0007).
+- [x] #56: los mocks aplican la regla del integrador (el dueno sale de `folio_creado`).
+- [x] #58: CI con reintentos y timeouts en `apt`.
+- [ ] #59: retirar y restaurar documentos sin borrarlos (ADR-013, propuesto; migracion 0008). En revision: entra
+      antes de la demo solo si se aprueba hoy; si no, despues.
+
 ## Mejoras post-MVP
-Despues de la demo; ninguna la bloquea.
+Despues de la demo; ninguna la bloquea. Lo que sigue pendiente (ver tambien la seccion 12 de
+`docs/arquitectura_solucion.md`):
 - Contrasena propia de postgres en docker-compose (hoy la de desarrollo, gestor/gestor). Los puertos ya solo se publican
-  en 127.0.0.1 (fix/seguridad-demo); cambiarla obliga a recrear el volumen, por eso se deja para despues de la demo.
-- Motivo al mostrar un dato sensible (cambio del ADR-010): pedirlo en "Mostrar" y guardarlo en `dato_revelado`.
-- Auditar la apertura del original (accion `original_visto`).
-- Contador de intentos al reanudar los analisis interrumpidos: pasar a `error` tras N fallos, para que un documento
-  que tumba el backend (p. ej. por RAM) no lo haga en bucle (nota de PERSONA_2 en el PR #33).
+  en 127.0.0.1 (#48); cambiarla obliga a recrear el volumen, por eso se deja para despues de la demo.
+- Retirar documentos (#59), si no entra antes de la demo.
 - Fragmento de antecedentes que pega lineas ("Completado Criticas:"): `rag.memoria.extraer_fragmento` (PERSONA_2)
   no deja una linea en blanco antes de cada titulo de grupo y react-markdown las une. Cosmetico.
 
