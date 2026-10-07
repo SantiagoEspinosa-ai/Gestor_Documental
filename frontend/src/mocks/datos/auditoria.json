@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "folio_creado",
     "folio": "ONB-2026-000004",
     "documento_id": null,
@@ -12,7 +12,7 @@
   },
   {
     "id": 2,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000001",
@@ -41,7 +41,7 @@
   },
   {
     "id": 4,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000002",
@@ -70,7 +70,7 @@
   },
   {
     "id": 6,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000004",
     "documento_id": "00000000-0000-4000-8000-000004000003",
@@ -362,7 +362,7 @@
   },
   {
     "id": 27,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "folio_creado",
     "folio": "ONB-2026-000003",
     "documento_id": null,
@@ -373,7 +373,7 @@
   },
   {
     "id": 28,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000001",
@@ -402,7 +402,7 @@
   },
   {
     "id": 30,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000002",
@@ -431,7 +431,7 @@
   },
   {
     "id": 32,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000003",
@@ -446,7 +446,7 @@
   },
   {
     "id": 33,
-    "usuario": "integrador.demo",
+    "usuario": "integrador.otro",
     "accion": "documento_subido",
     "folio": "ONB-2026-000003",
     "documento_id": "00000000-0000-4000-8000-000003000004",

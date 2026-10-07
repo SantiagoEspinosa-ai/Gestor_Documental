@@ -93,9 +93,9 @@ describe('pantalla de folios', () => {
     expect(screen.queryByRole('table')).toBeNull()
     expect(screen.getByRole('button', { name: 'Nuevo folio' })).toBeTruthy()
     const u = userEvent.setup()
-    await u.type(screen.getByLabelText('Número de folio'), 'onb-2026-000003')
+    await u.type(screen.getByLabelText('Número de folio'), 'onb-2026-000002')
     await u.click(screen.getByRole('button', { name: 'Abrir' }))
-    expect(await screen.findByRole('heading', { name: /ONB-2026-000003/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: /ONB-2026-000002/ })).toBeTruthy()
     expect(mock.peticiones).not.toContain('GET /folios')
     unmount()
 
