@@ -159,6 +159,8 @@ hace fallar el build si queda algun rastro.
   (pathname, search y hash: `RutaProtegida` la guarda, en todas las rutas protegidas), pero solo si es
   interna (`utilidades/navegacion.ts`, `rutaInternaSegura`): empieza por una sola `/`, sin `//`, URL
   absoluta, barras invertidas ni caracteres de control, y no es `/login`. Si no, va a `/folios`.
+  Tras 5 fallos de un usuario en 15 minutos la API responde `429 DEMASIADOS_INTENTOS` (ADR-011) y el login
+  muestra "Demasiados intentos fallidos..."; los mocks aplican el mismo limite (`mocks/logica.ts`).
 - Sesion: se recupera con `GET /auth/yo` al recargar; un 401 o la caducidad local llevan al login.
 - Layout (`componentes/Estructura.tsx`): enlace "Saltar al contenido", navegacion, usuario, rol y
   "Cerrar sesion".

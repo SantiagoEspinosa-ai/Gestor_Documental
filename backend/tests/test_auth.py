@@ -3,12 +3,13 @@
 SQLite temporal y datos ficticios. TestClient(app) sin `with`: no se ejecuta el lifespan.
 """
 import importlib.util
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core import auditoria, db
@@ -158,3 +159,93 @@ def test_una_fila_de_auditoria_por_intento(cliente, sesion):
 def test_registrar_accion_desconocida(sesion):
     with pytest.raises(ValueError, match="desconocida"):
         auditoria.registrar(sesion, "borrar_todo")
+
+
+# --- limite de intentos (ADR-011): 5 fallidos en 15 minutos, contados en la auditoria ---
+
+def _intento(cliente, contrasena="otra-contrasena", usuario="revisor_ficticio"):
+    return cliente.post(LOGIN, json={"usuario": usuario, "contrasena": contrasena})
+
+
+def _fallar(cliente, veces, usuario="revisor_ficticio"):
+    for _ in range(veces):
+        assert _intento(cliente, usuario=usuario).status_code == 401
+
+
+def _atrasar_logins(sesion, minutos):
+    """Mueve al pasado todos los login de la auditoria (simula que pasa el tiempo)."""
+    sesion.execute(update(Auditoria).where(Auditoria.accion == "login")
+                   .values(creado_en=datetime.now(timezone.utc) - timedelta(minutes=minutos)))
+    sesion.commit()
+
+
+def test_cinco_fallidos_dan_429_con_retry_after_sin_comprobar_la_contrasena(cliente, sesion, monkeypatch):
+    _fallar(cliente, 5)
+    llamadas = []
+    monkeypatch.setattr(auth, "verificar_contrasena", lambda *a: llamadas.append(a) or True)
+    r = _intento(cliente, CONTRASENA)  # ni siquiera la correcta entra
+    assert r.status_code == 429
+    assert r.json() == {"codigo": "DEMASIADOS_INTENTOS",
+                        "mensaje": "Demasiados intentos fallidos; vuelve a intentarlo mas tarde"}
+    assert 0 < int(r.headers["retry-after"]) <= 15 * 60
+    assert llamadas == []
+    assert _logins(sesion)[-1] == ("revisor_ficticio", "bloqueado")
+
+
+def test_retry_after_segun_el_fallido_que_libera(cliente, sesion):
+    _fallar(cliente, 5)
+    _atrasar_logins(sesion, 10)  # los 5 hace 10 minutos: quedan unos 5 minutos
+    assert 290 <= int(_intento(cliente).headers["retry-after"]) <= 300
+
+
+def test_el_bloqueado_se_audita_y_no_alarga_el_bloqueo(cliente, sesion):
+    _fallar(cliente, 5)
+    _atrasar_logins(sesion, 16)  # los fallidos ya fuera de la ventana...
+    _fallar(cliente, 4)
+    assert _intento(cliente).status_code == 401  # 5 fallidos en la ventana
+    for _ in range(3):
+        assert _intento(cliente).status_code == 429
+    assert [r for _, r in _logins(sesion)].count("bloqueado") == 3
+    # ...y los bloqueados no cuentan: al salir los 5 fallidos, vuelve a entrar aunque los bloqueados sean recientes
+    sesion.execute(update(Auditoria).where(Auditoria.accion == "login",
+                                           Auditoria.detalle["resultado"].as_string() == "fallido")
+                   .values(creado_en=datetime.now(timezone.utc) - timedelta(minutes=16)))
+    sesion.commit()
+    assert _intento(cliente, CONTRASENA).status_code == 200
+
+
+def test_pasada_la_ventana_vuelve_a_dejar_entrar(cliente, sesion):
+    _fallar(cliente, 5)
+    assert _intento(cliente, CONTRASENA).status_code == 429
+    _atrasar_logins(sesion, 16)
+    assert _intento(cliente, CONTRASENA).status_code == 200
+
+
+def test_un_ok_reinicia_la_cuenta(cliente):
+    _fallar(cliente, 4)
+    assert _intento(cliente, CONTRASENA).status_code == 200  # antes del limite, el correcto entra
+    _fallar(cliente, 4)  # 8 fallidos en la ventana, pero solo 4 despues del ok
+    assert _intento(cliente, CONTRASENA).status_code == 200
+
+
+def test_usuario_inexistente_igual_que_uno_existente(cliente, sesion):
+    _fallar(cliente, 5, "revisor_ficticio")
+    _fallar(cliente, 5, "nadie_ficticio")
+    existente = _intento(cliente, usuario="revisor_ficticio")
+    inexistente = _intento(cliente, usuario="nadie_ficticio")
+    assert existente.status_code == inexistente.status_code == 429
+    assert existente.json() == inexistente.json()
+    assert existente.headers.keys() == inexistente.headers.keys()
+    assert _logins(sesion)[-2:] == [("revisor_ficticio", "bloqueado"), ("nadie_ficticio", "bloqueado")]
+
+
+def test_el_limite_es_por_usuario(cliente):
+    _fallar(cliente, 5, "nadie_ficticio")
+    assert _intento(cliente, CONTRASENA).status_code == 200
+
+
+def test_limite_configurable(cliente, monkeypatch):
+    monkeypatch.setenv("LOGIN_MAX_FALLIDOS", "2")
+    get_settings.cache_clear()
+    _fallar(cliente, 2)
+    assert _intento(cliente, CONTRASENA).status_code == 429

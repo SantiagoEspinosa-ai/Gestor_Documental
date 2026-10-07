@@ -444,3 +444,23 @@ export function antecedentes(estado: EstadoMock, folio: ResultadoExpediente): Re
     }))
   return { permitido: true, motivo: null, elementos }
 }
+
+// ---------------------------------------------------------------- limite de intentos de login (ADR-011)
+// Como api/auth.py con los valores por defecto (LOGIN_MAX_FALLIDOS=5, LOGIN_VENTANA_MINUTOS=15)
+export const LOGIN_MAX_FALLIDOS = 5
+export const LOGIN_VENTANA_MS = 15 * 60 * 1000
+
+/** Segundos hasta poder volver a intentarlo, o null: fallidos del usuario en la ventana despues de su ultimo ok */
+export function segundosBloqueado(estado: EstadoMock, usuario: string): number | null {
+  const ahora = estado.ahora()
+  const fallidos: number[] = []
+  const recientes = estado.auditoria
+    .filter((e) => e.accion === 'login' && e.usuario === usuario && Date.parse(e.creado_en) >= ahora - LOGIN_VENTANA_MS)
+    .sort((a, b) => b.creado_en.localeCompare(a.creado_en) || b.id - a.id)
+  for (const e of recientes) {
+    if (e.detalle.resultado === 'ok') break
+    if (e.detalle.resultado === 'fallido') fallidos.push(Date.parse(e.creado_en))
+  }
+  if (fallidos.length < LOGIN_MAX_FALLIDOS) return null
+  return Math.max(1, Math.ceil((fallidos[LOGIN_MAX_FALLIDOS - 1] + LOGIN_VENTANA_MS - ahora) / 1000))
+}

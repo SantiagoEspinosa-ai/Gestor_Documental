@@ -68,6 +68,7 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
     case 'login':
       if (d.resultado === 'ok') usar('resultado', 'Acceso correcto')
       else if (d.resultado === 'fallido') usar('resultado', 'Intento fallido')
+      else if (d.resultado === 'bloqueado') usar('resultado', 'Acceso bloqueado') // ADR-011: no cuenta para el limite
       break
     case 'documento_subido':
       if (texto(d.hash_sha256)) usar('hash_sha256', `SHA-256 ${d.hash_sha256.slice(0, 12)}…`)

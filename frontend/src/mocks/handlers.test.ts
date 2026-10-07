@@ -108,6 +108,24 @@ describe('sesion y roles', () => {
     expect([caducado.status, caducado.cuerpo.codigo]).toEqual([401, 'TOKEN_CADUCADO'])
   })
 
+  it('limite de intentos (ADR-011): 5 fallidos dan 429 con Retry-After; el bloqueado se audita y no cuenta', async () => {
+    const intentar = (usuario: string, contrasena = 'mal') => fetch(`${API}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario, contrasena }) })
+    for (let i = 0; i < 4; i++) expect((await intentar('revisor.demo')).status).toBe(401)
+    expect((await intentar('revisor.demo', 'demo-revisor')).status).toBe(200) // un ok reinicia la cuenta
+    for (const usuario of ['revisor.demo', 'nadie.demo']) {
+      for (let i = 0; i < 5; i++) expect((await intentar(usuario)).status).toBe(401)
+      const bloqueado = await intentar(usuario, usuario === 'revisor.demo' ? 'demo-revisor' : 'mal')
+      expect([bloqueado.status, (await bloqueado.json()).codigo, bloqueado.headers.get('Retry-After')])
+        .toEqual([429, 'DEMASIADOS_INTENTOS', String(15 * 60)]) // igual exista o no el usuario
+    }
+    expect(estado.auditoria.filter((e) => e.detalle.resultado === 'bloqueado').map((e) => e.usuario)).toEqual(['revisor.demo', 'nadie.demo'])
+    t += 10 * 60 * 1000
+    expect((await intentar('revisor.demo')).headers.get('Retry-After')).toBe(String(5 * 60)) // el bloqueado no alarga
+    t += 5 * 60 * 1000 + 1
+    expect((await intentar('revisor.demo', 'demo-revisor')).status).toBe(200) // pasada la ventana
+  })
+
   it('el token sigue valido tras reiniciar msw (recargar la pagina), como un JWT', async () => {
     const token = await entrar('admin.demo')
     // Reinicio: estado nuevo y handlers nuevos, sin memoria de lo emitido
