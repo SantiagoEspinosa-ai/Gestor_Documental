@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.core.config import Settings, get_settings
 from app.main import app
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 VITE = "http://localhost:5173"
 
 

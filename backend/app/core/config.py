@@ -16,6 +16,10 @@ RAIZ_REPO = Path(__file__).resolve().parents[3]
 
 # Valores de ejemplo de .env.example que no pueden llegar a produccion
 _MARCADORES_EJEMPLO = ("CAMBIA_ESTO", "TU_CLAVE_AQUI")
+# Secretos de firma (JWT y HMAC de los webhooks): un valor corto o el de .env.example se adivina y permite
+# firmar tokens o webhooks falsos. Se exige en todos los entornos, tambien en dev
+LONGITUD_MINIMA_SECRETO = 32
+COMO_GENERAR_SECRETO = 'python -c "import secrets; print(secrets.token_urlsafe(48))"'
 
 
 class Settings(BaseSettings):
@@ -91,11 +95,19 @@ class Settings(BaseSettings):
         return valor or RAIZ_REPO / "config"
 
     @model_validator(mode="after")
-    def _sin_valores_de_ejemplo_en_prod(self):
-        if self.app_env == "prod":
-            for campo in ("secret_key", "webhook_secret_hmac"):
-                if getattr(self, campo).get_secret_value().startswith(_MARCADORES_EJEMPLO):
-                    raise ValueError(f"{campo} tiene el valor de ejemplo de .env.example")
+    def _secretos_de_firma_validos(self):
+        """En cualquier entorno: secret_key y webhook_secret_hmac sin el valor de ejemplo y con al menos
+        LONGITUD_MINIMA_SECRETO caracteres. webhook_secret_hmac puede ir vacio (= no se envian webhooks)."""
+        for campo, vacio_permitido in (("secret_key", False), ("webhook_secret_hmac", True)):
+            valor = getattr(self, campo).get_secret_value()
+            if not valor and vacio_permitido:
+                continue
+            if valor.startswith(_MARCADORES_EJEMPLO):
+                raise ValueError(f"{campo} tiene el valor de ejemplo de .env.example; genera uno propio con: "
+                                 f"{COMO_GENERAR_SECRETO}")
+            if len(valor) < LONGITUD_MINIMA_SECRETO:
+                raise ValueError(f"{campo} debe tener al menos {LONGITUD_MINIMA_SECRETO} caracteres; genera uno con: "
+                                 f"{COMO_GENERAR_SECRETO}")
         return self
 
 

@@ -5,12 +5,12 @@ from pydantic import ValidationError
 from app.core.config import RAIZ_REPO, Settings, get_settings
 
 OBLIGATORIAS = {
-    "SECRET_KEY": "clave-ficticia-de-test",
+    "SECRET_KEY": "clave-ficticia-de-test-de-32-caracteres",
     "DATABASE_URL": "postgresql+psycopg://usuario_test:contrasena_test@localhost:5432/test",
-    "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test",
-    "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test",
+    "AWS_ACCESS_KEY_ID": "clave-ficticia-de-test-de-32-caracteres",
+    "AWS_SECRET_ACCESS_KEY": "clave-ficticia-de-test-de-32-caracteres",
     "S3_BUCKET": "bucket-de-test",
-    "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test",
+    "WEBHOOK_SECRET_HMAC": "clave-ficticia-de-test-de-32-caracteres",
 }
 
 
@@ -42,7 +42,7 @@ def test_valores_por_defecto(entorno):
 
 def test_los_secretos_no_aparecen_en_repr(entorno):
     texto = repr(Settings(_env_file=None))
-    assert "clave-ficticia-de-test" not in texto
+    assert "clave-ficticia-de-test-de-32-caracteres" not in texto
     assert "contrasena_test" not in texto
 
 
@@ -56,16 +56,38 @@ def test_config_dir_del_entorno(entorno, tmp_path):
     assert Settings(_env_file=None).config_dir == tmp_path
 
 
-def test_prod_rechaza_valores_de_ejemplo(entorno):
-    entorno.setenv("APP_ENV", "prod")
-    entorno.setenv("SECRET_KEY", "CAMBIA_ESTO_EN_PRODUCCION")
-    with pytest.raises(ValidationError, match="valor de ejemplo"):
+@pytest.mark.parametrize("app_env", ["dev", "prod"])
+@pytest.mark.parametrize("campo", ["SECRET_KEY", "WEBHOOK_SECRET_HMAC"])
+@pytest.mark.parametrize("ejemplo", ["CAMBIA_ESTO_EN_PRODUCCION", "CAMBIA_ESTO", "TU_CLAVE_AQUI_" + "x" * 40])
+def test_rechaza_el_valor_de_ejemplo_en_cualquier_entorno(entorno, app_env, campo, ejemplo):
+    entorno.setenv("APP_ENV", app_env)
+    entorno.setenv(campo, ejemplo)
+    with pytest.raises(ValidationError, match="valor de ejemplo") as error:
+        Settings(_env_file=None)
+    assert "secrets.token_urlsafe(48)" in str(error.value)  # dice como generar uno
+
+
+@pytest.mark.parametrize("campo", ["SECRET_KEY", "WEBHOOK_SECRET_HMAC"])
+def test_rechaza_secretos_cortos(entorno, campo):
+    entorno.setenv(campo, "a" * 31)
+    with pytest.raises(ValidationError, match="al menos 32 caracteres"):
         Settings(_env_file=None)
 
 
-def test_dev_acepta_valores_de_ejemplo(entorno):
-    entorno.setenv("SECRET_KEY", "CAMBIA_ESTO_EN_PRODUCCION")
-    assert Settings(_env_file=None).app_env == "dev"
+def test_acepta_secretos_validos_de_32_o_mas(entorno):
+    entorno.setenv("SECRET_KEY", "a" * 32)
+    entorno.setenv("WEBHOOK_SECRET_HMAC", "b" * 64)
+    entorno.setenv("APP_ENV", "prod")
+    s = Settings(_env_file=None)
+    assert len(s.secret_key.get_secret_value()) == 32
+
+
+def test_webhook_vacio_permitido_y_secret_key_vacio_no(entorno):
+    entorno.setenv("WEBHOOK_SECRET_HMAC", "")
+    assert Settings(_env_file=None).webhook_secret_hmac.get_secret_value() == ""
+    entorno.setenv("SECRET_KEY", "")
+    with pytest.raises(ValidationError, match="secret_key"):
+        Settings(_env_file=None)
 
 
 def test_env_file_es_el_de_la_raiz_del_repo():

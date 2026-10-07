@@ -204,6 +204,8 @@ Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
 
 ## Mejoras post-MVP
 Despues de la demo; ninguna la bloquea.
+- Contrasena propia de postgres en docker-compose (hoy la de desarrollo, gestor/gestor). Los puertos ya solo se publican
+  en 127.0.0.1 (fix/seguridad-demo); cambiarla obliga a recrear el volumen, por eso se deja para despues de la demo.
 - Motivo al mostrar un dato sensible (cambio del ADR-010): pedirlo en "Mostrar" y guardarlo en `dato_revelado`.
 - Auditar la apertura del original (accion `original_visto`).
 - Contador de intentos al reanudar los analisis interrumpidos: pasar a `error` tras N fallos, para que un documento

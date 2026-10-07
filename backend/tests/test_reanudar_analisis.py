@@ -17,7 +17,7 @@ from app.modulos.expediente import servicio as expediente
 from app.modulos.ingesta import procesamiento
 from app.modulos.ingesta import servicio as ingesta
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 
 
 @pytest.fixture

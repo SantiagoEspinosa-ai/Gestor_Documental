@@ -14,7 +14,7 @@ from app.modulos.rag import memoria
 from app.modulos.rag import servicio as rag
 from app.modulos.rag.modelos import MemoriaFolio
 
-SECRETO = "valor-de-test-no-real"  # noqa: S105
+SECRETO = "valor-de-test-no-real-de-32-caracteres"  # noqa: S105
 FOLIO = "ONB-2026-000001"
 AHORA = datetime(2026, 10, 5, 12, 0, tzinfo=timezone.utc)
 

@@ -24,7 +24,7 @@ from app.modulos.ingesta.servicio import ingestar
 from app.modulos.validacion import servicio as validacion
 from app.schemas.resultado import Alerta
 
-SECRETO = "clave-ficticia-de-test"
+SECRETO = "clave-ficticia-de-test-de-32-caracteres"
 BUCKET = "bucket-de-test"
 REGION = "us-east-1"
 # Credencial ficticia completa y coherente (CURP con la fecha de nacimiento, vigencia futura)
