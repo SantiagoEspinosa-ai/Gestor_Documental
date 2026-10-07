@@ -134,3 +134,68 @@ def test_el_arranque_no_espera_a_que_terminen(sesion, monkeypatch):
             break
         time.sleep(0.05)
     assert len(empezados) == 2
+
+
+# --- limite de reintentos (MAX_REINTENTOS_REANUDAR) ---
+
+def _pendiente(sesion) -> Documento:
+    folio = expediente.crear_folio(sesion, "onboarding", None, "x").folio
+    doc = Documento(id=uuid.uuid4(), folio=folio, nombre_archivo="p.pdf", ruta_s3="x/p.pdf",
+                    hash_sha256=uuid.uuid4().hex * 2, tipo_declarado="credencial_elector", estado_analisis="procesando")
+    sesion.add(doc)
+    sesion.commit()
+    return doc
+
+
+def test_tras_max_arranques_pasa_a_error_y_no_se_reintenta_mas(sesion, llamadas, monkeypatch, caplog):
+    from sqlalchemy import select
+    from app.core.modelos import AlertaBD
+    monkeypatch.setenv("MAX_REINTENTOS_REANUDAR", "3")
+    get_settings.cache_clear()
+    doc = _pendiente(sesion)
+    # El analisis "tumba" la API cada vez: procesar (falso) nunca lo termina y sigue en procesando
+    for intento in (1, 2, 3):
+        assert ingesta.reanudar_pendientes(sesion) == [doc.id]
+        sesion.expire_all()
+        assert sesion.get(Documento, doc.id).intentos_reanudar == intento
+    assert len(llamadas) == 3
+    with caplog.at_level("WARNING", logger="app.modulos.ingesta.servicio"):
+        assert ingesta.reanudar_pendientes(sesion) == []  # 4.o arranque: agotados
+    sesion.expire_all()
+    assert sesion.get(Documento, doc.id).estado_analisis == "error"
+    [alerta] = sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)).all()
+    assert (alerta.codigo, alerta.severidad, alerta.version_resultado) == ("SYS-007", "critica", None)
+    assert alerta.mensaje.startswith("Reintentos agotados al reanudar el analisis (3 de 3)")
+    assert "reintentos agotados pasan a error" in caplog.text and "p.pdf" not in caplog.text  # solo ids
+    assert ingesta.reanudar_pendientes(sesion) == [] and len(llamadas) == 3  # ni se relanza ni se vuelve a tocar
+    assert len(sesion.scalars(select(AlertaBD).where(AlertaBD.documento_id == doc.id)).all()) == 1
+
+
+def test_el_maximo_es_configurable_y_3_por_defecto(sesion, llamadas, monkeypatch):
+    assert get_settings().max_reintentos_reanudar == 3
+    monkeypatch.setenv("MAX_REINTENTOS_REANUDAR", "1")
+    get_settings.cache_clear()
+    doc = _pendiente(sesion)
+    assert ingesta.reanudar_pendientes(sesion) == [doc.id]
+    assert ingesta.reanudar_pendientes(sesion) == []
+    sesion.expire_all()
+    assert sesion.get(Documento, doc.id).estado_analisis == "error"
+
+
+def test_un_analisis_que_termina_bien_reinicia_el_contador(sesion, monkeypatch):
+    """Con el motor stub (conftest) y un almacenamiento falso: tras dos reanudaciones, el analisis termina."""
+    monkeypatch.setattr(ingesta, "_lanzar", lambda funcion: None)  # se reanuda sin ejecutar
+    doc = _pendiente(sesion)
+    ingesta.reanudar_pendientes(sesion)
+    ingesta.reanudar_pendientes(sesion)
+    sesion.expire_all()
+    assert sesion.get(Documento, doc.id).intentos_reanudar == 2
+
+    class Almacen:
+        def descargar(self, clave):
+            return b"%PDF-1.4 ficticio"
+    monkeypatch.setattr(procesamiento, "get_almacenamiento", lambda: Almacen())
+    procesamiento.procesar(doc.id)
+    sesion.expire_all()
+    fila = sesion.get(Documento, doc.id)
+    assert (fila.estado_analisis, fila.intentos_reanudar) == ("completado", 0)

@@ -278,16 +278,40 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
     `tipo_documental_confirmado` (un reproceso por confirmar otro tipo sigue con ese tipo), cada uno en un
     hilo daemon para no bloquear el arranque. `completado` y `error` no se tocan. Devuelve los ids.
 
+    Limite de reintentos: cada relanzamiento suma 1 a `intentos_reanudar` (un analisis que termina lo vuelve a
+    0). Un documento que ya se relanzo MAX_REINTENTOS_REANUDAR veces no se relanza mas: pasa a `error` con una
+    SYS-007 ("reintentos agotados al reanudar el analisis"), se regenera el resumen y se avisa por webhook
+    (`documento.error`). Asi un documento que tumba la API (p. ej. por RAM) no la tumba en cada arranque.
+
     Limitacion conocida: vale para un solo proceso uvicorn. Con varios workers, cada uno relanzaria los
     mismos documentos; haria falta una cola (fuera del MVP).
     """
-    filas = sesion.execute(select(Documento.id, Documento.tipo_documental_confirmado).where(
+    documentos = sesion.scalars(select(Documento).where(
         Documento.estado_analisis.in_([EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value]))
         .order_by(Documento.creado_en, Documento.id)).all()
-    if not filas:
+    if not documentos:
         return []
+    maximo = get_settings().max_reintentos_reanudar
+    agotados = [d for d in documentos if d.intentos_reanudar >= maximo]
+    relanzar = [d for d in documentos if d.intentos_reanudar < maximo]
+    for doc in agotados:
+        doc.estado_analisis = EstadoAnalisis.error.value
+        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-007",
+                            severidad=Severidad.critica.value, confianza=1.0,
+                            mensaje=f"Reintentos agotados al reanudar el analisis ({doc.intentos_reanudar} de {maximo}); "
+                                    "vuelve a subir el documento"))
+    for doc in relanzar:
+        doc.intentos_reanudar += 1
+    pendientes = [(d.id, d.tipo_documental_confirmado) for d in relanzar]
+    sesion.commit()
     # Solo el numero y los ids: nunca datos del documento
-    log.info("Reanudando %d analisis interrumpidos: %s", len(filas), ", ".join(str(f.id) for f in filas))
-    for documento_id, tipo_confirmado in filas:
+    if agotados:
+        log.warning("%d analisis con los reintentos agotados pasan a error: %s", len(agotados),
+                    ", ".join(str(d.id) for d in agotados))
+        for doc in agotados:
+            procesamiento.despues_del_commit(sesion, doc.id)  # resumen y webhook documento.error; no lanza
+    if pendientes:
+        log.info("Reanudando %d analisis interrumpidos: %s", len(pendientes), ", ".join(str(i) for i, _ in pendientes))
+    for documento_id, tipo_confirmado in pendientes:
         _lanzar(lambda d=documento_id, t=tipo_confirmado: procesamiento.procesar(d, tipo_confirmado=t))
-    return [f.id for f in filas]
+    return [i for i, _ in pendientes]
