@@ -172,13 +172,13 @@ fichas (`config/tipos/*.yaml`). No cambia el Contrato 1 (`resultado.py`) ni la i
 - Si se rechaza: el enmascaramiento queda solo en la UI (sin proteccion real) y `/antecedentes` sigue
   sin forma, lo que bloquea H16 y H17.
 
-## Adenda post-MVP (PROPUESTA, pendiente de aceptar en el PR)
+## Adenda post-MVP (ACEPTADA el 2026-10-07 en los PRs #50 y #51)
 No cambia nada de lo aceptado arriba; solo anade puntos.
 
 | Punto | Descripcion | Implementa | Decision |
 |---|---|---|---|
-| A4b | Accion de auditoria `original_visto` en `GET /documentos/{id}/original` | PERSONA_1 | Propuesta |
-| A4c | `motivo` opcional en `POST /documentos/{id}/revelar`, guardado tapado en `dato_revelado` | PERSONA_1 | Propuesta |
+| A4b | Accion de auditoria `original_visto` en `GET /documentos/{id}/original` | PERSONA_1 | Aceptada |
+| A4c | `motivo` opcional en `POST /documentos/{id}/revelar`, guardado tapado en `dato_revelado` | PERSONA_1 | Aceptada |
 
 - **A4b, que**: cada `GET /documentos/{id}/original` correcto deja `original_visto` con el usuario, el
   folio y el `documento_id` en sus columnas y `detalle` vacio: nada del contenido del documento. Con `403`

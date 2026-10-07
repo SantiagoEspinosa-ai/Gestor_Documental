@@ -96,7 +96,7 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   `Cache-Control: no-store`; funciona con el folio cerrado; `422 PETICION_INVALIDA` si el campo no esta en
   la ficha o no es sensible, `409 DOCUMENTO_EN_PROCESO` o `DOCUMENTO_CON_ERROR`, `404
   DOCUMENTO_NO_ENCONTRADO`. Cada llamada correcta deja `dato_revelado` con `detalle: {campo}`, nunca el valor.
-  `motivo` es opcional (ADR-010 A4c, propuesta): texto de 3 a 200 caracteres (fuera de rango, `422
+  `motivo` es opcional (ADR-010 A4c): texto de 3 a 200 caracteres (fuera de rango, `422
   PETICION_INVALIDA`); si viene, va en `detalle.motivo` tapado con la misma barrera que los logs (A5).
 
 ## Webhook (salida)
