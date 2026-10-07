@@ -10,8 +10,12 @@ Todos los errores salen como `{codigo, mensaje}` (ADR-006 1.4); los 401 llevan `
 - Entrada (JSON, sin campos extra): `{usuario, contrasena}`.
 - Salida 200: `{access_token, rol, expires_in}` (`expires_in` en segundos).
 - Errores: 401 `CREDENCIALES_INVALIDAS` (usuario inexistente, contrasena incorrecta o de mas de
-  72 bytes: misma respuesta y mismo tiempo); 422 `PETICION_INVALIDA`.
-- Audita `login` con `{"resultado": "ok" | "fallido"}` en cada intento.
+  72 bytes: misma respuesta y mismo tiempo); 422 `PETICION_INVALIDA`; 429 `DEMASIADOS_INTENTOS` con
+  `Retry-After` (segundos) si el usuario escrito, exista o no, tiene `LOGIN_MAX_FALLIDOS` fallos (5) en
+  `LOGIN_VENTANA_MINUTOS` (15) posteriores a su ultimo acceso correcto (ADR-011). Bloqueado, no se comprueba
+  la contrasena.
+- Audita `login` con `{"resultado": "ok" | "fallido" | "bloqueado"}` en cada intento; los `bloqueado` no
+  cuentan para el limite.
 
 ### GET /api/v1/auth/yo
 - Entrada: cabecera `Authorization: Bearer <token>`.
@@ -179,7 +183,7 @@ ni contrasenas.
 
 | accion | detalle |
 |---|---|
-| `login` | `{resultado: "ok" \| "fallido"}` |
+| `login` | `{resultado: "ok" \| "fallido" \| "bloqueado"}` (ADR-011) |
 | `folio_creado` | sin detalle (`{}`) |
 | `documento_subido` | `{hash_sha256, tamano_bytes, duplicado}` |
 | `documento_procesado` | `{proveedor, respaldo_usado, confianzas_modelo, tiempos, tokens, ...}` (lo serializable de `datos_auditoria` del motor) |
