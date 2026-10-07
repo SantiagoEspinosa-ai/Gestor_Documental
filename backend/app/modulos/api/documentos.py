@@ -66,9 +66,9 @@ def obtener(documento_id: str, sesion: Session = Depends(get_sesion),
 @router.get("/documentos/{documento_id}/original", response_model=UrlOriginal)
 def original(documento_id: str, sesion: Session = Depends(get_sesion),
              almacenamiento: Almacenamiento = Depends(get_almacenamiento),
-             _: Usuario = Depends(requiere_rol("revisor", "admin"))) -> UrlOriginal:
-    # Sin auditoria por ahora: el "mostrar" auditado es de la etapa 3
-    return UrlOriginal(url=ingesta.url_original(sesion, almacenamiento, documento_id))
+             usuario: Usuario = Depends(requiere_rol("revisor", "admin"))) -> UrlOriginal:
+    # Deja original_visto en la auditoria (sin datos del contenido)
+    return UrlOriginal(url=ingesta.url_original(sesion, almacenamiento, documento_id, usuario.usuario))
 
 
 @router.post("/documentos/{documento_id}/revelar", response_model=DatoRevelado)

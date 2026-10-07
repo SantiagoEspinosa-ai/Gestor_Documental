@@ -299,8 +299,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
 
   ruta('GET', '/documentos/{id}', TODOS, ({ params }) => documentoJson(documentoOError(estado, params.id).doc))
 
-  ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params }) => {
-    const { doc } = documentoOError(estado, params.id)
+  ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params, usuario }) => {
+    const { folio, doc } = documentoOError(estado, params.id)
     const id = doc.identificador_unico_documento
     const archivo = estado.archivos.get(id)
     // Como la URL prefirmada real (caduca a los 300 s): una nueva en cada peticion y la anterior deja de valer,
@@ -311,6 +311,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     const url = archivo ? URL.createObjectURL(archivo)
       : `${ORIGEN_FRONT()}/mock-originales/${encodeURIComponent(doc.referencia_archivo_original.nombre_archivo)}?firma=${siguiente(estado)}`
     estado.urls.set(id, url)
+    auditar(estado, usuario.usuario, 'original_visto', folio.folio, id, {}) // como la API: detalle vacio
     return HttpResponse.json({ url })
   })
 

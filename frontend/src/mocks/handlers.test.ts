@@ -200,6 +200,10 @@ describe('consultas', () => {
     expect([auditoria.cuerpo.pagina, auditoria.cuerpo.tamano_pagina, auditoria.cuerpo.total]).toEqual([1, 50, entradas.length])
     expect(entradas.every((e) => e.folio === 'ONB-2026-000004')).toBe(true)
     expect(entradas.map((e) => e.creado_en)).toEqual([...entradas.map((e) => e.creado_en)].sort().reverse())
+    // Cada peticion del original deja original_visto (como la API: usuario, folio y documento; detalle vacio)
+    const vistos = entradas.filter((e) => e.accion === 'original_visto' && e.usuario === 'revisor.demo')
+    expect(vistos.map((e) => [e.documento_id, e.detalle])).toEqual( // las 2 de aqui y la de los datos iniciales
+      Array(3).fill([f4.documentos[0].identificador_unico_documento, {}]))
   })
 
   it('GET /auditoria segun ADR-008: 50 por defecto, 1 a 100, creado_en desc e id desc, 422 fuera de rango', async () => {

@@ -26,4 +26,4 @@ Responsable: PERSONA_1. Compartido por todos los modulos; `core` no importa ning
 - `resultados`: `ResultadoDocumento` en JSON, una fila por version; la vigente es la de version mayor.
 - `alertas`: alertas de documento o de expediente (`documento_id` NULL), con revision (`aplica`, comentario, autor, fecha). `version_resultado`: NULL = de plataforma (DUP, EXP, CMP); N = del motor en la version N del resultado (migracion 0003).
 - `correcciones`: cambios del revisor sobre `datos_extraidos` (valor anterior y nuevo), con `version_resultado` = la version del Resultado sobre la que se hizo; solo se aplican a esa version (migracion 0004).
-- `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`, con `dato_revelado` desde el ADR-010 A4; sin CHECK en BD, sin migracion), sin FK para no bloquear borrados.
+- `auditoria`: registro de acciones (`ACCIONES_AUDITORIA`, con `dato_revelado` desde el ADR-010 A4 y `original_visto` post-MVP; sin CHECK en BD, sin migracion), sin FK para no bloquear borrados.

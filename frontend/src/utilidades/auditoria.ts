@@ -121,6 +121,7 @@ export function describirDetalle(entrada: Pick<EntradaAuditoria, 'accion' | 'det
       if (d.decision === 'aprobar' || d.decision === 'rechazar') usar('decision', `Decisión: ${ETIQUETA_DECISION[d.decision]}`)
       break
     case 'folio_creado':
+    case 'original_visto':
       break
   }
   for (const [clave, valor] of Object.entries(d)) {

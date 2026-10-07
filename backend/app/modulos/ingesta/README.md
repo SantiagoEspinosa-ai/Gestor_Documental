@@ -39,7 +39,8 @@ Las correcciones de versiones anteriores no se aplican.
 `obtener_documento(sesion, documento_id) -> Documento`: 404 si no existe o el id no es un UUID.
 `existe_tipo(tipo) -> bool`: si hay ficha para ese tipo.
 
-`url_original(sesion, almacenamiento, documento_id) -> str`: URL prefirmada del original.
+`url_original(sesion, almacenamiento, documento_id, usuario) -> str`: URL prefirmada del original; deja
+`original_visto` en la auditoria (usuario, folio y documento, `detalle` vacio) y hace commit.
 
 `procesar_documento(documento_id, tipo_confirmado=None)`: lo que lanza la API como BackgroundTask;
 delega en `procesamiento.procesar` (la API solo importa `servicio.py`, ADR-005).

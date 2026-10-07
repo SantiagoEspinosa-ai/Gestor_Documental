@@ -79,7 +79,8 @@ resultado vigente lleva los datos de la ficha anterior). El valor real solo sale
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO` (tambien si el id no es un UUID).
 
 ### GET /api/v1/documentos/{id}/original (revisor, admin)
-- Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Sin auditoria hasta la etapa 3.
+- Salida 200: `{url}` prefirmada y temporal (`URL_PREFIRMADA_SEGUNDOS`). Cada llamada correcta deja
+  `original_visto` (usuario, folio y documento; `detalle` vacio).
 - Errores: 404 `DOCUMENTO_NO_ENCONTRADO`.
 
 ### POST /api/v1/documentos/{id}/revelar (revisor, admin; ADR-010 A4)
@@ -182,3 +183,4 @@ ni contrasenas.
 | `alerta_resuelta` | `{alerta_id, codigo, aplica}` |
 | `decision_tomada` | `{decision}` |
 | `dato_revelado` | `{campo}` (ADR-010 A4; nunca el valor) |
+| `original_visto` | sin detalle (`{}`): usuario, folio y documento van en sus columnas |

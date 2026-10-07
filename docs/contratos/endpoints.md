@@ -14,7 +14,7 @@ Cambios solo mediante ADR. Ampliado por ADR-004, ADR-006 y ADR-008 (2026-09-30) 
 | GET | /folios/{folio} | todos | Expediente consolidado | `ResultadoExpediente` |
 | POST | /folios/{folio}/documentos | integrador, revisor | multipart: `archivo` (max. 20 MB), `tipo_declarado?` -> lanza BackgroundTask | `202 {identificador_unico_documento, estado_analisis: "pendiente"}` |
 | GET | /documentos/{id} | todos | Resultado del documento | `ResultadoDocumento` |
-| GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream) | `{url}` |
+| GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream); audita `original_visto` | `{url}` |
 | POST | /documentos/{id}/revelar | revisor, admin | `{campo}`: valor real y vigente de un campo sensible (ADR-010 A4; ver "Reglas") | `{campo, valor}` |
 | PATCH | /documentos/{id}/datos | revisor | `{campo: valor}` corrige datos; se guarda en `correcciones` (ver "Reglas") | `ResultadoDocumento` |
 | POST | /documentos/{id}/confirmar-clasificacion | revisor | `{tipo_documental}` (ver "Reglas") | `ResultadoDocumento` |
@@ -45,7 +45,8 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
 - `EntradaAuditoria`: `{id, usuario, accion, folio, documento_id, detalle, modelo, version_prompt,
   creado_en}`. `accion` es una lista cerrada: `login`, `folio_creado`, `documento_subido`,
   `documento_procesado`, `dato_corregido`, `clasificacion_confirmada`, `alerta_resuelta`,
-  `decision_tomada` (y `dato_revelado` en la etapa 3). `detalle` nunca contiene valores sensibles sin
+  `decision_tomada` (y `dato_revelado` en la etapa 3), `original_visto` (post-MVP: cada
+  `GET /documentos/{id}/original` correcto, con `detalle` vacio). `detalle` nunca contiene valores sensibles sin
   enmascarar.
 - `RespuestaAntecedentes` (ADR-010 C): siempre `200` (salvo `404 FOLIO_NO_ENCONTRADO`): `{permitido,
   motivo: "proceso_sin_antecedentes" | "folio_sin_referencia" | null, elementos: [Antecedente]}`.

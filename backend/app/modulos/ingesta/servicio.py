@@ -236,12 +236,15 @@ def revelar_dato(sesion: Session, documento_id: str, campo: str, usuario: str) -
     return resultado.datos_extraidos.get(campo)
 
 
-def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str) -> str:
-    """URL prefirmada y temporal del original.
-
-    Sin auditoria: no esta en ACCIONES_AUDITORIA. El "mostrar" auditado es de la etapa 3.
+def url_original(sesion: Session, almacenamiento: Almacenamiento, documento_id: str, usuario: str) -> str:
+    """URL prefirmada y temporal del original, con su entrada `original_visto` (usuario, folio y documento;
+    `detalle` vacio, nada del contenido). El rol lo comprueba el router.
     """
-    return almacenamiento.url_prefirmada(obtener_documento(sesion, documento_id).ruta_s3)
+    doc = obtener_documento(sesion, documento_id)
+    url = almacenamiento.url_prefirmada(doc.ruta_s3)
+    auditoria.registrar(sesion, "original_visto", usuario=usuario, folio=doc.folio, documento_id=doc.id)
+    sesion.commit()
+    return url
 
 
 def listar_tipos() -> list[dict]:

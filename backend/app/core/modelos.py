@@ -26,10 +26,11 @@ ROLES = ("admin", "revisor", "integrador")
 ESTADOS_FOLIO = tuple(e.value for e in EstadoGeneral)
 DECISIONES = tuple(e.value for e in DecisionHumana)
 
-# ADR-006 1.5 y ADR-010 A4 (dato_revelado). Sin CHECK en BD: anadir una accion no necesita migracion
+# ADR-006 1.5, ADR-010 A4 (dato_revelado) y original_visto (post-MVP). Sin CHECK en BD: anadir una accion no necesita migracion
 ACCIONES_AUDITORIA = (
     "login", "folio_creado", "documento_subido", "documento_procesado", "dato_corregido",
     "clasificacion_confirmada", "alerta_resuelta", "decision_tomada", "dato_revelado",
+    "original_visto",
 )
 
 
