@@ -26,11 +26,11 @@ export function BarraConfianza({ valor, minimo, de }: Props) {
       <div role="meter" aria-label={`${ETIQUETA_CONFIANZA} de ${de}`} aria-valuemin={0} aria-valuemax={100}
         aria-valuenow={Math.round(valor * 100)} aria-valuetext={`${porcentaje(valor)}${bajo ? ', bajo el mínimo' : ''}`}
         aria-describedby={ayuda} className="h-2 w-20 shrink-0 overflow-hidden rounded bg-slate-200">
-        <div className={`h-full ${bajo ? 'bg-amber-500' : 'bg-green-600'}`} style={{ width: ancho }} />
+        <div className={`h-full ${bajo ? 'bg-q-orange' : 'bg-q-slate'}`} style={{ width: ancho }} />
       </div>
       <span className="text-sm tabular-nums">{porcentaje(valor)}</span>
       {bajo && (
-        <span className="inline-flex items-center gap-1 text-xs text-amber-800">
+        <span className="inline-flex items-center gap-1 text-xs text-q-orange-700">
           <AlertTriangle className="size-3.5" aria-hidden /> bajo el mínimo ({porcentaje(minimo ?? 0)})
         </span>
       )}

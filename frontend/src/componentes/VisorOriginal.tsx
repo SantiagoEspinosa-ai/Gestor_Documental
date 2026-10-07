@@ -33,7 +33,7 @@ export function VisorOriginal({ documentoId, nombreArchivo }: Props) {
     <figure className="rounded border border-slate-200 bg-white p-2">
       <figcaption className="flex items-center justify-between gap-2 text-xs text-slate-600">
         <span className="font-mono">{nombreArchivo}</span>
-        <button type="button" onClick={() => { setEstado({ url: null, error: null }); setAperturas((n) => n + 1) }} className="inline-flex items-center gap-1 text-blue-700 underline">
+        <button type="button" onClick={() => { setEstado({ url: null, error: null }); setAperturas((n) => n + 1) }} className="inline-flex items-center gap-1 text-q-slate underline hover:text-q-orange-700">
           <RefreshCw className="size-3.5" aria-hidden /> Volver a cargar
         </button>
       </figcaption>

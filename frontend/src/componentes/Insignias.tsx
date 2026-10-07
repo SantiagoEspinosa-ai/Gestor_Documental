@@ -3,10 +3,10 @@ import type { EstadoGeneral, Recomendacion } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_GENERAL, ETIQUETA_RECOMENDACION } from '../utilidades/etiquetas'
 
 const COLOR_ESTADO: Record<EstadoGeneral, string> = {
-  en_revision: 'bg-blue-100 text-blue-900', aprobado: 'bg-green-100 text-green-900', rechazado: 'bg-red-100 text-red-900',
+  en_revision: 'bg-q-slate-100 text-q-slate', aprobado: 'bg-q-slate text-white', rechazado: 'bg-red-100 text-red-900',
 }
 const COLOR_RECOMENDACION: Record<Recomendacion, string> = {
-  aprobar: 'text-green-800', revision_manual: 'text-amber-800', rechazar: 'text-red-800',
+  aprobar: 'text-q-slate', revision_manual: 'text-q-orange-700', rechazar: 'text-red-800',
 }
 
 export function InsigniaEstado({ estado }: { estado: EstadoGeneral }) {

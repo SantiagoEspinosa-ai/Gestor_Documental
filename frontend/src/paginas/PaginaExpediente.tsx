@@ -105,7 +105,7 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
       <section>
         <h1 className="text-xl font-semibold">Expediente {folio}</h1>
         <p role="alert" className="mt-2 text-red-700">{error}</p>
-        <Link to="/folios" className="mt-2 inline-block text-blue-700 underline">Volver a los folios</Link>
+        <Link to="/folios" className="mt-2 inline-block text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
       </section>
     )
   }
@@ -135,10 +135,10 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
         <div className="flex flex-wrap items-center gap-3">
           <h1 id="titulo-expediente" className="text-xl font-semibold">Expediente <span className="font-mono">{expediente.folio}</span></h1>
           <InsigniaEstado estado={expediente.estado_general} />
-          <Link to={`/folios/${encodeURIComponent(expediente.folio)}/carga`} className="inline-flex items-center gap-1 text-sm text-blue-700 underline">
+          <Link to={`/folios/${encodeURIComponent(expediente.folio)}/carga`} className="inline-flex items-center gap-1 text-sm text-q-slate underline hover:text-q-orange-700">
             <Upload className="size-4" aria-hidden /> Carga de documentos
           </Link>
-          <Link to="/folios" className="text-sm text-blue-700 underline">Volver a los folios</Link>
+          <Link to="/folios" className="text-sm text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
           {expediente.ruta_resumen_md && <ResumenExpediente folio={expediente.folio} />}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
@@ -162,7 +162,7 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
       {sondeo.detenido && <AvisoSondeoDetenido alReanudar={sondeo.reanudar} />}
       {aviso && (
         <p role={aviso.tipo === 'error' ? 'alert' : 'status'} data-testid="aviso"
-          className={`mt-3 rounded px-3 py-2 text-sm ${aviso.tipo === 'error' ? 'border border-red-300 bg-red-50 text-red-900' : 'bg-green-50 text-green-900'}`}>
+          className={`mt-3 rounded px-3 py-2 text-sm ${aviso.tipo === 'error' ? 'border border-red-300 bg-red-50 text-red-900' : 'bg-q-slate-50 text-q-slate'}`}>
           {aviso.texto}
         </p>
       )}
@@ -178,7 +178,7 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
               return (
                 <li key={d.identificador_unico_documento}>
                   <button type="button" onClick={() => setSeleccionado(d.identificador_unico_documento)} aria-current={activo ? 'true' : undefined}
-                    className={`w-full rounded border px-2 py-1.5 text-left text-sm ${activo ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:bg-slate-50'} ${d.retirado ? 'opacity-60' : ''}`}>
+                    className={`w-full rounded border px-2 py-1.5 text-left text-sm ${activo ? 'border-q-slate bg-q-slate-50' : 'border-slate-200 bg-white hover:bg-slate-50'} ${d.retirado ? 'opacity-60' : ''}`}>
                     <span className="block font-medium">
                       {nombreVisible(tipoEfectivo(d))}
                       {d.retirado && <span className="ml-1 rounded bg-slate-200 px-1 text-xs font-normal text-slate-700">Retirado</span>}

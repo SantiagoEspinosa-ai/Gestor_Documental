@@ -77,7 +77,7 @@ export function PaginaAuditoria() {
             <input id="filtro-folio-auditoria" value={folioEscrito} onChange={(e) => setFolioEscrito(e.target.value)}
               placeholder="PREFIJO-AAAA-NNNNNN" className="mt-1 rounded border border-slate-300 px-2 py-1.5 font-mono" />
           </div>
-          <button type="submit" className="flex items-center gap-1 rounded bg-slate-800 px-3 py-1.5 text-white">
+          <button type="submit" className="flex items-center gap-1 rounded bg-q-slate px-3 py-1.5 text-white">
             <Search className="size-4" aria-hidden /> Filtrar
           </button>
           {folio && (
@@ -101,7 +101,7 @@ export function PaginaAuditoria() {
       {error && (
         <div role="alert" className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-red-800">
           <p>{error}</p>
-          <Link to="/auditoria" onClick={() => setFolioEscrito('')} className="mt-1 inline-block text-blue-700 underline">
+          <Link to="/auditoria" onClick={() => setFolioEscrito('')} className="mt-1 inline-block text-q-slate underline hover:text-q-orange-700">
             Volver a la auditoría sin filtros
           </Link>
         </div>
@@ -154,7 +154,7 @@ function FilaAuditoria({ entrada: e, tipos }: { entrada: EntradaAuditoria; tipos
       <td className="px-3 py-2">{e.usuario ?? <span className="text-slate-500">Sistema</span>}</td>
       <th scope="row" className="px-3 py-2 text-left font-normal">{etiquetaAccion(e.accion)}</th>
       <td className="whitespace-nowrap px-3 py-2 font-mono">
-        {e.folio ? <Link to={`/folios/${e.folio}`} className="text-blue-700 underline">{e.folio}</Link> : '—'}
+        {e.folio ? <Link to={`/folios/${e.folio}`} className="text-q-slate underline hover:text-q-orange-700">{e.folio}</Link> : '—'}
       </td>
       <td className="px-3 py-2 font-mono text-xs">
         {e.documento_id ? <span title={e.documento_id}>{e.documento_id.slice(0, 8)}…</span> : '—'}

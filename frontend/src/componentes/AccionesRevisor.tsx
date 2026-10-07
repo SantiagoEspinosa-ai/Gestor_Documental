@@ -113,7 +113,7 @@ export function ConfirmarClasificacion({ fichas, actual, deshabilitado, alConfir
       <button type="submit" disabled={deshabilitado || enviando || !tipo} className={`${boton} border-slate-700 py-1`}>
         {enviando ? 'Confirmando…' : 'Confirmar clasificación'}
       </button>
-      {distinto && <p className="w-full text-xs text-amber-800">Es distinto del tipo con el que se extrajo: el documento se volverá a analizar.</p>}
+      {distinto && <p className="w-full text-xs text-q-orange-700">Es distinto del tipo con el que se extrajo: el documento se volverá a analizar.</p>}
     </form>
   )
 }
@@ -193,10 +193,10 @@ export function PanelDecision({ bloqueantes, enCurso, deshabilitado, alDecidir }
       )}
       {enCurso && <p className="mt-1 text-xs text-slate-600">Hay documentos analizándose: espera a que terminen para decidir.</p>}
       {pendiente ? (
-        <div role="alertdialog" aria-label="Confirmar la decisión" className="mt-2 rounded border border-amber-300 bg-amber-50 p-2">
+        <div role="alertdialog" aria-label="Confirmar la decisión" className="mt-2 rounded border border-q-orange-100 bg-q-orange-50 p-2">
           <p>¿Confirmas <strong>{pendiente === 'aprobar' ? 'aprobar' : 'rechazar'}</strong> el folio? La decisión lo cierra y no se puede deshacer.</p>
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={confirmar} disabled={enviando} className={`${boton} border-slate-800 bg-slate-800 text-white`}>
+            <button type="button" onClick={confirmar} disabled={enviando} className={`${boton} border-q-slate bg-q-slate text-white`}>
               {enviando ? 'Enviando…' : `Sí, ${pendiente}`}
             </button>
             <button type="button" onClick={() => setPendiente(null)} disabled={enviando} className={`${boton} border-slate-300`}>Cancelar</button>
@@ -205,7 +205,7 @@ export function PanelDecision({ bloqueantes, enCurso, deshabilitado, alDecidir }
       ) : (
         <div className="mt-2 flex gap-2">
           <button type="button" onClick={() => setPendiente('aprobar')} disabled={!puedeAprobar}
-            className={`${boton} border-green-700 py-1 text-green-800`}>Aprobar</button>
+            className={`${boton} rounded-[10px]! border-q-orange py-1 bg-q-orange font-medium text-white hover:bg-q-orange-500`}>Aprobar</button>
           <button type="button" onClick={() => setPendiente('rechazar')} disabled={enCurso || deshabilitado}
             className={`${boton} border-red-700 py-1 text-red-800`}>Rechazar</button>
         </div>

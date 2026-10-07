@@ -30,7 +30,7 @@ export function ResumenExpediente({ folio }: Props) {
 
   if (!abierto) {
     return (
-      <button type="button" onClick={abrir} className="inline-flex items-center gap-1 text-sm text-blue-700 underline">
+      <button type="button" onClick={abrir} className="inline-flex items-center gap-1 text-sm text-q-slate underline hover:text-q-orange-700">
         <FileText className="size-4" aria-hidden /> Ver resumen
       </button>
     )

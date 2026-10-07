@@ -45,7 +45,7 @@ export function Antecedentes({ folio }: Props) {
           {datos.elementos.map((a) => (
             <li key={a.folio} aria-label={`Antecedente ${a.folio}`} className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm">
               <p className="font-medium">
-                <Link to={`/folios/${encodeURIComponent(a.folio)}`} className="font-mono text-blue-700 underline">{a.folio}</Link>
+                <Link to={`/folios/${encodeURIComponent(a.folio)}`} className="font-mono text-q-slate underline hover:text-q-orange-700">{a.folio}</Link>
                 {' · '}{ETIQUETA_ESTADO_GENERAL[a.estado_general]}
                 {a.decision_humana && <> · Decisión: {ETIQUETA_DECISION[a.decision_humana]}</>}
               </p>
