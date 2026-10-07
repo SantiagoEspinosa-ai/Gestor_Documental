@@ -196,7 +196,7 @@ def test_folio_inexistente_da_folio_no_encontrado(sesion, s3):
 
 @pytest.mark.parametrize("rol", ["admin", "revisor", "integrador"])
 def test_los_tres_roles_lo_pueden_leer(sesion, s3, rol):
-    folio = _crear_folio()
+    folio = _crear_folio("integrador")  # ADR-012: el integrador solo lee los suyos; revisor y admin, todos
     assert _resumen(folio, rol).status_code == 200
 
 

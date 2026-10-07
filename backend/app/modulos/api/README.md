@@ -57,6 +57,12 @@ Todos requieren token (401 `NO_AUTENTICADO` / `TOKEN_CADUCADO`); 403 `SIN_PERMIS
 - Errores: 401; 403 `SIN_PERMISO` (integrador); 404 `FOLIO_NO_ENCONTRADO`.
 - Necesita la tabla `memoria_folios` (migracion 0005, H14).
 
+### Integrador: solo sus folios (ADR-012, aceptado)
+`POST /folios` guarda quien lo crea (`folios.creado_por`, migracion 0007). Para el integrador, `GET /folios/{folio}`,
+`GET /folios/{folio}/resumen.md`, `POST /folios/{folio}/documentos` y `GET /documentos/{id}` de un folio que no ha
+creado (o anterior a la migracion) dan `404 FOLIO_NO_ENCONTRADO` / `DOCUMENTO_NO_ENCONTRADO`, como si no existiera
+(`ingesta.servicio.exigir_folio_visible` y `core.seguridad.es_folio_ajeno`). `GET /folios` le sigue dando 403.
+
 ## documentos.py
 Todos requieren token (401); 403 `SIN_PERMISO` si el rol no vale.
 

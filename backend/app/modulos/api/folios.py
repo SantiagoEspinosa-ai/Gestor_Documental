@@ -11,6 +11,7 @@ from app.core.db import get_sesion
 from app.core.modelos import Usuario
 from app.core.seguridad import requiere_rol, usuario_actual
 from app.modulos.expediente import servicio as expediente
+from app.modulos.ingesta import servicio as ingesta
 from app.modulos.rag import servicio as rag
 from app.schemas.resultado import DecisionHumana, EstadoGeneral, ResultadoExpediente, ResumenFolio
 
@@ -72,14 +73,18 @@ def listar(proceso: str | None = None, estado_general: EstadoGeneral | None = No
 
 @router.get("/{folio}", response_model=ResultadoExpediente)
 def obtener(folio: str, sesion: Session = Depends(get_sesion),
-            _: Usuario = Depends(usuario_actual)) -> ResultadoExpediente:
+            usuario: Usuario = Depends(usuario_actual)) -> ResultadoExpediente:
+    ingesta.exigir_folio_visible(sesion, folio, usuario)  # ADR-012: el de otro integrador da 404
     return expediente.enmascarar(expediente.obtener_expediente(sesion, folio))  # ADR-010 A3
 
 
 @router.get("/{folio}/resumen.md", response_class=Response,
             responses={200: {"content": {"text/markdown": {}}, "description": "Resumen del expediente en Markdown"}})
-def resumen_md(folio: str, sesion: Session = Depends(get_sesion), _: Usuario = Depends(usuario_actual)) -> Response:
-    """Cualquier rol. 404 RESUMEN_NO_DISPONIBLE si aun no se ha generado; 404 FOLIO_NO_ENCONTRADO si no existe."""
+def resumen_md(folio: str, sesion: Session = Depends(get_sesion),
+               usuario: Usuario = Depends(usuario_actual)) -> Response:
+    """Cualquier rol. 404 RESUMEN_NO_DISPONIBLE si aun no se ha generado; 404 FOLIO_NO_ENCONTRADO si no existe
+    o es de otro integrador (ADR-012)."""
+    ingesta.exigir_folio_visible(sesion, folio, usuario)
     return Response(content=expediente.obtener_resumen(sesion, folio), media_type=expediente.TIPO_RESUMEN)
 
 

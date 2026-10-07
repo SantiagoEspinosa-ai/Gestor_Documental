@@ -109,7 +109,8 @@ def _sin_sensibles(texto: str, donde: str) -> None:
 
 def test_ningun_valor_sensible_sale_en_claro(entorno):
     sesion, s3, peticiones = entorno
-    folio = expediente.crear_folio(sesion, "onboarding", "CLI-000101", "x").folio
+    # Lo crea el integrador que despues lo consulta (ADR-012: solo ve los suyos)
+    folio = expediente.crear_folio(sesion, "onboarding", "CLI-000101", "integrador_ficticio").folio
     credencial = ingestar(sesion, s3, folio, "c.pdf", b"%PDF-1.4 credencial", "credencial_elector", "x")
     pasaporte = ingestar(sesion, s3, folio, "p.pdf", b"%PDF-1.4 pasaporte", "pasaporte", "x")
     procesamiento.procesar(credencial.id)

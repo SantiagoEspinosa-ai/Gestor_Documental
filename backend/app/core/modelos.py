@@ -94,6 +94,8 @@ class Folio(Base):
     estado_general: Mapped[str] = mapped_column(String(20), default="en_revision",
                                                 server_default="en_revision")
     referencia_externa: Mapped[str | None] = mapped_column(String(100))  # ADR-004
+    # Usuario que lo creo con POST /folios (migracion 0007, ADR-012); NULL en los folios anteriores
+    creado_por: Mapped[str | None] = mapped_column(String(100))
     creado_en: Mapped[datetime] = _creado_en()  # ADR-004: fecha_solicitud
     # ADR-006 G: tras la decision el folio queda cerrado
     decision: Mapped[str | None] = mapped_column(String(10))

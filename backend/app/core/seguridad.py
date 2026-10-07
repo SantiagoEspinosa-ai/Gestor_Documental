@@ -71,6 +71,13 @@ def usuario_actual(
     return usuario
 
 
+def es_folio_ajeno(usuario: Usuario, creado_por: str | None) -> bool:
+    """ADR-012 (propuesto): el integrador solo accede a los folios que ha creado. Un folio anterior a la
+    columna (creado_por NULL) no es de ningun integrador. Revisor y admin ven todos. Quien llama responde
+    404, como si el folio no existiera, para no revelar que existe."""
+    return usuario.rol == "integrador" and creado_por != usuario.usuario
+
+
 def requiere_rol(*roles: str):
     """Dependencia que exige uno de los roles dados. 403 SIN_PERMISO si no."""
     desconocidos = set(roles) - set(ROLES)
