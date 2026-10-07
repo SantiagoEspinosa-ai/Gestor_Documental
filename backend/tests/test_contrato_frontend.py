@@ -302,6 +302,10 @@ def generador(tmp_path_factory):
     return gf, gf.generar(HOY_MOCKS, salida)
 
 
+# Datos que los mocks se apartan del fixture a proposito (H3, como la salida real del motor): {archivo: {campo: valor}}
+FECHAS_ILEGIBLES = {"pasaporte_vencido_escaneado.pdf": {"fecha_expedicion": "30 SEP 2021"}}
+
+
 def test_datos_y_originales_coherentes_con_los_fixtures(generador):
     gf, _ = generador
     for folio in _json("folios"):
@@ -331,6 +335,8 @@ def test_datos_y_originales_coherentes_con_los_fixtures(generador):
                     esperados[a["campo"]] = None
                     assert doc["nivel_confianza_por_campo"][a["campo"]] == 0
                     assert a["campo"] not in doc["evidencia_por_campo"]
+            # H3: una fecha que el OCR leyo y no se puede normalizar, a proposito (scripts/generar_datos_mock.py)
+            esperados.update(FECHAS_ILEGIBLES.get(archivo, {}))
             assert doc["datos_extraidos"] == esperados, archivo
             assert not [v for v in doc["datos_extraidos"].values() if isinstance(v, str) and not v.strip()], archivo
             for correccion in doc["correcciones"]:

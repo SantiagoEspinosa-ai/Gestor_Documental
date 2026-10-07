@@ -65,8 +65,10 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 - [x] Cuando el modulo `configuracion` de PERSONA_2 llegue a `main`: `configuracion.cargar()` en el
       lifespan de `main.py` y sustituir `ingesta/tipos.py` por `configuracion.servicio.obtener()/listar()`
       (etapa 2, paso 0; `GET /tipos-documentales` devuelve el mismo JSON).
-- [ ] Entregar las claves AWS a PERSONA_3 por canal seguro (las necesita para los e2e).
-- [ ] Decidir con el equipo la maquina de Ollama (sin GPU de momento) y el resto de `propuesta/base-etapa0`.
+- [x] ~~Entregar las claves AWS a PERSONA_3~~: ya no aplica, PERSONA_3 dejo el equipo el 2026-10-01 (traspaso en el
+      PR #13); los e2e reales los hace PERSONA_1 con sus propias claves.
+- [x] Maquina de Ollama: la de PERSONA_2 (decidido el 2026-10-06 tras el ensayo tecnico: este equipo no tiene el
+      modelo de vision ni RAM suficiente; ver "Ensayo tecnico de la demo").
 
 ### ADR-008 (aceptado en el PR #7, aplicado a los contratos en el PR #8)
 - [x] `expediente.listar_folios` rellena `ResumenFolio.referencia_externa` desde `folios.referencia_externa`
@@ -76,7 +78,8 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
 ### Etapa 2 (dias 6-8), cuando PERSONA_2 entregue `procesar_documento`
 - [x] E2.1: `ingesta/procesamiento.py` con la interfaz acordada del motor (hoy `motor_stub.py`); cada
       alerta del motor se guarda en `alertas` con `version_resultado` (migracion 0003). Acordado con PERSONA_2.
-- [ ] Cambiar el import de `motor_stub` por `orquestador.servicio.procesar_documento` cuando llegue a `main`.
+- [x] Cambiar el import de `motor_stub` por `orquestador.servicio.procesar_documento` (H10, PR #28; el stub
+      queda para `MOTOR_ANALISIS=stub`).
 - [x] E2.3: `expediente.recalcular_exp001` al procesar cada documento (98196ea) y al confirmar la
       clasificacion (a1ec2c5).
 - [x] E2.4: comparaciones entre documentos (`validacion/comparaciones.py` y `servicio.py`) y `CMP-001`
@@ -87,7 +90,8 @@ tambien contra PostgreSQL (20 hilos, sin huecos ni duplicados).
       clasificacion con reproceso (ADR-006 2.5); codigo nuevo `DOCUMENTO_CON_ERROR` (ea08277, cd41b1e, a1ec2c5).
 - [x] E2.6c: decision del folio y cierre (ADR-006 2.2 y G), con UPDATE condicional contra decisiones
       simultaneas (commit "feat(api): decision del folio y cierre").
-- [ ] Pull Request de `feat/plataforma` a `main` al cerrar la etapa 2.
+- [x] Pull Request de `feat/plataforma` a `main` al cerrar la etapa 2: PR #9 (E2.1-E2.6); despues el #19
+      (`configuracion`, CORS, D2 y el resultado de H1).
 
 ### Etapa 3
 Como en el prompt: resumen `.md`, webhooks HMAC, enmascaramiento en logs y "mostrar" auditado.
@@ -141,23 +145,27 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
 - [x] H2: test de rutas de `app.openapi()` frente a `endpoints.md` (`tests/test_openapi_contrato.py`).
 - [x] H6: humo con stub y e2e con el motor real HECHOS (hito del dia 8, 2026-10-05). Proyecto aparte `playwright.real.config.ts`
       (`npm run test:e2e:real`, carpeta `frontend/e2e-real/`), contra el backend y Vite locales.
-- [ ] H7: borrador del ADR-010 de la etapa 3 (enmascaramiento, edicion de procesos, `/antecedentes`)
-      el dia 7; reservar antes el numero en el chat del equipo.
+- [x] H7: ADR-010 de la etapa 3 (enmascaramiento, procesos en solo lectura, `/antecedentes`): borrador en el
+      PR #21, aceptado en el #24.
 - Prioridad acordada en el PR #13: H1 y H2 primero; H7 para el dia 7.
 
 ### Etapa 2 (con el motor de PERSONA_2)
-- [ ] H3: mocks con `version_prompt` y evidencias reales (el PR #11 ya esta en `main`).
+- [x] H3: mocks como la salida real del motor (rama `docs-y-mocks/cierre-p1`): `version_prompt`
+      `extraccion_<tipo>@v3`, evidencia `pagina_1:seccion_central`, `fecha_analisis` con microsegundos y una fecha
+      que el OCR no pudo normalizar; generados con `scripts/generar_datos_mock.py`. Los JSON guardan los valores
+      ficticios completos (son el estado, como la BD) y los handlers enmascaran al responder (ADR-010).
 - [x] H4: "Tipo no reconocido" (ADR-009): UI, aviso sin datos y mensaje de `EXP-002` "Tipo de documento no
       reconocido" (rama `feat/plataforma-etapa3`).
-- [ ] H5: etiqueta de la confianza segun la decision sobre ADR-007 (H10: PERSONA_2 ha decidido no
-      sustituir el stub hasta entonces; PENDIENTE de tu confirmacion).
-- [ ] H6 (completo): folios de `INDICE.md` con el motor real; 5 min por documento, 10 min por folio de 3.
+- [x] H5: la UI dice "Confianza verificada" (ADR-007 aceptado: la calcula el codigo; `ETIQUETA_CONFIANZA` y
+      `BarraConfianza`).
+- [x] H6 (completo): folios de `INDICE.md` con el motor real en el hito del dia 8 (2026-10-05, ver "Hito del dia 8").
 - [x] H10: el motor real (`orquestador.servicio.procesar_documento`) en `ingesta/procesamiento.py`, con
       `MOTOR_ANALISIS` (`real` por defecto, `stub` para el humo sin Ollama). Forma de `tiempos` y `tokens`
       revisada y legible en la auditoria de la UI (rama `feat/plataforma-motor`).
 - [x] D3: al corregir datos se vuelven a evaluar las reglas del documento (VAL-001/002/004 y REG-*, VAL-003 del
       campo corregido; falsos positivos conservados; rollback y 500 si falla), rama `feat/plataforma-motor`.
-- [ ] La nota del `anio` `"0999"` (del PR #9).
+- [ ] La nota del `anio` `"0999"` (del PR #9): sigue igual (la API lo guarda como 999); la UI nunca lo envia, asi
+      que no bloquea. Si se corrige, `_valor_corregido` deberia exigir `[1-9]\d{3}` como la UI.
 - [x] Reanudar al arrancar los analisis interrumpidos por un reinicio (`ingesta.servicio.reanudar_pendientes`,
       `REANUDAR_ANALISIS_AL_ARRANCAR`, por defecto true), rama `fix/reanudar-analisis`. Un solo proceso uvicorn.
 
@@ -176,10 +184,11 @@ Detalle en `PERSONA_1_plataforma.md` (misma seccion) y `docs/equipo/PERSONA_3_es
       documento o de pantalla; errores por codigo. Vitest, e2e de mocks y e2e real (con "Dato revelado").
 
 ### Etapa 4
-- [ ] H19: guion de la demo, ensayo y `docker compose up` desde cero.
-- [ ] `frontend/README.md`: Node >= 22.22 y responsable.
-- [ ] `docs/arquitectura_solucion.md` (en `main` desde el PR #12): el reparto nuevo, en un PR pequeno
-      cuando se fusione el #13 (comprometido en su revision).
+- [ ] H19 (en curso). Hecho: guion (`docs/demo/GUION_DEMO.md`, rama `docs/guion-demo`), arranque con
+      `docker-compose.demo.yml` (#42), ensayo tecnico del 2026-10-06 con capturas del plan B. Pendiente: ensayo
+      completo en el equipo de PERSONA_2 (con el modelo de vision) y demo del 2026-10-12.
+- [x] `frontend/README.md`: Node >= 22.22 (lo piden dependencias del `package-lock.json`) y responsable PERSONA_1.
+- [x] `docs/arquitectura_solucion.md`: reparto de 2 personas y traspaso de PERSONA_3 (PR #34).
 
 ## Hito del dia 8 (2026-10-05): e2e con el motor real
 Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
@@ -194,5 +203,18 @@ Lo ejecuto PERSONA_2 desde `main` con Ollama y S3 reales.
   prueba con el #32 fusionado y anotar los tiempos por documento para el guion (H19).
 
 ## Mejoras post-MVP
+Despues de la demo; ninguna la bloquea.
 - Motivo al mostrar un dato sensible (cambio del ADR-010): pedirlo en "Mostrar" y guardarlo en `dato_revelado`.
 - Auditar la apertura del original (accion `original_visto`).
+- Contador de intentos al reanudar los analisis interrumpidos: pasar a `error` tras N fallos, para que un documento
+  que tumba el backend (p. ej. por RAM) no lo haga en bucle (nota de PERSONA_2 en el PR #33).
+- Fragmento de antecedentes que pega lineas ("Completado Criticas:"): `rag.memoria.extraer_fragmento` (PERSONA_2)
+  no deja una linea en blanco antes de cada titulo de grupo y react-markdown las une. Cosmetico.
+
+## Ensayo tecnico de la demo (2026-10-06)
+En este equipo, con el motor real y solo PDF digitales (no hay modelo de vision ni RAM para el): los 9 documentos
+de `INDICE.md` (sano, vencido y domicilio distinto) dan el resultado esperado, ~47 s por documento; D3, CMP-001,
+mascara y "Mostrar", decision, `resumen.md`, auditoria y antecedentes, correctos. Hallazgos: los modelos del `.env`
+estaban desactualizados (corregido por el usuario) y el filtro de logs rompia las lineas de acceso de uvicorn (#43).
+Capturas del plan B en el escritorio del usuario (fuera del repo).
+
