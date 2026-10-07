@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     max_procesamientos_simultaneos: int = Field(1, gt=0)
     # Al arrancar, relanzar los analisis que un reinicio dejo en pendiente o procesando (ingesta.servicio)
     reanudar_analisis_al_arrancar: bool = True
+    # Veces que se relanza un mismo analisis interrumpido; al superarlo, el documento pasa a error (SYS-001)
+    max_reintentos_reanudar: int = Field(3, ge=1)
 
     # Motor de analisis (H10): real = orquestador de PERSONA_2 (Ollama); stub = sin Ollama, solo pruebas (e2e de humo).
     # Otro valor no arranca (Literal)

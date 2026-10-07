@@ -69,7 +69,7 @@ def _expediente_servicio():
     return servicio
 
 
-def _despues_del_commit(sesion, documento_id: uuid.UUID) -> None:
+def despues_del_commit(sesion, documento_id: uuid.UUID) -> None:
     """Tras guardar el analisis (o el error): regenera el resumen.md del folio y avisa por webhook."""
     try:
         doc = sesion.get(Documento, documento_id)
@@ -128,7 +128,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
         except Exception:
             log.exception("Fallo al procesar el documento %s", documento_id)
             _marcar_error(sesion, documento_id)
-            _despues_del_commit(sesion, documento_id)  # documento.error, ya con el estado guardado
+            despues_del_commit(sesion, documento_id)  # documento.error, ya con el estado guardado
             return
 
         try:
@@ -140,6 +140,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
                                     severidad=a.severidad.value, mensaje=a.mensaje, confianza=a.confianza,
                                     campo=a.campo, version_resultado=version))
             doc.estado_analisis = resultado.estado_analisis.value  # completado o error, lo que diga el motor
+            doc.intentos_reanudar = 0  # el analisis ha terminado: el limite de reanudar vuelve a empezar
             expediente = _expediente_servicio()
             expediente.recalcular_exp001(sesion, doc.folio)
             expediente.recalcular_exp002(sesion, doc.folio)
@@ -152,7 +153,7 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
             log.exception("Fallo al guardar el resultado del documento %s", documento_id)
             _marcar_error(sesion, documento_id)
         # Tras el commit (o tras marcar el error): completado o error segun lo guardado
-        _despues_del_commit(sesion, documento_id)
+        despues_del_commit(sesion, documento_id)
 
 
 def _marcar_error(sesion, documento_id: uuid.UUID) -> None:
