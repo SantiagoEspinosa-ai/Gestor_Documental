@@ -185,3 +185,15 @@ describe('sondeo con limite en el expediente', () => {
     await waitFor(() => expect(peticiones('GET /folios/ONB-2026-000002')).toBeGreaterThan(antes))
   })
 })
+
+describe('datos como los da el motor real (H3)', () => {
+  it('una fecha que el OCR no pudo normalizar se pinta tal cual; evidencia con pagina y seccion', async () => {
+    await entrarComo('revisor.demo')
+    montarExpediente('ONB-2026-000001') // el pasaporte escaneado sale seleccionado
+    await screen.findByRole('heading', { name: /Expediente ONB-2026-000001/ })
+    await screen.findByRole('region', { name: 'Datos extraídos' })
+    expect(fila('Fecha expedicion').textContent).toContain('30 SEP 2021')
+    expect(fila('Fecha vencimiento').textContent).toContain('pagina_1:seccion_central')
+    expect(screen.getByText(/prompt/).textContent).toMatch(/extraccion_pasaporte@v3/)
+  })
+})

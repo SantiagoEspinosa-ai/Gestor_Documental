@@ -802,14 +802,17 @@ describe('enmascaramiento y revelar (ADR-010 A2-A5)', () => {
       .toEqual(['****1234', '****2345', '****', '****', null, '****3456'])
   })
 
-  it('ninguna respuesta de documento o expediente lleva un valor sensible en claro, con ningun rol', async () => {
+  it('ninguna respuesta (documento, expediente, resumen, lista, auditoria) lleva un sensible completo, con ningun rol', async () => {
     const valores = sensibles()
     expect(valores.length).toBeGreaterThan(0)
     for (const usuario of ['admin.demo', 'revisor.demo', 'integrador.demo'] as const) {
       const token = await entrar(usuario)
       for (const folio of estado.folios.values()) {
-        const textos = [(await api('GET', `/folios/${folio.folio}`, { token })).texto]
+        const textos = [(await api('GET', `/folios/${folio.folio}`, { token })).texto,
+          (await api('GET', `/folios/${folio.folio}/resumen.md`, { token })).texto]
         for (const d of folio.documentos) textos.push((await api('GET', `/documentos/${d.identificador_unico_documento}`, { token })).texto)
+        if (usuario === 'admin.demo') textos.push((await api('GET', `/auditoria?folio=${folio.folio}&tamano_pagina=100`, { token })).texto)
+        if (usuario !== 'integrador.demo') textos.push((await api('GET', '/folios?tamano_pagina=100', { token })).texto)
         for (const texto of textos) for (const v of valores) expect(texto.includes(v), `${usuario} ${folio.folio}`).toBe(false)
       }
     }

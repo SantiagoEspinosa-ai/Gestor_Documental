@@ -26,6 +26,11 @@ escaneado del folio 1 y VAL-004 (proveedor opcional no leido, null) en el compro
 Sin SYS-005: su unico respaldo es OpenRouter, que con PERMITIR_PROVEEDORES_NO_PRIVADOS=false no se usa
 nunca (ADR-003); un fallo de Ollama da SYS-001 (folio 3). Un campo sin valor es null, nunca "".
 Modelos: siempre Ollama, gemma4:e2b para pdf_digital y qwen2.5vl:3b para escaneados e imagenes.
+Como la salida real del motor (ensayo del 2026-10-06, H3): version_prompt extraccion_<tipo>@v3 (y
+clasificacion@v2 en el documento no reconocido), evidencia pagina_1:seccion_central, fecha_analisis con
+microsegundos y, en el pasaporte del folio 1, una fecha_expedicion que el OCR leyo y no se puede normalizar
+("30 SEP 2021"), guardada tal cual. Los JSON son el ESTADO de los mocks (como la BD): guardan los valores
+ficticios completos y los handlers enmascaran los sensibles al responder, como la API (ADR-010).
 
 Es determinista: sin azar ni fecha actual. backend/tests/test_generar_datos_mock.py comprueba que
 reproduce exactamente los ficheros del repo, y test_contrato_frontend.py que son validos.
@@ -58,7 +63,15 @@ REVISOR, INTEGRADOR = "revisor.demo", "integrador.demo"  # usuarios de frontend/
 # respaldo comercial no se usa nunca, asi que los mocks no tienen SYS-005.
 PROVEEDOR = "ollama"
 MODELO_POR_MODALIDAD = {"digital": "gemma4:e2b", "escaneado": "qwen2.5vl:3b", "foto": "qwen2.5vl:3b"}
-VERSION_PROMPT = "extraccion@v1"
+# Como el motor real (ensayo con el motor del 2026-10-06): un prompt de extraccion por tipo, y el de clasificacion
+# para un documento que no se reconoce (no se extrae nada)
+VERSION_PROMPT_CLASIFICACION = "clasificacion@v2"
+# Evidencia como la valida el motor (_EVIDENCIA en motor_ia/proveedores/base.py): pagina y seccion
+EVIDENCIA = "pagina_1:seccion_central"
+
+
+def version_prompt(tipo: str) -> str:
+    return f"extraccion_{tipo}@v3"
 # detalle de documento_procesado: datos de auditoria del motor sin modelo ni version_prompt (van en sus
 # columnas), como la API del PR #9 (api/README.md)
 DETALLE_PROCESADO = {"proveedor": PROVEEDOR, "respaldo_usado": False}
@@ -77,6 +90,13 @@ def momento(dia: int, hora: int, minuto: int) -> datetime:
 
 def iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def iso_analisis(dt: datetime, uid: str) -> str:
+    """fecha_analisis con microsegundos, como la serializa la API (datetime.now() del motor); deterministas,
+    sacados del id del documento"""
+    micro = int(hashlib.sha256(uid.encode()).hexdigest()[:8], 16) % 1_000_000
+    return dt.replace(microsecond=micro).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 def campo_api(definicion: dict) -> dict:
@@ -149,10 +169,13 @@ class DatosMock:
                                "version_prompt": version_prompt, "creado_en": iso(cuando)})
 
     def documento(self, folio, secuencia, n, caso, tipo, modalidad, subido, estado="completado", alertas_extra=(),
-                  confianzas=None, correcciones=(), vacios=(), fallo_plataforma=False, no_reconocido=False) -> dict:
+                  confianzas=None, correcciones=(), vacios=(), fallo_plataforma=False, no_reconocido=False,
+                  ilegibles=None) -> dict:
         """`vacios`: campos opcionales que el analisis no leyo (null, confianza 0, sin evidencia y VAL-004).
         `fallo_plataforma` (con estado="error"): fallo de S3 o excepcion del motor. Como la API, el documento
         queda en error sin Resultado, sin SYS-00x y sin entrada documento_procesado en la auditoria.
+        `ilegibles`: {campo: texto} que el OCR leyo pero no se puede normalizar (p. ej. una fecha "30 SEP 2021");
+        se guarda tal cual, como lo devolveria el motor, sin simular las reglas que dispararia.
         `no_reconocido`: subido sin tipo declarado y el motor no lo reconoce (ADR-009, punto 4): detectado
         `desconocido`, sin datos ni alertas del motor y con la EXP-002 de la plataforma. `tipo` solo elige
         el fichero ficticio."""
@@ -182,19 +205,20 @@ class DatosMock:
         if estado != "completado":
             if estado == "error" and not fallo_plataforma:  # el motor devolvio un resultado en error (SYS-00x)
                 self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
-                             subido + timedelta(seconds=40), MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT)
+                             subido + timedelta(seconds=40), MODELO_POR_MODALIDAD[modalidad], version_prompt(tipo))
             return doc
         if no_reconocido:
             modelo = MODELO_POR_MODALIDAD[modalidad]
             doc.update({
                 "tipo_documental_detectado": TIPO_DESCONOCIDO, "recomendacion": "revision_manual",
-                "fecha_y_modelo_utilizado": {"fecha_analisis": iso(subido + timedelta(seconds=40)), "proveedor": PROVEEDOR,
-                                             "modelo": modelo, "version_prompt": VERSION_PROMPT}})
+                "fecha_y_modelo_utilizado": {"fecha_analisis": iso_analisis(subido + timedelta(seconds=40), uid),
+                                             "proveedor": PROVEEDOR, "modelo": modelo,
+                                             "version_prompt": VERSION_PROMPT_CLASIFICACION}})
             # Como expediente.recalcular_exp002: "desconocido" no es un tipo del proceso
             doc["alertas_encontradas"] = [self.alerta("EXP-002", "Tipo de documento no reconocido", "informativa",
                                                       TIPO_DESCONOCIDO)] + doc["alertas_encontradas"]
             self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
-                         subido + timedelta(seconds=40), modelo, VERSION_PROMPT)
+                         subido + timedelta(seconds=40), modelo, VERSION_PROMPT_CLASIFICACION)
             return doc
         ficha = self.fichas[tipo]
         persona = gf.PERSONAS_FICTICIAS[gf.CASOS[caso]["persona"]]
@@ -204,19 +228,20 @@ class DatosMock:
         obligatorios = [c for c in vacios if ficha["campos"][c]["obligatorio"]]
         if obligatorios:
             raise ValueError(f"{tipo}: {obligatorios} son obligatorios; vacios solo admite campos opcionales (VAL-004)")
-        proveedor, modelo, version_prompt = PROVEEDOR, MODELO_POR_MODALIDAD[modalidad], VERSION_PROMPT
+        proveedor, modelo, prompt = PROVEEDOR, MODELO_POR_MODALIDAD[modalidad], version_prompt(tipo)
         doc.update({
             "tipo_documental_detectado": tipo, "confianza_clasificacion": 0.94,
             "datos_extraidos": {c: v.isoformat() if isinstance(v, date) else v
                                 for c, v in ((c, valores[c]) for c in ficha["campos"])},
             "nivel_confianza_por_campo": {c: confianza_campo(tipo, c) for c in ficha["campos"]} | (confianzas or {}),
-            "evidencia_por_campo": {c: "pagina_1" for c in ficha["campos"]},
+            "evidencia_por_campo": {c: EVIDENCIA for c in ficha["campos"]},
             "reglas_cumplidas_e_incumplidas": {
                 "cumplidas": [r["id"] for r in ficha["reglas"] if r["id"] not in ids_incumplidas],
                 "incumplidas": ids_incumplidas},
-            "fecha_y_modelo_utilizado": {"fecha_analisis": iso(subido + timedelta(seconds=40)), "proveedor": proveedor,
-                                         "modelo": modelo, "version_prompt": version_prompt},
+            "fecha_y_modelo_utilizado": {"fecha_analisis": iso_analisis(subido + timedelta(seconds=40), uid),
+                                         "proveedor": proveedor, "modelo": modelo, "version_prompt": prompt},
         })
+        doc["datos_extraidos"].update(ilegibles or {})
         for campo in vacios:  # sin valor = null (nunca ""), confianza 0 (ADR-007) y sin evidencia
             doc["datos_extraidos"][campo] = None
             doc["nivel_confianza_por_campo"][campo] = 0.0
@@ -234,7 +259,7 @@ class DatosMock:
         bajas = any(v < ficha["confianza_minima_campo"] for v in doc["nivel_confianza_por_campo"].values())
         doc["recomendacion"] = "revision_manual" if bajas or any(pesa(a) for a in doc["alertas_encontradas"]) else "aprobar"
         self.auditar(None, "documento_procesado", folio, uid, DETALLE_PROCESADO,
-                     subido + timedelta(seconds=40), modelo, version_prompt)
+                     subido + timedelta(seconds=40), modelo, prompt)
         for campo, _, cuando in correcciones:  # un PATCH por correccion: {campos: [...]}, como la API
             self.auditar(REVISOR, "dato_corregido", folio, uid, {"campos": [campo]}, cuando)
         return doc
@@ -301,7 +326,8 @@ class DatosMock:
         self.auditar(INTEGRADOR, "folio_creado", f, None, {}, t0)
         d1 = self.documento(f, s, 1, "vencido", "pasaporte", "escaneado", t0 + timedelta(minutes=1),
                             alertas_extra=[self.alerta("VAL-003", f"Valor de {c} tomado de la MRZ: no se leyo en la "
-                                                       "zona visual", "informativa", c) for c in ("nacionalidad", "sexo")])
+                                                       "zona visual", "informativa", c) for c in ("nacionalidad", "sexo")],
+                            ilegibles={"fecha_expedicion": "30 SEP 2021"})  # fecha que no se puede normalizar
         d2 = self.documento(f, s, 2, "vencido", "credencial_elector", "foto", t0 + timedelta(minutes=2),
                             confianzas={"clave_elector": 0.62},
                             alertas_extra=[self.alerta("VAL-002", "Confianza de clave_elector (0.62) por debajo del "

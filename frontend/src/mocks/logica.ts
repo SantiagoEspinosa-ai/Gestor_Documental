@@ -18,7 +18,10 @@ export const MS_HASTA_COMPLETADO = 9_000
 const PROVEEDOR = 'ollama'
 export const MODELO_TEXTO = 'gemma4:e2b' // pdf_digital
 export const MODELO_VISION = 'qwen2.5vl:3b' // pdf_escaneado e imagen
-const VERSION_PROMPT = 'extraccion@v1'
+/** Como el motor real: un prompt de extraccion por tipo (extraccion_<tipo>@v3) */
+const versionPrompt = (tipo: string) => `extraccion_${tipo}@v3`
+/** Evidencia como la valida el motor: pagina y seccion */
+const EVIDENCIA = 'pagina_1:seccion_central'
 
 /**
  * Modelo con el que se "analiza" un documento subido: el del documento de los datos con el mismo
@@ -257,7 +260,7 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
     // Con la ficha de otro tipo solo coinciden los campos comunes, y con poca confianza. Sin valor: 0 (ADR-007)
     doc.datos_extraidos[campo] = valor
     doc.nivel_confianza_por_campo[campo] = valor === null ? 0 : mismaFicha ? fuente?.nivel_confianza_por_campo[campo] ?? 0.9 : 0.45
-    if (valor !== null) doc.evidencia_por_campo[campo] = 'pagina_1' // un campo sin valor no tiene evidencia
+    if (valor !== null) doc.evidencia_por_campo[campo] = EVIDENCIA // un campo sin valor no tiene evidencia
     if (valor === null && def.obligatorio) {
       alertas.push(nuevaAlerta(estado, 'VAL-001', `Falta el campo obligatorio ${campo}`, 'critica', campo))
     } else if (valor === null) {
@@ -287,12 +290,14 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
   doc.tipo_documental_detectado = proc.tipoContenido
   doc.confianza_clasificacion = proc.confianzaClasificacion
   const modelo = modeloDeAnalisis(doc, proc)
-  doc.fecha_y_modelo_utilizado = { fecha_analisis: fechaIso(estado), proveedor: PROVEEDOR, modelo, version_prompt: VERSION_PROMPT }
+  doc.fecha_y_modelo_utilizado = {
+    fecha_analisis: fechaIso(estado), proveedor: PROVEEDOR, modelo, version_prompt: versionPrompt(proc.tipoExtraccion),
+  }
   doc.estado_analisis = 'completado'
   recomendarDocumento(estado, doc)
   // detalle = datos de auditoria del motor sin modelo ni version_prompt (van en sus columnas), como la API
   auditar(estado, null, 'documento_procesado', folio.folio, doc.identificador_unico_documento,
-    { proveedor: PROVEEDOR, respaldo_usado: false }, modelo, VERSION_PROMPT)
+    { proveedor: PROVEEDOR, respaldo_usado: false }, modelo, versionPrompt(proc.tipoExtraccion))
 }
 
 /** Avanza con el reloj el analisis de los documentos subidos en esta sesion */
