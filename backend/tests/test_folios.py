@@ -215,7 +215,8 @@ def test_folio_inexistente(cliente):
 
 
 def test_expediente_con_la_version_mayor(cliente, sesion):
-    folio = servicio.crear_folio(sesion, "onboarding", None, "x").folio
+    # Lo crea el integrador que despues lo lee (ADR-012: solo ve los suyos)
+    folio = servicio.crear_folio(sesion, "onboarding", None, "integrador_ficticio").folio
     con_resultado = Documento(folio=folio, nombre_archivo="a.pdf", ruta_s3="a", hash_sha256="1" * 64)
     sin_resultado = Documento(folio=folio, nombre_archivo="b.pdf", ruta_s3="b", hash_sha256="2" * 64)
     sesion.add_all([con_resultado, sin_resultado])
@@ -241,7 +242,7 @@ def test_expediente_con_la_version_mayor(cliente, sesion):
 
 
 def test_expediente_con_referencia_y_fecha_de_solicitud(cliente, sesion):
-    folio = servicio.crear_folio(sesion, "onboarding", "CLI-000123", "x")
+    folio = servicio.crear_folio(sesion, "onboarding", "CLI-000123", "integrador_ficticio")  # ADR-012
     r = cliente.get(f"{URL}/{folio.folio}", headers=_cab("integrador")).json()
     assert r["referencia_externa"] == "CLI-000123"
     assert r["fecha_solicitud"] is not None

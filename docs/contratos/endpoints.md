@@ -12,9 +12,9 @@ ADR-013 (retirar documentos, propuesta).
 | GET | /procesos | admin, integrador, revisor | Procesos configurados | lista de `Proceso` (ver "Formas de respuesta") |
 | POST | /folios | integrador, revisor | `{proceso, referencia_externa?}` | `{folio, estado_general}` |
 | GET | /folios?proceso=&estado_general=&pagina=1&tamano_pagina=20 | revisor, admin | Lista de folios, del mas reciente al mas antiguo; cada elemento lleva `referencia_externa` (ADR-008) | `PaginaFolios` |
-| GET | /folios/{folio} | todos | Expediente consolidado | `ResultadoExpediente` |
-| POST | /folios/{folio}/documentos | integrador, revisor | multipart: `archivo` (max. 20 MB), `tipo_declarado?` -> lanza BackgroundTask | `202 {identificador_unico_documento, estado_analisis: "pendiente"}` |
-| GET | /documentos/{id} | todos | Resultado del documento | `ResultadoDocumento` |
+| GET | /folios/{folio} | todos | Expediente consolidado; integrador: solo sus folios, el resto da 404 (ADR-012) | `ResultadoExpediente` |
+| POST | /folios/{folio}/documentos | integrador, revisor | multipart: `archivo` (max. 20 MB), `tipo_declarado?` -> lanza BackgroundTask; integrador: solo sus folios, el resto da 404 (ADR-012) | `202 {identificador_unico_documento, estado_analisis: "pendiente"}` |
+| GET | /documentos/{id} | todos | Resultado del documento; integrador: solo sus folios, el resto da 404 (ADR-012) | `ResultadoDocumento` |
 | GET | /documentos/{id}/original | revisor, admin | URL prefirmada S3 (o stream); audita `original_visto` | `{url}` |
 | POST | /documentos/{id}/revelar | revisor, admin | `{campo, motivo?}`: valor real y vigente de un campo sensible (ADR-010 A4 y A4c; ver "Reglas") | `{campo, valor}` |
 | POST | /documentos/{id}/retirar | revisor, admin | `{motivo}` (3 a 200 caracteres, se guarda tapado): el documento deja de contar para el folio; nada se borra (ADR-013; ver "Reglas") | `ResultadoDocumento` |
@@ -24,7 +24,7 @@ ADR-013 (retirar documentos, propuesta).
 | POST | /documentos/{id}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` | `ResultadoDocumento` |
 | POST | /folios/{folio}/alertas/{alerta_id}/resolver | revisor | `{aplica: bool, comentario?}` sobre `alertas_expediente` | `ResultadoExpediente` |
 | POST | /folios/{folio}/decision | revisor | `{decision: aprobar\|rechazar, comentario?}`; guarda comentario, usuario y fecha y cierra el folio (ver "Reglas") | `ResultadoExpediente` |
-| GET | /folios/{folio}/resumen.md | todos | Memoria sintetica en Markdown; `404 RESUMEN_NO_DISPONIBLE` mientras no exista | text/markdown |
+| GET | /folios/{folio}/resumen.md | todos | Memoria sintetica en Markdown; `404 RESUMEN_NO_DISPONIBLE` mientras no exista; integrador: solo sus folios, el resto da 404 (ADR-012) | text/markdown |
 | GET | /folios/{folio}/antecedentes | revisor, admin | Folios previos de la misma persona (misma `referencia_externa`) con un fragmento de su resumen (ADR-010 C; ver "Formas de respuesta") | `RespuestaAntecedentes` |
 | GET | /tipos-documentales | todos | Fichas cargadas desde config/tipos | lista de `TipoDocumental` |
 | GET | /auditoria?folio=&pagina=1&tamano_pagina=50 | admin | Registro de acciones, del mas reciente al mas antiguo, paginado (ADR-008) | `PaginaAuditoria` |

@@ -49,6 +49,16 @@ def png(ancho: int, alto: int) -> bytes:
     ("25/07/2031", "2031-07-25"), ("10/05/2024", "2024-05-10"), ("1/1/1990", "1990-01-01"),
     ("10.05.2024", "2024-05-10"), ("10-05-2024", "2024-05-10"), ("2024-05-10", "2024-05-10"),
     ("31/02/2024", None), ("2024/05/10", None), ("mayo 2024", None), (None, None), (20240510, None),
+    # Separadores perdidos por el OCR (pasaporte sano en foto dificil)
+    ("30092031", "2031-09-30"), ("3009/2021", "2021-09-30"), ("3009-2021", "2021-09-30"),
+    ("3009 2021", "2021-09-30"), (" 01011990 ", "1990-01-01"),
+    # Ambiguedades y casos peligrosos: nunca se adivinan
+    ("20240510", None),    # AAAAMMDD: se leeria como mes 24
+    ("19901001", None),    # AAAAMMDD: mes 90
+    ("20111220", None),    # AAAAMMDD: como DDMMAAAA seria el anio 1220
+    ("01011850", None), ("01012150", None),  # anio fuera de 1900-2100
+    ("31022024", None), ("3002/2024", None),  # no existen
+    ("309/2021", None), ("3009/21", None), ("3092031", None), ("300920311", None),  # cifras de mas o de menos
 ])
 def test_normalizar_fecha(entrada, esperado):
     assert normalizar_fecha(entrada) == esperado
@@ -256,8 +266,23 @@ def test_recortar_texto():
     assert [p.numero for p in salida] == [1, 2, 3, 4]
 
 
-def test_timeout_vision():
-    assert timeout_vision(4) == 660 and timeout_vision(1) == 210 and timeout_vision(0) == 210
+def test_timeout_vision(monkeypatch):
+    monkeypatch.delenv("OLLAMA_TIMEOUT_VISION_BASE_S", raising=False)
+    # Base de 180 s: cubre el primer uso de vision con el modelo de texto cargado (172 s medidos)
+    assert timeout_vision(4) == 780 and timeout_vision(1) == 330 and timeout_vision(0) == 330
+
+
+@pytest.mark.parametrize("valor, base", [("90", 90.0), ("240.5", 240.5), ("", 180.0)])
+def test_timeout_vision_configurable(monkeypatch, valor, base):
+    monkeypatch.setenv("OLLAMA_TIMEOUT_VISION_BASE_S", valor)
+    assert timeout_vision(1) == base + 150
+
+
+@pytest.mark.parametrize("valor", ["0", "-5", "abc", "nan"])
+def test_timeout_vision_invalido_es_error_de_configuracion(monkeypatch, valor):
+    monkeypatch.setenv("OLLAMA_TIMEOUT_VISION_BASE_S", valor)
+    with pytest.raises(ValueError, match="OLLAMA_TIMEOUT_VISION_BASE_S"):
+        timeout_vision(1)
 
 
 # --- Regla de texto suficiente y reintento con vision ---
@@ -296,7 +321,8 @@ def test_combinar_texto_y_vision():
 
 @pytest.mark.parametrize("tipo, datos, invalidos", [
     ("pasaporte", {"numero_pasaporte": "X00000015UTO9001011F", "fecha_vencimiento": "2031-09-30"}, ["numero_pasaporte"]),
-    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, ["fecha_vencimiento"]),
+    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/21"}, ["fecha_vencimiento"]),
+    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, []),  # el OCR perdio un separador
     ("pasaporte", {"numero_pasaporte": "2X0000001", "fecha_vencimiento": "2031-09-30"}, []),  # cumple el patron
     ("credencial_elector", {"curp": "AEPA9O0101MDFXXX01", "vigencia": "2029"}, ["curp"]),
     ("credencial_elector", {"curp": "AEPA900101MDFXXX01", "vigencia": "2021 - 2029"}, ["vigencia"]),

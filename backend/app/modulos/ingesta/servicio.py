@@ -15,7 +15,8 @@ from app.core import auditoria, enmascaramiento
 from app.core.almacenamiento import Almacenamiento, clave_original
 from app.core.config import get_settings
 from app.core.errores import ErrorApi
-from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado
+from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado, Usuario
+from app.core.seguridad import es_folio_ajeno
 from app.modulos.ingesta import procesamiento, tipos
 from app.schemas.resultado import Correccion as CorreccionContrato
 from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
@@ -208,9 +209,22 @@ def _retirada(documento: Documento) -> Retirada | None:
     return Retirada(en=en, por=documento.retirado_por, motivo=documento.motivo_retirada)
 
 
-def obtener_resultado(sesion: Session, documento_id: str) -> ResultadoDocumento:
-    """GET /documentos/{id}. 404 si no existe o el id no es un UUID."""
-    return construir_resultado(sesion, obtener_documento(sesion, documento_id))
+def exigir_folio_visible(sesion: Session, folio: str, usuario: Usuario) -> Folio:
+    """El folio, o 404 FOLIO_NO_ENCONTRADO si no existe o es de otro integrador (ADR-012): la misma respuesta
+    en los dos casos, para no revelar que existe."""
+    fila = sesion.get(Folio, folio)
+    if fila is None or es_folio_ajeno(usuario, fila.creado_por):
+        raise ErrorApi(404, "FOLIO_NO_ENCONTRADO", f"No existe el folio '{folio}'")
+    return fila
+
+
+def obtener_resultado(sesion: Session, documento_id: str, usuario: Usuario | None = None) -> ResultadoDocumento:
+    """GET /documentos/{id}. 404 si no existe, el id no es un UUID o, con `usuario` integrador, el documento es
+    de un folio que no ha creado (ADR-012)."""
+    doc = obtener_documento(sesion, documento_id)
+    if usuario is not None and es_folio_ajeno(usuario, sesion.get(Folio, doc.folio).creado_por):
+        raise ErrorApi(404, "DOCUMENTO_NO_ENCONTRADO", "No existe el documento")
+    return construir_resultado(sesion, doc)
 
 
 def campos_sensibles(resultado: ResultadoDocumento) -> set[str]:
@@ -330,16 +344,40 @@ def reanudar_pendientes(sesion: Session) -> list[uuid.UUID]:
     `tipo_documental_confirmado` (un reproceso por confirmar otro tipo sigue con ese tipo), cada uno en un
     hilo daemon para no bloquear el arranque. `completado` y `error` no se tocan. Devuelve los ids.
 
+    Limite de reintentos: cada relanzamiento suma 1 a `intentos_reanudar` (un analisis que termina lo vuelve a
+    0). Un documento que ya se relanzo MAX_REINTENTOS_REANUDAR veces no se relanza mas: pasa a `error` con una
+    SYS-001 de plataforma ("reintentos agotados"), se regenera el resumen y se avisa por webhook
+    (`documento.error`). Asi un documento que tumba la API (p. ej. por RAM) no la tumba en cada arranque.
+
     Limitacion conocida: vale para un solo proceso uvicorn. Con varios workers, cada uno relanzaria los
     mismos documentos; haria falta una cola (fuera del MVP).
     """
-    filas = sesion.execute(select(Documento.id, Documento.tipo_documental_confirmado).where(
+    documentos = sesion.scalars(select(Documento).where(
         Documento.estado_analisis.in_([EstadoAnalisis.pendiente.value, EstadoAnalisis.procesando.value]))
         .order_by(Documento.creado_en, Documento.id)).all()
-    if not filas:
+    if not documentos:
         return []
+    maximo = get_settings().max_reintentos_reanudar
+    agotados = [d for d in documentos if d.intentos_reanudar >= maximo]
+    relanzar = [d for d in documentos if d.intentos_reanudar < maximo]
+    for doc in agotados:
+        doc.estado_analisis = EstadoAnalisis.error.value
+        sesion.add(AlertaBD(folio=doc.folio, documento_id=doc.id, version_resultado=None, codigo="SYS-001",
+                            severidad=Severidad.critica.value, confianza=1.0,
+                            mensaje=f"Analisis no completado: reintentos agotados al reanudar ({doc.intentos_reanudar} "
+                                    f"de {maximo}); vuelve a subir el documento"))
+    for doc in relanzar:
+        doc.intentos_reanudar += 1
+    pendientes = [(d.id, d.tipo_documental_confirmado) for d in relanzar]
+    sesion.commit()
     # Solo el numero y los ids: nunca datos del documento
-    log.info("Reanudando %d analisis interrumpidos: %s", len(filas), ", ".join(str(f.id) for f in filas))
-    for documento_id, tipo_confirmado in filas:
+    if agotados:
+        log.warning("%d analisis con los reintentos agotados pasan a error: %s", len(agotados),
+                    ", ".join(str(d.id) for d in agotados))
+        for doc in agotados:
+            procesamiento.despues_del_commit(sesion, doc.id)  # resumen y webhook documento.error; no lanza
+    if pendientes:
+        log.info("Reanudando %d analisis interrumpidos: %s", len(pendientes), ", ".join(str(i) for i, _ in pendientes))
+    for documento_id, tipo_confirmado in pendientes:
         _lanzar(lambda d=documento_id, t=tipo_confirmado: procesamiento.procesar(d, tipo_confirmado=t))
-    return [f.id for f in filas]
+    return [i for i, _ in pendientes]

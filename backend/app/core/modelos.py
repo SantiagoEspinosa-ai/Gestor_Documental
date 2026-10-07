@@ -94,6 +94,8 @@ class Folio(Base):
     estado_general: Mapped[str] = mapped_column(String(20), default="en_revision",
                                                 server_default="en_revision")
     referencia_externa: Mapped[str | None] = mapped_column(String(100))  # ADR-004
+    # Usuario que lo creo con POST /folios (migracion 0007, ADR-012); NULL en los folios anteriores
+    creado_por: Mapped[str | None] = mapped_column(String(100))
     creado_en: Mapped[datetime] = _creado_en()  # ADR-004: fecha_solicitud
     # ADR-006 G: tras la decision el folio queda cerrado
     decision: Mapped[str | None] = mapped_column(String(10))
@@ -118,6 +120,8 @@ class Documento(Base):
     tipo_documental_confirmado: Mapped[str | None] = mapped_column(String(50))  # ADR-006 2.5
     estado_analisis: Mapped[str] = mapped_column(String(20), default=EstadoAnalisis.pendiente.value,
                                                  server_default=EstadoAnalisis.pendiente.value)
+    # Veces que el arranque ha relanzado su analisis interrumpido (migracion 0006); 0 al terminar un analisis
+    intentos_reanudar: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     creado_en: Mapped[datetime] = _creado_en()
     # ADR-013: retirado = retirado_en no nulo. No cuenta para el folio; nada se borra (ni de la BD ni de S3).
     # motivo_retirada se guarda ya tapado (enmascaramiento.enmascarar_texto)
