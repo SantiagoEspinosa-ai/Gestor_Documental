@@ -3,6 +3,7 @@ el script de reindexado y la migracion 0005. Mismo entorno que test_enmascaramie
 moto, motor falso con datos sensibles ficticios). Datos ficticios."""
 import importlib.util
 import os
+import re
 import uuid
 from pathlib import Path
 
@@ -159,12 +160,15 @@ def test_migracion_0005_sube_y_baja_en_sqlite(monkeypatch, tmp_path):
 
 @pytest.mark.skipif(not os.environ.get("TEST_POSTGRES_URL"), reason="requiere TEST_POSTGRES_URL")
 def test_migraciones_suben_y_bajan_en_postgres(monkeypatch):
-    # BD propia y vacia: la de TEST_POSTGRES_URL la usan otros tests con create_all, sin alembic_version
+    # BD propia y vacia: la de TEST_POSTGRES_URL la usan otros tests con create_all, sin alembic_version. Su
+    # nombre sale del de TEST_POSTGRES_URL (<base>_migraciones): dos ejecuciones con BD de pruebas distintas
+    # (p. ej. gestor_test y gestor_test2) no se pisan
     base = make_url(os.environ["TEST_POSTGRES_URL"])
-    nombre = "gestor_migraciones_test"
+    nombre = f"{base.database}_migraciones"
+    assert re.fullmatch(r"[a-z][a-z0-9_]*", nombre), nombre  # va sin comillas en DROP/CREATE DATABASE
     admin = create_engine(base, isolation_level="AUTOCOMMIT")
     with admin.connect() as conexion:
-        conexion.execute(text(f"DROP DATABASE IF EXISTS {nombre}"))
+        conexion.execute(text(f"DROP DATABASE IF EXISTS {nombre} WITH (FORCE)"))
         conexion.execute(text(f"CREATE DATABASE {nombre}"))
     url = base.set(database=nombre).render_as_string(hide_password=False)
     try:
