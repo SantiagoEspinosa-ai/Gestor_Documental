@@ -26,3 +26,10 @@ test('integrador: sin lista de folios; abre un folio por su numero y no ve el or
   await expect(page.getByText('Tu rol no puede ver el original del documento.')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Decisión del revisor' })).toHaveCount(0)
 })
+
+test('integrador: un folio de otro integrador no existe para el (ADR-012)', async ({ page }) => {
+  await entrar(page, 'integrador.demo')
+  await page.getByLabel('Número de folio').fill('ONB-2026-000003')
+  await page.getByLabel('Número de folio').press('Enter')
+  await expect(page.getByRole('alert')).toContainText('El folio no existe.')
+})

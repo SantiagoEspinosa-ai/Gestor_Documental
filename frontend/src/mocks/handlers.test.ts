@@ -155,6 +155,36 @@ describe('sesion y roles', () => {
 
 // ------------------------------------------------------------------ consultas
 
+describe('el integrador solo ve sus folios (ADR-012)', () => {
+  it('los suyos si; los de otro integrador dan el mismo 404 que uno inexistente', async () => {
+    const token = await entrar('integrador.demo')
+    expect((await api('GET', '/folios/ONB-2026-000002', { token })).status).toBe(200)
+    const ajeno = await api<ResultadoExpediente>('GET', '/folios/ONB-2026-000003', { token })
+    const inexistente = await api('GET', '/folios/ONB-2026-999999', { token })
+    expect([ajeno.status, ajeno.cuerpo]).toEqual([404, { codigo: 'FOLIO_NO_ENCONTRADO', mensaje: 'No existe el folio ONB-2026-000003' }])
+    expect(inexistente.cuerpo).toMatchObject({ codigo: 'FOLIO_NO_ENCONTRADO' })
+    expect((await api('GET', '/folios/ONB-2026-000004/resumen.md', { token })).cuerpo).toMatchObject({ codigo: 'FOLIO_NO_ENCONTRADO' })
+    const subida = new FormData()
+    subida.append('archivo', new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'a.pdf'))
+    expect((await api('POST', '/folios/ONB-2026-000003/documentos', { token, formulario: subida })).cuerpo)
+      .toMatchObject({ codigo: 'FOLIO_NO_ENCONTRADO' })
+    const docAjeno = estado.folios.get('ONB-2026-000003')!.documentos[0].identificador_unico_documento
+    expect((await api('GET', `/documentos/${docAjeno}`, { token })).cuerpo).toMatchObject({ codigo: 'DOCUMENTO_NO_ENCONTRADO' })
+    const docPropio = estado.folios.get('ONB-2026-000002')!.documentos[0].identificador_unico_documento
+    expect((await api('GET', `/documentos/${docPropio}`, { token })).status).toBe(200)
+  })
+
+  it('un folio que crea en la sesion es suyo; revisor y admin ven todos', async () => {
+    const token = await entrar('integrador.demo')
+    const creado = await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding' } })
+    expect((await api('GET', `/folios/${creado.cuerpo.folio}`, { token })).status).toBe(200)
+    for (const usuario of ['revisor.demo', 'admin.demo'] as const) {
+      const otro = await entrar(usuario)
+      for (const folio of ['ONB-2026-000003', creado.cuerpo.folio]) expect((await api('GET', `/folios/${folio}`, { token: otro })).status).toBe(200)
+    }
+  })
+})
+
 describe('consultas', () => {
   it('GET /folios pagina, ordena del mas reciente al mas antiguo y filtra', async () => {
     const token = await entrar('revisor.demo')

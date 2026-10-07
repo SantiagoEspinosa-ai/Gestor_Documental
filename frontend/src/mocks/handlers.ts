@@ -98,18 +98,27 @@ function autenticar(estado: EstadoMock, request: Request): SesionMock {
   return { usuario: resultado.usuario.usuario, rol: resultado.usuario.rol, expiraEn: resultado.expiraEn }
 }
 
-function folioOError(estado: EstadoMock, id: string): ResultadoExpediente {
+/** Con `usuario` integrador, un folio ajeno da el mismo 404 que uno inexistente (ADR-012) */
+function folioOError(estado: EstadoMock, id: string, usuario?: SesionMock): ResultadoExpediente {
   const folio = estado.folios.get(id)
-  if (!folio) throw new FalloApi('FOLIO_NO_ENCONTRADO', `No existe el folio ${id}`)
+  if (!folio || (usuario && esFolioAjeno(estado, usuario, id))) throw new FalloApi('FOLIO_NO_ENCONTRADO', `No existe el folio ${id}`)
   avanzarProcesamiento(estado, folio)
   return folio
 }
 
-function documentoOError(estado: EstadoMock, id: string) {
+function documentoOError(estado: EstadoMock, id: string, usuario?: SesionMock) {
   const encontrado = buscarDocumento(estado, id)
-  if (!encontrado) throw new FalloApi('DOCUMENTO_NO_ENCONTRADO', `No existe el documento ${id}`)
+  if (!encontrado || (usuario && esFolioAjeno(estado, usuario, encontrado.folio.folio))) {
+    throw new FalloApi('DOCUMENTO_NO_ENCONTRADO', `No existe el documento ${id}`)
+  }
   avanzarProcesamiento(estado, encontrado.folio)
   return encontrado
+}
+
+/** ADR-012: el integrador solo accede a los folios que ha creado; el dueno es el usuario de su folio_creado */
+function esFolioAjeno(estado: EstadoMock, usuario: SesionMock, folio: string): boolean {
+  if (usuario.rol !== 'integrador') return false
+  return estado.auditoria.find((e) => e.accion === 'folio_creado' && e.folio === folio)?.usuario !== usuario.usuario
 }
 
 function exigirAbierto(folio: ResultadoExpediente): void {
@@ -230,11 +239,11 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return HttpResponse.json({ elementos: lista.slice((pagina - 1) * tamano, pagina * tamano), total: lista.length, pagina, tamano_pagina: tamano })
   })
 
-  ruta('GET', '/folios/{folio}', TODOS, ({ params }) => folioJson(folioOError(estado, params.folio)))
+  ruta('GET', '/folios/{folio}', TODOS, ({ params, usuario }) => folioJson(folioOError(estado, params.folio, usuario)))
 
   // ---------------------------------------------------------------- documentos
   ruta('POST', '/folios/{folio}/documentos', ['integrador', 'revisor'], async ({ request, params, usuario }) => {
-    const folio = folioOError(estado, params.folio)
+    const folio = folioOError(estado, params.folio, usuario)
     exigirAbierto(folio)
     let formulario: FormData
     try {
@@ -297,7 +306,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
     return HttpResponse.json({ identificador_unico_documento: id, estado_analisis: 'pendiente' }, { status: 202 })
   })
 
-  ruta('GET', '/documentos/{id}', TODOS, ({ params }) => documentoJson(documentoOError(estado, params.id).doc))
+  ruta('GET', '/documentos/{id}', TODOS, ({ params, usuario }) => documentoJson(documentoOError(estado, params.id, usuario).doc))
 
   ruta('GET', '/documentos/{id}/original', ['revisor', 'admin'], ({ params }) => {
     const { doc } = documentoOError(estado, params.id)
@@ -440,8 +449,8 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
   })
 
   // ---------------------------------------------------------------- expediente, RAG y catalogos
-  ruta('GET', '/folios/{folio}/resumen.md', TODOS, ({ params }) => {
-    const folio = folioOError(estado, params.folio)
+  ruta('GET', '/folios/{folio}/resumen.md', TODOS, ({ params, usuario }) => {
+    const folio = folioOError(estado, params.folio, usuario)
     if (!folio.ruta_resumen_md) throw new FalloApi('RESUMEN_NO_DISPONIBLE', 'El resumen de este folio aun no existe')
     return new HttpResponse(resumenMarkdown(folio), { headers: { 'Content-Type': 'text/markdown; charset=utf-8' } })
   })
