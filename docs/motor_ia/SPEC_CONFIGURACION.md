@@ -149,7 +149,7 @@ gratuito, ADR-003, solo con fixtures ficticios). Sin respaldo disponible: `estad
 
 | Regla | Valor | Motivo | Donde | Test |
 |---|---|---|---|---|
-| Fechas | El prompt pide las fechas **tal como aparecen**; el codigo las normaliza con `normalizar_fecha` (dia/mes/anio -> `AAAA-MM-DD`, separadores `/ . -` y espacio; ISO valido se deja igual; fecha imposible -> `None`) | Al convertirlas, `qwen2.5vl:3b` intercambia dia y mes (`10/05/2024` -> `2024-10-05`). Sin convertir: 3/3 correctas en 4 de 4 | `motor_ia/proveedores/base.py` (tarea 7). Referencia: `pruebas_ollama/prueba_fechas.py` | unitario con los 11 casos del autotest |
+| Fechas | El prompt pide las fechas **tal como aparecen**; el codigo las normaliza con `normalizar_fecha` (dia/mes/anio -> `AAAA-MM-DD`, separadores `/ . -` y espacio; ISO valido se deja igual; fecha imposible -> `None`). **Desde el 2026-10-07 tambien los separadores que pierde el OCR**: `DDMMAAAA` (`30092031`) y `DDMM/AAAA` (`3009/2021`, con `/ . -` o espacio), solo con dia y mes de dos cifras y anio entre 1900 y 2100: asi `20240510` (`AAAAMMDD`) da `None` y nunca hay dos lecturas validas. Motivo: en el ensayo de la demo, el pasaporte sano en foto dificil daba un falso `REG-vigencia_documento` (bloqueante) con `30092031` | Al convertirlas, `qwen2.5vl:3b` intercambia dia y mes (`10/05/2024` -> `2024-10-05`). Sin convertir: 3/3 correctas en 4 de 4 | `motor_ia/proveedores/base.py` (tarea 7). Referencia: `pruebas_ollama/prueba_fechas.py` | unitario con los 11 casos del autotest |
 | Tamano de imagen | `ANCHO_MAX_IMAGEN = 1000`: `reducir_imagen` antes de enviar; solo reduce y mantiene la proporcion | Sube los aciertos de 5/7 a 6/7 y ahorra ~20 % de tiempo; 800 px no mejora | `proveedores/base.py` | unitario |
 | Lotes de vision | `MAX_PAGINAS_POR_LLAMADA_VISION = 4`. Con mas paginas no se ignora ninguna: se procesan por lotes de 4 y se combinan (`combinar_lotes`). Por campo, el valor no nulo con evidencia valida; ante empate, el de la pagina mas baja; si ningun lote tiene evidencia valida, el primer valor no nulo. La clasificacion solo usa el primer lote. En un lote, `pagina_1..k` relativa a las imagenes enviadas se traduce a la pagina real | Cada pagina A4 a 1000 px suma ~1 850 tokens y ~130 s en CPU | `proveedores/base.py`, `proveedores/ollama.py` | unitario con Ollama simulado |
 | Contexto | `NUM_CTX = 16384`. Medido (`pruebas_ollama/prueba_num_ctx.py`): 1 pagina A4 + prompt = 2 457 tokens; 4 paginas + prompt + 20 000 caracteres = 13 476; con `NUM_PREDICT` quedan ~2 100 de margen (13 %) | Si no se fija, Ollama usa un contexto menor y recorta la entrada sin avisar. **Se mantiene fijo** (2026-10-01): bajarlo a 8192 solo ahorra ~0,3 GB del modelo y ~0,1 GB de consumo real, y la vision pasa a ser el caso poco frecuente | `proveedores/base.py` | unitario del cuerpo de la peticion |
@@ -471,9 +471,17 @@ un documento de 1 pagina cada vez y un modelo cargado cada vez:
 | Dificil (ruta auto) | ~150 s | 244 s | Texto + reintento o extraccion con vision (`qwen2.5vl:3b`) |
 | Extremo (ruta auto) | ~156 s | 193 s | Reclasificacion y extraccion con vision |
 | Vision forzada (dificil y extremo) | ~155 s | 195 s | Clasificacion + extraccion con vision |
+| Primer uso de vision con `gemma4:e2b` cargado (`OLLAMA_MAX_LOADED_MODELS=1`; pasaporte sano en foto dificil, CLI, 2026-10-07) | 172 s la llamada de vision | 211 s (limite: se corto en la plataforma) | Ollama descarga `gemma4:e2b`, carga `qwen2.5vl:3b` (**40 s**, segun su log) e infiere (~132 s). Documento entero: 243 s. En la plataforma (ensayo del 2026-10-07, con backend y frontend en marcha) no llego en 210 s y se quedo el resultado con texto |
+| El mismo pasaporte con el arreglo de fechas (2026-10-07) | 59 s | 59 s | Las fechas `30092031` y `3009/2021` ya se normalizan: sin senal de formato invalido no hay reintento con vision (antes 243-280 s) |
 
 Limites (timeouts de cada peticion, `proveedores/base.py`): texto **120 s**; vision **60 s + 150 s por imagen**
-(1 pagina: 210 s; lote de 4: 660 s). El reintento de correccion del JSON usa el de texto. Peor caso de un documento
+(1 pagina: 210 s; lote de 4: 660 s). El reintento de correccion del JSON usa el de texto. **El limite de vision no
+cubre el primer uso** con el modelo de texto cargado (cambio de modelo + carga de 40 s + inferencia; arriba).
+**Propuesta pendiente de decidir** (2026-10-07, no aplicada): `TIMEOUT_VISION_BASE_S` configurable desde el `.env`
+(`OLLAMA_TIMEOUT_VISION_BASE_S`) y de 60 a **180 s** (1 pagina: 330 s), lo que cubre la carga y la inferencia
+medidas con margen; el peor caso de 1 pagina pasaria de 540 s a 780 s. No se propone `calentar --vision` en la
+preparacion: con `OLLAMA_MAX_LOADED_MODELS=1` descarga el modelo de texto, que es la ruta habitual, y el primer
+documento volveria a pagar su carga (~30 s); el cambio de modelo se repite en cada reintento con vision. Peor caso de un documento
 de 1 pagina con OCR pobre, sin reintentos de correccion: clasificacion con texto (120 s) + reclasificacion con vision
 (210 s) + extraccion con vision (210 s) = **540 s**; cada reintento de correccion suma hasta 120 s y el respaldo, si
 lo hay, repite la llamada. Con varios documentos, la ingesta los procesa de uno en uno (PR #9): el tiempo de espera
@@ -599,6 +607,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-07 | `normalizar_fecha` acepta los separadores que pierde el OCR (`DDMMAAAA` y `DDMM/AAAA`, anio 1900-2100, sin lecturas ambiguas; seccion 4): el pasaporte sano en foto dificil ya no da el falso `REG-vigencia_documento` y baja de 243-280 s a 59 s (sin reintento con vision). Seccion 13: primer uso de vision con el modelo de texto cargado medido (carga de `qwen2.5vl:3b` 40 s + inferencia ~132 s = 172 s; en la plataforma supero los 210 s) y propuesta de limite configurable de 180 s, pendiente de decidir | este commit |
 | 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #42 (arranque de demo) y el #43 (filtro de logs). `CHECKLIST_E2E_HITO.md`: la plataforma se arranca con `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build` (backend sin `--reload`, frontend incluido) y el arranque de desarrollo queda como alternativa. `ESTADO_SESION.md` al dia (#42 y #43 fusionados; el aviso del log, resuelto por el #43) | este commit |
 | 2026-10-06 | Merge de `origin/main` en `feat/motor-ia` con el #38 (boton Mostrar), el #39 (H14 conectado), el #40 (CI en ubuntu-24.04) y el #41 (antecedentes); conflicto del registro resuelto conservando todas las entradas. `ESTADO_SESION.md` al dia (H14 completo; H16 y H17 en `main`; siguiente, el e2e por la web). Docstring de `indexar_resumen`: hace commit (o rollback) sobre la sesion recibida y se llama despues del commit del llamador | `6325c9d` |
 | 2026-10-06 | `ESTADO_SESION.md` al dia: H13 (#35), documentacion (#36) y enmascaramiento (#32) fusionados; H14 (#37) esperando aprobacion; siguiente paso, el e2e por la web con la mascara (plataforma preparada sin el override local y sin `revisor_hito`) | `6501bff` |

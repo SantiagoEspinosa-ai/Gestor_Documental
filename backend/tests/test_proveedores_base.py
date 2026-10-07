@@ -49,6 +49,16 @@ def png(ancho: int, alto: int) -> bytes:
     ("25/07/2031", "2031-07-25"), ("10/05/2024", "2024-05-10"), ("1/1/1990", "1990-01-01"),
     ("10.05.2024", "2024-05-10"), ("10-05-2024", "2024-05-10"), ("2024-05-10", "2024-05-10"),
     ("31/02/2024", None), ("2024/05/10", None), ("mayo 2024", None), (None, None), (20240510, None),
+    # Separadores perdidos por el OCR (pasaporte sano en foto dificil)
+    ("30092031", "2031-09-30"), ("3009/2021", "2021-09-30"), ("3009-2021", "2021-09-30"),
+    ("3009 2021", "2021-09-30"), (" 01011990 ", "1990-01-01"),
+    # Ambiguedades y casos peligrosos: nunca se adivinan
+    ("20240510", None),    # AAAAMMDD: se leeria como mes 24
+    ("19901001", None),    # AAAAMMDD: mes 90
+    ("20111220", None),    # AAAAMMDD: como DDMMAAAA seria el anio 1220
+    ("01011850", None), ("01012150", None),  # anio fuera de 1900-2100
+    ("31022024", None), ("3002/2024", None),  # no existen
+    ("309/2021", None), ("3009/21", None), ("3092031", None), ("300920311", None),  # cifras de mas o de menos
 ])
 def test_normalizar_fecha(entrada, esperado):
     assert normalizar_fecha(entrada) == esperado
@@ -296,7 +306,8 @@ def test_combinar_texto_y_vision():
 
 @pytest.mark.parametrize("tipo, datos, invalidos", [
     ("pasaporte", {"numero_pasaporte": "X00000015UTO9001011F", "fecha_vencimiento": "2031-09-30"}, ["numero_pasaporte"]),
-    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, ["fecha_vencimiento"]),
+    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/21"}, ["fecha_vencimiento"]),
+    ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, []),  # el OCR perdio un separador
     ("pasaporte", {"numero_pasaporte": "2X0000001", "fecha_vencimiento": "2031-09-30"}, []),  # cumple el patron
     ("credencial_elector", {"curp": "AEPA9O0101MDFXXX01", "vigencia": "2029"}, ["curp"]),
     ("credencial_elector", {"curp": "AEPA900101MDFXXX01", "vigencia": "2021 - 2029"}, ["vigencia"]),

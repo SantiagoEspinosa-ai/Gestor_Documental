@@ -129,13 +129,20 @@ def parsear_extraccion(texto: str) -> _Extraccion:
 # --- Normalizacion ---
 
 _DMA = re.compile(r"^(\d{1,2})[/.\- ](\d{1,2})[/.\- ](\d{4})$")
+# Separadores perdidos por el OCR (pasaporte en foto dificil): "30092031" (DDMMAAAA) y "3009/2021" (DDMM/AAAA).
+# Solo con dia y mes de dos cifras y un anio plausible: asi "20240510" (AAAAMMDD) no se lee como 20/24/0510 ni
+# hay dos lecturas validas (con el anio entre 1900 y 2100, las cifras 5-6 serian 19-21: no son un mes).
+_DMA_SIN_SEPARADOR = re.compile(r"^(\d{2})(\d{2})(\d{4})$")
+_DM_A = re.compile(r"^(\d{2})(\d{2})[/.\- ](\d{4})$")
+ANIO_MIN_OCR, ANIO_MAX_OCR = 1900, 2100
 _ISO = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _ANIO = re.compile(r"^\d{4}$")
 _EVIDENCIA = re.compile(r"^(pagina_([1-9]\d*))(:.+)?$")
 
 
 def normalizar_fecha(valor) -> str | None:
-    """Dia/mes/anio (separador / . - o espacio) -> AAAA-MM-DD; ISO valido se deja igual.
+    """Dia/mes/anio (separador / . - o espacio) -> AAAA-MM-DD; ISO valido se deja igual. Tambien los separadores
+    que pierde el OCR: DDMMAAAA y DDMM/AAAA, con anio entre 1900 y 2100.
     None si no es una fecha reconocible o no existe (p. ej. 31/02/2024)."""
     if not isinstance(valor, str):
         return None
@@ -144,6 +151,10 @@ def normalizar_fecha(valor) -> str | None:
         anio, mes, dia = map(int, m.groups())
     elif m := _DMA.match(texto):
         dia, mes, anio = map(int, m.groups())
+    elif m := _DMA_SIN_SEPARADOR.match(texto) or _DM_A.match(texto):
+        dia, mes, anio = map(int, m.groups())
+        if not ANIO_MIN_OCR <= anio <= ANIO_MAX_OCR:
+            return None
     else:
         return None
     try:
