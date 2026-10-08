@@ -24,7 +24,7 @@ def documento(monkeypatch):
     """Sustituye preparar(): el texto del documento lo fija cada test."""
     estado = {"texto": TEXTO_PASAPORTE}
 
-    def preparar(contenido, nombre, tipo_declarado=None, *, identificador=None, ocr=None):
+    def preparar(contenido, nombre, tipo_declarado=None, *, identificador=None, ocr=None, al_avanzar=None):
         return DocumentoPreparado(identificador, Modalidad.pdf_digital, [Pagina(1, estado["texto"])], tipo_declarado)
     monkeypatch.setattr(procesamiento, "preparar", preparar)
     return estado

@@ -5,14 +5,17 @@ Prepara cada documento y orquesta su analisis. Los demas modulos solo importan `
 
 ## `procesamiento.py`: `procesar_documento` (lo conecta la plataforma)
 `procesar_documento(contenido, *, identificador, nombre_archivo, tipo_declarado, folio, referencia,
-tipo_confirmado=None) -> (ResultadoDocumento, datos_auditoria)`. Sin BD ni S3. Pasos: `preparar` -> MRZ ->
+tipo_confirmado=None, al_avanzar=None, enrutador=None, ahora=None) -> (ResultadoDocumento, datos_auditoria)`.
+`al_avanzar` recibe la fase (ADR-014): `preparando` al empezar y `ocr` en `preparar`; las demas las avisa
+`motor_ia.analizar`. Solo informativo: si lanza, se ignora y el resultado no cambia. Sin BD ni S3. Pasos: `preparar` -> MRZ ->
 `motor_ia.analizar` -> sexo desde la MRZ (`VAL-003`, `completar_mrz.py`) -> `validacion.evaluar_reglas` (con `hoy`
 de `reloj.py`, zona `ZONA_HORARIA`) -> `validacion.recomendar_documento`. Proveedor caido: `error` + `SYS-001`; JSON
 invalido: `error` + `SYS-002`; lo demas lanza. Detalle: spec, seccion 11. Configuracion vigente:
 [docs/motor_ia/SPEC_CONFIGURACION.md](../../../../docs/motor_ia/SPEC_CONFIGURACION.md).
 
 ## `preparador.py`
-Entrada: `preparar(contenido: bytes, nombre: str, tipo_declarado=None, *, identificador=None, ocr=None)`.
+Entrada: `preparar(contenido: bytes, nombre: str, tipo_declarado=None, *, identificador=None, ocr=None,
+al_avanzar=None)`; avisa `ocr` (ADR-014) antes del OCR o de leer la capa de texto.
 Salida: `DocumentoPreparado` (Contrato 3), con las paginas en orden y numeradas desde 1.
 
 | Modalidad | Texto de cada pagina | Imagen de cada pagina |

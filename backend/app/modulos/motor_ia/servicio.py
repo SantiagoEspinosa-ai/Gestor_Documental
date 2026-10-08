@@ -42,10 +42,12 @@ from app.modulos.motor_ia.proveedores.base import (
     necesita_reintento_vision,
     obligatorios_vacios,
     recortar_texto,
+    tiene_texto_suficiente,
 )
 from app.schemas.resultado import (
     Alerta,
     EstadoAnalisis,
+    FaseAnalisis,
     FechaYModelo,
     ReferenciaArchivoOriginal,
     ResultadoDocumento,
@@ -130,6 +132,20 @@ def _modelo_usado(proveedor: ProveedorLLM) -> str:
     return info.modelo if info is not None else proveedor.modelo
 
 
+AlAvanzar = Callable[[FaseAnalisis], None]
+
+
+def avisar_fase(al_avanzar: AlAvanzar | None, fase: FaseAnalisis) -> None:
+    """Avisa de la fase del analisis (ADR-014). Nunca lanza: un fallo del aviso no cambia el analisis. Sin datos
+    del documento en el log."""
+    if al_avanzar is None:
+        return
+    try:
+        al_avanzar(fase)
+    except Exception as e:  # noqa: BLE001 - el aviso es solo informativo
+        logger.debug("no se pudo avisar de la fase %s: %s", fase.value, type(e).__name__)
+
+
 def _enrutador() -> Enrutador:
     global _enrutador_por_defecto
     if _enrutador_por_defecto is None:
@@ -139,10 +155,12 @@ def _enrutador() -> Enrutador:
 
 def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchivoOriginal,
              tipo_confirmado: str | None = None, enrutador: Enrutador | None = None,
-             ahora: datetime | None = None, mrz: VerificacionMrz | None = None) -> Analisis:
+             ahora: datetime | None = None, mrz: VerificacionMrz | None = None,
+             al_avanzar: AlAvanzar | None = None) -> Analisis:
     """Analiza el documento. Ficha para extraer: tipo_confirmado > declarado > detectado (ADR-006, 2.5).
     Con tipo_confirmado no se clasifica. Tipo desconocido sin declarado ni confirmado: no se extrae.
-    `mrz`: la del pasaporte, si el orquestador la encontro; la usa la confianza calculada (ADR-007)."""
+    `mrz`: la del pasaporte, si el orquestador la encontro; la usa la confianza calculada (ADR-007).
+    `al_avanzar`: recibe la fase (clasificando, vision o extrayendo; ADR-014); nunca cambia el resultado."""
     ctx = _Contexto(enrutador or _enrutador())
     fichas = {f.nombre: f for f in configuracion.listar()}
     declarado = doc.tipo_documental_declarado
@@ -170,16 +188,20 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
     version_clasificacion: str | None = None
 
     ocr_pobre: str | None = None  # motivo si la clasificacion ya detecto un OCR pobre
+    # Sin texto suficiente, el proveedor va directo a vision (misma regla que OllamaProvider.usa_texto)
+    directo_a_vision = not tiene_texto_suficiente(doc_modelo.paginas)
     try:
         detectado = None
         if tipo_confirmado is None:
             prompt, version = renderizar("clasificacion", contenido=contenido,
                                          tipos_posibles=formatear_tipos(fichas.values()),
                                          contexto_rag=formatear_contexto_rag(doc.contexto_rag))
+            avisar_fase(al_avanzar, FaseAnalisis.vision if directo_a_vision else FaseAnalisis.clasificando)
             clasificacion, proveedor = ctx.con_respaldo(
                 Tarea.clasificacion, None, lambda p: p.clasificar(doc_modelo, list(fichas), prompt))
             # Senal 2 de OCR pobre: con texto da desconocido -> se reclasifica con vision y CLS-001 se decide con ella
-            reclasificada = _reclasificar_con_vision(ctx, proveedor, doc_modelo, list(fichas), prompt, clasificacion)
+            reclasificada = _reclasificar_con_vision(ctx, proveedor, doc_modelo, list(fichas), prompt, clasificacion,
+                                                   al_avanzar)
             if reclasificada is not None:
                 clasificacion = reclasificada
                 ocr_pobre = "OCR pobre (la clasificacion con texto dio desconocido)"
@@ -213,16 +235,18 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             cls_concreto = declarado is not None and detectado not in (None, declarado, DESCONOCIDO)
             if ocr_pobre and not cls_concreto and any(p.imagen_png for p in doc_modelo.paginas):
                 motivo = f"extraccion con vision: {ocr_pobre}"
+                avisar_fase(al_avanzar, FaseAnalisis.vision)
                 extraccion, proveedor = ctx.con_respaldo(
                     Tarea.extraccion, ficha.nombre,
                     lambda p: p.extraer_con_vision(doc_modelo, esquema, prompt, motivo)
                     if hasattr(p, "extraer_con_vision") else p.extraer(doc_modelo, esquema, prompt))
                 modelo = _modelo_usado(proveedor)
             else:
+                avisar_fase(al_avanzar, FaseAnalisis.vision if directo_a_vision else FaseAnalisis.extrayendo)
                 extraccion, proveedor = ctx.con_respaldo(
                     Tarea.extraccion, ficha.nombre, lambda p: p.extraer(doc_modelo, esquema, prompt))
                 extraccion, modelo = _reintento_vision(ctx, proveedor, doc_modelo, esquema, prompt, extraccion,
-                                                       cls_concreto)
+                                                       cls_concreto, al_avanzar)
             fecha_modelo = (proveedor.nombre, version, modelo)
             valores = dict(extraccion.datos_extraidos)
             confianzas_modelo.update(extraccion.nivel_confianza_por_campo)
@@ -246,7 +270,7 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
 
 
 def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, tipos: list[str],
-                            prompt: str, clasificacion):
+                            prompt: str, clasificacion, al_avanzar: AlAvanzar | None = None):
     """Si la clasificacion con texto da desconocido y hay imagenes, reclasifica con vision. Devuelve la nueva
     clasificacion, o None si no aplica o la vision falla (se conserva la de texto)."""
     info = getattr(proveedor, "ultima_llamada", None)
@@ -254,6 +278,7 @@ def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: Docum
             or not hasattr(proveedor, "clasificar_con_vision") or not any(p.imagen_png for p in doc.paginas)):
         return None
     motivo = "reclasificacion con vision: la clasificacion con texto dio desconocido"
+    avisar_fase(al_avanzar, FaseAnalisis.vision)
     try:
         return proveedor.clasificar_con_vision(doc, tipos, prompt, motivo)
     except ErrorProveedor as error:
@@ -267,7 +292,8 @@ def _reclasificar_con_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: Docum
 
 
 def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPreparado, esquema: dict, prompt: str,
-                      extraccion: ResultadoExtraccion, cls_concreto: bool) -> tuple[ResultadoExtraccion, str]:
+                      extraccion: ResultadoExtraccion, cls_concreto: bool,
+                      al_avanzar: AlAvanzar | None = None) -> tuple[ResultadoExtraccion, str]:
     """Riesgo 2 del plan (OCR malo -> vision). Si la extraccion se hizo con texto y deja a null la mitad o mas
     de los obligatorios (senal 3) o algun campo con formato invalido (senal 4), se repite con vision; manda la
     vision y el texto rellena sus nulos. No se reintenta si salta CLS-001 con un tipo concreto distinto del
@@ -290,6 +316,7 @@ def _reintento_vision(ctx: _Contexto, proveedor: ProveedorLLM, doc: DocumentoPre
                        "el tipo declarado no coincide con el detectado (CLS-001)")
         return extraccion, modelo
     motivo = "reintento con vision: " + "; ".join(senales) + " con texto"
+    avisar_fase(al_avanzar, FaseAnalisis.vision)
     try:
         vision = proveedor.extraer_con_vision(doc, esquema, prompt, motivo)
     except ErrorProveedor as error:

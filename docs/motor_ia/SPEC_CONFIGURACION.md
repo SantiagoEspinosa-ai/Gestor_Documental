@@ -441,6 +441,13 @@ Lo que se decidio:
 - Un test (`test_procesar_documento.py`) comprueba que `motor_ia` no importa `orquestador`, salvo `motor_ia/cli.py`:
   es un punto de entrada que ningun modulo importa, asi que no crea ciclo. El CLI llama a `procesar_documento`.
 
+**Fase del analisis (ADR-014, PROPUESTO, 2026-10-08).** `procesar_documento` y `motor_ia.analizar` aceptan
+`al_avanzar: Callable[[FaseAnalisis], None] | None`. Avisos, en orden: `preparando` (al empezar), `ocr` (en `preparar`,
+antes del OCR o de leer la capa de texto), `clasificando` (antes de clasificar), `vision` (sin texto suficiente, misma
+regla que `OllamaProvider.usa_texto`; reclasificacion; extraccion por OCR pobre; reintento con vision) y `extrayendo`
+(antes de extraer con texto). `avisar_fase` nunca lanza (log de depuracion con la fase y el tipo de error, sin datos).
+El motor no devuelve la fase: `ResultadoDocumento.fase_analisis` la rellena la plataforma desde su registro en memoria.
+
 ## 12. CLI (`motor_ia/cli.py`, tarea 10, entregable de la etapa 1)
 
 | Regla | Detalle |
@@ -610,6 +617,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-08 | Fase del analisis (ADR-014, PROPUESTO; seccion 11): `al_avanzar` en `procesar_documento`, `preparar` y `analizar`, con `avisar_fase` que nunca lanza; la plataforma la guarda en memoria y la muestra la web | este commit |
 | 2026-10-07 | Merge de `origin/main` en `fix/fechas-ocr` con el #47 (R10) y el #48 (seguridad de la demo); conflicto del registro y del historial resuelto conservando todas las entradas | este commit |
 | 2026-10-07 | Limite base de vision **180 s** y configurable (`OLLAMA_TIMEOUT_VISION_BASE_S`; decidido tras medir el primer uso: 172 s; seccion 13): 1 pagina 330 s y peor caso de 1 pagina 780 s. Seguridad (revision de PERSONA_1): `MAX_PAGINAS_DOCUMENTO` (20) y `MAX_PIXELES_PAGINA` (50 MP) antes de renderizar, con `DocumentoDemasiadoGrande` (documento en `error`, sin alerta SYS; `SYS-006` propuesta). Los tres en `.env.example` | `ca1bee0` |
 | 2026-10-07 | `normalizar_fecha` acepta los separadores que pierde el OCR (`DDMMAAAA` y `DDMM/AAAA`, anio 1900-2100, sin lecturas ambiguas; seccion 4): el pasaporte sano en foto dificil ya no da el falso `REG-vigencia_documento` y baja de 243-280 s a 59 s (sin reintento con vision). Seccion 13: primer uso de vision con el modelo de texto cargado medido (carga de `qwen2.5vl:3b` 40 s + inferencia ~132 s = 172 s; en la plataforma supero los 210 s) y propuesta de limite configurable de 180 s, pendiente de decidir | `9767b91` |
