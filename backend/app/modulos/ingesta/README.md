@@ -107,6 +107,14 @@ el documento sigue en `procesando`. Vale para un solo proceso uvicorn (las Backg
 del mismo proceso); con varios workers haria falta una cola, fuera del MVP. Con Ollama, arrancarlo con
 `OLLAMA_MAX_LOADED_MODELS=1`.
 
+## Fase del analisis (ADR-014)
+Registro solo en memoria (`_fases`, con `threading.Lock`): `fijar_fase`, `leer_fase` y `borrar_fase`.
+`procesar` fija `en_cola` justo antes del semaforo, pasa al motor `al_avanzar=lambda f: fijar_fase(id, f)` y
+borra la fase en un `finally` (completado, error o excepcion); reanudar al arrancar pasa por `procesar`.
+`construir_resultado` la pone en `fase_analisis` solo si el documento esta `pendiente` o `procesando`; sin
+entrada en el registro (p. ej. tras reiniciar), `null`. No va a la BD, a la auditoria ni a los webhooks
+(en ellos sale `null`). `motor_stub.procesar_documento` acepta `al_avanzar` y lo ignora.
+
 ## Reanudar al arrancar
 Las BackgroundTasks viven en memoria: si la API se reinicia en mitad de un analisis, el documento se
 quedaria en `pendiente` o `procesando` para siempre. `reanudar_pendientes(sesion)` (lo llama el lifespan

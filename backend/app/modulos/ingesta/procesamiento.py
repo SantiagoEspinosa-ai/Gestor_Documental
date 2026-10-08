@@ -19,7 +19,7 @@ from app.core.db import SesionLocal, get_engine
 from app.core.modelos import AlertaBD, Documento, Folio, Proceso, Resultado
 from app.modulos.ingesta import motor_stub
 from app.modulos.orquestador import servicio as orquestador
-from app.schemas.resultado import EstadoAnalisis, ReferenciaArchivoOriginal
+from app.schemas.resultado import EstadoAnalisis, FaseAnalisis, ReferenciaArchivoOriginal
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +33,28 @@ def analizar(contenido: bytes, **kwargs):
     if get_settings().motor_analisis == "stub":
         return motor_stub.procesar_documento(contenido, **kwargs)
     return orquestador.procesar_documento(contenido, **kwargs)
+
+
+# ADR-014: fase de cada analisis en curso, solo en memoria (un proceso uvicorn, como el semaforo). Se pierde al
+# reiniciar; no va a la BD, a la auditoria ni a los webhooks. Lo lee construir_resultado (GET /documentos/{id} y
+# el expediente) mientras el documento esta pendiente o procesando.
+_fases: dict[uuid.UUID, FaseAnalisis] = {}
+_cerrojo_fases = threading.Lock()
+
+
+def fijar_fase(documento_id: uuid.UUID, fase: FaseAnalisis) -> None:
+    with _cerrojo_fases:
+        _fases[documento_id] = fase
+
+
+def leer_fase(documento_id: uuid.UUID) -> FaseAnalisis | None:
+    with _cerrojo_fases:
+        return _fases.get(documento_id)
+
+
+def borrar_fase(documento_id: uuid.UUID) -> None:
+    with _cerrojo_fases:
+        _fases.pop(documento_id, None)
 
 
 @lru_cache
@@ -102,6 +124,15 @@ def _notificar(sesion, documento_id: uuid.UUID) -> None:
 
 
 def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> None:
+    """Analiza el documento y guarda el resultado. La fase (ADR-014) se borra siempre al terminar: completado,
+    error o excepcion."""
+    try:
+        _procesar(documento_id, tipo_confirmado)
+    finally:
+        borrar_fase(documento_id)
+
+
+def _procesar(documento_id: uuid.UUID, tipo_confirmado: str | None) -> None:
     with SesionLocal(bind=get_engine()) as sesion:
         doc = sesion.get(Documento, documento_id)
         if doc is None:
@@ -113,14 +144,15 @@ def procesar(documento_id: uuid.UUID, tipo_confirmado: str | None = None) -> Non
         try:
             contenido = get_almacenamiento().descargar(doc.ruta_s3)
             # Solo la llamada al motor va limitada; descarga y BD quedan fuera. Mientras espera su turno,
-            # el documento sigue en "procesando" (la UI ya sondea)
+            # el documento sigue en "procesando" (la UI ya sondea) con la fase en_cola (ADR-014)
+            fijar_fase(doc.id, FaseAnalisis.en_cola)
             with _semaforo(get_settings().max_procesamientos_simultaneos):
                 resultado, datos = analizar(
                     contenido, identificador=str(doc.id), nombre_archivo=doc.nombre_archivo,
                     tipo_declarado=doc.tipo_declarado, folio=doc.folio,
                     referencia=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo, ruta=doc.ruta_s3,
                                                          hash=doc.hash_sha256),
-                    tipo_confirmado=tipo_confirmado)
+                    tipo_confirmado=tipo_confirmado, al_avanzar=lambda fase: fijar_fase(doc.id, fase))
             if (resultado.identificador_unico_documento != str(doc.id)
                     or resultado.folio_solicitud != doc.folio):
                 # Solo ids en el log: nada de datos extraidos
