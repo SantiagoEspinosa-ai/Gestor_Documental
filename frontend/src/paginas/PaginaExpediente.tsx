@@ -258,7 +258,7 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
             <ul className="mt-1 space-y-2">
               {expediente.comparaciones.map((c) => (
                 <li key={c.campo} className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm">
-                  <p className={`flex items-center gap-1 font-medium ${c.coincide ? 'text-green-800' : 'text-orange-900'}`}>
+                  <p className={`flex items-center gap-1 font-medium ${c.coincide ? 'text-q-slate' : 'text-orange-900'}`}>
                     {c.coincide ? <CheckCircle2 className="size-4" aria-hidden /> : <XCircle className="size-4" aria-hidden />}
                     {nombreCampo(c.campo)}: {c.coincide ? 'coincide' : 'no coincide'}
                   </p>

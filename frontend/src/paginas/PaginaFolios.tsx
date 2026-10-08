@@ -59,7 +59,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
         <h1 id="titulo-folios" className="text-xl font-semibold">Folios</h1>
         <SoloRol roles={ROLES_CREAR}>
           <button ref={refBotonNuevo} type="button" onClick={() => setCreando((c) => !c)} aria-expanded={creando} aria-controls="nuevo-folio"
-            className="flex items-center gap-1 rounded-[10px] bg-q-orange font-medium text-white hover:bg-q-orange-500 px-3 py-1.5">
+            className="flex items-center gap-1 rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 px-3 py-1.5">
             <Plus className="size-4" aria-hidden /> Nuevo folio
           </button>
         </SoloRol>
@@ -163,7 +163,7 @@ function AbrirFolio() {
       <div className="mt-1 flex gap-2">
         <input id="abrir-folio" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="PREFIJO-AAAA-NNNNNN" aria-describedby="formato-folio"
           className="rounded border border-slate-300 px-2 py-1.5 font-mono" />
-        <button type="submit" disabled={!folio.trim()} className="rounded-[10px] bg-q-orange font-medium text-white hover:bg-q-orange-500 px-3 py-1.5 disabled:opacity-60">Abrir</button>
+        <button type="submit" disabled={!folio.trim()} className="rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 px-3 py-1.5 disabled:opacity-60">Abrir</button>
       </div>
     </form>
   )

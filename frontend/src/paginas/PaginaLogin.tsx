@@ -48,7 +48,7 @@ export function PaginaLogin() {
         className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow">
         <img src="/brand/logo-dark.svg" alt="Qaracter" className="h-8" />
         <h1 id="titulo-login" className="text-lg font-semibold text-slate-800">Gestor Documental</h1>
-        {aviso && !error && <p role="status" className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-900">{aviso}</p>}
+        {aviso && !error && <p role="status" className="rounded border border-q-orange-100 bg-q-orange-50 px-3 py-2 text-sm text-q-orange-700">{aviso}</p>}
         <div>
           <label htmlFor="usuario" className="block text-sm text-slate-700">Usuario</label>
           <input id="usuario" ref={refUsuario} name="usuario" autoComplete="username" required
@@ -71,7 +71,7 @@ export function PaginaLogin() {
         </div>
         {error && <p id="error-login" role="alert" className="text-sm text-red-700">{error}</p>}
         <button type="submit" disabled={enviando || !usuario.trim() || !contrasena}
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-q-orange font-medium text-white hover:bg-q-orange-500 py-2 disabled:opacity-60">
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 py-2 disabled:opacity-60">
           <LogIn className="size-4" aria-hidden /> {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>

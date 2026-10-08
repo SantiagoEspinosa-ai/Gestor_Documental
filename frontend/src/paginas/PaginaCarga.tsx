@@ -182,7 +182,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
             <AlertTriangle className="size-4" aria-hidden /> Faltan tipos requeridos por el proceso: {faltan.map(nombreVisible).join(', ')}.
           </p>
         ) : (
-          <p className="flex items-center gap-2 text-sm text-green-800">
+          <p className="flex items-center gap-2 text-sm text-q-slate">
             <CheckCircle2 className="size-4" aria-hidden /> Están todos los tipos requeridos por el proceso.
           </p>
         )}
@@ -190,7 +190,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
 
       <div onDragOver={(e) => { e.preventDefault(); if (puedeSubir) setArrastrando(true) }} onDragLeave={() => setArrastrando(false)}
         onDrop={soltar} data-testid="zona-carga" aria-disabled={!puedeSubir} aria-describedby="ayuda-carga"
-        className={`mt-4 rounded-lg border-2 border-dashed p-6 text-center ${arrastrando ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-white'} ${puedeSubir ? '' : 'opacity-60'}`}>
+        className={`mt-4 rounded-lg border-2 border-dashed p-6 text-center ${arrastrando ? 'border-q-orange bg-q-orange-50' : 'border-slate-300 bg-white'} ${puedeSubir ? '' : 'opacity-60'}`}>
         <FileUp className="mx-auto size-8 text-slate-500" aria-hidden />
         <p id="ayuda-carga" className="mt-2 text-sm text-slate-600">
           Arrastra aquí los archivos o elígelos. Formatos: {aceptados.replaceAll(',', ', ') || '—'}; máximo 20 MB por archivo.

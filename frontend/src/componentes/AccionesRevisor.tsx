@@ -74,7 +74,7 @@ export function EditorCampo({ campo, valor, tipo, obligatorio = false, sensible 
           : 'Déjalo vacío si el documento no trae este dato (queda como “no detectado”).'}
       </p>
       <div className="flex gap-2">
-        <button type="submit" disabled={guardando || !preparada.valida} className={`${boton} border-blue-700 bg-blue-700 text-white`}>
+        <button type="submit" disabled={guardando || !preparada.valida} className={`${boton} border-q-slate bg-q-slate text-white hover:bg-q-slate-700`}>
           <Check className="size-3" aria-hidden /> {guardando ? 'Guardando…' : 'Guardar corrección'}
         </button>
         <button type="button" onClick={() => setEditando(false)} disabled={guardando} className={`${boton} border-slate-300`}>
@@ -205,7 +205,7 @@ export function PanelDecision({ bloqueantes, enCurso, deshabilitado, alDecidir }
       ) : (
         <div className="mt-2 flex gap-2">
           <button type="button" onClick={() => setPendiente('aprobar')} disabled={!puedeAprobar}
-            className={`${boton} rounded-[10px]! border-q-orange py-1 bg-q-orange font-medium text-white hover:bg-q-orange-500`}>Aprobar</button>
+            className={`${boton} rounded-[10px]! border-q-orange py-1 bg-q-orange font-medium text-q-slate hover:bg-q-orange-300`}>Aprobar</button>
           <button type="button" onClick={() => setPendiente('rechazar')} disabled={enCurso || deshabilitado}
             className={`${boton} border-red-700 py-1 text-red-800`}>Rechazar</button>
         </div>
