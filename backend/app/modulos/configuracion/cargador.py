@@ -19,6 +19,10 @@ _RAIZ_REPO = Path(__file__).resolve().parents[4]
 
 # Valor reservado de tipo_documental_detectado (ADR-009): ninguna ficha puede llamarse asi.
 NOMBRE_RESERVADO = "desconocido"
+# Las alertas de las reglas se guardan con el codigo REG-<id> en alertas.codigo: 64 caracteres desde la
+# migracion 0009 de PERSONA_1 (antes 30, y un codigo mas largo hacia fallar al guardar el resultado). Una ficha
+# con un codigo que no quepa se rechaza al cargar, en vez de fallar al analizar un documento.
+LONGITUD_MAXIMA_CODIGO_ALERTA = 64
 # Los marcadores de clasificacion (ADR-007) se buscan linea a linea en el texto normalizado
 # (mayusculas, sin acentos): ^ y $ son principio y fin de linea.
 FLAGS_MARCADORES = re.MULTILINE
@@ -94,6 +98,15 @@ class Regla(_Estricto):
     mensaje: str
     dias: int | None = Field(None, gt=0)
     campo_relacionado: str | None = None
+
+    @model_validator(mode="after")
+    def _codigo_cabe_en_la_bd(self) -> Regla:
+        codigo = f"REG-{self.id}"
+        if len(codigo) > LONGITUD_MAXIMA_CODIGO_ALERTA:
+            raise ValueError(f"la regla '{self.id}': su codigo de alerta '{codigo}' tiene {len(codigo)} caracteres y "
+                             f"alertas.codigo admite {LONGITUD_MAXIMA_CODIGO_ALERTA}; acorta el id a "
+                             f"{LONGITUD_MAXIMA_CODIGO_ALERTA - len('REG-')} caracteres como mucho")
+        return self
 
     @model_validator(mode="after")
     def _dias_si_hacen_falta(self) -> Regla:

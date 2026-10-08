@@ -194,6 +194,30 @@ def test_ids_de_regla_repetidos(config):
     assert "ids de regla repetidos: formato_numero" in errores_de(config, ficha)
 
 
+def test_codigo_de_regla_de_mas_de_64_caracteres_se_rechaza(config):
+    # REG-<id> va a alertas.codigo (64 caracteres desde la migracion 0009): mejor fallar al cargar que al guardar
+    ficha = ficha_base()
+    ficha["reglas"][1]["id"] = "v" * 61  # REG- + 61 = 65
+    error = errores_de(config, ficha)
+    assert f"REG-{'v' * 61}" in error and "65 caracteres" in error and "alertas.codigo admite 64" in error
+    assert "acorta el id a 60 caracteres como mucho" in error
+
+
+def test_codigo_de_regla_de_64_caracteres_justos_se_acepta(config):
+    ficha = ficha_base()
+    ficha["reglas"][1]["id"] = "v" * 60  # REG- + 60 = 64
+    config(ficha)
+
+
+def test_todos_los_codigos_reg_de_las_fichas_reales_caben_en_64():
+    tipos = cargar()
+    largos = {f"REG-{r.id}": len(f"REG-{r.id}") for t in tipos.values() for r in t.reglas
+              if len(f"REG-{r.id}") > 64}
+    assert largos == {}
+    # Los de coherencia del pasaporte (34-35 caracteres) no cabian en los 30 de antes de la migracion 0009
+    assert max(len(f"REG-{r.id}") for r in tipos["pasaporte"].reglas) > 30
+
+
 def test_sin_campos(config):
     ficha = ficha_base()
     ficha["campos"] = {}

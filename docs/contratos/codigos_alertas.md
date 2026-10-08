@@ -6,6 +6,8 @@ nuevo es libre (se anade aqui en el mismo commit); cambiar el significado de uno
 Formato: `{FAMILIA}-{NNN}`. Las alertas de reglas de los YAML usan `REG-{id_regla}` para que el
 codigo coincida con `reglas_cumplidas_e_incumplidas` (diapositiva 7: `vigencia_documento`, etc.).
 La severidad de las alertas `REG-` la fija la ficha YAML, no este catalogo.
+Un codigo `REG-{id}` tiene como mucho 64 caracteres (`alertas.codigo`, migracion 0009): el id de la regla,
+60 como mucho. El cargador rechaza la ficha si no cabe.
 
 | Codigo | Quien la emite | Severidad | Cuando |
 |---|---|---|---|
