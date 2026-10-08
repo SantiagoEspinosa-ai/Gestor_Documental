@@ -380,6 +380,7 @@ digitos de `numero_documento` y `compuesto`. OCR: ~0,8 s por documento en el con
 | Linea base | 150/153 campos con Tesseract `spa+eng`, render a 200 dpi, escala de grises + autocontraste. `ocr.py` no debe quedar por debajo con los mismos fixtures | `scripts/verificar_ocr_fixtures.py` de PERSONA_3 (2026-09-30) |
 | Sexo del pasaporte | Si no se lee en la zona visual, se toma de la MRZ: posicion 21 de la linea 2 (TD3). `Mrz.sexo` implementado; se aplica en `motor_ia/servicio.py` (tarea 9) | Fallo conocido: `sexo` "M" suelto no lo lee Tesseract |
 | Digitos de control de la MRZ | Validar los digitos de control (numero, nacimiento, vencimiento, datos personales y compuesto, pesos 7-3-1). Un fallo indica una lectura erronea (p. ej. Z/2). **Sin codigo de alerta propio**: si fallan, se baja la confianza de esos campos al aplicar ADR-007 (tarea 9 / etapa 2). `validar_digitos` implementado | Fallo conocido de la MRZ de `pasaporte_vencido` |
+| MRZ con ruido en los bordes (2026-10-08) | Si no hay dos lineas exactas de 44, `buscar_mrz` prueba a repararlas: quita los simbolos sueltos de los bordes, de una linea de 45 prueba sin el primer y sin el ultimo caracter, y a la linea 1 de 43 le repone un `<` de relleno (a la linea 2 de 43 no: le falta un dato o un digito). **Solo se acepta si cuadran todos los digitos de control**; si no, no hay MRZ. Nunca sustituye un caracter por otro (`K` por `<`, etc.: otro PR con su medicion). La MRZ exacta se sigue aceptando como antes aunque falle un digito | Pasaporte real con una linea de 45 caracteres: la MRZ no se usaba y el vencimiento quedo vacio | `test_mrz.py` |
 | Enderezado (deskew) | No se hace: la linea base se alcanza sin el (rotaciones de 0,4 a 1,2 grados en los fixtures) | Decision de la tarea 3 |
 | Casos de prueba | `pasaporte_vencido_escaneado.pdf` y `pasaporte_vencido_foto.jpg` (sexo "M" y confusion Z/2 en la MRZ); el resto de fixtures como regresion de la linea base | `INDICE.md` y `resultado_ocr.md` de PERSONA_3 |
 
@@ -617,6 +618,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-08 | MRZ tolerante (seccion 9): lineas de 43-45 caracteres con ruido en los bordes, aceptadas solo si cuadran todos los digitos de control; sin sustituciones de caracteres | este commit |
 | 2026-10-08 | `normalizar_fecha` y la verificacion de `confianza.py` entienden el mes en letras (seccion 4): "DD MES AAAA", "D DE MES DE AAAA", "DD-MES-AAAA" y "DD MES AA" (20AA, nunca mas alla del anio siguiente); rangos y fechas incompletas dan None | este commit |
 | 2026-10-08 | Cargador: rechaza una ficha cuyo codigo `REG-<id>` pase de 64 caracteres (`alertas.codigo` tras la migracion 0009 de PERSONA_1); los ids no cambian. Catalogo de alertas al dia | este commit |
 | 2026-10-08 | ADR-014 ACEPTADO (PERSONA_1 y PERSONA_2, PR #62): texto de la fase de vision "puede tardar unos minutos" en la web | `9ed03e3` |
