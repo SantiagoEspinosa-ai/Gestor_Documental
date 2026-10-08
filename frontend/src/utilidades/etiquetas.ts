@@ -24,7 +24,7 @@ export const ETIQUETA_FASE: Record<FaseAnalisis, string> = {
   preparando: 'Preparando el documento',
   ocr: 'Leyendo el texto (OCR)',
   clasificando: 'Identificando el tipo de documento',
-  vision: 'La foto es difícil: leyéndola como imagen, tardará 2-3 min',
+  vision: 'La foto es difícil: la estamos leyendo como imagen, puede tardar unos minutos',
   extrayendo: 'Extrayendo los datos',
 }
 

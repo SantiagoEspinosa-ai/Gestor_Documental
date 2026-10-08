@@ -327,6 +327,7 @@ Cada decisión está registrada como ADR en `docs/adr/`.
 | ADR-011 | Límite de intentos de login: `429 DEMASIADOS_INTENTOS` tras 5 fallos de un usuario en 15 minutos | Aceptado (PR #52) |
 | ADR-012 | El integrador solo accede a los folios que ha creado | Aceptado (PR #55 y #57) |
 | ADR-013 | Retirar y restaurar documentos sin borrarlos (solo el revisor) | Aceptado (PR #59) |
+| ADR-014 | Fase del análisis de un documento en la web: solo en memoria de la API, sin migración; no va a la auditoría y en los webhooks es `null` | Aceptado (PR de feat/fase-analisis) |
 
 ## 12. Limitaciones conocidas y evolución después del MVP
 

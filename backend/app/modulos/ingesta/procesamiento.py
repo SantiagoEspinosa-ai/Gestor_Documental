@@ -145,14 +145,15 @@ def _procesar(documento_id: uuid.UUID, tipo_confirmado: str | None) -> None:
             contenido = get_almacenamiento().descargar(doc.ruta_s3)
             # Solo la llamada al motor va limitada; descarga y BD quedan fuera. Mientras espera su turno,
             # el documento sigue en "procesando" (la UI ya sondea) con la fase en_cola (ADR-014)
-            fijar_fase(doc.id, FaseAnalisis.en_cola)
+            doc_id = doc.id  # el callback no toca la sesion de SQLAlchemy (otro hilo puede avisar la fase)
+            fijar_fase(doc_id, FaseAnalisis.en_cola)
             with _semaforo(get_settings().max_procesamientos_simultaneos):
                 resultado, datos = analizar(
                     contenido, identificador=str(doc.id), nombre_archivo=doc.nombre_archivo,
                     tipo_declarado=doc.tipo_declarado, folio=doc.folio,
                     referencia=ReferenciaArchivoOriginal(nombre_archivo=doc.nombre_archivo, ruta=doc.ruta_s3,
                                                          hash=doc.hash_sha256),
-                    tipo_confirmado=tipo_confirmado, al_avanzar=lambda fase: fijar_fase(doc.id, fase))
+                    tipo_confirmado=tipo_confirmado, al_avanzar=lambda fase: fijar_fase(doc_id, fase))
             if (resultado.identificador_unico_documento != str(doc.id)
                     or resultado.folio_solicitud != doc.folio):
                 # Solo ids en el log: nada de datos extraidos

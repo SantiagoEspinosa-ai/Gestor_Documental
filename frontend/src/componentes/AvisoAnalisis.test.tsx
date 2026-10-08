@@ -21,7 +21,7 @@ describe('AvisoAnalisis (ADR-014)', () => {
     const { rerender } = render(<AvisoAnalisis fase="vision" documento="doc-1" />)
     act(() => { vi.advanceTimersByTime(80_000) })
     expect(screen.getByTestId('fase-transcurrido').textContent).toBe('· lleva 1 min 20 s')
-    expect(screen.getByTestId('fase-analisis').textContent).toBe('La foto es difícil: leyéndola como imagen, tardará 2-3 min')
+    expect(screen.getByTestId('fase-analisis').textContent).toBe('La foto es difícil: la estamos leyendo como imagen, puede tardar unos minutos')
     rerender(<AvisoAnalisis fase="extrayendo" documento="doc-1" />)
     expect(screen.getByTestId('fase-transcurrido').textContent).toBe('· lleva 0 s')
     act(() => { vi.advanceTimersByTime(5_000) })
