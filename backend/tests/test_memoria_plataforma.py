@@ -130,6 +130,25 @@ def _alembic(monkeypatch, url: str) -> Config:
     return Config(str(BACKEND / "alembic.ini"))
 
 
+def _longitud_codigo(engine) -> int:
+    return next(c for c in inspect(engine).get_columns("alertas") if c["name"] == "codigo")["type"].length
+
+
+def _con_alerta_larga(engine) -> None:
+    """Un proceso, un folio y una alerta con un codigo de 34 caracteres (ficticios), en SQL: el esquema de la
+    migracion, no el del modelo."""
+    with engine.begin() as conexion:
+        conexion.execute(text(
+            "INSERT INTO procesos (nombre, prefijo_folio, tipos_requeridos, tipos_opcionales, permitir_antecedentes,"
+            " caducidad_antecedentes_dias, modelos) VALUES ('migracion_test', 'MIG', '[]', '[]', false, 1, 'default')"))
+        conexion.execute(text("INSERT INTO folios (folio, proceso, anio, secuencia, estado_general)"
+                              " VALUES ('MIG-2026-000001', 'migracion_test', 2026, 1, 'en_revision')"))
+        conexion.execute(text(
+            "INSERT INTO alertas (id, folio, codigo, severidad, mensaje, confianza, resuelta_por_revisor)"
+            " VALUES (:id, 'MIG-2026-000001', 'REG-nacimiento_antes_de_expedicion', 'critica', 'Regla ficticia', 1.0,"
+            " false)"), {"id": uuid.uuid4().hex})
+
+
 def _sube_y_baja(config: Config, url: str) -> None:
     command.upgrade(config, "head")
     engine = create_engine(url)
@@ -150,6 +169,16 @@ def _sube_y_baja(config: Config, url: str) -> None:
         retirada = {"retirado_en", "retirado_por", "motivo_retirada"}
         columnas_documentos = {c["name"]: c for c in inspect(engine).get_columns("documentos")}
         assert retirada <= set(columnas_documentos) and all(columnas_documentos[c]["nullable"] for c in retirada)
+        # 0009: alertas.codigo de 30 a 64; el downgrade falla (sin cambiar nada) si hay un codigo mas largo
+        assert _longitud_codigo(engine) == 64
+        _con_alerta_larga(engine)
+        with pytest.raises(RuntimeError, match="0009"):
+            command.downgrade(config, "0008")
+        assert _longitud_codigo(engine) == 64
+        with engine.begin() as conexion:
+            conexion.execute(text("DELETE FROM alertas WHERE folio = 'MIG-2026-000001'"))
+        command.downgrade(config, "0008")
+        assert _longitud_codigo(engine) == 30
         command.downgrade(config, "0007")
         assert not retirada & {c["name"] for c in inspect(engine).get_columns("documentos")}
         assert "creado_por" in {c["name"] for c in inspect(engine).get_columns("folios")}  # solo baja la 0008
