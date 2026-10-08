@@ -119,3 +119,42 @@ def test_sexo_de_pasaporte_vencido_se_recupera_de_la_mrz(preparados):
     assert len(vencidos) == 3
     sexos = [buscar_mrz("\n".join(p.texto or "" for p in doc.paginas)).sexo for doc in vencidos]
     assert sexos.count("M") >= 2, sexos
+
+
+# --- Variantes de lectura (2026-10-08, fuera de la linea base del hito): solo si estan generadas ---
+
+def _variante(nombre: str):
+    ruta = FIXTURES / nombre
+    if not ruta.is_file():
+        pytest.skip(f"sin la variante {nombre} (regenera los fixtures con scripts/generar_fixtures.py)")
+    return preparar(ruta.read_bytes(), nombre)
+
+
+@pytest.mark.parametrize("modalidad", ["digital", "escaneado"])
+@pytest.mark.parametrize("variante", ["mes_abreviado", "mes_completo", "mes_anio_corto"])
+def test_variante_fecha_con_el_mes_en_letras_se_lee(variante, modalidad):
+    from app.modulos.motor_ia.confianza import _fechas_del_texto, texto_del_documento
+    doc = _variante(f"comprobante_domicilio_sano_{modalidad}_{variante}.pdf")
+    assert "2026-09-15" in _fechas_del_texto(texto_del_documento(doc.paginas))  # --hoy 2026-09-30, emision -15
+
+
+def test_variante_recibo_sin_recibo_cumple_los_marcadores():
+    from app.modulos.configuracion import servicio as configuracion
+    from app.modulos.motor_ia.confianza import confianza_clasificacion, texto_del_documento
+    doc = _variante("comprobante_domicilio_sano_digital_sin_recibo.pdf")
+    assert confianza_clasificacion(configuracion.obtener("comprobante_domicilio"),
+                                   texto_del_documento(doc.paginas)) == 1.0
+
+
+@pytest.mark.parametrize("nombre", ["pasaporte_sano_digital_mrz_ruido.pdf", "pasaporte_sano_foto_mrz_ruido.jpg"])
+def test_variante_mrz_con_ruido_solo_se_lee_reparandola(nombre):
+    from app.modulos.orquestador import mrz as modulo_mrz
+    doc = _variante(nombre)
+    texto = "\n".join(p.texto or "" for p in doc.paginas)
+    mrz = buscar_mrz(texto)
+    assert mrz is not None and all(validar_digitos(mrz).values())
+    # Sin la reparacion (solo la busqueda exacta de antes) no habria MRZ: el fixture de verdad la pone a prueba
+    lineas = [re.sub(r"\s+", "", l).upper() for l in texto.splitlines() if l.strip()]
+    exactas = [(a, b) for a, b in zip(lineas, lineas[1:])
+               if a.startswith("P") and modulo_mrz._CARACTERES.match(a) and modulo_mrz._CARACTERES.match(b)]
+    assert exactas == []
