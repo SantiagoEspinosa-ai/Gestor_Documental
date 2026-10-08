@@ -13,7 +13,7 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from app.modulos.configuracion.servicio import FLAGS_MARCADORES, TipoCampo, TipoDocumental
-from app.modulos.motor_ia.proveedores.base import normalizar_fecha
+from app.modulos.motor_ia.proveedores.base import PATRON_FECHA_MES_EN_LETRAS, normalizar_fecha
 
 # Confianza de campo = PESO_APARECE * aparece + PESO_FORMATO * formato_valido (campo null -> 0)
 PESO_APARECE = 0.6
@@ -25,6 +25,9 @@ SIMILITUD_MINIMA = 0.85
 TOPE_MRZ_FALLIDA = 0.5
 
 _FECHA_EN_TEXTO = re.compile(r"(?<!\d)(\d{1,4})[/.\- ](\d{1,2})[/.\- ](\d{2,4})(?!\d)")
+# Mes en letras ("15 SEP 2026"): el texto ya esta normalizado (mayusculas, sin acentos). Sin cifras ni letras
+# pegadas por delante ni cifras por detras, para no cortar un numero o una palabra
+_FECHA_MES_EN_TEXTO = re.compile(rf"(?<![0-9A-Z]){PATRON_FECHA_MES_EN_LETRAS}(?!\d)")
 _SEPARADOR_ENTRE_DIGITOS = re.compile(r"(?<=\d)[/.\- ](?=\d)")
 
 
@@ -139,9 +142,14 @@ def _mejor_parecido(buscado: str, texto: str) -> float:
 
 
 def _fechas_del_texto(texto: str) -> set[str]:
+    """Fechas del texto en ISO, para verificar las extraidas: numericas y con el mes en letras. Un rango
+    ("03 DIC 24-04 FEB 25") da sus dos fechas, cada una por separado; nunca una mezcla."""
     fechas = set()
     for m in _FECHA_EN_TEXTO.finditer(texto):
         if (iso := normalizar_fecha(m.group(0).replace(" ", "/"))) is not None:
+            fechas.add(iso)
+    for m in _FECHA_MES_EN_TEXTO.finditer(texto):
+        if (iso := normalizar_fecha(m.group(0))) is not None:
             fechas.add(iso)
     return fechas
 

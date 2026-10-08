@@ -70,6 +70,24 @@ def test_fecha_en_el_texto_sin_separador(ficha):
     assert campos(DATOS, ficha, texto)["fecha_expedicion"] == 1.0
 
 
+@pytest.mark.parametrize("en_el_texto", ["30 SEP 2021", "30-SEP-2021", "30 DE SEPTIEMBRE DE 2021", "30 SEP 21",
+                                         "30 sept. 2021", "30SEP2021"])
+def test_fecha_iso_se_verifica_contra_su_forma_en_letras(ficha, en_el_texto):
+    texto = PASAPORTE.replace("30/09/2021", en_el_texto)
+    assert campos(DATOS, ficha, texto)["fecha_expedicion"] == 1.0  # 2021-09-30 <-> "30 SEP 2021"
+
+
+def test_rango_pegado_del_texto_da_sus_dos_fechas_y_ninguna_mezcla():
+    from app.modulos.motor_ia.confianza import _fechas_del_texto
+    assert _fechas_del_texto(normalizar_texto("PERIODO 03 DIC 24-04 FEB 25 TOTAL")) == {"2024-12-03", "2025-02-04"}
+    assert _fechas_del_texto(normalizar_texto("DEL 03 DIC 2024 AL 04 FEB 2025")) == {"2024-12-03", "2025-02-04"}
+
+
+def test_mes_en_letras_dentro_de_una_palabra_no_es_fecha():
+    from app.modulos.motor_ia.confianza import _fechas_del_texto
+    assert _fechas_del_texto(normalizar_texto("CLIENTE 1234MAYO2026 REF115 MARZO20261")) == set()
+
+
 def test_fecha_con_dia_y_mes_cambiados_no_aparece(ficha):
     assert campos({**DATOS, "fecha_expedicion": "2021-01-09"}, ficha)["fecha_expedicion"] == 0.4
 
