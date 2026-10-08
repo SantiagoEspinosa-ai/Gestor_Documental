@@ -12,26 +12,30 @@ from typing import Any
 from app.modulos.configuracion import servicio as configuracion
 from app.modulos.motor_ia import servicio as motor_ia
 from app.modulos.motor_ia.interfaces import Enrutador
+from app.modulos.motor_ia.servicio import AlAvanzar, avisar_fase
 from app.modulos.orquestador import reloj
 from app.modulos.orquestador.completar_mrz import completar_sexo, verificacion_mrz
 from app.modulos.orquestador.preparador import preparar
 from app.modulos.validacion import servicio as validacion
-from app.schemas.resultado import EstadoAnalisis, Recomendacion, ReferenciaArchivoOriginal, ResultadoDocumento
+from app.schemas.resultado import EstadoAnalisis, FaseAnalisis, Recomendacion, ReferenciaArchivoOriginal, ResultadoDocumento
 
 DESCONOCIDO = configuracion.NOMBRE_RESERVADO
 
 
 def procesar_documento(contenido: bytes, *, identificador: str, nombre_archivo: str, tipo_declarado: str | None,
                        folio: str, referencia: ReferenciaArchivoOriginal, tipo_confirmado: str | None = None,
-                       enrutador: Enrutador | None = None, ahora: datetime | None = None
-                       ) -> tuple[ResultadoDocumento, dict[str, Any]]:
+                       al_avanzar: AlAvanzar | None = None, enrutador: Enrutador | None = None,
+                       ahora: datetime | None = None) -> tuple[ResultadoDocumento, dict[str, Any]]:
     """Analisis completo de un documento. Errores (acordados con PERSONA_1): proveedor caido o sin respaldo ->
     `estado_analisis=error` + SYS-001; JSON invalido -> `error` + SYS-002; cualquier otra cosa lanza (formato no
-    soportado, tipo inexistente, configuracion invalida). `enrutador` y `ahora` son para los tests y el CLI."""
-    doc = preparar(contenido, nombre_archivo, tipo_declarado, identificador=identificador)
+    soportado, tipo inexistente, configuracion invalida). `enrutador` y `ahora` son para los tests y el CLI.
+    `al_avanzar` recibe la fase del analisis (ADR-014): preparando, ocr, clasificando, vision y extrayendo. Es
+    solo informativo: si lanza, se ignora y el resultado no cambia."""
+    avisar_fase(al_avanzar, FaseAnalisis.preparando)
+    doc = preparar(contenido, nombre_archivo, tipo_declarado, identificador=identificador, al_avanzar=al_avanzar)
     mrz = verificacion_mrz(doc)
     analisis = motor_ia.analizar(doc, folio=folio, referencia=referencia, tipo_confirmado=tipo_confirmado,
-                                 enrutador=enrutador, ahora=ahora, mrz=mrz)
+                                 enrutador=enrutador, ahora=ahora, mrz=mrz, al_avanzar=al_avanzar)
     resultado = analisis.resultado
     ficha = _ficha_de_extraccion(resultado)
 

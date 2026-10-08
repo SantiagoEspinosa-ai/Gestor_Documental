@@ -78,7 +78,8 @@ hace fallar el build si queda algun rastro.
   o 405 `METODO_NO_PERMITIDO`.
 - Estado en memoria (`src/mocks/estado.ts`): los datos (folios, subidas, decisiones, auditoria) vuelven
   a los iniciales al recargar; la sesion no se pierde (ver "Token ficticio"). Lo que simula `src/mocks/logica.ts`:
-  - subida: 202 `pendiente`, `procesando` a los 3 s y `completado` a los 9 s. Si el fichero es uno de
+  - subida: 202 `pendiente`, `procesando` a los 3 s y `completado` a los 9 s; mientras procesa, `fase_analisis`
+    pasa por `en_cola`, `preparando`, `ocr`, `clasificando` y `extrayendo` (o `vision` si es imagen) (ADR-014). Si el fichero es uno de
     `public/mock-originales` (mismo SHA-256), se usan sus valores; si no, los de un documento sano del tipo;
   - mismo SHA-256 en el folio: `DUP-001`; tipo declarado distinto del detectado: `CLS-001`;
   - regla 2.2 en la decision; folio cerrado tras decidir (409 `FOLIO_CERRADO`);

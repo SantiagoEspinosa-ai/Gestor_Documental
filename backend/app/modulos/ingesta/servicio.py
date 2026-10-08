@@ -19,7 +19,7 @@ from app.core.modelos import AlertaBD, Correccion, Documento, Folio, Resultado, 
 from app.core.seguridad import es_folio_ajeno
 from app.modulos.ingesta import procesamiento, tipos
 from app.schemas.resultado import Correccion as CorreccionContrato
-from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, ReferenciaArchivoOriginal,
+from app.schemas.resultado import (Alerta, EstadoAnalisis, EstadoGeneral, FaseAnalisis, ReferenciaArchivoOriginal,
                                    ResultadoDocumento, Retirada, Severidad)
 
 log = logging.getLogger(__name__)
@@ -155,6 +155,13 @@ def _aplicar_correcciones(sesion: Session, resultado: ResultadoDocumento, docume
                          for c in filas]})
 
 
+def _fase(documento: Documento, estado: EstadoAnalisis) -> FaseAnalisis | None:
+    """ADR-014: la fase del registro en memoria, solo con el documento pendiente o procesando; si no, None."""
+    if estado in (EstadoAnalisis.pendiente, EstadoAnalisis.procesando):
+        return procesamiento.leer_fase(documento.id)
+    return None
+
+
 def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocumento:
     """ResultadoDocumento de un documento, con la BD como fuente de verdad.
 
@@ -182,6 +189,7 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
             "tipo_documental_confirmado": documento.tipo_documental_confirmado,
             "alertas_encontradas": alertas,
             "retirado": _retirada(documento),
+            "fase_analisis": _fase(documento, estado),
         })
         return _aplicar_correcciones(sesion, resultado, documento.id, fila.version)
     return ResultadoDocumento(
@@ -196,6 +204,7 @@ def construir_resultado(sesion: Session, documento: Documento) -> ResultadoDocum
                                                               ruta=documento.ruta_s3,
                                                               hash=documento.hash_sha256),
         retirado=_retirada(documento),
+        fase_analisis=_fase(documento, estado),
     )
 
 

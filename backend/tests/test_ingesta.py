@@ -227,11 +227,11 @@ def test_firma_del_motor_stub_es_la_acordada():
     firma = inspect.signature(motor_stub.procesar_documento)
     params = list(firma.parameters.values())
     assert [p.name for p in params] == ["contenido", "identificador", "nombre_archivo", "tipo_declarado",
-                                        "folio", "referencia", "tipo_confirmado"]
+                                        "folio", "referencia", "tipo_confirmado", "al_avanzar"]  # ADR-014
     assert params[0].kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
     assert all(p.kind is inspect.Parameter.KEYWORD_ONLY for p in params[1:])
-    assert params[-1].default is None
-    assert all(p.default is inspect.Parameter.empty for p in params[:-1])
+    assert params[-2].default is None and params[-1].default is None
+    assert all(p.default is inspect.Parameter.empty for p in params[:-2])
 
 
 def test_motor_stub_devuelve_resultado_sin_alertas():

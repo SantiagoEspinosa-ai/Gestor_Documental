@@ -5,7 +5,10 @@ Configuracion vigente (modelos, enrutador, reglas de vision y parseo, prompts):
 
 ## Servicio (`servicio.py`): lo unico que importan los demas modulos
 - Entrada: `analizar(doc: DocumentoPreparado, *, folio, referencia: ReferenciaArchivoOriginal,
-  tipo_confirmado=None, enrutador=None, ahora=None)`.
+  tipo_confirmado=None, enrutador=None, ahora=None, mrz=None, al_avanzar=None)`.
+- `al_avanzar` (ADR-014) recibe `clasificando`, `vision` (sin texto suficiente, reclasificacion, extraccion
+  por OCR pobre y reintento) o `extrayendo`. `avisar_fase(al_avanzar, fase)` nunca lanza: un fallo del
+  aviso se ignora (log de depuracion sin datos) y el resultado no cambia.
 - Salida: `Analisis` con `resultado` (`ResultadoDocumento`, Contrato 1) y `llamadas` (`InfoLlamada`:
   modelo real, tiempos y tokens, para la auditoria).
 - Clasifica (salvo con `tipo_confirmado`), extrae con la ficha `tipo_confirmado` > declarado > detectado

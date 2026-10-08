@@ -7,7 +7,7 @@ import {
 } from '../tipos/contrato'
 import { crearEstado, type EstadoMock } from './estado'
 import { crearHandlers } from './handlers'
-import { compararCampos, enmascararDocumento, mascara, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO, resumenMarkdown } from './logica'
+import { compararCampos, enmascararDocumento, FASES_SIMULADAS, mascara, MS_HASTA_COMPLETADO, MS_HASTA_PROCESANDO, resumenMarkdown } from './logica'
 
 const API = 'http://localhost:8000/api/v1'
 const CONTRATO = new URL('../../../docs/contratos/endpoints.md', import.meta.url)
@@ -315,6 +315,29 @@ describe('subida de documentos', () => {
     exp = (await api<ResultadoExpediente>('GET', `/folios/${folio}`, { token })).cuerpo
     expect(exp001(exp)).toEqual(['comprobante_domicilio'])
     expect(exp.alertas_expediente[0].mensaje).toBe('Falta el documento requerido: Comprobante de domicilio') // como la API
+  })
+
+  it('ADR-014: mientras procesa pasa por las fases (texto: extrayendo; imagen: vision) y al terminar no tiene', async () => {
+    const token = await entrar('integrador.demo')
+    const folio = (await api<{ folio: string }>('POST', '/folios', { token, cuerpo: { proceso: 'onboarding', referencia_externa: 'CLI-000901' } })).cuerpo.folio
+    const fasesDe = async (archivo: string) => {
+      const inicio = t
+      const id = (await api<{ identificador_unico_documento: string }>('POST', `/folios/${folio}/documentos`,
+        { token, formulario: subida(archivo, original(archivo), 'credencial_elector') })).cuerpo.identificador_unico_documento
+      const leer = async () => (await api<ResultadoDocumento>('GET', `/documentos/${id}`, { token })).cuerpo
+      const vistas = [(await leer()).fase_analisis] // pendiente: sin fase
+      for (const [desde] of FASES_SIMULADAS) {
+        t = inicio + MS_HASTA_PROCESANDO + desde
+        vistas.push((await leer()).fase_analisis)
+      }
+      t = inicio + MS_HASTA_COMPLETADO
+      const hecho = await leer()
+      return { vistas, final: [hecho.estado_analisis, hecho.fase_analisis] }
+    }
+    expect(await fasesDe('credencial_elector_sano_digital.pdf')).toEqual({
+      vistas: [null, 'en_cola', 'preparando', 'ocr', 'clasificando', 'extrayendo'], final: ['completado', null] })
+    expect(await fasesDe('credencial_elector_vencido_foto.jpg')).toEqual({
+      vistas: [null, 'en_cola', 'preparando', 'ocr', 'clasificando', 'vision'], final: ['completado', null] })
   })
 
   it('el mismo archivo en el mismo folio devuelve 202 con DUP-001', async () => {

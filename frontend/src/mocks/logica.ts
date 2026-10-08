@@ -1,7 +1,7 @@
 // Logica de negocio simulada de los mocks: la minima para que el estado en memoria sea coherente
 // con el contrato (reglas de ADR-006). No sustituye a validacion ni a expediente del backend.
 import {
-  TIPO_DESCONOCIDO, type Alerta, type ComparacionCampo, type Recomendacion, type RespuestaAntecedentes, type ResultadoDocumento,
+  TIPO_DESCONOCIDO, type Alerta, type ComparacionCampo, type FaseAnalisis, type Recomendacion, type RespuestaAntecedentes, type ResultadoDocumento,
   type ResultadoExpediente, type ResumenFolio, type Severidad, type TipoDocumental,
 } from '../tipos/contrato'
 import {
@@ -13,6 +13,13 @@ import { auditar, fechaIso, siguiente, type EstadoMock, type Procesamiento } fro
 /** pendiente -> procesando a los 3 s, -> completado a los 9 s */
 export const MS_HASTA_PROCESANDO = 3_000
 export const MS_HASTA_COMPLETADO = 9_000
+/**
+ * ADR-014: fases simuladas desde que el documento pasa a procesando (ms). La ultima es `vision` si el
+ * documento se "analiza" con el modelo de vision, y `extrayendo` si va por texto.
+ */
+export const FASES_SIMULADAS: readonly (readonly [number, FaseAnalisis])[] = [
+  [0, 'en_cola'], [1_000, 'preparando'], [2_000, 'ocr'], [3_000, 'clasificando'], [4_500, 'extrayendo'],
+]
 // Modelos de .env.example (PERSONA_2, docs/motor_ia/pruebas_ollama.md). Siempre Ollama: con
 // PERMITIR_PROVEEDORES_NO_PRIVADOS=false el respaldo comercial no se usa nunca (ADR-003), asi que no hay SYS-005.
 const PROVEEDOR = 'ollama'
@@ -318,7 +325,12 @@ function completar(estado: EstadoMock, folio: ResultadoExpediente, doc: Resultad
     { proveedor: PROVEEDOR, respaldo_usado: false }, modelo, versionPrompt(proc.tipoExtraccion))
 }
 
-/** Avanza con el reloj el analisis de los documentos subidos en esta sesion */
+function faseSimulada(doc: ResultadoDocumento, proc: Procesamiento, msProcesando: number): FaseAnalisis {
+  const fase = FASES_SIMULADAS.filter(([desde]) => msProcesando >= desde).at(-1)?.[1] ?? 'en_cola'
+  return fase === 'extrayendo' && modeloDeAnalisis(doc, proc) === MODELO_VISION ? 'vision' : fase
+}
+
+/** Avanza con el reloj el analisis de los documentos subidos en esta sesion (y su fase, ADR-014) */
 export function avanzarProcesamiento(estado: EstadoMock, folio: ResultadoExpediente): void {
   let cambios = false
   for (const doc of folio.documentos) {
@@ -328,9 +340,11 @@ export function avanzarProcesamiento(estado: EstadoMock, folio: ResultadoExpedie
     if (transcurrido >= MS_HASTA_COMPLETADO) {
       completar(estado, folio, doc, proc)
       estado.procesamientos.delete(doc.identificador_unico_documento)
+      doc.fase_analisis = null
       cambios = true
-    } else if (transcurrido >= MS_HASTA_PROCESANDO && doc.estado_analisis === 'pendiente') {
+    } else if (transcurrido >= MS_HASTA_PROCESANDO) {
       doc.estado_analisis = 'procesando'
+      doc.fase_analisis = faseSimulada(doc, proc, transcurrido - MS_HASTA_PROCESANDO)
     }
   }
   if (cambios) recalcularTiposDelProceso(estado, folio) // un documento se ha procesado

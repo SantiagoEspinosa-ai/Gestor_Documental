@@ -12,11 +12,12 @@ from app.schemas.resultado import (EstadoAnalisis, FechaYModelo, Recomendacion, 
 
 def procesar_documento(contenido: bytes, *, identificador: str, nombre_archivo: str,
                        tipo_declarado: str | None, folio: str, referencia: ReferenciaArchivoOriginal,
-                       tipo_confirmado: str | None = None) -> tuple[ResultadoDocumento, dict]:
+                       tipo_confirmado: str | None = None, al_avanzar=None) -> tuple[ResultadoDocumento, dict]:
     """Resultado ficticio pero valido, sin alertas, y los datos de auditoria del stub.
 
     Con `tipo_confirmado` no se clasifica (ADR-009): detectado y confianza de clasificacion a null, como
     el motor real. El confirmado manda en el tipo efectivo y vale 1.0 en la recomendacion (D2).
+    `al_avanzar` (fases, ADR-014) se acepta por tener la firma del motor real y se ignora.
     """
     resultado = ResultadoDocumento(
         folio_solicitud=folio,

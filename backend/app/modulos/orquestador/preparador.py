@@ -17,6 +17,7 @@ import pymupdf
 from PIL import Image, ImageOps
 
 from app.modulos.motor_ia.interfaces import DocumentoPreparado, Modalidad, Pagina
+from app.modulos.motor_ia.servicio import AlAvanzar, avisar_fase
 from app.modulos.orquestador.modalidad import (
     UMBRAL_CARACTERES_POR_PAGINA,
     DocumentoDemasiadoGrande,
@@ -26,6 +27,7 @@ from app.modulos.orquestador.modalidad import (
     detectar,
 )
 from app.modulos.orquestador.ocr import ErrorOCR, OCRProvider, TesseractOCR
+from app.schemas.resultado import FaseAnalisis
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +36,11 @@ DPI_ESCANEADO = 200
 
 
 def preparar(contenido: bytes, nombre: str, tipo_declarado: str | None = None, *,
-             identificador: str | None = None, ocr: OCRProvider | None = None) -> DocumentoPreparado:
+             identificador: str | None = None, ocr: OCRProvider | None = None,
+             al_avanzar: AlAvanzar | None = None) -> DocumentoPreparado:
     modalidad = detectar(contenido, nombre)
     lector = _LectorOCR(ocr if ocr is not None else TesseractOCR())
+    avisar_fase(al_avanzar, FaseAnalisis.ocr)  # ADR-014: antes del OCR o de leer la capa de texto
     if modalidad is Modalidad.imagen:
         paginas = [_pagina_imagen(contenido, lector)]
     else:

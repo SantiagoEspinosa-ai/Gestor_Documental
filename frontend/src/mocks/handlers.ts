@@ -308,7 +308,7 @@ export function crearHandlers(estado: EstadoMock): { handlers: HttpHandler[]; ru
       referencia_archivo_original: {
         nombre_archivo: nombre, ruta: `${folio.proceso}/${folio.folio.split('-')[1]}/${folio.folio.slice(-6)}/${id}.${extension}`, hash,
       },
-      retirado: null,
+      retirado: null, fase_analisis: null,
     }
     folio.documentos.push(doc)
     estado.archivos.set(id, archivo)

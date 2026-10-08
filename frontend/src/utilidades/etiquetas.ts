@@ -1,6 +1,7 @@
 // Textos visibles de los valores del contrato
 import type {
-  AccionAuditoria, Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, MotivoSinAntecedentes, Recomendacion, Rol, Severidad,
+  AccionAuditoria, Alerta, DecisionHumana, EstadoAnalisis, EstadoGeneral, FaseAnalisis, MotivoSinAntecedentes, Recomendacion,
+  Rol, Severidad,
 } from '../tipos/contrato'
 
 export const ETIQUETA_ROL: Record<Rol, string> = { admin: 'Administración', revisor: 'Revisión', integrador: 'Integración' }
@@ -15,6 +16,26 @@ export const ETIQUETA_RECOMENDACION: Record<Recomendacion, string> = {
 
 export const ETIQUETA_ESTADO_ANALISIS: Record<EstadoAnalisis, string> = {
   pendiente: 'Pendiente', procesando: 'Procesando', completado: 'Completado', error: 'Error',
+}
+
+/** ADR-014: frase de la fase en el aviso del documento que se esta analizando */
+export const ETIQUETA_FASE: Record<FaseAnalisis, string> = {
+  en_cola: 'En espera: se analiza un documento cada vez',
+  preparando: 'Preparando el documento',
+  ocr: 'Leyendo el texto (OCR)',
+  clasificando: 'Identificando el tipo de documento',
+  vision: 'La foto es difícil: la estamos leyendo como imagen, puede tardar unos minutos',
+  extrayendo: 'Extrayendo los datos',
+}
+
+/** ADR-014: version corta, bajo "Procesando" en la lista de documentos del expediente */
+export const ETIQUETA_FASE_CORTA: Record<FaseAnalisis, string> = {
+  en_cola: 'En espera',
+  preparando: 'Preparando',
+  ocr: 'Leyendo el texto',
+  clasificando: 'Identificando el tipo',
+  vision: 'Leyendo como imagen',
+  extrayendo: 'Extrayendo los datos',
 }
 
 export const ETIQUETA_SEVERIDAD: Record<Severidad, string> = {
@@ -75,4 +96,13 @@ export function fechaHoraCompleta(iso: string | null): string {
   return new Date(iso).toLocaleString('es-ES', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
+}
+
+/** ADR-014: tiempo que lleva una fase, contado en el cliente: "lleva 45 s", "lleva 1 min 20 s", "lleva 2 min" */
+export function textoTranscurrido(segundos: number): string {
+  const s = Math.max(0, Math.floor(segundos))
+  const minutos = Math.floor(s / 60)
+  const resto = s % 60
+  if (minutos === 0) return `lleva ${resto} s`
+  return resto === 0 ? `lleva ${minutos} min` : `lleva ${minutos} min ${resto} s`
 }

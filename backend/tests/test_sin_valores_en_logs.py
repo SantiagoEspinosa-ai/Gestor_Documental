@@ -27,7 +27,7 @@ def _sin_valores(texto: str):
 def test_logs_y_datos_auditoria_sin_valores(proveedor, monkeypatch, caplog):
     from app.modulos.motor_ia.interfaces import DocumentoPreparado, Modalidad, Pagina
     from app.modulos.orquestador import procesamiento
-    monkeypatch.setattr(procesamiento, "preparar", lambda contenido, nombre, tipo=None, *, identificador=None, ocr=None:
+    monkeypatch.setattr(procesamiento, "preparar", lambda contenido, nombre, tipo=None, *, identificador=None, ocr=None, al_avanzar=None:
                         DocumentoPreparado(identificador, Modalidad.pdf_digital,
                                            [Pagina(1, f"{TEXTO_PASAPORTE}\n{MRZ}")], tipo))
     with caplog.at_level(logging.DEBUG):
