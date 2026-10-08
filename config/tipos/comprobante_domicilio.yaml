@@ -15,11 +15,14 @@ campos:
   fecha_emision:  {tipo: fecha, obligatorio: true}
 # ADR-007: marcadores verificables en el texto (mayusculas, sin acentos, linea a linea);
 # confianza de clasificacion = proporcion encontrada. Cuantos: el umbral tolera uno sin encontrar.
+# 2026-10-08: alternativas DENTRO de los marcadores (recibos reales con FECHA LIMITE DE PAGO, SERVICIO o CONSUMO
+# y sin RECIBO ni COMPROBANTE), no marcadores nuevos: anadir marcadores bajaria la confianza de los comprobantes
+# que ya los cumplen todos (5/5 pasaria a 5/8).
 marcadores_clasificacion:
-  - 'COMPROBANTE\s*(DE\s*)?DOMICILIO|\bRECIBO\b|ESTADO\s*DE\s*CUENTA'
-  - 'FECHA\s*(DE\s*)?EMISION|\bPERIODO\b'
+  - 'COMPROBANTE\s*(DE\s*)?DOMICILIO|\bRECIBO\b|ESTADO\s*DE\s*CUENTA|\bSERVICIO\b'
+  - 'FECHA\s*(DE\s*)?EMISION|\bPERIODO\b|FECHA\s*(LIMITE\s*)?DE\s*PAGO|PAGAR\s*ANTES\s*DE'
   - '\bDOMICILIO\b'
-  - '\bTOTAL\b|\bIMPORTE\b'
+  - '\bTOTAL\b|\bIMPORTE\b|\bCONSUMO\b'
   - '\bTITULAR\b'
 confianza_minima_clasificacion: 0.80
 confianza_minima_campo: 0.75

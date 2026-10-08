@@ -618,6 +618,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-08 | Marcadores del comprobante: alternativas dentro de los existentes (FECHA LIMITE DE PAGO / PAGAR ANTES DE, SERVICIO, CONSUMO), no marcadores nuevos, para no bajar la confianza de los que ya los cumplen. Test con todos los fixtures: ningun comprobante baja, ningun otro tipo sube y ninguno cambia de tipo | este commit |
 | 2026-10-08 | MRZ tolerante (seccion 9): lineas de 43-45 caracteres con ruido en los bordes, aceptadas solo si cuadran todos los digitos de control; sin sustituciones de caracteres | este commit |
 | 2026-10-08 | `normalizar_fecha` y la verificacion de `confianza.py` entienden el mes en letras (seccion 4): "DD MES AAAA", "D DE MES DE AAAA", "DD-MES-AAAA" y "DD MES AA" (20AA, nunca mas alla del anio siguiente); rangos y fechas incompletas dan None | este commit |
 | 2026-10-08 | Cargador: rechaza una ficha cuyo codigo `REG-<id>` pase de 64 caracteres (`alertas.codigo` tras la migracion 0009 de PERSONA_1); los ids no cambian. Catalogo de alertas al dia | este commit |
