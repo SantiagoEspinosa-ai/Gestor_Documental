@@ -19,6 +19,10 @@ export type Recomendacion = (typeof RECOMENDACIONES)[number]
 export const ESTADOS_ANALISIS = ['pendiente', 'procesando', 'completado', 'error'] as const
 export type EstadoAnalisis = (typeof ESTADOS_ANALISIS)[number]
 
+/** ADR-014: en que va un analisis en curso; solo con estado pendiente o procesando */
+export const FASES_ANALISIS = ['en_cola', 'preparando', 'ocr', 'clasificando', 'vision', 'extrayendo'] as const
+export type FaseAnalisis = (typeof FASES_ANALISIS)[number]
+
 export const ESTADOS_GENERALES = ['en_revision', 'aprobado', 'rechazado'] as const
 export type EstadoGeneral = (typeof ESTADOS_GENERALES)[number]
 
@@ -111,6 +115,8 @@ export interface ResultadoDocumento {
   referencia_archivo_original: ReferenciaArchivoOriginal
   /** ADR-013: null si cuenta para el folio */
   retirado: Retirada | null
+  /** ADR-014: fase del analisis en curso; null en completado y error (y si la API se reinicio) */
+  fase_analisis: FaseAnalisis | null
 }
 
 export interface ComparacionCampo {

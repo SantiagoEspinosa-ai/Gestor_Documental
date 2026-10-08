@@ -34,6 +34,15 @@ class EstadoAnalisis(str, Enum):
     error = "error"
 
 
+class FaseAnalisis(str, Enum):  # ADR-014: en que va un analisis en curso (solo en memoria; nunca en BD)
+    en_cola = "en_cola"            # esperando a que termine el anterior (un analisis cada vez)
+    preparando = "preparando"
+    ocr = "ocr"                    # OCR o capa de texto del PDF
+    clasificando = "clasificando"
+    vision = "vision"              # el modelo de vision lee las imagenes (lo mas lento en CPU)
+    extrayendo = "extrayendo"
+
+
 class EstadoGeneral(str, Enum):  # ADR-006, K
     en_revision = "en_revision"
     aprobado = "aprobado"    # folio cerrado (ADR-006, G)
@@ -110,6 +119,9 @@ class ResultadoDocumento(BaseModel):
     fecha_y_modelo_utilizado: FechaYModelo | None = None
     referencia_archivo_original: ReferenciaArchivoOriginal
     retirado: Retirada | None = None  # ADR-013: lo rellena la plataforma desde la BD; el motor no lo toca
+    # ADR-014: solo con estado pendiente o procesando (None en completado y error). La rellena la plataforma
+    # desde su registro en memoria; el motor no la devuelve
+    fase_analisis: FaseAnalisis | None = None
 
 
 class ComparacionCampo(BaseModel):

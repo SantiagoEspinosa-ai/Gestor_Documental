@@ -114,14 +114,22 @@ una alerta: puede repetirse en un documento, una vez por campo (ADR-006, 1.3).
   (`409 DOCUMENTO_RETIRADO`); si se consulta. Nada se borra (BD ni S3). `resumen.md` lo lista al final, en
   "Documentos retirados", con el motivo tapado. Sin webhook: el estado del folio no cambia.
 
+- Fase del analisis (ADR-014): `ResultadoDocumento.fase_analisis` dice en que va un analisis en curso:
+  `en_cola` (espera su turno: un analisis cada vez), `preparando`, `ocr` (OCR o capa de texto del PDF),
+  `clasificando`, `vision` (el modelo de vision lee las imagenes) o `extrayendo`. Solo con `estado_analisis`
+  `pendiente` o `procesando`; en `completado` y `error` siempre `null`. Vive solo en memoria de la API: tras
+  reiniciarla es `null` hasta que el analisis vuelve a avanzar. No va a la auditoria.
+
 ## Webhook (salida)
 Configurable por proceso. `POST <url>` con cabecera `X-Firma: sha256=<HMAC(cuerpo, WEBHOOK_SECRET_HMAC)>`
 y `X-Entrega-Id: <uuid>`: uno por entrega, igual en todos sus reintentos, para detectar reenvios (no va en
 el cuerpo). `datos` va enmascarado (ver "Reglas").
 Eventos: `documento.completado`, `documento.error`, `folio.estado_cambiado`.
 Cuerpo: `{evento, fecha, folio, identificador_unico_documento?, datos: ResultadoDocumento | ResultadoExpediente}`.
+En `documento.completado` y `documento.error`, `datos.fase_analisis` siempre es `null` (ADR-014).
 
 ## Estados
 Documento: `pendiente -> procesando -> completado | error`. Ademas `completado -> pendiente` solo al
-confirmar una clasificacion distinta de la usada para extraer (ADR-006, 2.5).
+confirmar una clasificacion distinta de la usada para extraer (ADR-006, 2.5). Mientras esta `pendiente` o
+`procesando`, `fase_analisis` dice en que va (ADR-014).
 Expediente: `en_revision -> aprobado | rechazado`. `aprobado` y `rechazado` son finales (ADR-006, G).

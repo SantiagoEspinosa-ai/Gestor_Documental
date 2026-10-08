@@ -202,7 +202,7 @@ class DatosMock:
                "referencia_archivo_original": {
                    "nombre_archivo": archivo, "ruta": f"onboarding/2026/{secuencia:06d}/{uid}.{ext}",
                    "hash": hash_},
-               "retirado": None}
+               "retirado": None, "fase_analisis": None}  # ADR-014: los mocks la simulan al subir
         # Mismo detalle que la API real: sin nombre_archivo (los nombres de fichero suelen llevar el de la persona)
         self.auditar(self.duenos[folio], "documento_subido", folio, uid,
                      {"hash_sha256": hash_, "tamano_bytes": len(datos), "duplicado": duplicado}, subido)
