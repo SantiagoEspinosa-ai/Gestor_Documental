@@ -1,6 +1,6 @@
 # ADR-014: Fase del analisis de un documento
 
-Fecha: 2026-10-08. Estado: ACEPTADO (2026-10-08, PERSONA_1 y PERSONA_2, PR de feat/fase-analisis).
+Fecha: 2026-10-08. Estado: ACEPTADO (2026-10-08, PERSONA_1 y PERSONA_2, PR #62).
 Propone: PERSONA_2; PERSONA_1 dio permiso para tocar sus ficheros en el PR.
 Afecta al Contrato 1 (`backend/app/schemas/resultado.py`: enum `FaseAnalisis` y campo opcional
 `fase_analisis` en `ResultadoDocumento`) y a `docs/contratos/endpoints.md` ("Reglas", webhook y estados).
