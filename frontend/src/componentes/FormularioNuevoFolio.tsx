@@ -53,7 +53,7 @@ export function FormularioNuevoFolio({ procesos, onCancelar }: Props) {
         <p id="ayuda-referencia" className="text-xs text-slate-500">Identificador del sistema integrador, nunca un nombre.</p>
       </div>
       <div className="flex gap-2">
-        <button type="submit" disabled={!proceso || enviando} className="rounded bg-slate-800 px-3 py-1.5 text-white disabled:opacity-60">
+        <button type="submit" disabled={!proceso || enviando} className="rounded bg-q-slate px-3 py-1.5 text-white disabled:opacity-60">
           {enviando ? 'Creando…' : 'Crear folio'}
         </button>
         <button type="button" onClick={onCancelar} className="rounded border border-slate-300 px-3 py-1.5">Cancelar</button>

@@ -21,7 +21,7 @@ export function RutaProtegida({ roles }: { roles?: readonly Rol[] }) {
     return (
       <div role="alert" className="p-8 text-slate-700">
         <p>No se pudo recuperar la sesión: {estado.mensaje}</p>
-        <button className="mt-3 rounded bg-slate-800 px-3 py-1.5 text-white" onClick={reintentar}>
+        <button className="mt-3 rounded bg-q-slate px-3 py-1.5 text-white" onClick={reintentar}>
           Reintentar
         </button>
       </div>

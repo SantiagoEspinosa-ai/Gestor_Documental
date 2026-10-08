@@ -146,7 +146,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
       <section>
         <h1 className="text-xl font-semibold">Carga de documentos</h1>
         <p role="alert" className="mt-2 text-red-700">{errorCarga}</p>
-        <Link to="/folios" className="mt-2 inline-block text-blue-700 underline">Volver a los folios</Link>
+        <Link to="/folios" className="mt-2 inline-block text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
       </section>
     )
   }
@@ -158,15 +158,15 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
       <div className="flex flex-wrap items-center gap-3">
         <h1 id="titulo-carga" className="text-xl font-semibold">Carga de documentos — <span className="font-mono">{expediente.folio}</span></h1>
         <InsigniaEstado estado={expediente.estado_general} />
-        <Link to={`/folios/${encodeURIComponent(expediente.folio)}`} className="text-sm text-blue-700 underline">Ver expediente</Link>
-        <Link to="/folios" className="text-sm text-blue-700 underline">Volver a los folios</Link>
+        <Link to={`/folios/${encodeURIComponent(expediente.folio)}`} className="text-sm text-q-slate underline hover:text-q-orange-700">Ver expediente</Link>
+        <Link to="/folios" className="text-sm text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
       </div>
       <p className="mt-1 text-sm text-slate-600">
         Proceso {expediente.proceso}{expediente.referencia_externa ? ` · Referencia ${expediente.referencia_externa}` : ''}
       </p>
 
       {cerrado && (
-        <p role="status" className="mt-4 flex items-center gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+        <p role="status" className="mt-4 flex items-center gap-2 rounded border border-q-orange-100 bg-q-orange-50 px-3 py-2 text-q-orange-700">
           <Lock className="size-4" aria-hidden /> El folio está {expediente.estado_general}: solo lectura. No se pueden subir documentos.
         </p>
       )}
@@ -182,7 +182,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
             <AlertTriangle className="size-4" aria-hidden /> Faltan tipos requeridos por el proceso: {faltan.map(nombreVisible).join(', ')}.
           </p>
         ) : (
-          <p className="flex items-center gap-2 text-sm text-green-800">
+          <p className="flex items-center gap-2 text-sm text-q-slate">
             <CheckCircle2 className="size-4" aria-hidden /> Están todos los tipos requeridos por el proceso.
           </p>
         )}
@@ -190,7 +190,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
 
       <div onDragOver={(e) => { e.preventDefault(); if (puedeSubir) setArrastrando(true) }} onDragLeave={() => setArrastrando(false)}
         onDrop={soltar} data-testid="zona-carga" aria-disabled={!puedeSubir} aria-describedby="ayuda-carga"
-        className={`mt-4 rounded-lg border-2 border-dashed p-6 text-center ${arrastrando ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-white'} ${puedeSubir ? '' : 'opacity-60'}`}>
+        className={`mt-4 rounded-lg border-2 border-dashed p-6 text-center ${arrastrando ? 'border-q-orange bg-q-orange-50' : 'border-slate-300 bg-white'} ${puedeSubir ? '' : 'opacity-60'}`}>
         <FileUp className="mx-auto size-8 text-slate-500" aria-hidden />
         <p id="ayuda-carga" className="mt-2 text-sm text-slate-600">
           Arrastra aquí los archivos o elígelos. Formatos: {aceptados.replaceAll(',', ', ') || '—'}; máximo 20 MB por archivo.
@@ -223,7 +223,7 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
             ))}
           </ul>
           <button type="button" onClick={subirTodo} disabled={!puedeSubir || subiendo || validos === 0}
-            className="mt-3 flex items-center gap-1 rounded bg-slate-800 px-3 py-1.5 text-white disabled:opacity-60">
+            className="mt-3 flex items-center gap-1 rounded bg-q-slate px-3 py-1.5 text-white disabled:opacity-60">
             <Upload className="size-4" aria-hidden /> {subiendo ? 'Subiendo…' : `Subir ${validos} ${validos === 1 ? 'archivo' : 'archivos'}`}
           </button>
         </div>

@@ -44,7 +44,7 @@ export function RetirarDocumento({ doc, puedeActuar, deshabilitado, alRetirar, a
 
   if (doc.retirado) {
     return (
-      <section aria-label="Documento retirado" className="rounded border border-slate-300 bg-slate-100 p-3 text-sm">
+      <section aria-label="Documento retirado" className="rounded border border-slate-300 bg-q-slate-50 p-3 text-sm">
         <p className="flex items-center gap-2 font-medium"><Archive className="size-4" aria-hidden /> Retirado del folio: no cuenta para la revisión.</p>
         <p className="mt-1 text-slate-700">
           {fechaHora(doc.retirado.en)} · {doc.retirado.por} · Motivo: “{doc.retirado.motivo}”
@@ -74,11 +74,11 @@ export function RetirarDocumento({ doc, puedeActuar, deshabilitado, alRetirar, a
       <textarea id={id} value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={2} maxLength={MOTIVO_RETIRAR_MAX}
         required disabled={enviando || confirmando} className="w-full rounded border border-slate-300 px-2 py-1" />
       {confirmando ? (
-        <div role="alertdialog" aria-label="Confirmar la retirada" className="mt-2 rounded border border-amber-300 bg-amber-50 p-2">
+        <div role="alertdialog" aria-label="Confirmar la retirada" className="mt-2 rounded border border-q-orange-100 bg-q-orange-50 p-2">
           <p>¿Retiras este documento del folio? Dejará de contar para la revisión; no se borra y se puede restaurar.</p>
           <div className="mt-2 flex gap-2">
             <button type="button" onClick={() => enviar(() => alRetirar(texto))} disabled={enviando}
-              className={`${boton} border-slate-800 bg-slate-800 text-white`}>{enviando ? 'Enviando…' : 'Sí, retirar'}</button>
+              className={`${boton} border-q-slate bg-q-slate text-white`}>{enviando ? 'Enviando…' : 'Sí, retirar'}</button>
             <button type="button" onClick={() => setConfirmando(false)} disabled={enviando} className={`${boton} border-slate-300`}>Cancelar</button>
           </div>
         </div>

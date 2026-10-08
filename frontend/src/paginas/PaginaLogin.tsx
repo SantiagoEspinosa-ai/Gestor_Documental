@@ -46,12 +46,13 @@ export function PaginaLogin() {
     <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <form onSubmit={enviar} noValidate aria-labelledby="titulo-login" aria-busy={enviando}
         className="w-full max-w-sm space-y-4 rounded-lg bg-white p-6 shadow">
+        <img src="/brand/logo-dark.svg" alt="Qaracter" className="h-8" />
         <h1 id="titulo-login" className="text-lg font-semibold text-slate-800">Gestor Documental</h1>
-        {aviso && !error && <p role="status" className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-900">{aviso}</p>}
+        {aviso && !error && <p role="status" className="rounded border border-q-orange-100 bg-q-orange-50 px-3 py-2 text-sm text-q-orange-700">{aviso}</p>}
         <div>
           <label htmlFor="usuario" className="block text-sm text-slate-700">Usuario</label>
           <input id="usuario" ref={refUsuario} name="usuario" autoComplete="username" required
-            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 focus:outline-2 focus:outline-blue-600"
+            className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5 focus:outline-2 focus:outline-q-orange"
             value={usuario} onChange={(e) => setUsuario(e.target.value)} aria-invalid={Boolean(error)} aria-describedby={describe} />
         </div>
         <div>
@@ -59,7 +60,7 @@ export function PaginaLogin() {
           <div className="mt-1 flex">
             <input id="contrasena" ref={refContrasena} name="contrasena" type={verContrasena ? 'text' : 'password'}
               autoComplete="current-password" required
-              className="w-full rounded-l border border-slate-300 px-2 py-1.5 focus:outline-2 focus:outline-blue-600"
+              className="w-full rounded-l border border-slate-300 px-2 py-1.5 focus:outline-2 focus:outline-q-orange"
               value={contrasena} onChange={(e) => setContrasena(e.target.value)} aria-invalid={Boolean(error)} aria-describedby={describe} />
             <button type="button" onClick={() => setVerContrasena((v) => !v)} aria-pressed={verContrasena}
               aria-label={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -70,7 +71,7 @@ export function PaginaLogin() {
         </div>
         {error && <p id="error-login" role="alert" className="text-sm text-red-700">{error}</p>}
         <button type="submit" disabled={enviando || !usuario.trim() || !contrasena}
-          className="flex w-full items-center justify-center gap-2 rounded bg-slate-800 py-2 text-white disabled:opacity-60">
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 py-2 disabled:opacity-60">
           <LogIn className="size-4" aria-hidden /> {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>

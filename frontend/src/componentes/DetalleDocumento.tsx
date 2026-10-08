@@ -92,7 +92,7 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
       </section>
 
       {doc.estado_analisis === 'completado' && sinDatosNiFicha && (
-        <p role="status" className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p role="status" className="rounded border border-q-orange-100 bg-q-orange-50 px-3 py-2 text-sm text-q-orange-700">
           No se han extraído datos: el tipo del documento no está reconocido. Confirma la clasificación para
           analizarlo con la ficha correcta.
         </p>
@@ -131,7 +131,7 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, accionesClasif
                       )
                       : enmascarado}
                     {correccion && (
-                      <span className="mt-0.5 flex items-center gap-1 text-xs text-violet-800">
+                      <span className="mt-0.5 flex items-center gap-1 text-xs text-q-orange-700">
                         <Pencil className="size-3" aria-hidden /> Corregido por revisor (antes: {formatearValor(correccion.valor_anterior, tipo)})
                       </span>
                     )}

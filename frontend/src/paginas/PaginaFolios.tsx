@@ -59,7 +59,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
         <h1 id="titulo-folios" className="text-xl font-semibold">Folios</h1>
         <SoloRol roles={ROLES_CREAR}>
           <button ref={refBotonNuevo} type="button" onClick={() => setCreando((c) => !c)} aria-expanded={creando} aria-controls="nuevo-folio"
-            className="flex items-center gap-1 rounded bg-slate-800 px-3 py-1.5 text-white">
+            className="flex items-center gap-1 rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 px-3 py-1.5">
             <Plus className="size-4" aria-hidden /> Nuevo folio
           </button>
         </SoloRol>
@@ -102,7 +102,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
                   return (
                     <tr key={f.folio} className="border-t border-slate-200">
                       <th scope="row" className="px-3 py-2 text-left font-mono font-normal">
-                        <Link to={`/folios/${f.folio}`} className="text-blue-700 underline">{f.folio}</Link>
+                        <Link to={`/folios/${f.folio}`} className="text-q-slate underline hover:text-q-orange-700">{f.folio}</Link>
                       </th>
                       <td className="px-3 py-2 font-mono">{f.referencia_externa ?? '—'}</td>
                       <td className="px-3 py-2">{f.proceso}</td>
@@ -112,7 +112,7 @@ export function PaginaFolios({ tamanoPagina = 20 }: { tamanoPagina?: number }) {
                       <td className="px-3 py-2">{f.n_documentos}</td>
                       <td className="px-3 py-2"><IndicadorBloqueantes n={f.n_bloqueantes_sin_resolver} /></td>
                       <td className="px-3 py-2">
-                        <Link to={`/folios/${f.folio}/carga`} className="inline-flex items-center gap-1 text-blue-700 underline"
+                        <Link to={`/folios/${f.folio}/carga`} className="inline-flex items-center gap-1 text-q-slate underline hover:text-q-orange-700"
                           aria-label={`Cargar documentos en ${f.folio}`}>
                           <Upload className="size-4" aria-hidden /> Cargar
                         </Link>
@@ -163,7 +163,7 @@ function AbrirFolio() {
       <div className="mt-1 flex gap-2">
         <input id="abrir-folio" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="PREFIJO-AAAA-NNNNNN" aria-describedby="formato-folio"
           className="rounded border border-slate-300 px-2 py-1.5 font-mono" />
-        <button type="submit" disabled={!folio.trim()} className="rounded bg-slate-800 px-3 py-1.5 text-white disabled:opacity-60">Abrir</button>
+        <button type="submit" disabled={!folio.trim()} className="rounded-[10px] bg-q-orange font-medium text-q-slate hover:bg-q-orange-300 px-3 py-1.5 disabled:opacity-60">Abrir</button>
       </div>
     </form>
   )

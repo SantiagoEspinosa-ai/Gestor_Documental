@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/* Colores y tipografia de Qaracter (feat/colores-qaracter). Solo tokens: las pantallas no cambian. */
+@theme {
+  --color-q-orange: #FF7932;
+  --color-q-orange-500: #FF5F0B;
+  --color-q-orange-50: #FFF3EC;
+  --color-q-orange-100: #FFD9C2;
+  --color-q-orange-soft: #FFE5D5;
+  --color-q-orange-300: #FF9559;
+  --color-q-orange-700: #B23E00;
+  --color-q-slate: #233441;
+  --color-q-slate-50: #F4F6F8;
+  --color-q-slate-100: #E6EAEE;
+  --color-q-slate-200: #C7CFD6;
+  --color-q-slate-400: #5C6E7C;
+  --color-q-slate-700: #1A2832;
+
+  /* Satoshi desde Fontshare (index.html); sin red, la fuente del sistema */
+  --font-sans: "Satoshi", system-ui, sans-serif;
+}
