@@ -18,7 +18,7 @@ import { RetirarDocumento } from '../componentes/RetirarDocumento'
 import { Antecedentes } from '../componentes/Antecedentes'
 import { SoloRol } from '../componentes/SoloRol'
 import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental } from '../tipos/contrato'
-import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, fechaHora } from '../utilidades/etiquetas'
+import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, ETIQUETA_FASE_CORTA, fechaHora } from '../utilidades/etiquetas'
 import { alertasQueBloquean, cuentaEnElFolio, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
 import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
@@ -188,6 +188,11 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
                       <Icono className={`size-3.5 ${d.estado_analisis === 'procesando' ? 'animate-spin' : ''}`} aria-hidden />
                       {ETIQUETA_ESTADO_ANALISIS[d.estado_analisis]}
                     </span>
+                    {enProceso(d) && d.fase_analisis && (
+                      <span className="block text-xs text-slate-600" data-testid={`fase-${d.identificador_unico_documento}`}>
+                        {ETIQUETA_FASE_CORTA[d.fase_analisis]}
+                      </span>
+                    )}
                   </button>
                 </li>
               )
