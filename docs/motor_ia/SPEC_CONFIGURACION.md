@@ -617,6 +617,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-08 | Cargador: rechaza una ficha cuyo codigo `REG-<id>` pase de 64 caracteres (`alertas.codigo` tras la migracion 0009 de PERSONA_1); los ids no cambian. Catalogo de alertas al dia | este commit |
 | 2026-10-08 | ADR-014 ACEPTADO (PERSONA_1 y PERSONA_2, PR #62): texto de la fase de vision "puede tardar unos minutos" en la web | `9ed03e3` |
 | 2026-10-08 | Fase del analisis (ADR-014, PROPUESTO; seccion 11): `al_avanzar` en `procesar_documento`, `preparar` y `analizar`, con `avisar_fase` que nunca lanza; la plataforma la guarda en memoria y la muestra la web | `bb5fa9a` |
 | 2026-10-07 | Merge de `origin/main` en `fix/fechas-ocr` con el #47 (R10) y el #48 (seguridad de la demo); conflicto del registro y del historial resuelto conservando todas las entradas | este commit |
