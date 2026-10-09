@@ -1,6 +1,6 @@
 // Humo real (H6): controles del rol integrador en la UI contra la API real (la API los vuelve a comprobar).
 import { expect, test } from '@playwright/test'
-import { COMPROBANTE, entrar, esperarCompletado, exigirUsuarios, nuevoFolio, referenciaE2E, subir } from './ayudas'
+import { abrirDocumento, COMPROBANTE, entrar, esperarCompletado, exigirUsuarios, irADocumentos, nuevoFolio, referenciaE2E, subir } from './ayudas'
 
 test('integrador_roles: sin lista de folios, "Sin permiso" en auditoría y procesos, y sin ver el original', async ({ page }) => {
   exigirUsuarios('integrador')
@@ -23,8 +23,9 @@ test('integrador_roles: sin lista de folios, "Sin permiso" en auditoría y proce
   const folio = await nuevoFolio(page, referenciaE2E())
   await subir(page, { [COMPROBANTE]: 'comprobante_domicilio' })
   await esperarCompletado(page, COMPROBANTE)
-  await page.getByRole('link', { name: 'Ver expediente' }).click()
+  await irADocumentos(page)
   await expect(page.getByRole('heading', { name: new RegExp(`Expediente ${folio}`) })).toBeVisible()
+  await abrirDocumento(page, COMPROBANTE)
   await expect(page.getByText('Tu rol no puede ver el original del documento.')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Decisión del revisor' })).toHaveCount(0)
 })

@@ -49,3 +49,20 @@ export async function abrirFolio(page: Page, folio: string) {
   await page.getByRole('link', { name: folio, exact: true }).click()
   await expect(page.getByRole('heading', { name: new RegExp(`Expediente ${folio}`) })).toBeVisible()
 }
+
+/** "Abrir y revisar" (o "Abrir") de un documento en la rejilla del expediente; deja la pagina en su detalle */
+export async function abrirDocumento(page: Page, nombre: string) {
+  await page.getByRole('region', { name: 'Documentos del folio' })
+    .getByRole('link', { name: new RegExp(`^Abrir( y revisar)? ${nombre.replaceAll('.', '[.]')}$`) }).click()
+  await expect(page.getByRole('link', { name: /Todos los documentos/ })).toBeVisible()
+}
+
+/** "Todos los documentos": del detalle a la lista */
+export async function volverALaLista(page: Page) {
+  await page.getByRole('link', { name: /Todos los documentos/ }).click()
+  await expect(page.getByRole('region', { name: 'Documentos del folio' })).toBeVisible()
+}
+
+/** Fila de un campo en "Datos leidos" del detalle */
+export const filaDato = (page: Page, campo: string) =>
+  page.getByRole('region', { name: 'Datos leídos' }).getByRole('row').filter({ has: page.getByRole('rowheader', { name: campo, exact: true }) })
