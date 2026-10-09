@@ -6,6 +6,8 @@ import { abrirFolio, entrar } from './ayudas'
 test('revisor: ve el antecedente del folio y lo abre', async ({ page }) => {
   await entrar(page, 'revisor.demo')
   await abrirFolio(page, 'ONB-2026-000002')
+  // Los antecedentes estan en la pestana Resumen
+  await page.getByRole('navigation', { name: 'Secciones del expediente' }).getByRole('link', { name: 'Resumen' }).click()
   const seccion = page.getByRole('region', { name: 'Antecedentes' })
   const elemento = seccion.getByRole('listitem', { name: /^Antecedente / })
   await expect(elemento).toHaveCount(1)

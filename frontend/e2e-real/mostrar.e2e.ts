@@ -2,7 +2,7 @@
 // "Dato revelado" en la auditoria del folio. Con el motor stub no se extraen datos, asi que el revisor
 // escribe antes una CURP ficticia (sale enmascarada) y despues la muestra.
 import { expect, test } from '@playwright/test'
-import { CREDENCIAL, entrar, esperarCompletado, exigirUsuarios, nuevoFolio, referenciaE2E, subir } from './ayudas'
+import { abrirDocumento, CREDENCIAL, entrar, esperarCompletado, exigirUsuarios, irADocumentos, nuevoFolio, referenciaE2E, subir } from './ayudas'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -16,10 +16,11 @@ test('revisor_mostrar: corrige la CURP, sale enmascarada, la muestra y la oculta
   folio = await nuevoFolio(page, referenciaE2E())
   await subir(page, { [CREDENCIAL]: 'credencial_elector' })
   await esperarCompletado(page, CREDENCIAL)
-  await page.getByRole('link', { name: 'Ver expediente' }).click()
+  await irADocumentos(page)
   await expect(page.getByRole('heading', { name: `Expediente ${folio}` })).toBeVisible()
+  await abrirDocumento(page, CREDENCIAL)
 
-  const curp = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Curp', exact: true }) })
+  const curp = page.getByRole('region', { name: 'Datos leídos' }).getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Curp', exact: true }) })
   await curp.getByRole('button', { name: 'Corregir Curp' }).click()
   await curp.getByLabel('Nuevo valor de Curp').fill(CURP_FICTICIA)
   await curp.getByRole('button', { name: 'Guardar corrección' }).click()

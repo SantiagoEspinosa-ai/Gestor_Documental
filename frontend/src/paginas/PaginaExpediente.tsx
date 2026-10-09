@@ -1,6 +1,6 @@
-import { CheckCircle2, CircleX, Clock, LoaderCircle, Lock, Upload, XCircle } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, Lock } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { ErrorApi } from '../api/cliente'
 import { listarTiposDocumentales, obtenerFolio } from '../api/folios'
 import {
@@ -8,38 +8,43 @@ import {
   retirarDocumento,
 } from '../api/revision'
 import { ConfirmarClasificacion, EditorCampo, PanelDecision, RevisarAlerta } from '../componentes/AccionesRevisor'
-import { useRol } from '../componentes/contextoSesion'
 import { AvisoSondeoDetenido } from '../componentes/AvisoSondeoDetenido'
+import { CabeceraExpediente } from '../componentes/CabeceraExpediente'
+import { ComparacionesExpediente } from '../componentes/ComparacionesExpediente'
+import { useRol, useSesion } from '../componentes/contextoSesion'
 import { DetalleDocumento } from '../componentes/DetalleDocumento'
-import { IndicadorBloqueantes, InsigniaEstado, TextoRecomendacion } from '../componentes/Insignias'
 import { ListaAlertas } from '../componentes/ListaAlertas'
-import { ResumenExpediente } from '../componentes/ResumenExpediente'
+import { PestanaResumen } from '../componentes/PestanaResumen'
 import { RetirarDocumento } from '../componentes/RetirarDocumento'
-import { Antecedentes } from '../componentes/Antecedentes'
-import { SoloRol } from '../componentes/SoloRol'
-import type { EstadoAnalisis, ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental } from '../tipos/contrato'
-import { ETIQUETA_DECISION, ETIQUETA_ESTADO_ANALISIS, ETIQUETA_FASE_CORTA, fechaHora } from '../utilidades/etiquetas'
-import { alertasQueBloquean, cuentaEnElFolio, enProceso, nombreTipo, tipoEfectivo, tipoExtraccion } from '../utilidades/expediente'
+import { LeyendaSemaforo } from '../componentes/Semaforo'
+import { TarjetaDocumento } from '../componentes/TarjetaDocumento'
+import type { ResultadoDocumento, ResultadoExpediente, Rol, TipoDocumental } from '../tipos/contrato'
+import { ETIQUETA_DECISION, fechaHora } from '../utilidades/etiquetas'
+import { alertasQueBloquean, cuentaEnElFolio, enProceso, tipoExtraccion } from '../utilidades/expediente'
 import { mensajeDeError } from '../utilidades/mensajes'
+import { rutaPestana } from '../utilidades/navegacion'
+import { hayBloqueantesConfirmadas, pendientesDeRevisar } from '../utilidades/semaforo'
 import { firmaDocumentos, useSondeo, type TiemposSondeo } from '../utilidades/sondeo'
-import { formatearValor, nombreCampo } from '../utilidades/valores'
+import { nombreCampo } from '../utilidades/valores'
 
-const ROLES_ORIGINAL = ['revisor', 'admin'] // GET /documentos/{id}/original
-const ROLES_ANTECEDENTES: readonly Rol[] = ['revisor', 'admin'] // GET /folios/{folio}/antecedentes
+const ROLES_ORIGINAL: readonly Rol[] = ['revisor', 'admin'] // GET /documentos/{id}/original
 const ROLES_RETIRAR: readonly Rol[] = ['revisor'] // POST /documentos/{id}/retirar y /restaurar (ADR-013): como las demas acciones de revision
+const ROLES_SUBIR: readonly Rol[] = ['integrador', 'revisor'] // POST /folios/{folio}/documentos ("Volver a subir")
 
-const ICONO_ESTADO: Record<EstadoAnalisis, typeof Clock> = {
-  pendiente: Clock, procesando: LoaderCircle, completado: CheckCircle2, error: CircleX,
-}
-
-/** Vista de lectura del expediente (diapositiva 8): cabecera, documentos, documento seleccionado y alertas */
+/**
+ * Expediente de un folio, pensado para el revisor: pestanas Documentos (rejilla con semaforo, comparaciones,
+ * alertas del expediente y la decision al final), Cargar documentos (PaginaCarga) y Resumen. El detalle de un
+ * documento se abre en la misma pestana con ?doc=; el Resumen, con ?pestana=resumen.
+ */
 export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<TiemposSondeo> }) {
   const { folio = '' } = useParams()
+  const [parametros] = useSearchParams()
   const rol = useRol()
+  const { estado: sesion } = useSesion()
+  const usuario = sesion.tipo === 'autenticado' ? sesion.usuario.usuario : null
   const [cargado, setCargado] = useState<ResultadoExpediente | null>(null)
   const [fichas, setFichas] = useState<TipoDocumental[]>([])
   const [fallo, setFallo] = useState<{ folio: string; mensaje: string } | null>(null)
-  const [seleccionado, setSeleccionado] = useState<string | null>(null)
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [ocupado, setOcupado] = useState(false)
   // Al cambiar de folio en la ruta no se muestra el anterior mientras llega el nuevo
@@ -111,53 +116,142 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
   }
   if (!expediente) return <p role="status" className="text-slate-600">Cargando el expediente…</p>
 
-  const doc = expediente.documentos.find((d) => d.identificador_unico_documento === seleccionado) ?? expediente.documentos[0]
-  // "Tipo no reconocido" para `desconocido` (ADR-009); "Sin tipo" si no hay ninguno
-  const nombreVisible = (tipo: string | null) => nombreTipo(tipo, fichas, 'Sin tipo')
-  const nombreDocumento = (id: string) => {
-    const d = expediente.documentos.find((x) => x.identificador_unico_documento === id)
-    return d ? `${nombreVisible(tipoEfectivo(d))} (${d.referencia_archivo_original.nombre_archivo})` : id
-  }
+  const pestana = parametros.get('pestana') === 'resumen' ? 'resumen' : 'documentos'
+  const idSeleccionado = pestana === 'documentos' ? parametros.get('doc') : null
   const cerrado = expediente.estado_general !== 'en_revision'
-  const bloqueantes = alertasQueBloquean(expediente)
   // Acciones solo para el revisor y con el folio abierto; la API vuelve a comprobarlo
   const puedeActuar = rol === 'revisor' && !cerrado
-  // ADR-013: sobre un retirado no se revisa nada (la API responde 409 DOCUMENTO_RETIRADO)
-  const docRevisable = puedeActuar && !doc?.retirado
-  const docAnalizado = doc?.estado_analisis === 'completado' // corregir y reclasificar: ni en curso ni en error
-  const puedeRetirar = rol !== null && ROLES_RETIRAR.includes(rol) && !cerrado && !!doc && !enProceso(doc)
-  const fichaDoc = doc ? fichas.find((t) => t.nombre === tipoExtraccion(doc)) : undefined
-  const idDoc = doc?.identificador_unico_documento ?? ''
+  const puedeRetirar = rol !== null && ROLES_RETIRAR.includes(rol) && !cerrado
+  const rutaCarga = rol !== null && ROLES_SUBIR.includes(rol) && !cerrado ? rutaPestana(expediente.folio, 'carga') : undefined
 
+  const restaurar = (id: string) => ejecutar(() => restaurarDocumento(id), aplicarDocumento, 'Documento restaurado.', true)
+
+  function vistaDocumento(doc: ResultadoDocumento) {
+    const idDoc = doc.identificador_unico_documento
+    // ADR-013: sobre un retirado no se revisa nada (la API responde 409 DOCUMENTO_RETIRADO)
+    const docRevisable = puedeActuar && !doc.retirado
+    const docAnalizado = doc.estado_analisis === 'completado' // corregir y reclasificar: ni en curso ni en error
+    const fichaDoc = fichas.find((t) => t.nombre === tipoExtraccion(doc))
+    const retirar = (puedeRetirar && !enProceso(doc)) || doc.retirado
+      ? (
+        <RetirarDocumento key={idDoc} doc={doc} puedeActuar={puedeRetirar && !enProceso(doc)} deshabilitado={ocupado}
+          alRetirar={(motivo) => ejecutar(() => retirarDocumento(idDoc, { motivo }), aplicarDocumento, 'Documento retirado del folio.', true)}
+          alRestaurar={() => restaurar(idDoc)} />
+      )
+      : undefined
+    return (
+      <DetalleDocumento key={idDoc} doc={doc} fichas={fichas} usuario={usuario}
+        puedeVerOriginal={rol !== null && ROLES_ORIGINAL.includes(rol)}
+        retirar={retirar}
+        avisos={(
+          <ListaAlertas titulo="Avisos de este documento" vacio="Este documento no tiene avisos." alertas={doc.alertas_encontradas}
+            acciones={docRevisable && !enProceso(doc) ? (a) => (
+              <RevisarAlerta alerta={a} deshabilitado={ocupado}
+                alResolver={(aplica, comentario) => ejecutar(
+                  () => resolverAlertaDocumento(idDoc, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), aplicarDocumento,
+                  `Alerta ${a.codigo} revisada.`, true)} />
+            ) : undefined} />
+        )}
+        accionesClasificacion={docRevisable && docAnalizado ? (
+          <ConfirmarClasificacion fichas={fichas} actual={tipoExtraccion(doc)} deshabilitado={ocupado}
+            alConfirmar={(tipo) => ejecutar(() => confirmarClasificacion(idDoc, { tipo_documental: tipo }), aplicarDocumento,
+              'Clasificación confirmada.', true)} />
+        ) : undefined}
+        celdaValor={docRevisable && docAnalizado ? (campo, contenido) => (
+          <EditorCampo campo={campo} valor={doc.datos_extraidos[campo]} tipo={fichaDoc?.campos[campo]?.tipo}
+            obligatorio={fichaDoc?.campos[campo]?.obligatorio ?? false}
+            sensible={fichaDoc?.campos[campo]?.sensible ?? false} deshabilitado={ocupado}
+            alGuardar={(valor) => ejecutar(() => corregirDatos(idDoc, { [campo]: valor }), aplicarDocumento,
+              `${nombreCampo(campo)} corregido.`, true)}>
+            {contenido}
+          </EditorCampo>
+        ) : undefined} />
+    )
+  }
+
+  function vistaLista(exp: ResultadoExpediente) {
+    // Los retirados (ADR-013) al final de la rejilla
+    const ordenados = [...exp.documentos.filter(cuentaEnElFolio), ...exp.documentos.filter((d) => !cuentaEnElFolio(d))]
+    const bloqueantes = alertasQueBloquean(exp)
+    const pendientes = pendientesDeRevisar(exp).length
+    const soloRechazar = hayBloqueantesConfirmadas(exp)
+    return (
+      <div className="space-y-4">
+        <LeyendaSemaforo />
+        <section aria-labelledby="titulo-documentos">
+          <h2 id="titulo-documentos" className="font-semibold">Documentos del folio</h2>
+          {ordenados.length === 0 && (
+            <p className="mt-1 text-sm text-slate-600">
+              Aún no hay documentos.{rutaCarga && <> <Link to={rutaCarga} className="text-q-slate underline">Cargar documentos</Link></>}
+            </p>
+          )}
+          <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {ordenados.map((d) => (
+              <TarjetaDocumento key={d.identificador_unico_documento} doc={d} fichas={fichas} deshabilitado={ocupado}
+                rutaDetalle={rutaPestana(exp.folio, 'documentos', d.identificador_unico_documento)}
+                textoAbrir={rol === 'revisor' ? 'Abrir y revisar' : 'Abrir'} rutaCarga={rutaCarga}
+                alRestaurar={puedeRetirar ? () => restaurar(d.identificador_unico_documento) : undefined} />
+            ))}
+          </div>
+        </section>
+
+        <ComparacionesExpediente expediente={exp} fichas={fichas} />
+
+        <div id="alertas-expediente" className="rounded-lg border border-q-slate-100 bg-white p-4">
+          <ListaAlertas titulo="Alertas del expediente" alertas={exp.alertas_expediente}
+            acciones={puedeActuar ? (a) => (
+              <RevisarAlerta alerta={a} deshabilitado={ocupado}
+                alResolver={(aplica, comentario) => ejecutar(
+                  () => resolverAlertaExpediente(exp.folio, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), setCargado,
+                  `Alerta ${a.codigo} revisada.`)} />
+            ) : undefined} />
+        </div>
+
+        {/* La decision, siempre la ultima seccion de la pagina */}
+        <section aria-labelledby="titulo-decision" data-testid="seccion-decision" className="space-y-3">
+          <h2 id="titulo-decision" className="font-semibold">Decisión del folio</h2>
+          {cerrado && exp.decision_humana ? (
+            <p role="status" className="flex items-start gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm">
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                <span className="font-medium">Decisión: {ETIQUETA_DECISION[exp.decision_humana]}</span>
+                {exp.comentario_decision && <> · “{exp.comentario_decision}”</>}
+                {' · '}{exp.usuario_decision ?? '—'} · {fechaHora(exp.fecha_decision)}. Folio cerrado: solo lectura.
+              </span>
+            </p>
+          ) : (
+            <>
+              {pendientes > 0 ? (
+                <p data-testid="estado-revision" className="flex items-center gap-2 rounded-lg border border-semaforo-ambar-borde bg-semaforo-ambar-fondo px-3 py-2 text-sm font-medium text-semaforo-ambar">
+                  <AlertTriangle className="size-4 shrink-0" aria-hidden />
+                  Antes de decidir: te {pendientes === 1 ? 'queda 1 cosa' : `quedan ${pendientes} cosas`} por revisar.
+                  {soloRechazar && ' Hay bloqueantes confirmadas: solo puedes rechazar.'}
+                </p>
+              ) : (
+                <p data-testid="estado-revision" className="flex items-center gap-2 rounded-lg border border-semaforo-verde-borde bg-semaforo-verde-fondo px-3 py-2 text-sm font-medium text-semaforo-verde">
+                  <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                  {soloRechazar ? 'Todo revisado. Hay bloqueantes confirmadas: solo puedes rechazar.' : 'Todo revisado. Ya puedes decidir.'}
+                </p>
+              )}
+              {puedeActuar
+                ? (
+                  <PanelDecision bloqueantes={bloqueantes} enCurso={exp.documentos.filter(cuentaEnElFolio).some(enProceso)} deshabilitado={ocupado}
+                    alDecidir={(decision, comentario) => ejecutar(
+                      () => decidir(exp.folio, { decision, ...(comentario ? { comentario } : {}) }), setCargado,
+                      `Folio ${decision === 'aprobar' ? 'aprobado' : 'rechazado'}.`)} />
+                )
+                : <p className="text-sm text-slate-600">La decisión la toma un revisor.</p>}
+            </>
+          )}
+        </section>
+      </div>
+    )
+  }
+
+  const seleccionado = idSeleccionado ? expediente.documentos.find((d) => d.identificador_unico_documento === idSeleccionado) : undefined
   return (
     <section aria-labelledby="titulo-expediente">
-      <header className="rounded border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 id="titulo-expediente" className="text-xl font-semibold">Expediente <span className="font-mono">{expediente.folio}</span></h1>
-          <InsigniaEstado estado={expediente.estado_general} />
-          <Link to={`/folios/${encodeURIComponent(expediente.folio)}/carga`} className="inline-flex items-center gap-1 text-sm text-q-slate underline hover:text-q-orange-700">
-            <Upload className="size-4" aria-hidden /> Carga de documentos
-          </Link>
-          <Link to="/folios" className="text-sm text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
-          {expediente.ruta_resumen_md && <ResumenExpediente folio={expediente.folio} />}
-        </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
-          <div><dt className="text-slate-600">Referencia</dt><dd className="font-mono">{expediente.referencia_externa ?? '—'}</dd></div>
-          <div><dt className="text-slate-600">Fecha de solicitud</dt><dd>{fechaHora(expediente.fecha_solicitud)}</dd></div>
-          <div><dt className="text-slate-600">Proceso</dt><dd>{expediente.proceso}</dd></div>
-          <div><dt className="text-slate-600">Recomendación global</dt><dd><TextoRecomendacion valor={expediente.recomendacion_global} /></dd></div>
-        </dl>
-        {cerrado && expediente.decision_humana && (
-          <div role="status" className="mt-3 flex items-start gap-2 rounded border border-slate-300 bg-slate-50 px-3 py-2 text-sm">
-            <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <p>
-              <span className="font-medium">Decisión: {ETIQUETA_DECISION[expediente.decision_humana]}</span>
-              {expediente.comentario_decision && <> · “{expediente.comentario_decision}”</>}
-              {' · '}{expediente.usuario_decision ?? '—'} · {fechaHora(expediente.fecha_decision)}. Folio cerrado: solo lectura.
-            </p>
-          </div>
-        )}
-      </header>
+      <CabeceraExpediente expediente={expediente} pestana={pestana} />
 
       {sondeo.detenido && <AvisoSondeoDetenido alReanudar={sondeo.reanudar} />}
       {aviso && (
@@ -167,118 +261,19 @@ export function PaginaExpediente({ tiemposSondeo }: { tiemposSondeo?: Partial<Ti
         </p>
       )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)_20rem]">
-        <nav aria-label="Documentos del folio">
-          <h2 className="text-sm font-semibold">Documentos ({expediente.documentos.length})</h2>
-          {expediente.documentos.length === 0 && <p className="mt-1 text-sm text-slate-500">Aún no hay documentos.</p>}
-          <ul className="mt-1 space-y-1">
-            {expediente.documentos.map((d) => {
-              const Icono = ICONO_ESTADO[d.estado_analisis]
-              const activo = d === doc
-              return (
-                <li key={d.identificador_unico_documento}>
-                  <button type="button" onClick={() => setSeleccionado(d.identificador_unico_documento)} aria-current={activo ? 'true' : undefined}
-                    className={`w-full rounded border px-2 py-1.5 text-left text-sm ${activo ? 'border-q-slate bg-q-slate-50' : 'border-slate-200 bg-white hover:bg-slate-50'} ${d.retirado ? 'opacity-60' : ''}`}>
-                    <span className="block font-medium">
-                      {nombreVisible(tipoEfectivo(d))}
-                      {d.retirado && <span className="ml-1 rounded bg-slate-200 px-1 text-xs font-normal text-slate-700">Retirado</span>}
-                    </span>
-                    <span className="block truncate font-mono text-xs text-slate-600">{d.referencia_archivo_original.nombre_archivo}</span>
-                    <span className="mt-0.5 inline-flex items-center gap-1 text-xs" data-testid={`estado-${d.identificador_unico_documento}`}>
-                      <Icono className={`size-3.5 ${d.estado_analisis === 'procesando' ? 'animate-spin' : ''}`} aria-hidden />
-                      {ETIQUETA_ESTADO_ANALISIS[d.estado_analisis]}
-                    </span>
-                    {enProceso(d) && d.fase_analisis && (
-                      <span className="block text-xs text-slate-600" data-testid={`fase-${d.identificador_unico_documento}`}>
-                        {ETIQUETA_FASE_CORTA[d.fase_analisis]}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-
-        <div>
-          {doc && (
-            <div className="mb-3">
-              <RetirarDocumento key={doc.identificador_unico_documento} doc={doc} puedeActuar={puedeRetirar} deshabilitado={ocupado}
-                alRetirar={(motivo) => ejecutar(() => retirarDocumento(idDoc, { motivo }), aplicarDocumento, 'Documento retirado del folio.', true)}
-                alRestaurar={() => ejecutar(() => restaurarDocumento(idDoc), aplicarDocumento, 'Documento restaurado.', true)} />
-            </div>
-          )}
-          {doc
-            ? <DetalleDocumento key={doc.identificador_unico_documento} doc={doc} fichas={fichas}
-                puedeVerOriginal={rol !== null && ROLES_ORIGINAL.includes(rol)}
-                accionesClasificacion={docRevisable && docAnalizado ? (
-                  <ConfirmarClasificacion fichas={fichas} actual={tipoExtraccion(doc)} deshabilitado={ocupado}
-                    alConfirmar={(tipo) => ejecutar(() => confirmarClasificacion(idDoc, { tipo_documental: tipo }), aplicarDocumento,
-                      'Clasificación confirmada.', true)} />
-                ) : undefined}
-                celdaValor={docRevisable && docAnalizado ? (campo, contenido) => (
-                  <EditorCampo campo={campo} valor={doc.datos_extraidos[campo]} tipo={fichaDoc?.campos[campo]?.tipo}
-                    obligatorio={fichaDoc?.campos[campo]?.obligatorio ?? false}
-                    sensible={fichaDoc?.campos[campo]?.sensible ?? false} deshabilitado={ocupado}
-                    alGuardar={(valor) => ejecutar(() => corregirDatos(idDoc, { [campo]: valor }), aplicarDocumento,
-                      `${nombreCampo(campo)} corregido.`, true)}>
-                    {contenido}
-                  </EditorCampo>
-                ) : undefined} />
-            : <p className="text-sm text-slate-500">Selecciona un documento cuando se haya subido alguno.</p>}
-        </div>
-
-        <aside aria-label="Alertas y resultado" className="space-y-4">
-          <section aria-label="Resultado global" className="rounded border border-slate-200 bg-white p-3 text-sm">
-            <h2 className="text-sm font-semibold">Resultado global</h2>
-            <p className="mt-1">Recomendación: <TextoRecomendacion valor={expediente.recomendacion_global} /></p>
-            <p className="mt-1 flex items-center gap-2">Bloqueantes sin descartar: <IndicadorBloqueantes n={bloqueantes.length} /></p>
-            <p className="mt-1 text-xs text-slate-500">La IA recomienda; la decisión final es del revisor.</p>
-          </section>
-          {puedeActuar && (
-            <PanelDecision bloqueantes={bloqueantes} enCurso={expediente.documentos.filter(cuentaEnElFolio).some(enProceso)} deshabilitado={ocupado}
-              alDecidir={(decision, comentario) => ejecutar(
-                () => decidir(expediente.folio, { decision, ...(comentario ? { comentario } : {}) }), setCargado,
-                `Folio ${decision === 'aprobar' ? 'aprobado' : 'rechazado'}.`)} />
-          )}
-          {doc && (
-            <ListaAlertas titulo="Alertas del documento seleccionado" alertas={doc.alertas_encontradas}
-              acciones={docRevisable && !enProceso(doc) ? (a) => (
-                <RevisarAlerta alerta={a} deshabilitado={ocupado}
-                  alResolver={(aplica, comentario) => ejecutar(
-                    () => resolverAlertaDocumento(idDoc, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), aplicarDocumento,
-                    `Alerta ${a.codigo} revisada.`, true)} />
-              ) : undefined} />
-          )}
-          <ListaAlertas titulo="Alertas del expediente" alertas={expediente.alertas_expediente}
-            acciones={puedeActuar ? (a) => (
-              <RevisarAlerta alerta={a} deshabilitado={ocupado}
-                alResolver={(aplica, comentario) => ejecutar(
-                  () => resolverAlertaExpediente(expediente.folio, a.id!, { aplica, ...(comentario ? { comentario } : {}) }), setCargado,
-                  `Alerta ${a.codigo} revisada.`)} />
-            ) : undefined} />
-          <section aria-label="Comparaciones entre documentos">
-            <h3 className="text-sm font-semibold">Comparaciones</h3>
-            {expediente.comparaciones.length === 0 && <p className="mt-1 text-sm text-slate-500">Sin comparaciones.</p>}
-            <ul className="mt-1 space-y-2">
-              {expediente.comparaciones.map((c) => (
-                <li key={c.campo} className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm">
-                  <p className={`flex items-center gap-1 font-medium ${c.coincide ? 'text-q-slate' : 'text-orange-900'}`}>
-                    {c.coincide ? <CheckCircle2 className="size-4" aria-hidden /> : <XCircle className="size-4" aria-hidden />}
-                    {nombreCampo(c.campo)}: {c.coincide ? 'coincide' : 'no coincide'}
-                  </p>
-                  <dl className="mt-1 space-y-0.5 text-xs">
-                    {Object.entries(c.valores).map(([id, valor]) => (
-                      <div key={id}><dt className="text-slate-600">{nombreDocumento(id)}</dt><dd className="font-mono">{formatearValor(valor)}</dd></div>
-                    ))}
-                  </dl>
-                </li>
-              ))}
-            </ul>
-          </section>
-          {/* H16: antecedentes del folio, solo revisor y admin (ADR-010 C5) */}
-          <SoloRol roles={ROLES_ANTECEDENTES}><Antecedentes key={expediente.folio} folio={expediente.folio} /></SoloRol>
-        </aside>
+      <div className="mt-4">
+        {pestana === 'resumen' && <PestanaResumen expediente={expediente} fichas={fichas} />}
+        {pestana === 'documentos' && idSeleccionado && (
+          <>
+            <Link to={rutaPestana(expediente.folio, 'documentos')} className="mb-3 inline-flex items-center gap-1 text-sm text-q-slate underline hover:text-q-orange-700">
+              <ArrowLeft className="size-4" aria-hidden /> Todos los documentos
+            </Link>
+            {seleccionado
+              ? vistaDocumento(seleccionado)
+              : <p role="alert" className="text-sm text-red-700">Ese documento no está en el folio.</p>}
+          </>
+        )}
+        {pestana === 'documentos' && !idSeleccionado && vistaLista(expediente)}
       </div>
     </section>
   )
