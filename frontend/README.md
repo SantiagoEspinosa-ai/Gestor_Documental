@@ -174,63 +174,97 @@ hace fallar el build si queda algun rastro.
   bloqueantes sin resolver. Una sola peticion por pagina. "Nuevo folio" (integrador y revisor): proceso de
   `GET /procesos` y referencia opcional; lleva a la carga. El integrador no tiene `GET /folios`: ve un
   campo para abrir un folio por su numero.
-- Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`, con enlace "Ver expediente"): arrastrar o elegir varios archivos;
+- Carga (`paginas/PaginaCarga.tsx`, `/folios/{folio}/carga`): es la pestana "Cargar documentos" del
+  expediente, con su misma cabecera (`componentes/CabeceraExpediente.tsx`). Arrastrar o elegir varios archivos;
   extension validada contra `formatos_permitidos` del tipo declarado (`nombre_visible`); aviso de los
   tipos requeridos que faltan con el tipo efectivo; subida multipart; sondeo de `GET /documentos/{id}`
   hasta completado o error (ver "Sondeo"); `DUP-001` y errores de analisis visibles.
   Solo lectura si el folio esta cerrado o el rol no puede subir (admin).
-- Expediente (`paginas/PaginaExpediente.tsx`, `/folios/{folio}`, todos los roles; diapositiva 8):
-  - Cabecera: folio, referencia, fecha de solicitud, proceso, estado, recomendacion global y, si esta
-    cerrado, la decision con comentario, usuario y fecha. Enlace a la carga.
-  - Izquierda: documentos del folio (tambien pendientes y procesando) con su estado. Mientras haya
-    alguno en curso, sondeo de `GET /folios/{folio}` (ver "Sondeo").
-  - Centro (`componentes/DetalleDocumento.tsx`): original (`componentes/VisorOriginal.tsx`: la URL
-    se pide cada vez que se abre porque caduca; `iframe` para PDF, `img` para imagen; solo revisor y
-    admin), clasificacion declarada, detectada y confirmada con su confianza, tabla de datos con
-    `<BarraConfianza>` (umbral de la ficha; texto de ADR-007), formato segun el tipo del campo, `null`
-    como "no detectado", evidencia y "Corregido por revisor (antes: X)"; reglas y modelo usado.
-    Datos sensibles (ADR-010, H17, `componentes/DatoSensible.tsx`): un campo `sensible` de la ficha de
-    extraccion con valor sale enmascarado (`****1234`, como lo da la API) y, para revisor y admin (nunca el
-    integrador; tambien con el folio cerrado), con el boton "Mostrar <campo>": `POST
-    /documentos/{id}/revelar` (`api/revision.ts`, `revelarDato`), boton deshabilitado mientras carga, el
-    valor completo con "Ocultar" y un aviso `aria-live`. El valor vive solo en el estado del componente
-    (nada de storage, URL ni consola) y se oculta al pulsar "Ocultar", al cambiar de documento o de
-    pantalla y solo a los `SEGUNDOS_DATO_REVELADO` (60 s, `utilidades/etiquetas.ts`). Errores con
-    `mensajeRevelar` (`utilidades/mensajes.ts`): 409 en proceso o con error, 403 y 422; el valor sigue
-    enmascarado. Solo en la tabla de datos: comparaciones, evidencia y correcciones siguen enmascaradas.
-    Documento en error: mensaje y alerta `SYS-00x`, sin reprocesar (fuera del MVP).
-    Documento no reconocido (ADR-009, H4): un detectado `desconocido` (`TIPO_DESCONOCIDO` en
-    `tipos/contrato.ts`) sale como "Tipo no reconocido" en la clasificacion, en la lista del expediente y
-    en la tabla de la carga; nunca se busca su ficha ni su umbral (`fichaDeTipo` y `nombreTipo` de
-    `utilidades/expediente.ts`). Sin ficha para el tipo de extraccion y sin datos, en vez de una tabla
-    vacia se ve el aviso "No se han extraído datos: el tipo del documento no está reconocido. Confirma la
-    clasificación para analizarlo con la ficha correcta."; el revisor, con el folio abierto, tiene
-    "Confirmar clasificación". `desconocido` no cubre ningun requerido (como `_tipo_efectivo` del backend)
-    y lleva `EXP-002` "Tipo de documento no reconocido".
-  - Derecha: resultado global, `<ListaAlertas>` del documento y del expediente agrupadas por
-    severidad (informativa azul, preventiva amarillo, critica naranja, bloqueante rojo; siempre con
-    icono y texto) con su estado de revision, y comparaciones con el valor de cada documento.
-  - Antecedentes (H16, ADR-010 C, `componentes/Antecedentes.tsx`, solo revisor y admin): `GET
-    /folios/{folio}/antecedentes` (`api/folios.ts`, `obtenerAntecedentes`). Lista con el folio (enlace al
-    expediente), fechas de solicitud y decision, estado y decision, y el fragmento del resumen con el mismo
-    renderizado seguro que "Ver resumen" (react-markdown con `skipHtml`, sin enlaces ni imagenes). Estados:
-    cargando, error, no permitido con el motivo legible (`ETIQUETA_MOTIVO_SIN_ANTECEDENTES`: proceso sin
-    antecedentes o folio sin referencia), sin antecedentes y antecedente sin fragmento en la memoria.
-  - Acciones del revisor (`componentes/AccionesRevisor.tsx`, `api/revision.ts`), solo rol revisor y
-    folio abierto: corregir un dato inline mostrando el valor actual (`utilidades/valores.ts`,
-    `prepararCorreccion`). En un campo opcional, vaciarlo envia `null`, nunca `""`. En uno obligatorio
-    de la ficha no se puede guardar vacio: "Guardar" queda deshabilitado y se explica por que. Un
-    `anio` se valida antes de enviar (4 cifras, `AAAA`) y va como entero. Confirmar la clasificacion (si cambia el tipo vuelve a `pendiente` y arranca el sondeo);
-    "Aplica" / "Falso positivo" con comentario en alertas de documento y de expediente, por
-    `alerta_id`; decision aprobar/rechazar con comentario y confirmacion. Aprobar esta deshabilitado
-    mientras haya bloqueantes que no sean falso positivo (regla 2.2) y se listan las que bloquean.
-    Nada se decide solo. Se refresca con la respuesta del endpoint (tras una accion de documento
-    tambien el expediente). Un 409 (`DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`, `FOLIO_CERRADO`,
-    `DECISION_BLOQUEADA`) muestra el motivo y recarga el expediente.
-  - "Ver resumen" (`componentes/ResumenExpediente.tsx`): `GET /folios/{folio}/resumen.md` renderizado
-    con `react-markdown` con `skipHtml` (nunca HTML crudo). Solo aparece si `ruta_resumen_md` no es
-    `null`; un 404 `RESUMEN_NO_DISPONIBLE` muestra su mensaje. En los mocks solo lo tiene el folio
-    aprobado `ONB-2026-000004` (resumen ficticio generado con sus datos).
+- Expediente (`paginas/PaginaExpediente.tsx`, `/folios/{folio}`, todos los roles; rediseno
+  `feat/expediente-intuitivo`, propuesta "Requisitos 1 · Pestanas"). De arriba abajo:
+  - "← Volver a los folios" y cabecera (`componentes/CabeceraExpediente.tsx`): "Expediente", el folio, el
+    proceso, el numero de documentos, el estado, la referencia y la fecha de solicitud; nunca el nombre de la
+    persona (ADR-004). "Ver resumen" abre la pestana Resumen. Con el folio cerrado, "Folio cerrado: solo lectura".
+  - Barra de fase (`BarraFase`, `faseExpediente` de `utilidades/semaforo.ts`): Carga de documentos ->
+    Analisis -> Revision -> Decision, con check (hecho), numero y "Fase actual" (`aria-current="step"`).
+    Carga: sin documentos que cuenten; Analisis: alguno pendiente o procesando; Revision: en revision y nada
+    en proceso; Decision: aprobado o rechazado (los 4 hechos, con "Aprobado/Rechazado", fecha y usuario).
+  - Pestanas (enlaces, se pueden compartir y el boton atras funciona): "Documentos · N" (`/folios/{folio}`),
+    "Cargar documentos" (`/folios/{folio}/carga`; deshabilitada con el motivo si el folio esta cerrado) y
+    "Resumen" (`?pestana=resumen`). El detalle de un documento es `?doc=<id>`. Rutas en `rutaPestana`
+    (`utilidades/navegacion.ts`).
+  - Pestana Documentos, lista:
+    - "Que significan los colores" (`LeyendaSemaforo`, `componentes/Semaforo.tsx`).
+    - Rejilla con todos los documentos (`componentes/TarjetaDocumento.tsx`): icono del tipo de archivo (sin
+      miniatura del original: pedirlo dejaria `original_visto` en la auditoria por cada documento, ADR-010
+      A4b), semaforo con icono + texto, tipo, una linea de explicacion y "Abrir y revisar" (revisor) o
+      "Abrir" (admin e integrador). En rojo, "Volver a subir" (enlace a la carga) solo para quien puede subir
+      (integrador y revisor) y con el folio abierto. Los retirados (ADR-013), al final y en gris, con
+      "Restaurar" solo para el revisor y con el folio abierto. En proceso: gris con la fase corta (ADR-014).
+    - Semaforo (`semaforoDocumento`, `utilidades/semaforo.ts`, con tests): rojo "No se pudo leer" si el
+      analisis acabo en error o termino con todos los campos sin valor; amarillo "Tipo no reconocido" si es
+      `desconocido` (o sin tipo) sin ficha ni datos (se arregla confirmando el tipo); amarillo "Falta un
+      dato" / "Faltan N datos" si falta algun campo OBLIGATORIO; si no, verde "Todo detectado". Los
+      opcionales vacios no cambian el color (como `VAL-001`), aunque en el detalle salen "No detectado".
+    - Comparaciones entre documentos (`componentes/ComparacionesExpediente.tsx`): "X de Y coinciden"; si
+      coincide, solo el campo y "Coincide" (sin valores); si no, "No coincide entre <Tipo A> y <Tipo B>" y el
+      valor de cada documento tal como llega de la API (los sensibles, enmascarados).
+    - Alertas del expediente (`EXP-001`, `CMP-001`) con su revision (`id="alertas-expediente"`).
+    - Al final, siempre la ultima seccion, la decision: "Antes de decidir: te quedan N cosas por revisar"
+      (ambar; N = alertas no informativas sin revisar, `pendientesDeRevisar`) o "Todo revisado. Ya puedes
+      decidir" (verde); con bloqueantes confirmadas, ademas "solo puedes rechazar". Debajo, `PanelDecision`
+      (solo revisor) o, con el folio decidido, "Decision: ... · comentario · usuario · fecha. Folio cerrado".
+  - Pestana Documentos, detalle (`?doc=`, `componentes/DetalleDocumento.tsx`), con "← Todos los documentos":
+    titulo con el tipo y su semaforo; a la izquierda el original grande (`componentes/VisorOriginal.tsx`: la
+    URL se pide cada vez que se abre porque caduca; `iframe` para PDF, `img` para imagen; solo revisor y
+    admin); a la derecha, en este orden:
+    1. Avisos del documento (`<ListaAlertas>`, agrupados por severidad con icono y texto) con `RevisarAlerta`:
+       "¿Es un problema real del documento?", comentario opcional y "Si, es un problema" / "No, es un falso
+       aviso" (las mismas llamadas que "Aplica" / "Falso positivo"). Ya revisada: "Revisado: ..." y "Cambiar
+       la revision".
+    2. Tipo de documento con "Cambiar tipo" (`ConfirmarClasificacion`; abierto de entrada si no hay tipo
+       reconocido). Si cambia el tipo vuelve a `pendiente` y arranca el sondeo.
+    3. "Datos leidos": cada campo con "Corregir" (`EditorCampo`). Sin valor: fila en ambar con "No detectado ·
+       miralo en el original" y "Escribir el valor". Corregido: "Corregido por ti" o "Corregido por <usuario>"
+       (el `usuario` de la correccion), con el valor anterior. Sensibles (ADR-010, H17,
+       `componentes/DatoSensible.tsx`): enmascarados (`****1234`) y, para revisor y admin (nunca el
+       integrador; tambien con el folio cerrado), "Mostrar <campo>": `POST /documentos/{id}/revelar`, el valor
+       vive solo en el estado del componente y se oculta con "Ocultar", al cambiar de documento o de pantalla
+       y a los `SEGUNDOS_DATO_REVELADO` (60 s). Solo aqui: comparaciones, evidencia y correcciones siguen
+       enmascaradas.
+    4. "Retirar este documento del expediente" plegado (`<details>`, `RetirarDocumento`, ADR-013), con motivo
+       obligatorio y confirmacion. Un retirado muestra arriba la retirada y "Restaurar".
+    5. "Detalles tecnicos" plegado (por auditoria): estado del analisis, recomendacion, clasificacion
+       declarada, detectada y confirmada con su confianza, `<BarraConfianza>` y evidencia de cada campo (sin
+       valores; tal como llegan de la API), reglas, y modelo y version del prompt.
+    Documento en error: mensaje y alerta `SYS-00x`, sin reprocesar (fuera del MVP). Documento no reconocido
+    (ADR-009, H4): "Tipo no reconocido"; sin ficha ni datos, el aviso "No se han extraído datos: el tipo del
+    documento no está reconocido..." en vez de una tabla vacia; `desconocido` no cubre ningun requerido y lleva
+    `EXP-002`.
+  - Pestana Resumen (`componentes/PestanaResumen.tsx`): tres cifras (documentos con cuantos verdes,
+    amarillos y rojos; comparaciones "X de Y"; recomendacion de la IA), "Lo que tienes que hacer"
+    (`tareasDelRevisor`: amarillos, rojos, avisos sin revisar y comparaciones que no coinciden, cada uno con
+    su enlace), el resumen (`componentes/ResumenExpediente.tsx`: `GET /folios/{folio}/resumen.md` con
+    `react-markdown` y `skipHtml`; si `ruta_resumen_md` es `null`, se dice; un 404 `RESUMEN_NO_DISPONIBLE`
+    muestra su mensaje) y los antecedentes (H16, ADR-010 C, `componentes/Antecedentes.tsx`, solo revisor y
+    admin).
+  - Acciones del revisor (`componentes/AccionesRevisor.tsx`, `api/revision.ts`), solo rol revisor y folio
+    abierto: corregir un dato mostrando el valor actual (`prepararCorreccion`: un opcional vacio va como
+    `null`; un obligatorio no se puede guardar vacio; un `anio` son 4 cifras y va como entero), cambiar el
+    tipo, revisar alertas de documento y de expediente con comentario, retirar/restaurar y decidir con
+    comentario y confirmacion. Aprobar esta deshabilitado mientras haya bloqueantes que no sean falso
+    positivo (regla 2.2). Nada se decide solo. Un 409 (`DOCUMENTO_EN_PROCESO`, `DOCUMENTO_CON_ERROR`,
+    `FOLIO_CERRADO`, `DECISION_BLOQUEADA`) muestra el motivo y recarga el expediente.
+  - Colores del semaforo: tokens `--color-semaforo-{verde,ambar,rojo,gris}` (texto), `-fondo` y `-borde` en
+    `src/index.css` (`@theme`). Texto sobre su fondo y sobre blanco >= 4,5:1 (AA), comprobado en
+    `src/estilos.test.ts`. El estado nunca se indica solo por color: siempre icono + texto.
+
+    | Token | Texto | Fondo | Borde | Contraste texto/fondo |
+    |---|---|---|---|---|
+    | verde | `#14532D` | `#DCFCE7` | `#4ADE80` | 8,3:1 (9,1:1 sobre blanco) |
+    | ambar | `#78350F` | `#FEF3C7` | `#F59E0B` | 8,1:1 (9,1:1 sobre blanco) |
+    | rojo | `#7F1D1D` | `#FEE2E2` | `#F87171` | 8,2:1 (10,0:1 sobre blanco) |
+    | gris | `#334155` | `#F1F5F9` | `#94A3B8` | 9,5:1 (10,4:1 sobre blanco) |
 - Sondeo (`utilidades/sondeo.ts`, hook `useSondeo`, comun a la carga y al expediente): mientras haya
   documentos pendientes o procesando consulta con una espera de 3 s que crece x1,5 hasta 15 s; un
   cambio de estado vuelve a los 3 s. Tras 10 minutos sin cambios (Ollama lento o caido) se detiene y
