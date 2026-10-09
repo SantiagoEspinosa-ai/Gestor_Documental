@@ -201,11 +201,21 @@ hace fallar el build si queda algun rastro.
       "Abrir" (admin e integrador). En rojo, "Volver a subir" (enlace a la carga) solo para quien puede subir
       (integrador y revisor) y con el folio abierto. Los retirados (ADR-013), al final y en gris, con
       "Restaurar" solo para el revisor y con el folio abierto. En proceso: gris con la fase corta (ADR-014).
-    - Semaforo (`semaforoDocumento`, `utilidades/semaforo.ts`, con tests): rojo "No se pudo leer" si el
-      analisis acabo en error o termino con todos los campos sin valor; amarillo "Tipo no reconocido" si es
-      `desconocido` (o sin tipo) sin ficha ni datos (se arregla confirmando el tipo); amarillo "Falta un
-      dato" / "Faltan N datos" si falta algun campo OBLIGATORIO; si no, verde "Todo detectado". Los
-      opcionales vacios no cambian el color (como `VAL-001`), aunque en el detalle salen "No detectado".
+    - Semaforo (`semaforoDocumento`, `utilidades/semaforo.ts`, con tests; orden validado por PERSONA_1:
+      gana la primera regla que se cumple, lo mas grave siempre gana):
+      1. retirado: gris "Retirado" (aunque tenga avisos);
+      2. pendiente o procesando: gris con la fase corta;
+      3. error, o completado con todos los campos sin valor: rojo "No se pudo leer";
+      4. alguna alerta BLOQUEANTE del documento confirmada (`aplica = true`): rojo "Solo se puede rechazar";
+      5. sin ficha (`desconocido` o sin tipo), traiga o no datos: amarillo "Tipo no reconocido: confirma el
+         tipo", con los motivos de la regla 6 detras;
+      6. amarillo con sus motivos separados por " · " y en este orden: bloqueantes sin revisar ("1 aviso impide
+         aprobar"), no informativas y no bloqueantes sin revisar ("N avisos por revisar"), algun OBLIGATORIO sin
+         valor ("Falta un dato"; los opcionales no cuentan, como `VAL-001`) y alguna no bloqueante confirmada
+         ("Aviso confirmado · no impide aprobar": ya revisada, no cuenta como pendiente);
+      7. verde "Todo detectado".
+      No colorean el documento las informativas, los falsos avisos (`aplica = false`) ni las alertas del
+      expediente. Leyenda del amarillo: "falta algo o hay un aviso; revísalo o tenlo en cuenta al decidir."
     - Comparaciones entre documentos (`componentes/ComparacionesExpediente.tsx`): "X de Y coinciden"; si
       coincide, solo el campo y "Coincide" (sin valores); si no, "No coincide entre <Tipo A> y <Tipo B>" y el
       valor de cada documento tal como llega de la API (los sensibles, enmascarados).
@@ -243,7 +253,7 @@ hace fallar el build si queda algun rastro.
     `EXP-002`.
   - Pestana Resumen (`componentes/PestanaResumen.tsx`): tres cifras (documentos con cuantos verdes,
     amarillos y rojos; comparaciones "X de Y"; recomendacion de la IA), "Lo que tienes que hacer"
-    (`tareasDelRevisor`: amarillos, rojos, avisos sin revisar y comparaciones que no coinciden, cada uno con
+    (`tareasDelRevisor`: rojos, amarillos con algo pendiente, avisos sin revisar y comparaciones que no coinciden, cada uno con
     su enlace), el resumen (`componentes/ResumenExpediente.tsx`: `GET /folios/{folio}/resumen.md` con
     `react-markdown` y `skipHtml`; si `ruta_resumen_md` es `null`, se dice; un 404 `RESUMEN_NO_DISPONIBLE`
     muestra su mensaje) y los antecedentes (H16, ADR-010 C, `componentes/Antecedentes.tsx`, solo revisor y
