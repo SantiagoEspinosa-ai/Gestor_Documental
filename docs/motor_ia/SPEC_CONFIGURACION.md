@@ -621,6 +621,7 @@ El mas reciente arriba.
 
 | Fecha | Cambio | Commit |
 |---|---|---|
+| 2026-10-09 | Fixtures: 5 variantes de la INE (`fondo_seguridad` digital y foto, `emision_vigencia`, `curp_confundible` digital y foto), generadas al final y en su propia seccion de `INDICE.md`; los 52 de antes, identicos byte a byte. `fixtures/README.md` | este commit |
 | 2026-10-09 | Prompt `extraccion_v4` vigente (todos los tipos pasan a `@v4`; la instruccion nueva solo afecta a `credencial_elector`): vigencia = anio junto a VIGENCIA, nunca el de EMISION. Los analisis anteriores conservan `@v3`. Lo reservado como v4 (`observaciones_visuales`) pasa a `extraccion_v5`. Seccion 5 | este commit |
 | 2026-10-09 | OCR de fotos: segundo intento con `preprocesar_foto` si el primero saca menos de `UMBRAL_SEGUNDO_INTENTO_OCR` (150, configurable; el de la modalidad sigue en 30); gana el de mas calidad (marcadores, despues palabras reconocibles; empate: el primero). Seccion 9; en `.env.example` | este commit |
 | 2026-10-09 | Confusiones de OCR letra/digito en campos con patron (seccion 4): correccion solo con una unica candidata (y la CURP cuadrando con fecha_nacimiento), confianza maxima 0,6 para que salte VAL-002; sin codigo nuevo | este commit |

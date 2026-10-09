@@ -158,3 +158,37 @@ def test_variante_mrz_con_ruido_solo_se_lee_reparandola(nombre):
     exactas = [(a, b) for a, b in zip(lineas, lineas[1:])
                if a.startswith("P") and modulo_mrz._CARACTERES.match(a) and modulo_mrz._CARACTERES.match(b)]
     assert exactas == []
+
+
+# --- Variantes de la INE (2026-10-09, PR de fix/lectura-fotos): solo si estan generadas ---
+
+def test_variante_emision_y_vigencia_en_la_misma_linea_llega_al_prompt():
+    from app.modulos.configuracion import servicio as configuracion
+    from app.modulos.motor_ia.prompts import formatear_campos, formatear_contenido, renderizar
+    doc = _variante("credencial_elector_sano_digital_emision_vigencia.pdf")
+    lineas = [_normalizar(l) for p in doc.paginas for l in (p.texto or "").splitlines()]
+    assert any(re.search(r"EMISION \d{4} VIGENCIA \d{4}", l) for l in lineas)  # las dos en la misma linea
+    texto, _ = renderizar("extraccion", tipo_documental="credencial_elector", contenido=formatear_contenido(doc.paginas),
+                          campos_a_extraer=formatear_campos(configuracion.obtener("credencial_elector")))
+    assert "Nunca el de EMISION" in texto
+
+
+@pytest.mark.parametrize("nombre", ["credencial_elector_sano_digital_curp_confundible.pdf",
+                                    "credencial_elector_sano_foto_curp_confundible.jpg"])
+def test_variante_curp_confundible_se_corrige(nombre):
+    from app.modulos.configuracion import servicio as configuracion
+    from app.modulos.motor_ia.proveedores.base import corregir_campos_con_patron
+    doc = _variante(nombre)
+    texto = _normalizar("\n".join(p.texto or "" for p in doc.paginas))
+    impresa = re.search(r"SOB\w{15}", texto)
+    assert impresa and impresa[0] != "SOBI900101MDFGZS01"  # el OCR lee la CURP con las confusiones impresas
+    esquema = configuracion.obtener("credencial_elector").campos
+    datos, corregidos = corregir_campos_con_patron({"curp": impresa[0], "fecha_nacimiento": "1990-01-01"}, esquema)
+    assert datos["curp"] == "SOBI900101MDFGZS01" and corregidos == {"curp"}
+
+
+@pytest.mark.parametrize("nombre", ["credencial_elector_sano_digital_fondo_seguridad.pdf",
+                                    "credencial_elector_sano_foto_fondo_seguridad.jpg"])
+def test_variante_fondo_de_seguridad_se_prepara(nombre):
+    doc = _variante(nombre)
+    assert doc.paginas and any(p.texto for p in doc.paginas)

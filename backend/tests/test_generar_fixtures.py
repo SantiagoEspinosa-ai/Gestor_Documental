@@ -229,6 +229,11 @@ ARCHIVOS_VARIANTES = (
      for v in ("mes_abreviado", "mes_completo", "mes_anio_corto")}
     | {"comprobante_domicilio_sano_digital_sin_recibo.pdf", "pasaporte_sano_digital_mrz_ruido.pdf",
        "pasaporte_sano_foto_mrz_ruido.jpg", "pasaporte_fechas_incoherentes_digital.pdf"})
+# Variantes de la INE (2026-10-09, PR de fix/lectura-fotos)
+ARCHIVOS_VARIANTES_INE = (
+    {"credencial_elector_sano_digital_fondo_seguridad.pdf", "credencial_elector_sano_foto_fondo_seguridad.jpg",
+     "credencial_elector_sano_digital_emision_vigencia.pdf",
+     "credencial_elector_sano_digital_curp_confundible.pdf", "credencial_elector_sano_foto_curp_confundible.jpg"})
 
 
 def test_se_generan_todos_los_ficheros(generado):
@@ -236,7 +241,8 @@ def test_se_generan_todos_los_ficheros(generado):
     esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
     esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
     assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12 and len(ARCHIVOS_VARIANTES) == 10
-    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES
+    assert len(ARCHIVOS_VARIANTES_INE) == 5
+    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES | ARCHIVOS_VARIANTES_INE
     assert all((salida / nombre).is_file() for nombre in hashes)
     assert (salida / "INDICE.md").is_file()
 
@@ -394,7 +400,7 @@ def test_pasaporte_con_fechas_incoherentes_da_su_regla_de_coherencia(generado, f
 def test_indice_marca_las_variantes_como_anadidas_en_este_pr(generado):
     salida, hashes = generado
     indice = (salida / "INDICE.md").read_text(encoding="utf-8")
-    seccion = indice.split("## Variantes de lectura (anadidas en el PR de fix/lectura-documentos")[1]
+    seccion = indice.split("## Variantes de lectura (anadidas en el PR de fix/lectura-documentos")[1].split("\n## ")[0]
     assert "fuera de la linea base del hito" in seccion
     for archivo in ARCHIVOS_VARIANTES:
         fila = next(l for l in seccion.splitlines() if l.startswith(f"| `{archivo}` |"))
@@ -404,6 +410,31 @@ def test_indice_marca_las_variantes_como_anadidas_en_este_pr(generado):
     # Las variantes no entran en los folios de prueba (linea base del hito)
     folios = indice.split("## Folios de prueba")[1].split("## Fixtures de dificultad")[0]
     assert not any(a.split(".")[0] in folios for a in ARCHIVOS_VARIANTES)
+
+
+def test_indice_marca_las_variantes_de_la_ine_en_su_pr(generado):
+    salida, hashes = generado
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    seccion = indice.split("## Variantes de lectura (anadidas en el PR de fix/lectura-fotos (2026-10-09))")[1]
+    assert "Anadidas en este PR" in seccion
+    for archivo in ARCHIVOS_VARIANTES_INE:
+        fila = next(l for l in seccion.splitlines() if l.startswith(f"| `{archivo}` |"))
+        assert hashes[archivo][:16] in fila
+    assert not any(f"`{a}`" in seccion for a in ARCHIVOS_VARIANTES)  # cada variante en la seccion de su PR
+    folios = indice.split("## Folios de prueba")[1].split("## Fixtures de dificultad")[0]
+    assert not any(a.split(".")[0] in folios for a in ARCHIVOS_VARIANTES_INE)
+
+
+def test_variantes_de_la_ine_esperan_los_valores_correctos(generado):
+    salida, _ = generado
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    seccion = indice.split("fix/lectura-fotos (2026-10-09))")[1]
+    assert f"| `curp` | {gf.CURP_CONFUNDIBLE} |" in seccion          # esperada la CURP correcta, no la impresa
+    assert gf.CURP_CONFUNDIBLE_IMPRESA != gf.CURP_CONFUNDIBLE
+    texto = pymupdf.open(salida / "credencial_elector_sano_digital_curp_confundible.pdf")[0].get_text()
+    assert gf.CURP_CONFUNDIBLE_IMPRESA in texto and gf.CURP_CONFUNDIBLE not in texto
+    texto = pymupdf.open(salida / "credencial_elector_sano_digital_emision_vigencia.pdf")[0].get_text()
+    assert any("EMISIÓN" in l and "VIGENCIA" in l for l in texto.splitlines())
 
 
 def test_determinismo_byte_a_byte_con_el_mismo_hoy(generado, tmp_path):

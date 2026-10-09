@@ -35,14 +35,19 @@ INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio d
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
 seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
-En total, 52 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
-dificultad y 10 variantes de lectura (2026-10-08, fuera de la linea base del hito):
+En total, 57 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
+dificultad, 10 variantes de lectura (2026-10-08) y 5 de la INE (2026-10-09), fuera de la linea base del hito:
   - comprobante_domicilio_sano_{digital,escaneado}_{mes_abreviado,mes_completo,mes_anio_corto}: la fecha de
     emision con el mes en letras ("15 SEP 2026", "15 DE SEPTIEMBRE DE 2026", "15 SEP 26");
   - pasaporte_sano_{digital,foto}_mrz_ruido: un caracter de ruido delante de la primera linea de la MRZ;
   - pasaporte_fechas_incoherentes_digital: expedicion posterior al vencimiento (REG de coherencia);
   - comprobante_domicilio_sano_digital_sin_recibo: "FECHA LIMITE DE PAGO" y "SERVICIO", sin RECIBO ni
     COMPROBANTE.
+  Y 7 variantes de la INE (2026-10-09, PR de fix/lectura-fotos):
+  - credencial_elector_sano_{digital,foto}_fondo_seguridad: fondo de seguridad; la foto, de baja resolucion;
+  - credencial_elector_sano_digital_emision_vigencia: "EMISION AAAA" y "VIGENCIA AAAA" en la misma linea;
+  - credencial_elector_sano_{digital,foto}_curp_confundible: CURP impresa con 1 por I y O por 0.
+  (El fondo de seguridad y la CURP confundible generan tambien su PDF digital, base de la foto.)
   No forman parte de ningun folio de prueba ni cambian los SHA-256 de los ficheros de antes. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
 fixtures/especimenes/ (en git) y las prepara scripts/procesar_especimenes.py.
 
@@ -175,6 +180,13 @@ RUIDO_MRZ = "#"  # delante de la primera linea de la MRZ: 45 caracteres
 CASO_INCOHERENTE = "fechas_incoherentes"
 TITULO_SIN_RECIBO = "AVISO DE SERVICIO"
 PR_VARIANTES = "PR de fix/lectura-documentos (2026-10-08)"
+PR_VARIANTES_INE = "PR de fix/lectura-fotos (2026-10-09)"
+# CURP ficticia de la variante con caracteres confundibles: coherente con la persona 1 (1990-01-01, mujer) y con
+# letras que tienen pareja numerica. Impresa con un 1 en lugar de I (posicion 4, de letra) y O en lugar de 0
+# (posiciones 6 y 7, de digito): 3 cambios, que la correccion de confusiones del motor debe deshacer.
+CURP_CONFUNDIBLE = "SOBI900101MDFGZS01"
+CURP_CONFUNDIBLE_IMPRESA = "SOB19OO101MDFGZS01"
+NIVEL_FONDO_SEGURIDAD = "dificil"  # foto de baja resolucion (130 dpi) de la credencial con fondo de seguridad
 
 GRIS_TEXTO = (0.35, 0.35, 0.35)
 GRIS_MARCA = (0.93, 0.93, 0.93)  # marca de agua muy tenue
@@ -454,11 +466,31 @@ def dibujar_pasaporte(pagina, ficha, valores, mrz):
         texto(pagina, 22, pagina.rect.height - 46 + i * 22, linea, tam=15, fuente="cour")
 
 
-def dibujar_credencial(pagina, ficha, valores):
+def dibujar_credencial(pagina, ficha, valores, fondo_seguridad: bool = False, emision: int | None = None,
+                       impresos: dict | None = None):
+    """Sin parametros opcionales, igual que siempre. `fondo_seguridad`: lineas onduladas finas detras de los
+    datos. `emision`: la ultima linea es "EMISION <anio>  VIGENCIA <anio>" (las dos en la misma linea).
+    `impresos`: valores que se imprimen en lugar de los esperados (p. ej. una CURP con confusiones)."""
     cabecera(pagina, ficha["nombre_visible"])
+    if fondo_seguridad:
+        fondo_de_seguridad(pagina)
     marca_de_agua_lateral(pagina)
     silueta(pagina, pymupdf.Rect(20, 52, 150, 216))
-    campos_en_columna(pagina, 172, 56, ficha["campos"], valores, paso=31, tam=11)
+    mostrados = {**valores, **(impresos or {})}
+    if emision is None:
+        campos_en_columna(pagina, 172, 56, ficha["campos"], mostrados, paso=31, tam=11)
+        return
+    campos = {c: d for c, d in ficha["campos"].items() if c != "vigencia"}
+    y = campos_en_columna(pagina, 172, 56, campos, mostrados, paso=31, tam=11)
+    texto(pagina, 172, y + 13, f"EMISIÓN {emision}   VIGENCIA {valores['vigencia']}", tam=11, fuente="hebo")
+
+
+def fondo_de_seguridad(pagina) -> None:
+    """Fondo de seguridad ficticio: lineas onduladas finas en tonos claros, como las de una credencial."""
+    ancho, alto = pagina.rect.width, pagina.rect.height
+    for k in range(0, int(alto) + 40, 6):
+        puntos = [pymupdf.Point(x, 40 + k + 5 * math.sin(x / 9 + k / 7)) for x in range(0, int(ancho) + 6, 6)]
+        pagina.draw_polyline(puntos, color=(0.72, 0.80, 0.88), width=0.6)
 
 
 def dibujar_comprobante(pagina, ficha, valores, rng: random.Random, fmt=formatear, titulo: str | None = None,
@@ -499,7 +531,7 @@ def metadatos(ficha: dict, caso: str, modalidad: str, hoy: date) -> dict:
 
 def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date, destino: Path,
                     formato_fecha=None, ruido_mrz: str = "", titulo: str | None = None,
-                    fecha_limite_pago: date | None = None) -> list[str]:
+                    fecha_limite_pago: date | None = None, credencial: dict | None = None) -> list[str]:
     """PDF con capa de texto real. Devuelve el texto que debe poder extraerse. Los parametros opcionales son
     para las variantes de lectura; sin ellos, el PDF sale igual que siempre."""
     fmt = formatear if formato_fecha is None else (
@@ -515,7 +547,12 @@ def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date,
         dibujar_pasaporte(pagina, ficha, valores, mrz)
         esperado += list(mrz)
     elif tipo == "credencial_elector":
-        dibujar_credencial(pagina, ficha, valores)
+        if credencial:
+            dibujar_credencial(pagina, ficha, valores, **credencial)
+            impresos = credencial.get("impresos") or {}
+            esperado = [fmt(impresos.get(c, valores[c])) for c in ficha["campos"]]
+        else:
+            dibujar_credencial(pagina, ficha, valores)
     elif formato_fecha is None and titulo is None and fecha_limite_pago is None:
         dibujar_comprobante(pagina, ficha, valores, rng_para(destino.name))
     else:
@@ -712,9 +749,20 @@ def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, docume
         lineas += [f"| `{campo}` | {iso(valores[campo])} |" for campo in fichas[tipo]["campos"]]
         if tipo == "pasaporte":
             lineas += ["", "MRZ:", "", "```", *generar_mrz(valores), "```"]
+    for pr in dict.fromkeys(v.get("pr", PR_VARIANTES) for v in (variantes or {}).values()):
+        del_pr = {a: v for a, v in variantes.items() if v.get("pr", PR_VARIANTES) == pr}
+        lineas += escribir_variantes(pr, del_pr, hashes, fichas, iso)
+    ruta = salida / "INDICE.md"
+    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
+    return ruta
+
+
+def escribir_variantes(pr: str, variantes: dict, hashes: dict, fichas: dict, iso) -> list[str]:
+    """Seccion de INDICE.md con las variantes de lectura anadidas en un PR, fuera de la linea base del hito."""
+    lineas = []
     if variantes:
-        lineas += ["", f"## Variantes de lectura (anadidas en el {PR_VARIANTES})", "",
-                   "**Anadidas en ese PR, fuera de la linea base del hito**: no forman parte de ningun folio de",
+        lineas += ["", f"## Variantes de lectura (anadidas en el {pr})", "",
+                   "**Anadidas en este PR, fuera de la linea base del hito**: no forman parte de ningun folio de",
                    "prueba ni de los SHA-256 registrados de los ficheros de antes. Cubren fallos vistos con",
                    "documentos reales: fechas con el mes en letras, MRZ con ruido de OCR, fechas incoherentes",
                    "y recibos sin RECIBO ni COMPROBANTE.", "",
@@ -735,9 +783,7 @@ def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, docume
             lineas += ["", f"### Valores esperados: {', '.join(f'`{a}`' for a in mismos)}", "",
                        "| Campo | Valor esperado |", "|---|---|"]
             lineas += [f"| `{campo}` | {iso(v['valores'][campo])} |" for campo in fichas[v["tipo"]]["campos"]]
-    ruta = salida / "INDICE.md"
-    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
-    return ruta
+    return lineas
 
 
 def generar(hoy: date, salida: Path = SALIDA) -> dict[str, str]:
@@ -824,6 +870,47 @@ def generar_variantes(salida: Path, fichas: dict, documentos: dict, hoy: date) -
     digital = salida / nombre_archivo(tipo, CASO_INCOHERENTE, "digital")
     comprobar_capa_texto(digital, generar_digital(tipo, CASO_INCOHERENTE, ficha, valores, hoy, digital))
     anotar(digital, tipo, "digital", "expedicion posterior al vencimiento", valores, alertas)
+
+    # INE (2026-10-09, PR de fix/lectura-fotos)
+    tipo, ficha = "credencial_elector", fichas["credencial_elector"]
+    valores = documentos[("sano", tipo)]["valores"]
+
+    def anotar_ine(ruta: Path, modalidad: str, prueba: str, vals: dict) -> None:
+        anotar(ruta, tipo, modalidad, prueba, vals)
+        variantes[ruta.name]["pr"] = PR_VARIANTES_INE
+
+    # Foto de baja resolucion con fondo de seguridad: el OCR saca poco texto
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "fondo_seguridad")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital,
+                                                  credencial={"fondo_seguridad": True}))
+    foto = salida / nombre_archivo(tipo, "sano", "foto", "fondo_seguridad")
+    generar_foto(digital, foto, NIVEL_FONDO_SEGURIDAD)
+    anotar_ine(digital, "digital", "fondo de seguridad (lineas onduladas) detras de los datos", valores)
+    anotar_ine(foto, "foto", f"fondo de seguridad en una foto de baja resolucion (nivel {NIVEL_FONDO_SEGURIDAD})",
+               valores)
+
+    # EMISION y VIGENCIA en la misma linea
+    emision = valores["vigencia"] - 10
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "emision_vigencia")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital,
+                                                  credencial={"emision": emision}))
+    anotar_ine(digital, "digital", f'"EMISION {emision}" y "VIGENCIA {valores["vigencia"]}" en la misma linea: '
+                                   "vigencia esperada, la de VIGENCIA", valores)
+
+    # CURP impresa con caracteres confundibles (1 por I en una letra; O por 0 en dos digitos)
+    valores_curp = {**valores, "curp": CURP_CONFUNDIBLE}
+    validar_valores(tipo, valores_curp, ficha)
+    if evaluar_reglas(ficha, valores_curp, hoy):
+        raise ErrorFixture("La CURP ficticia de la variante debe cumplir las reglas de la ficha")
+    for modalidad in ("digital", "foto"):
+        ruta_v = salida / nombre_archivo(tipo, "sano", modalidad, "curp_confundible")
+        if modalidad == "digital":
+            comprobar_capa_texto(ruta_v, generar_digital(tipo, "sano", ficha, valores_curp, hoy, ruta_v,
+                                                         credencial={"impresos": {"curp": CURP_CONFUNDIBLE_IMPRESA}}))
+        else:
+            generar_foto(salida / nombre_archivo(tipo, "sano", "digital", "curp_confundible"), ruta_v)
+        anotar_ine(ruta_v, modalidad, f'CURP impresa "{CURP_CONFUNDIBLE_IMPRESA}" (1 por I y O por 0); esperada la '
+                                      "correcta", valores_curp)
     return variantes
 
 

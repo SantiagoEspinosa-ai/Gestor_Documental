@@ -12,9 +12,9 @@ byte. Cada persona los genera en local.
 python scripts/generar_fixtures.py                    # --hoy = fecha de hoy
 python scripts/generar_fixtures.py --hoy 2026-09-30   # la de los mocks del frontend (DUP-001 contra ellos)
 ```
-Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 52
+Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 57
 ficheros e `INDICE.md`: 3 casos x 3 tipos x 3 modalidades (27), las 3 copias del caso `duplicado`
-(solo la credencial), 12 de dificultad y 10 variantes de lectura (ver abajo).
+(solo la credencial), 12 de dificultad, 10 variantes de lectura y 5 variantes de la INE (ver abajo).
 
 ## Casos
 | Caso | Persona | Que tiene |
@@ -73,6 +73,18 @@ documentos reales:
   completarse con `REG-expedicion_antes_de_vencimiento` (critica), sin error.
 `INDICE.md` las lista en su propia seccion, con los valores y las alertas deterministas esperadas.
 
+## Variantes de la INE (2026-10-09)
+Anadidas en el PR de `fix/lectura-fotos`, tambien **fuera de la linea base del hito** y generadas al final
+(no cambian ni un byte de los 52 de antes). Todas son del caso `sano` de la credencial:
+- `fondo_seguridad` (digital y foto): lineas onduladas finas detras de los datos; la foto, de baja
+  resolucion (nivel `dificil`), da poco texto de OCR;
+- `emision_vigencia` (digital): "EMISION AAAA   VIGENCIA AAAA" en la misma linea; la vigencia esperada es
+  la de VIGENCIA;
+- `curp_confundible` (digital y foto): CURP ficticia impresa con un 1 en lugar de I y O en lugar de 0
+  (`SOB19OO101MDFGZS01`); la esperada es la correcta (`SOBI900101MDFGZS01`), que el motor debe recuperar
+  con la correccion de confusiones.
+`INDICE.md` las lista en una seccion aparte, la de su PR.
+
 ## INDICE.md
 `fixtures/generados/INDICE.md` es la verdad de referencia para los tests: archivos y SHA-256, valores
 esperados por campo (fechas en ISO 8601) y alertas esperadas por folio de prueba, con codigo,
@@ -106,7 +118,7 @@ entre secciones, el orden de los documentos y las columnas de la tabla "Archivos
 | Caso `duplicado` | `### duplicado / credencial_elector`: los lectores lo **excluyen** (mismo SHA-256 que el sano) | test OCR, evaluacion |
 | Fichero de dificultad | fila `` | `<archivo>` | <tipo> | <escaneado o foto> | <dificil o extremo> | ... | `` dentro de `## Fixtures de dificultad` | evaluacion |
 | Valores de dificultad | `### Valores esperados: <tipo>` y sus filas de valor (los del caso sano) | evaluacion |
-| Variantes de lectura | `## Variantes de lectura (anadidas en el PR de fix/lectura-documentos (2026-10-08))`: tabla de ficheros (tipo, modalidad, que prueba, alertas esperadas, SHA-256) y `### Valores esperados: <archivos>` | test OCR (se salta si no estan) |
+| Variantes de lectura | `## Variantes de lectura (anadidas en el PR de fix/lectura-documentos (2026-10-08))` y `## Variantes de lectura (anadidas en el PR de fix/lectura-fotos (2026-10-09))`, cada una con su tabla de ficheros (tipo, modalidad, que prueba, alertas esperadas, SHA-256) y `### Valores esperados: <archivos>` | test OCR (se salta si no estan) |
 | Especimenes | no estan en `INDICE.md`: se leen de `fixtures/especimenes/*_sano_especimen_*.jpg` con los valores del caso sano | evaluacion (bloque 5), calibracion |
 
 Comprobacion rapida tras cambiar el generador: `python docs/motor_ia/pruebas_ollama/evaluar_fixtures.py indice`
