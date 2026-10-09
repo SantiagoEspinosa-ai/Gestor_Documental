@@ -61,7 +61,97 @@ describe('semaforo del documento', () => {
 
   it('desconocido sin ficha ni datos (ADR-009): amarillo "Tipo no reconocido", no rojo', () => {
     const d = doc({ tipo_documental_declarado: null, tipo_documental_detectado: TIPO_DESCONOCIDO, datos_extraidos: {} })
-    expect(semaforo(d)).toMatchObject({ color: 'amarillo', etiqueta: 'Tipo no reconocido' })
+    expect(semaforo(d)).toMatchObject({ color: 'amarillo', etiqueta: 'Tipo no reconocido: confirma el tipo' })
+  })
+})
+
+// Orden validado por PERSONA_1: gana la primera regla que se cumple. EXP-001 se usa como en su caso: una
+// bloqueante entre las alertas del documento (el codigo no importa al semaforo, solo severidad y aplica)
+describe('semaforo: una regla cada vez (revision de PERSONA_1)', () => {
+  const RETIRADO = { en: '2026-10-01T10:00:00Z', por: 'revisor.demo', motivo: '****' }
+  const SIN_FICHA = { tipo_documental_declarado: null, tipo_documental_detectado: TIPO_DESCONOCIDO }
+  const bloqueante = (aplica: boolean | null) => alerta({ codigo: 'EXP-001', severidad: 'bloqueante', aplica })
+  const aviso = (aplica: boolean | null) => alerta({ codigo: 'VAL-002', severidad: 'preventiva', aplica })
+  const vacios = () => Object.fromEntries(Object.keys(COMPLETOS).map((c) => [c, null]))
+
+  it('R1 retirado: gris aunque tenga avisos', () => {
+    expect(semaforo(doc({ retirado: RETIRADO, alertas_encontradas: [aviso(null), bloqueante(null)] })))
+      .toMatchObject({ color: 'retirado', etiqueta: 'Retirado' })
+  })
+
+  it('R2 en proceso: gris con la fase', () => {
+    expect(semaforo(doc({ estado_analisis: 'procesando', fase_analisis: 'extrayendo', alertas_encontradas: [aviso(null)] })))
+      .toMatchObject({ color: 'en_proceso', etiqueta: 'Extrayendo los datos' })
+  })
+
+  it('R3 error: rojo; completado con todo vacio: rojo', () => {
+    expect(semaforo(doc({ estado_analisis: 'error', datos_extraidos: {} }))).toMatchObject({ color: 'rojo', etiqueta: 'No se pudo leer' })
+    expect(semaforo(doc({ datos_extraidos: vacios() }))).toMatchObject({ color: 'rojo', etiqueta: 'No se pudo leer' })
+  })
+
+  it('R4 INE con todos los datos y EXP-001 bloqueante confirmada: rojo "Solo se puede rechazar"', () => {
+    expect(semaforo(doc({ alertas_encontradas: [bloqueante(true)] }))).toMatchObject({ color: 'rojo', etiqueta: 'Solo se puede rechazar' })
+  })
+
+  it('R5 sin ficha, con datos o sin ellos: amarillo "Tipo no reconocido: confirma el tipo"', () => {
+    expect(semaforo(doc({ ...SIN_FICHA, datos_extraidos: { nombre_completo: 'ANA EJEMPLO PRUEBA' } })))
+      .toMatchObject({ color: 'amarillo', etiqueta: 'Tipo no reconocido: confirma el tipo' })
+    expect(semaforo(doc({ ...SIN_FICHA, datos_extraidos: {} })))
+      .toMatchObject({ color: 'amarillo', etiqueta: 'Tipo no reconocido: confirma el tipo' })
+    // Con avisos de la regla 6, detras
+    expect(semaforo(doc({ ...SIN_FICHA, datos_extraidos: {}, alertas_encontradas: [aviso(null)] })).etiqueta)
+      .toBe('Tipo no reconocido: confirma el tipo · 1 aviso por revisar')
+  })
+
+  it('R6a INE con todos los datos y EXP-001 bloqueante sin revisar: amarillo "1 aviso impide aprobar"', () => {
+    expect(semaforo(doc({ alertas_encontradas: [bloqueante(null)] }))).toMatchObject({ color: 'amarillo', etiqueta: '1 aviso impide aprobar' })
+    expect(semaforo(doc({ alertas_encontradas: [bloqueante(null), bloqueante(null)] })).etiqueta).toBe('2 avisos impiden aprobar')
+  })
+
+  it('R6b aviso no bloqueante sin revisar: amarillo "1 aviso por revisar"', () => {
+    expect(semaforo(doc({ alertas_encontradas: [aviso(null)] }))).toMatchObject({ color: 'amarillo', etiqueta: '1 aviso por revisar' })
+    expect(semaforo(doc({ alertas_encontradas: [aviso(null), alerta({ severidad: 'critica' })] })).etiqueta).toBe('2 avisos por revisar')
+  })
+
+  it('R6c falta un obligatorio: amarillo "Falta un dato"; falta solo un opcional: verde', () => {
+    expect(semaforo(doc({ datos_extraidos: { ...COMPLETOS, curp: null } }))).toMatchObject({ color: 'amarillo', etiqueta: 'Falta un dato' })
+    expect(semaforo(doc({ datos_extraidos: { ...COMPLETOS, clave_elector: null } })).color).toBe('verde')
+  })
+
+  it('R6d aviso no bloqueante confirmado: amarillo "Aviso confirmado · no impide aprobar", sin pendientes', () => {
+    const d = doc({ alertas_encontradas: [aviso(true)] })
+    expect(semaforo(d)).toMatchObject({ color: 'amarillo', etiqueta: 'Aviso confirmado · no impide aprobar', pendiente: false })
+    expect(pendientesDeRevisar({ documentos: [d], alertas_expediente: [] })).toEqual([])
+    const expediente = { documentos: [d], alertas_expediente: [], comparaciones: [] } as unknown as ResultadoExpediente
+    expect(tareasDelRevisor(expediente, TIPOS_DOCUMENTALES)).toEqual([])
+  })
+
+  it('R7 verde: datos completos sin avisos; con EXP-001 como falso aviso; con una informativa sin revisar', () => {
+    expect(semaforo(doc()).color).toBe('verde')
+    expect(semaforo(doc({ alertas_encontradas: [bloqueante(false)] })).color).toBe('verde')
+    expect(semaforo(doc({ alertas_encontradas: [alerta({ severidad: 'informativa', aplica: null })] })).color).toBe('verde')
+  })
+
+  it('cruce: sin ficha + bloqueante confirmada -> rojo (gana R4)', () => {
+    expect(semaforo(doc({ ...SIN_FICHA, datos_extraidos: {}, alertas_encontradas: [bloqueante(true)] })))
+      .toMatchObject({ color: 'rojo', etiqueta: 'Solo se puede rechazar' })
+  })
+
+  it('cruce: error + avisos sin revisar -> rojo "No se pudo leer" (gana R3)', () => {
+    expect(semaforo(doc({ estado_analisis: 'error', datos_extraidos: {}, alertas_encontradas: [aviso(null), bloqueante(null)] })))
+      .toMatchObject({ color: 'rojo', etiqueta: 'No se pudo leer' })
+  })
+
+  it('cruce: retirado + bloqueante confirmada -> gris (gana R1)', () => {
+    expect(semaforo(doc({ retirado: RETIRADO, alertas_encontradas: [bloqueante(true)] })).color).toBe('retirado')
+  })
+
+  it('texto combinado, en orden: bloqueante sin revisar + aviso sin revisar + falta un dato', () => {
+    const d = doc({ datos_extraidos: { ...COMPLETOS, vigencia: null }, alertas_encontradas: [aviso(null), bloqueante(null)] })
+    expect(semaforo(d)).toMatchObject({ color: 'amarillo', etiqueta: '1 aviso impide aprobar · 1 aviso por revisar · Falta un dato' })
+    // Y con un aviso confirmado, al final
+    const e = doc({ datos_extraidos: { ...COMPLETOS, vigencia: null }, alertas_encontradas: [aviso(true), bloqueante(null)] })
+    expect(semaforo(e).etiqueta).toBe('1 aviso impide aprobar · Falta un dato · Aviso confirmado · no impide aprobar')
   })
 })
 

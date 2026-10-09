@@ -22,7 +22,7 @@ describe('lista de documentos', () => {
     await abrir('ONB-2026-000001')
     const leyenda = screen.getByRole('region', { name: 'Qué significan los colores' })
     expect(leyenda.textContent).toContain('Verde: Se leyeron todos los datos.')
-    expect(leyenda.textContent).toContain('Amarillo: Falta algún dato; revísalo en el original.')
+    expect(leyenda.textContent).toContain('Amarillo: falta algo o hay un aviso; revísalo o tenlo en cuenta al decidir.')
     expect(leyenda.textContent).toContain('Rojo: No se pudo leer nada o hubo un error; vuelve a subirlo.')
   })
 
@@ -40,6 +40,30 @@ describe('lista de documentos', () => {
     expect(within(tarjeta('pasaporte_sano_foto.jpg')).getByRole('link', { name: /Volver a subir/ })).toBeTruthy()
     expect(within(tarjeta('credencial_elector_sano_digital.pdf')).queryByRole('link', { name: /Volver a subir/ })).toBeNull()
     expect(within(tarjeta('credencial_elector_sano_digital.pdf')).getByRole('link', { name: /^Abrir y revisar / })).toBeTruthy()
+  })
+
+  it('folio 1: los avisos sin revisar del documento lo ponen en amarillo; sin avisos, verde; el retirado, gris', async () => {
+    await abrir('ONB-2026-000001')
+    const insignia = (nombre: string) => within(tarjeta(nombre)).getByTestId(/^semaforo-/)
+    // Pasaporte: REG-vigencia_documento (bloqueante) y REG-vigencia_proxima (preventiva) sin revisar; las VAL-003 son informativas
+    expect(insignia('pasaporte_vencido_escaneado.pdf').getAttribute('data-color')).toBe('amarillo')
+    expect(insignia('pasaporte_vencido_escaneado.pdf').textContent).toBe('1 aviso impide aprobar · 1 aviso por revisar')
+    expect(insignia('credencial_elector_vencido_foto.jpg').textContent).toBe('1 aviso por revisar') // VAL-002
+    const comprobantes = within(rejilla()).getAllByRole('article').filter((a) => a.textContent!.includes('comprobante_domicilio_vencido_digital.pdf'))
+    expect(comprobantes.map((a) => within(a).getByTestId(/^semaforo-/).textContent)).toEqual(['Todo detectado', 'Retirado'])
+  })
+
+  it('con solo avisos confirmados no bloqueantes: amarillo en el documento y "Todo revisado. Ya puedes decidir"', async () => {
+    const folio = mock.estado.folios.get('ONB-2026-000002')!
+    folio.alertas_expediente.forEach((a) => { a.aplica = false; a.resuelta_por_revisor = true }) // CMP-001 como falso aviso
+    folio.documentos[2].estado_analisis = 'completado' // sin documentos en analisis
+    const credencial = folio.documentos[0]
+    credencial.alertas_encontradas.push({ ...folio.alertas_expediente[0], id: 'alr-confirmada', codigo: 'VAL-002', severidad: 'preventiva',
+      campo: 'curp', aplica: true, resuelta_por_revisor: true })
+    await abrir('ONB-2026-000002')
+    expect(within(tarjeta('credencial_elector_domicilio_distinto_escaneado.pdf')).getByTestId(/^semaforo-/).textContent)
+      .toBe('Aviso confirmado · no impide aprobar')
+    expect(screen.getByTestId('estado-revision').textContent).toBe('Todo revisado. Ya puedes decidir.')
   })
 
   it('en proceso: gris con la fase corta (ADR-014)', async () => {

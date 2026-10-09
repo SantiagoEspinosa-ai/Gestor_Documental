@@ -13,12 +13,14 @@ export interface Semaforo {
   etiqueta: string
   /** Una linea que explica que pasa y que hacer */
   explicacion: string
+  /** Queda algo por hacer en el documento ("Lo que tienes que hacer"); un aviso ya confirmado no lo es */
+  pendiente: boolean
 }
 
 /** Leyenda "Que significan los colores" */
 export const LEYENDA_SEMAFORO: { color: Extract<ColorSemaforo, 'verde' | 'amarillo' | 'rojo'>; texto: string }[] = [
   { color: 'verde', texto: 'Se leyeron todos los datos.' },
-  { color: 'amarillo', texto: 'Falta algún dato; revísalo en el original.' },
+  { color: 'amarillo', texto: 'falta algo o hay un aviso; revísalo o tenlo en cuenta al decidir.' },
   { color: 'rojo', texto: 'No se pudo leer nada o hubo un error; vuelve a subirlo.' },
 ]
 
@@ -31,48 +33,81 @@ export function camposDelDocumento(doc: ResultadoDocumento, ficha: TipoDocumenta
   return [...new Set([...Object.keys(ficha?.campos ?? {}), ...Object.keys(doc.datos_extraidos)])]
 }
 
+const plural = (n: number, uno: string, varios: string) => (n === 1 ? uno : varios.replace('N', String(n)))
+
 /**
- * Semaforo de un documento (acordado el 2026-10-09; lo valida PERSONA_1 en el PR):
- * - retirado (ADR-013): gris "Retirado", aunque se hubiera analizado;
- * - pendiente o procesando: gris con la fase corta (ADR-014);
- * - rojo "No se pudo leer": el analisis acabo en error, o termino con TODOS los campos sin valor;
- * - amarillo "Tipo no reconocido": `desconocido` (o sin tipo) sin ficha y sin datos (ADR-009): se arregla
- *   confirmando el tipo, no volviendo a subirlo;
- * - amarillo "Falta un dato": algun campo OBLIGATORIO de la ficha sin valor. Los opcionales vacios no
- *   cambian el color (como VAL-001), aunque en el detalle salen como "No detectado";
- * - verde "Todo detectado": ningun obligatorio sin valor.
+ * Semaforo de un documento (validado por PERSONA_1 en la revision del PR; gana la primera regla que se
+ * cumple, lo mas grave siempre gana):
+ * 1. retirado (ADR-013): gris "Retirado", aunque tenga avisos;
+ * 2. pendiente o procesando: gris con la fase corta (ADR-014);
+ * 3. rojo "No se pudo leer": el analisis acabo en error, o termino con TODOS los campos sin valor;
+ * 4. rojo "Solo se puede rechazar": alguna alerta BLOQUEANTE del documento confirmada (aplica = true);
+ * 5. amarillo "Tipo no reconocido: confirma el tipo": sin ficha (`desconocido` o sin tipo, ADR-009), traiga
+ *    o no datos; los motivos de la regla 6 se anaden detras;
+ * 6. amarillo con todos sus motivos, separados por " · " y en este orden: a) bloqueantes sin revisar ("N
+ *    avisos impiden aprobar": puede ser un falso aviso, lo decide el revisor); b) no informativas y no
+ *    bloqueantes sin revisar ("N avisos por revisar"); c) algun campo OBLIGATORIO sin valor ("Falta un
+ *    dato"; los opcionales no cuentan, como VAL-001); d) alguna no bloqueante confirmada ("Aviso confirmado ·
+ *    no impide aprobar": ya esta revisada, no es un pendiente);
+ * 7. verde "Todo detectado".
+ * No colorean: las informativas, los falsos avisos (aplica = false) ni las alertas del expediente.
  */
 export function semaforoDocumento(doc: ResultadoDocumento, fichas: readonly TipoDocumental[]): Semaforo {
-  if (doc.retirado) return { color: 'retirado', etiqueta: 'Retirado', explicacion: 'No cuenta para la revisión del folio.' }
+  // 1 y 2
+  if (doc.retirado) return { color: 'retirado', etiqueta: 'Retirado', explicacion: 'No cuenta para la revisión del folio.', pendiente: false }
   if (enProceso(doc)) {
     return {
       color: 'en_proceso',
       etiqueta: doc.fase_analisis ? ETIQUETA_FASE_CORTA[doc.fase_analisis] : 'Analizando',
       explicacion: 'Se está analizando; la vista se actualiza sola.',
+      pendiente: false,
     }
   }
+  // 3
   if (doc.estado_analisis === 'error') {
-    return { color: 'rojo', etiqueta: 'No se pudo leer', explicacion: 'Hubo un error al analizarlo; vuelve a subirlo.' }
+    return { color: 'rojo', etiqueta: 'No se pudo leer', explicacion: 'Hubo un error al analizarlo; vuelve a subirlo.', pendiente: true }
   }
   const ficha = fichaDeTipo(fichas, tipoExtraccion(doc))
   const campos = camposDelDocumento(doc, ficha)
-  if (!ficha && campos.length === 0) {
-    return { color: 'amarillo', etiqueta: 'Tipo no reconocido', explicacion: 'No se sabe qué documento es; confirma su tipo.' }
-  }
   if (campos.length > 0 && campos.every((c) => sinValor(doc.datos_extraidos[c]))) {
-    return { color: 'rojo', etiqueta: 'No se pudo leer', explicacion: 'No se leyó ningún dato; vuelve a subirlo.' }
+    return { color: 'rojo', etiqueta: 'No se pudo leer', explicacion: 'No se leyó ningún dato; vuelve a subirlo.', pendiente: true }
   }
+  // 4
+  const alertas = doc.alertas_encontradas.filter((a) => a.severidad !== 'informativa')
+  const bloqueante = (a: Alerta) => a.severidad === 'bloqueante'
+  if (alertas.some((a) => bloqueante(a) && a.aplica === true)) {
+    return {
+      color: 'rojo', etiqueta: 'Solo se puede rechazar',
+      explicacion: 'Tiene un aviso confirmado que impide aprobar el folio.', pendiente: true,
+    }
+  }
+  // 6: motivos del amarillo, en su orden
+  const impiden = alertas.filter((a) => bloqueante(a) && a.aplica === null).length
+  const porRevisar = alertas.filter((a) => !bloqueante(a) && a.aplica === null).length
   const faltan = Object.entries(ficha?.campos ?? {})
     .filter(([campo, def]) => def.obligatorio && sinValor(doc.datos_extraidos[campo]))
     .map(([campo]) => nombreCampo(campo))
-  if (faltan.length > 0) {
+  const confirmado = alertas.some((a) => !bloqueante(a) && a.aplica === true)
+  const motivos = [
+    impiden > 0 && plural(impiden, '1 aviso impide aprobar', 'N avisos impiden aprobar'),
+    porRevisar > 0 && plural(porRevisar, '1 aviso por revisar', 'N avisos por revisar'),
+    faltan.length > 0 && plural(faltan.length, 'Falta un dato', 'Faltan N datos'),
+    confirmado && 'Aviso confirmado · no impide aprobar',
+  ].filter((m): m is string => !!m)
+  const explicacion = faltan.length > 0
+    ? `No se detectó: ${faltan.join(', ')}. Revísalo en el original.`
+    : impiden + porRevisar > 0 ? 'Revisa sus avisos en el detalle.' : 'Tiene un aviso confirmado; tenlo en cuenta al decidir.'
+  // 5
+  if (!ficha) {
     return {
-      color: 'amarillo',
-      etiqueta: faltan.length === 1 ? 'Falta un dato' : `Faltan ${faltan.length} datos`,
-      explicacion: `No se detectó: ${faltan.join(', ')}. Revísalo en el original.`,
+      color: 'amarillo', etiqueta: ['Tipo no reconocido: confirma el tipo', ...motivos].join(' · '),
+      explicacion: 'No se sabe qué documento es; confirma su tipo.', pendiente: true,
     }
   }
-  return { color: 'verde', etiqueta: 'Todo detectado', explicacion: 'Se leyeron todos los datos.' }
+  // 6: es un pendiente salvo que solo quede un aviso confirmado (d)
+  if (motivos.length > 0) return { color: 'amarillo', etiqueta: motivos.join(' · '), explicacion, pendiente: impiden + porRevisar + faltan.length > 0 }
+  // 7
+  return { color: 'verde', etiqueta: 'Todo detectado', explicacion: 'Se leyeron todos los datos.', pendiente: false }
 }
 
 // ------------------------------------------------------------------ fase del expediente
@@ -134,8 +169,9 @@ export interface Tarea {
 }
 
 /**
- * "Lo que tienes que hacer": documentos en amarillo o rojo, alertas sin revisar (de documento y de
- * expediente) y comparaciones que no coinciden. Solo los documentos que cuentan (ADR-013).
+ * "Lo que tienes que hacer": documentos en rojo o en amarillo con algo pendiente (no los que solo tienen un
+ * aviso ya confirmado), alertas sin revisar (de documento y de expediente) y comparaciones que no
+ * coinciden. Solo los documentos que cuentan (ADR-013).
  */
 export function tareasDelRevisor(expediente: ResultadoExpediente, fichas: readonly TipoDocumental[]): Tarea[] {
   const tareas: Tarea[] = []
@@ -144,7 +180,7 @@ export function tareasDelRevisor(expediente: ResultadoExpediente, fichas: readon
     const id = d.identificador_unico_documento
     const s = semaforoDocumento(d, fichas)
     const nombre = nombreTipo(tipoEfectivo(d), fichas, 'Sin tipo')
-    if (s.color === 'amarillo' || s.color === 'rojo') tareas.push({ clave: `doc-${id}`, texto: `${nombre}: ${s.etiqueta}. ${s.explicacion}`, documento: id })
+    if (s.pendiente) tareas.push({ clave: `doc-${id}`, texto: `${nombre}: ${s.etiqueta}. ${s.explicacion}`, documento: id })
     d.alertas_encontradas.filter((a) => a.aplica === null && a.severidad !== 'informativa').forEach((a, i) => {
       tareas.push({ clave: `alerta-${a.id ?? `${id}-${i}`}`, texto: `${nombre}: revisa el aviso ${a.codigo} (${a.mensaje})`, documento: id })
     })
