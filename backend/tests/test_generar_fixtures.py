@@ -223,12 +223,20 @@ ARCHIVOS_DIFICULTAD = {f"{t}_sano_{m}_{n}{ext}" for t in TIPOS for m, ext in (("
                        for n in ("dificil", "extremo")}
 
 
+# Variantes de lectura (2026-10-08), fuera de la linea base del hito
+ARCHIVOS_VARIANTES = (
+    {f"comprobante_domicilio_sano_{m}_{v}.pdf" for m in ("digital", "escaneado")
+     for v in ("mes_abreviado", "mes_completo", "mes_anio_corto")}
+    | {"comprobante_domicilio_sano_digital_sin_recibo.pdf", "pasaporte_sano_digital_mrz_ruido.pdf",
+       "pasaporte_sano_foto_mrz_ruido.jpg", "pasaporte_fechas_incoherentes_digital.pdf"})
+
+
 def test_se_generan_todos_los_ficheros(generado):
     salida, hashes = generado
     esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
     esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
-    assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12
-    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD
+    assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12 and len(ARCHIVOS_VARIANTES) == 10
+    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES
     assert all((salida / nombre).is_file() for nombre in hashes)
     assert (salida / "INDICE.md").is_file()
 
@@ -339,6 +347,63 @@ def test_indice_seccion_fixtures_de_dificultad(generado):
     assert "### Valores esperados: pasaporte" in seccion
     assert f"| `numero_pasaporte` | {sano['numero_pasaporte']} |" in seccion
     assert f"| `fecha_vencimiento` | {sano['fecha_vencimiento'].isoformat()} |" in seccion
+
+
+# ---------------------------------------------------------------- variantes de lectura
+
+def _texto(ruta) -> str:
+    with gf.pymupdf.open(ruta) as doc:
+        return "\n".join(p.get_text() for p in doc)
+
+
+@pytest.mark.parametrize("variante, esperado", [
+    ("mes_abreviado", "15 SEP 2026"), ("mes_completo", "15 DE SEPTIEMBRE DE 2026"), ("mes_anio_corto", "15 SEP 26"),
+])
+def test_comprobante_con_el_mes_en_letras(generado, variante, esperado):
+    salida, _ = generado
+    texto = _texto(salida / f"comprobante_domicilio_sano_digital_{variante}.pdf")
+    assert esperado in texto and "15/09/2026" not in texto  # emision = hoy - 15 dias, con el mes en letras
+    escaneado = salida / f"comprobante_domicilio_sano_escaneado_{variante}.pdf"
+    assert escaneado.is_file() and not _texto(escaneado).strip()  # escaneado: sin capa de texto
+
+
+def test_comprobante_sin_recibo_ni_comprobante(generado):
+    salida, _ = generado
+    texto = _texto(salida / "comprobante_domicilio_sano_digital_sin_recibo.pdf").upper()
+    assert "FECHA LIMITE DE PAGO" in texto and "SERVICIO" in texto
+    assert "RECIBO" not in texto and "COMPROBANTE" not in texto
+
+
+def test_pasaporte_con_ruido_en_la_mrz(generado):
+    salida, _ = generado
+    lineas = [l.strip() for l in _texto(salida / "pasaporte_sano_digital_mrz_ruido.pdf").splitlines()]
+    mrz1 = next(l for l in lineas if l.startswith(gf.RUIDO_MRZ + "P<"))
+    assert len(mrz1) == 45
+    assert (salida / "pasaporte_sano_foto_mrz_ruido.jpg").is_file()
+
+
+def test_pasaporte_con_fechas_incoherentes_da_su_regla_de_coherencia(generado, fichas):
+    salida, _ = generado
+    sano = gf.valores_documento("pasaporte", gf.PERSONAS_FICTICIAS[0], "sano", HOY)
+    valores = {**sano, "fecha_expedicion": sano["fecha_vencimiento"] + gf.timedelta(days=365)}
+    alertas = gf.evaluar_reglas(fichas["pasaporte"], valores, HOY)
+    assert [a["codigo"] for a in alertas] == ["REG-expedicion_antes_de_vencimiento"]
+    assert (salida / "pasaporte_fechas_incoherentes_digital.pdf").is_file()
+
+
+def test_indice_marca_las_variantes_como_anadidas_en_este_pr(generado):
+    salida, hashes = generado
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    seccion = indice.split("## Variantes de lectura (anadidas en el PR de fix/lectura-documentos")[1]
+    assert "fuera de la linea base del hito" in seccion
+    for archivo in ARCHIVOS_VARIANTES:
+        fila = next(l for l in seccion.splitlines() if l.startswith(f"| `{archivo}` |"))
+        assert hashes[archivo][:16] in fila
+    fila = next(l for l in seccion.splitlines() if "pasaporte_fechas_incoherentes_digital.pdf" in l)
+    assert "`REG-expedicion_antes_de_vencimiento` (critica, fecha_expedicion)" in fila
+    # Las variantes no entran en los folios de prueba (linea base del hito)
+    folios = indice.split("## Folios de prueba")[1].split("## Fixtures de dificultad")[0]
+    assert not any(a.split(".")[0] in folios for a in ARCHIVOS_VARIANTES)
 
 
 def test_determinismo_byte_a_byte_con_el_mismo_hoy(generado, tmp_path):
