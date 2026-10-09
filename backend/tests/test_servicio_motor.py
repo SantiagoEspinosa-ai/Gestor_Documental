@@ -105,7 +105,7 @@ def test_caso_normal():
     assert r.alertas_encontradas == [] and r.recomendacion is None
     assert r.fecha_y_modelo_utilizado.model_dump() == {
         "fecha_analisis": AHORA, "proveedor": "ollama", "modelo": "ollama-modelo-real-extraccion",
-        "version_prompt": "extraccion_pasaporte@v3"}
+        "version_prompt": "extraccion_pasaporte@v4"}
     assert enrutador.pedidos == [(Tarea.clasificacion, None), (Tarea.extraccion, "pasaporte")]
     assert [i.modelo for i in analisis.llamadas] == ["ollama-modelo-real-clasificacion", "ollama-modelo-real-extraccion"]
     clasificacion, extraccion = p.prompts
@@ -133,7 +133,7 @@ def test_tipo_confirmado_no_clasifica():
     # ADR-009 y stub del PR #19: sin clasificacion, detectado y confianza None; el 1,0 lo pone la plataforma (D2)
     assert (r.tipo_documental_confirmado, r.tipo_documental_detectado, r.confianza_clasificacion) == ("pasaporte", None, None)
     assert codigos(r) == []
-    assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v3"
+    assert r.fecha_y_modelo_utilizado.version_prompt == "extraccion_pasaporte@v4"
 
 
 def test_sin_declarado_extrae_con_el_detectado():

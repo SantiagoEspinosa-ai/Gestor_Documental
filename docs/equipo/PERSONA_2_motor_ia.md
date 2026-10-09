@@ -90,7 +90,7 @@ evidencia por campo, usando Ollama.
   en pgvector; `rag.buscar(consulta, k)` -> fragmentos que el servicio inyecta en `contexto_rag`.
   Reparto de `modulos/rag` (ADR-006, "Coordinacion"): `conocimiento.py` tuyo, `memoria.py` y
   `embeddings.py` de PERSONA_3 (lo reutilizas), `servicio.py` y `README.md` comunes.
-- Extra: `prompts/extraccion_v4.md` (la v2 y la v3 ya se usan; ver la spec) pidiendo `observaciones_visuales` (legibilidad, paginas
+- Extra: `prompts/extraccion_v5.md` (la v2, la v3 y la v4 ya se usan; ver la spec) pidiendo `observaciones_visuales` (legibilidad, paginas
   recortadas, alteraciones) y convertirlas en alertas `VIS-xxx`.
 - Probar el respaldo OpenRouter con los fixtures (modelos `:free` solo con datos ficticios).
 

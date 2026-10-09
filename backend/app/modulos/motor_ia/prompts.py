@@ -17,7 +17,7 @@ from app.modulos.configuracion.servicio import TipoDocumental
 from app.modulos.motor_ia.interfaces import Pagina
 
 # Version en uso de cada prompt. Cambiarla es una decision de configuracion: anotarla en la spec.
-VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v3", "correccion_json": "v1"}
+VERSIONES_VIGENTES = {"clasificacion": "v2", "extraccion": "v4", "correccion_json": "v1"}
 
 # backend/app/modulos/motor_ia/prompts.py -> raiz del repo
 _RAIZ_REPO = Path(__file__).resolve().parents[4]
@@ -117,7 +117,7 @@ def formatear_esquema(ficha: TipoDocumental) -> str:
 
 def formatear_campos(ficha: TipoDocumental) -> str:
     """Campos con su tipo, sin la obligatoriedad: con "opcional" qwen2.5vl dejaba vacios campos legibles
-    (fecha_expedicion del pasaporte; sonda del 2026-10-01). Lo usa extraccion_v3."""
+    (fecha_expedicion del pasaporte; sonda del 2026-10-01). Lo usan extraccion_v3 y v4."""
     return "\n".join(f"- {nombre}: {campo.tipo.value}" for nombre, campo in ficha.campos.items())
 
 

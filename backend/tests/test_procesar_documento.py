@@ -50,7 +50,7 @@ def test_caso_normal_reglas_recomendacion_y_auditoria(documento):
     assert "vigencia_documento" in r.reglas_cumplidas_e_incumplidas.cumplidas
     json.dumps(auditoria)  # la plataforma lo guarda en detalle (JSON)
     assert auditoria["modelo"] == "ollama-modelo-real-extraccion"
-    assert auditoria["version_prompt"] == "extraccion_pasaporte@v3"
+    assert auditoria["version_prompt"] == "extraccion_pasaporte@v4"
     assert auditoria["version_prompt_clasificacion"] == "clasificacion@v2"
     assert auditoria["respaldo_usado"] is False
     assert auditoria["confianzas_modelo"]["clasificacion"] == 0.93       # la del modelo, solo aqui (ADR-007)

@@ -62,6 +62,25 @@ def test_versiones_vigentes_existen_y_renderizan():
     assert "EXACTAMENTE como aparecen" in texto
 
 
+
+def test_extraccion_v4_vigencia_de_la_credencial():
+    fichas = configuracion.cargar()
+    contenido = formatear_contenido([Pagina(numero=1, texto="CREDENCIAL PARA VOTAR\nEMISION 2019   VIGENCIA 2029")])
+    texto, version = renderizar("extraccion", "v4", tipo_documental="credencial_elector", contenido=contenido,
+                                campos_a_extraer=formatear_campos(fichas["credencial_elector"]))
+    assert version == "extraccion_credencial_elector@v4"
+    assert "junto a la palabra VIGENCIA" in texto and "Nunca el de EMISION" in texto
+    assert "{%" not in texto
+
+
+@pytest.mark.parametrize("tipo", ["pasaporte", "comprobante_domicilio"])
+def test_extraccion_v4_igual_que_v3_en_los_demas_tipos(tipo):
+    fichas = configuracion.cargar()
+    variables = {"contenido": "x", "campos_a_extraer": formatear_campos(fichas[tipo])}
+    v3, _ = renderizar("extraccion", "v3", tipo_documental=tipo, **variables)
+    v4, version = renderizar("extraccion", "v4", tipo_documental=tipo, **variables)
+    assert v4 == v3 and version == f"extraccion_{tipo}@v4"
+
 def test_prompts_v1_siguen_disponibles():
     v = variables_reales()
     _, version = renderizar("clasificacion", "v1", tipos_posibles=v["tipos_posibles"], contexto_rag="(sin contexto)")
