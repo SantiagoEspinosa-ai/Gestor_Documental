@@ -35,8 +35,9 @@ INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio d
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
 seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
-En total, 57 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
-dificultad, 10 variantes de lectura (2026-10-08) y 5 de la INE (2026-10-09), fuera de la linea base del hito:
+En total, 60 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
+dificultad, 10 variantes de lectura (2026-10-08), 5 de la INE (2026-10-09) y 3 de la INE en columnas y con la
+CURP mal impresa (2026-10-12), fuera de la linea base del hito:
   - comprobante_domicilio_sano_{digital,escaneado}_{mes_abreviado,mes_completo,mes_anio_corto}: la fecha de
     emision con el mes en letras ("15 SEP 2026", "15 DE SEPTIEMBRE DE 2026", "15 SEP 26");
   - pasaporte_sano_{digital,foto}_mrz_ruido: un caracter de ruido delante de la primera linea de la MRZ;
@@ -48,6 +49,10 @@ dificultad, 10 variantes de lectura (2026-10-08) y 5 de la INE (2026-10-09), fue
   - credencial_elector_sano_digital_emision_vigencia: "EMISION AAAA" y "VIGENCIA AAAA" en la misma linea;
   - credencial_elector_sano_{digital,foto}_curp_confundible: CURP impresa con 1 por I y O por 0.
   (El fondo de seguridad y la CURP confundible generan tambien su PDF digital, base de la foto.)
+  Y 3 variantes de la INE (2026-10-12, PR de fix/nombre-ine-columnas):
+  - credencial_elector_sano_{digital,foto}_columnas: el nombre en varias lineas a la izquierda y FECHA DE
+    NACIMIENTO y SEXO a la derecha, en las mismas lineas (el digital es la base de la foto);
+  - credencial_elector_sano_digital_curp_siglo: CURP impresa con O en lugar del 0 de la posicion 17.
   No forman parte de ningun folio de prueba ni cambian los SHA-256 de los ficheros de antes. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
 fixtures/especimenes/ (en git) y las prepara scripts/procesar_especimenes.py.
 
@@ -181,6 +186,7 @@ CASO_INCOHERENTE = "fechas_incoherentes"
 TITULO_SIN_RECIBO = "AVISO DE SERVICIO"
 PR_VARIANTES = "PR de fix/lectura-documentos (2026-10-08)"
 PR_VARIANTES_INE = "PR de fix/lectura-fotos (2026-10-09)"
+PR_VARIANTES_COLUMNAS = "PR de fix/nombre-ine-columnas (2026-10-12)"
 # CURP ficticia de la variante con caracteres confundibles: coherente con la persona 1 (1990-01-01, mujer) y con
 # letras que tienen pareja numerica. Impresa con un 1 en lugar de I (posicion 4, de letra) y O en lugar de 0
 # (posiciones 6 y 7, de digito): 3 cambios, que la correccion de confusiones del motor debe deshacer.
@@ -467,22 +473,46 @@ def dibujar_pasaporte(pagina, ficha, valores, mrz):
 
 
 def dibujar_credencial(pagina, ficha, valores, fondo_seguridad: bool = False, emision: int | None = None,
-                       impresos: dict | None = None):
+                       impresos: dict | None = None, columnas: str | None = None):
     """Sin parametros opcionales, igual que siempre. `fondo_seguridad`: lineas onduladas finas detras de los
     datos. `emision`: la ultima linea es "EMISION <anio>  VIGENCIA <anio>" (las dos en la misma linea).
-    `impresos`: valores que se imprimen en lugar de los esperados (p. ej. una CURP con confusiones)."""
+    `impresos`: valores que se imprimen en lugar de los esperados (p. ej. una CURP con confusiones).
+    `columnas`: el sexo (H/M) para la maqueta de dos columnas (nombre a la izquierda, una palabra por linea, y
+    FECHA DE NACIMIENTO y SEXO a la derecha en las mismas lineas), como en la INE real."""
     cabecera(pagina, ficha["nombre_visible"])
     if fondo_seguridad:
         fondo_de_seguridad(pagina)
     marca_de_agua_lateral(pagina)
     silueta(pagina, pymupdf.Rect(20, 52, 150, 216))
     mostrados = {**valores, **(impresos or {})}
+    if columnas is not None:
+        dibujar_credencial_columnas(pagina, ficha, mostrados, columnas)
+        return
     if emision is None:
         campos_en_columna(pagina, 172, 56, ficha["campos"], mostrados, paso=31, tam=11)
         return
     campos = {c: d for c, d in ficha["campos"].items() if c != "vigencia"}
     y = campos_en_columna(pagina, 172, 56, campos, mostrados, paso=31, tam=11)
     texto(pagina, 172, y + 13, f"EMISIÓN {emision}   VIGENCIA {valores['vigencia']}", tam=11, fuente="hebo")
+
+
+def dibujar_credencial_columnas(pagina, ficha, valores, sexo: str) -> None:
+    """Maqueta de dos columnas: NOMBRE en varias lineas a la izquierda y, en esas mismas lineas, FECHA DE
+    NACIMIENTO, la fecha y SEXO a la derecha (un OCR linea a linea mezcla las dos columnas). Las palabras del
+    nombre van en el orden del valor esperado. El resto de campos, debajo, como siempre."""
+    izquierda, derecha, y = 172, 400, 56
+    texto(pagina, izquierda, y, "NOMBRE", tam=7, color=GRIS_TEXTO)
+    texto(pagina, derecha, y, "FECHA DE NACIMIENTO", tam=7, color=GRIS_TEXTO)
+    palabras = str(valores["nombre_completo"]).split()
+    derecha_lineas = [formatear(valores["fecha_nacimiento"]), f"SEXO {sexo}"]
+    for i in range(max(len(palabras), len(derecha_lineas))):
+        y += 14
+        if i < len(palabras):
+            texto(pagina, izquierda, y, palabras[i], tam=11, fuente="hebo")
+        if i < len(derecha_lineas):
+            texto(pagina, derecha, y, derecha_lineas[i], tam=11, fuente="hebo")
+    resto = {c: d for c, d in ficha["campos"].items() if c not in ("nombre_completo", "fecha_nacimiento")}
+    campos_en_columna(pagina, izquierda, y + 22, resto, valores, paso=31, tam=11)
 
 
 def fondo_de_seguridad(pagina) -> None:
@@ -551,6 +581,9 @@ def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date,
             dibujar_credencial(pagina, ficha, valores, **credencial)
             impresos = credencial.get("impresos") or {}
             esperado = [fmt(impresos.get(c, valores[c])) for c in ficha["campos"]]
+            if credencial.get("columnas") is not None:
+                esperado = [p for p in esperado if p != fmt(valores["nombre_completo"])]
+                esperado += str(valores["nombre_completo"]).split()
         else:
             dibujar_credencial(pagina, ficha, valores)
     elif formato_fecha is None and titulo is None and fecha_limite_pago is None:
@@ -911,6 +944,33 @@ def generar_variantes(salida: Path, fichas: dict, documentos: dict, hoy: date) -
             generar_foto(salida / nombre_archivo(tipo, "sano", "digital", "curp_confundible"), ruta_v)
         anotar_ine(ruta_v, modalidad, f'CURP impresa "{CURP_CONFUNDIBLE_IMPRESA}" (1 por I y O por 0); esperada la '
                                       "correcta", valores_curp)
+
+    # INE (2026-10-12, PR de fix/nombre-ine-columnas)
+    def anotar_columnas(ruta: Path, modalidad: str, prueba: str, vals: dict) -> None:
+        anotar(ruta, tipo, modalidad, prueba, vals)
+        variantes[ruta.name]["pr"] = PR_VARIANTES_COLUMNAS
+
+    # Nombre en varias lineas a la izquierda y FECHA DE NACIMIENTO y SEXO a la derecha, en las mismas lineas
+    sexo_ine = "M" if PERSONAS_FICTICIAS[CASOS["sano"]["persona"]]["sexo"] == "F" else "H"
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "columnas")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital,
+                                                  credencial={"columnas": sexo_ine}))
+    foto = salida / nombre_archivo(tipo, "sano", "foto", "columnas")
+    generar_foto(digital, foto)
+    anotar_columnas(digital, "digital", "base de la foto en columnas", valores)
+    anotar_columnas(foto, "foto", "nombre en varias lineas a la izquierda y FECHA DE NACIMIENTO y SEXO a la derecha "
+                                  "en las mismas lineas: un OCR linea a linea mezcla las columnas", valores)
+
+    # CURP impresa con O en lugar del 0 de la posicion 17 (nacido antes de 2000: ahi va un digito)
+    curp = str(valores["curp"])
+    if not (curp[16] == "0" and int(str(valores["fecha_nacimiento"])[:4]) < 2000):
+        raise ErrorFixture("La CURP del caso sano debe tener un 0 en la posicion 17 y nacimiento antes de 2000")
+    impresa = curp[:16] + "O" + curp[17:]
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "curp_siglo")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital,
+                                                  credencial={"impresos": {"curp": impresa}}))
+    anotar_columnas(digital, "digital", f'CURP impresa "{impresa}" (O en lugar del 0 de la posicion 17, nacimiento '
+                                        "antes de 2000); esperada la correcta y sin REG-curp_coincide_nacimiento", valores)
     return variantes
 
 

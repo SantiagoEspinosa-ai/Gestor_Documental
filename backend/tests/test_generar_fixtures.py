@@ -234,6 +234,9 @@ ARCHIVOS_VARIANTES_INE = (
     {"credencial_elector_sano_digital_fondo_seguridad.pdf", "credencial_elector_sano_foto_fondo_seguridad.jpg",
      "credencial_elector_sano_digital_emision_vigencia.pdf",
      "credencial_elector_sano_digital_curp_confundible.pdf", "credencial_elector_sano_foto_curp_confundible.jpg"})
+# Variantes de la INE en columnas y con la posicion 17 de la CURP mal impresa (2026-10-12, PR de fix/nombre-ine-columnas)
+ARCHIVOS_VARIANTES_COLUMNAS = {"credencial_elector_sano_digital_columnas.pdf", "credencial_elector_sano_foto_columnas.jpg",
+                               "credencial_elector_sano_digital_curp_siglo.pdf"}
 
 
 def test_se_generan_todos_los_ficheros(generado):
@@ -241,8 +244,8 @@ def test_se_generan_todos_los_ficheros(generado):
     esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
     esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
     assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12 and len(ARCHIVOS_VARIANTES) == 10
-    assert len(ARCHIVOS_VARIANTES_INE) == 5
-    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES | ARCHIVOS_VARIANTES_INE
+    assert len(ARCHIVOS_VARIANTES_INE) == 5 and len(ARCHIVOS_VARIANTES_COLUMNAS) == 3
+    assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES | ARCHIVOS_VARIANTES_INE | ARCHIVOS_VARIANTES_COLUMNAS
     assert all((salida / nombre).is_file() for nombre in hashes)
     assert (salida / "INDICE.md").is_file()
 
@@ -423,6 +426,34 @@ def test_indice_marca_las_variantes_de_la_ine_en_su_pr(generado):
     assert not any(f"`{a}`" in seccion for a in ARCHIVOS_VARIANTES)  # cada variante en la seccion de su PR
     folios = indice.split("## Folios de prueba")[1].split("## Fixtures de dificultad")[0]
     assert not any(a.split(".")[0] in folios for a in ARCHIVOS_VARIANTES_INE)
+
+
+def test_indice_marca_las_variantes_en_columnas_en_su_pr(generado):
+    salida, hashes = generado
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    seccion = indice.split("## Variantes de lectura (anadidas en el PR de fix/nombre-ine-columnas (2026-10-12))")[1]
+    for archivo in ARCHIVOS_VARIANTES_COLUMNAS:
+        fila = next(l for l in seccion.splitlines() if l.startswith(f"| `{archivo}` |"))
+        assert hashes[archivo][:16] in fila
+    assert not any(f"`{a}`" in seccion for a in ARCHIVOS_VARIANTES_INE | ARCHIVOS_VARIANTES)
+    folios = indice.split("## Folios de prueba")[1].split("## Fixtures de dificultad")[0]
+    assert not any(a.split(".")[0] in folios for a in ARCHIVOS_VARIANTES_COLUMNAS)
+
+
+def test_variante_en_columnas_y_curp_siglo(generado):
+    salida, _ = generado
+    lineas = pymupdf.open(salida / "credencial_elector_sano_digital_columnas.pdf")[0].get_text().splitlines()
+    # El nombre, palabra a palabra, y a la derecha FECHA DE NACIMIENTO y SEXO
+    for palabra in gf.PERSONAS_FICTICIAS[0]["nombre_completo"].upper().split():
+        assert palabra in lineas
+    assert "FECHA DE NACIMIENTO" in lineas and any(l.startswith("SEXO ") for l in lineas)
+    texto = pymupdf.open(salida / "credencial_elector_sano_digital_curp_siglo.pdf")[0].get_text()
+    curp = gf.PERSONAS_FICTICIAS[0]["curp"]
+    impresa = curp[:16] + "O" + curp[17:]
+    assert impresa in texto and curp not in texto
+    indice = (salida / "INDICE.md").read_text(encoding="utf-8")
+    seccion = indice.split("fix/nombre-ine-columnas (2026-10-12))")[1]
+    assert f"| `curp` | {curp} |" in seccion  # esperada la CURP correcta, no la impresa
 
 
 def test_variantes_de_la_ine_esperan_los_valores_correctos(generado):

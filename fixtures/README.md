@@ -12,9 +12,9 @@ byte. Cada persona los genera en local.
 python scripts/generar_fixtures.py                    # --hoy = fecha de hoy
 python scripts/generar_fixtures.py --hoy 2026-09-30   # la de los mocks del frontend (DUP-001 contra ellos)
 ```
-Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 57
+Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 60
 ficheros e `INDICE.md`: 3 casos x 3 tipos x 3 modalidades (27), las 3 copias del caso `duplicado`
-(solo la credencial), 12 de dificultad, 10 variantes de lectura y 5 variantes de la INE (ver abajo).
+(solo la credencial), 12 de dificultad, 10 variantes de lectura y 8 variantes de la INE (ver abajo).
 
 ## Casos
 | Caso | Persona | Que tiene |
@@ -84,6 +84,16 @@ Anadidas en el PR de `fix/lectura-fotos`, tambien **fuera de la linea base del h
   (`SOB19OO101MDFGZS01`); la esperada es la correcta (`SOBI900101MDFGZS01`), que el motor debe recuperar
   con la correccion de confusiones.
 `INDICE.md` las lista en una seccion aparte, la de su PR.
+
+## Variantes de la INE en columnas (2026-10-12)
+Anadidas en el PR de `fix/nombre-ine-columnas`, fuera de la linea base del hito y generadas al final (no cambian
+ni un byte de los 57 de antes). Del caso `sano` de la credencial:
+- `columnas` (foto, y su digital como base): el nombre en varias lineas a la izquierda y FECHA DE NACIMIENTO,
+  la fecha y SEXO a la derecha, en las mismas lineas; un OCR linea a linea mezcla las dos columnas en el
+  nombre. Las palabras del nombre van en el orden del valor esperado;
+- `curp_siglo` (digital): la CURP impresa con una O en lugar del 0 de la posicion 17 (nacimiento antes de
+  2000: ahi va un digito); la esperada es la correcta y sin `REG-curp_coincide_nacimiento`.
+`INDICE.md` las lista en la seccion de su PR.
 
 ## INDICE.md
 `fixtures/generados/INDICE.md` es la verdad de referencia para los tests: archivos y SHA-256, valores
