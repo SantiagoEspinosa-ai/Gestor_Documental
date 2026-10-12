@@ -31,6 +31,13 @@
   --color-semaforo-gris-fondo: #F1F5F9;
   --color-semaforo-gris-borde: #94A3B8;
 
+  /* Fundido corto al cambiar el semaforo (p. ej. al terminar el analisis); no se usa con movimiento reducido */
+  --animate-aparecer: aparecer 300ms ease-out;
+  @keyframes aparecer {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
   /* Satoshi desde Fontshare (index.html); sin red, la fuente del sistema */
   --font-sans: "Satoshi", system-ui, sans-serif;
 }

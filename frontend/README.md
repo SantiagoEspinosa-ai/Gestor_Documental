@@ -200,7 +200,9 @@ hace fallar el build si queda algun rastro.
       A4b), semaforo con icono + texto, tipo, una linea de explicacion y "Abrir y revisar" (revisor) o
       "Abrir" (admin e integrador). En rojo, "Volver a subir" (enlace a la carga) solo para quien puede subir
       (integrador y revisor) y con el folio abierto. Los retirados (ADR-013), al final y en gris, con
-      "Restaurar" solo para el revisor y con el folio abierto. En proceso: gris con la fase corta (ADR-014).
+      "Restaurar" solo para el revisor y con el folio abierto. En proceso: gris con el icono de la fase y la fase
+      corta (ADR-014) y una barra "Paso N de 5" (`BarraAnalisis`, `componentes/FlujoAnalisis.tsx`; la vision
+      cuenta como el paso 4), sin contador. Al terminar, el semaforo aparece con un fundido corto.
     - Semaforo (`semaforoDocumento`, `utilidades/semaforo.ts`, con tests; orden validado por PERSONA_1:
       gana la primera regla que se cumple, lo mas grave siempre gana):
       1. retirado: gris "Retirado" (aunque tenga avisos);
@@ -226,8 +228,13 @@ hace fallar el build si queda algun rastro.
       (solo revisor) o, con el folio decidido, "Decision: ... · comentario · usuario · fecha. Folio cerrado".
   - Pestana Documentos, detalle (`?doc=`, `componentes/DetalleDocumento.tsx`), con "← Todos los documentos":
     titulo con el tipo y su semaforo; a la izquierda el original grande (`componentes/VisorOriginal.tsx`: la
-    URL se pide cada vez que se abre porque caduca; `iframe` para PDF, `img` para imagen; solo revisor y
-    admin); a la derecha, en este orden:
+    URL se pide cada vez que se abre porque caduca; solo revisor y admin). Imagen: "Alejar" (−), "Acercar" (+),
+    "Ajustar" y el porcentaje (50 % a 400 %, en pasos de 25; 100 % = ajustada), Ctrl + rueda, arrastrar con
+    zoom (tambien con las flechas) y "Pantalla completa" (dialogo modal; Esc lo cierra y el foco vuelve).
+    PDF: `iframe` con el zoom del navegador y "Abrir en pestaña nueva". Nada de esto vuelve a pedir el original
+    (cada `GET /documentos/{id}/original` deja `original_visto`, ADR-010 A4b): solo "Volver a cargar".
+    Mientras se analiza, encima, el flujo completo (`AvisoAnalisis` -> `FlujoAnalisis`, ver "Flujo del
+    analisis"). A la derecha, en este orden:
     1. Avisos del documento (`<ListaAlertas>`, agrupados por severidad con icono y texto) con `RevisarAlerta`:
        "¿Es un problema real del documento?", comentario opcional y "Si, es un problema" / "No, es un falso
        aviso" (las mismas llamadas que "Aplica" / "Falso positivo"). Ya revisada: "Revisado: ..." y "Cambiar
@@ -275,6 +282,16 @@ hace fallar el build si queda algun rastro.
     | ambar | `#78350F` | `#FEF3C7` | `#F59E0B` | 8,1:1 (9,1:1 sobre blanco) |
     | rojo | `#7F1D1D` | `#FEE2E2` | `#F87171` | 8,2:1 (10,0:1 sobre blanco) |
     | gris | `#334155` | `#F1F5F9` | `#94A3B8` | 9,5:1 (10,4:1 sobre blanco) |
+- Flujo del analisis (ADR-014; `componentes/FlujoAnalisis.tsx`, `utilidades/flujoAnalisis.ts`): pasos En espera
+  ("Se analiza un documento cada vez"), Preparando el documento, Leyendo el texto · OCR, Identificando el tipo
+  de documento, el desvio "La foto es difícil: pasamos a leerla como imagen" (solo si el documento pasa por
+  vision) y Extrayendo los datos (`ETIQUETA_FASE`). El actual en naranja, en negrita y con el icono con un
+  pulso suave, y con el contador "lleva X" (tiempo transcurrido, ADR-014 punto 6); los hechos con check en
+  q-slate; los pendientes en gris. Un paso esta hecho si va antes del actual (el sondeo puede saltarse fases)
+  o si ya se vio; las fases vistas las recuerda la pagina (`anotarFase`): tras recargar, una vision ya pasada
+  no se puede saber (la API solo da la fase actual). Un solo texto `aria-live="polite"` que cambia con la
+  fase, no con cada sondeo ni con el contador. Con `prefers-reduced-motion` no hay ninguna animacion
+  (`usePrefiereMenosMovimiento`): solo cambia el icono. Sin promesas de tiempo en los textos.
 - Sondeo (`utilidades/sondeo.ts`, hook `useSondeo`, comun a la carga y al expediente): mientras haya
   documentos pendientes o procesando consulta con una espera de 3 s que crece x1,5 hasta 15 s; un
   cambio de estado vuelve a los 3 s. Tras 10 minutos sin cambios (Ollama lento o caido) se detiene y
