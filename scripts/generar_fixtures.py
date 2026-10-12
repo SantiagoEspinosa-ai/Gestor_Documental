@@ -35,8 +35,15 @@ INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio d
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
 seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
-En total, 42 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado y 12 de
-dificultad. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
+En total, 52 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
+dificultad y 10 variantes de lectura (2026-10-08, fuera de la linea base del hito):
+  - comprobante_domicilio_sano_{digital,escaneado}_{mes_abreviado,mes_completo,mes_anio_corto}: la fecha de
+    emision con el mes en letras ("15 SEP 2026", "15 DE SEPTIEMBRE DE 2026", "15 SEP 26");
+  - pasaporte_sano_{digital,foto}_mrz_ruido: un caracter de ruido delante de la primera linea de la MRZ;
+  - pasaporte_fechas_incoherentes_digital: expedicion posterior al vencimiento (REG de coherencia);
+  - comprobante_domicilio_sano_digital_sin_recibo: "FECHA LIMITE DE PAGO" y "SERVICIO", sin RECIBO ni
+    COMPROBANTE.
+  No forman parte de ningun folio de prueba ni cambian los SHA-256 de los ficheros de antes. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
 fixtures/especimenes/ (en git) y las prepara scripts/procesar_especimenes.py.
 
 Tras cambiar este generador, comprueba la legibilidad OCR con scripts/verificar_ocr_fixtures.py
@@ -154,6 +161,21 @@ PARAMETROS = {
                     "desenfoque": 1.45, "calidad": 30},
     },
 }
+# Variantes de lectura (2026-10-08): fixtures para fechas con el mes en letras, MRZ con ruido, fechas
+# incoherentes y recibos sin RECIBO ni COMPROBANTE. Se generan al final, sin tocar los ficheros de antes.
+MESES_ABREVIADOS = ("ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC")
+MESES_COMPLETOS = ("ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE",
+                   "OCTUBRE", "NOVIEMBRE", "DICIEMBRE")
+FORMATOS_FECHA = {
+    "mes_abreviado": lambda d: f"{d.day:02d} {MESES_ABREVIADOS[d.month - 1]} {d.year}",
+    "mes_completo": lambda d: f"{d.day} DE {MESES_COMPLETOS[d.month - 1]} DE {d.year}",
+    "mes_anio_corto": lambda d: f"{d.day:02d} {MESES_ABREVIADOS[d.month - 1]} {d.year % 100:02d}",
+}
+RUIDO_MRZ = "#"  # delante de la primera linea de la MRZ: 45 caracteres
+CASO_INCOHERENTE = "fechas_incoherentes"
+TITULO_SIN_RECIBO = "AVISO DE SERVICIO"
+PR_VARIANTES = "PR de fix/lectura-documentos (2026-10-08)"
+
 GRIS_TEXTO = (0.35, 0.35, 0.35)
 GRIS_MARCA = (0.93, 0.93, 0.93)  # marca de agua muy tenue
 AZUL_CABECERA = (0.12, 0.23, 0.42)
@@ -412,10 +434,10 @@ def silueta(pagina, rect: pymupdf.Rect) -> None:
     pagina.draw_rect(rect, color=(0.6, 0.6, 0.6), width=0.8)
 
 
-def campos_en_columna(pagina, x, y, campos: dict, valores: dict, paso=30, tam=12):
+def campos_en_columna(pagina, x, y, campos: dict, valores: dict, paso=30, tam=12, fmt=formatear):
     for campo in campos:  # orden del YAML
         texto(pagina, x, y, campo.replace("_", " ").upper(), tam=7, color=GRIS_TEXTO)
-        texto(pagina, x, y + 13, formatear(valores[campo]), tam=tam, fuente="hebo")
+        texto(pagina, x, y + 13, fmt(valores[campo]), tam=tam, fuente="hebo")
         y += paso
     return y
 
@@ -439,9 +461,14 @@ def dibujar_credencial(pagina, ficha, valores):
     campos_en_columna(pagina, 172, 56, ficha["campos"], valores, paso=31, tam=11)
 
 
-def dibujar_comprobante(pagina, ficha, valores, rng: random.Random):
-    cabecera(pagina, f"{valores['proveedor']} - {ficha['nombre_visible']}", alto_barra=46)
-    y = campos_en_columna(pagina, 50, 90, ficha["campos"], valores, paso=36)
+def dibujar_comprobante(pagina, ficha, valores, rng: random.Random, fmt=formatear, titulo: str | None = None,
+                        fecha_limite_pago: date | None = None):
+    cabecera(pagina, f"{valores['proveedor']} - {titulo or ficha['nombre_visible']}", alto_barra=46)
+    y = campos_en_columna(pagina, 50, 90, ficha["campos"], valores, paso=36, fmt=fmt)
+    if fecha_limite_pago is not None:  # variante sin_recibo
+        texto(pagina, 50, y, "FECHA LIMITE DE PAGO", tam=7, color=GRIS_TEXTO)
+        texto(pagina, 50, y + 13, formatear(fecha_limite_pago), tam=12, fuente="hebo")
+        y += 36
     # Detalle decorativo con importes ficticios (dependen solo de la semilla del fichero)
     y += 20
     texto(pagina, 50, y, "DETALLE DEL PERIODO (IMPORTES FICTICIOS)", tam=9, fuente="hebo", color=GRIS_TEXTO)
@@ -470,20 +497,30 @@ def metadatos(ficha: dict, caso: str, modalidad: str, hoy: date) -> dict:
             "creationDate": fecha_pdf, "modDate": fecha_pdf}
 
 
-def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date, destino: Path) -> list[str]:
-    """PDF con capa de texto real. Devuelve el texto que debe poder extraerse."""
+def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date, destino: Path,
+                    formato_fecha=None, ruido_mrz: str = "", titulo: str | None = None,
+                    fecha_limite_pago: date | None = None) -> list[str]:
+    """PDF con capa de texto real. Devuelve el texto que debe poder extraerse. Los parametros opcionales son
+    para las variantes de lectura; sin ellos, el PDF sale igual que siempre."""
+    fmt = formatear if formato_fecha is None else (
+        lambda v: formato_fecha(v) if isinstance(v, date) else formatear(v))
     doc = pymupdf.open()
     pagina = doc.new_page(width=PAGINAS[tipo][0], height=PAGINAS[tipo][1])
-    esperado = [formatear(valores[c]) for c in ficha["campos"]]
+    esperado = [fmt(valores[c]) for c in ficha["campos"]]
     if tipo == "pasaporte":
         mrz = generar_mrz(valores)
         validar_mrz(*mrz, valores)
+        if ruido_mrz:
+            mrz = (ruido_mrz + mrz[0], mrz[1])
         dibujar_pasaporte(pagina, ficha, valores, mrz)
         esperado += list(mrz)
     elif tipo == "credencial_elector":
         dibujar_credencial(pagina, ficha, valores)
-    else:
+    elif formato_fecha is None and titulo is None and fecha_limite_pago is None:
         dibujar_comprobante(pagina, ficha, valores, rng_para(destino.name))
+    else:
+        dibujar_comprobante(pagina, ficha, valores, rng_para(destino.name), fmt=fmt, titulo=titulo,
+                            fecha_limite_pago=fecha_limite_pago)
     doc.set_metadata(metadatos(ficha, caso, "digital", hoy))
     doc.save(destino, garbage=4, deflate=True, no_new_id=True)
     doc.close()
@@ -614,7 +651,7 @@ def sha256(ruta: Path) -> str:
 
 
 def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, documentos: dict,
-                    hashes: dict, dificultad: dict) -> Path:
+                    hashes: dict, dificultad: dict, variantes: dict | None = None) -> Path:
     persona = lambda i: f"persona {i + 1} ({PERSONAS_FICTICIAS[i]['nombre_completo'].upper()})"
     iso = lambda v: v.isoformat() if isinstance(v, date) else str(v)
     lineas = [
@@ -675,6 +712,29 @@ def escribir_indice(salida: Path, hoy: date, fichas: dict, proceso: dict, docume
         lineas += [f"| `{campo}` | {iso(valores[campo])} |" for campo in fichas[tipo]["campos"]]
         if tipo == "pasaporte":
             lineas += ["", "MRZ:", "", "```", *generar_mrz(valores), "```"]
+    if variantes:
+        lineas += ["", f"## Variantes de lectura (anadidas en el {PR_VARIANTES})", "",
+                   "**Anadidas en ese PR, fuera de la linea base del hito**: no forman parte de ningun folio de",
+                   "prueba ni de los SHA-256 registrados de los ficheros de antes. Cubren fallos vistos con",
+                   "documentos reales: fechas con el mes en letras, MRZ con ruido de OCR, fechas incoherentes",
+                   "y recibos sin RECIBO ni COMPROBANTE.", "",
+                   "| Archivo | Tipo | Modalidad | Que prueba | Alertas deterministas esperadas | SHA-256 |",
+                   "|---|---|---|---|---|---|"]
+        for archivo, v in variantes.items():
+            alertas = ", ".join(f"`{a['codigo']}` ({a['severidad']}, {a['campo']})" for a in v["alertas"]) or "ninguna"
+            lineas.append(f"| `{archivo}` | {v['tipo']} | {v['modalidad']} | {v['prueba']} | {alertas} "
+                          f"| `{hashes[archivo][:16]}...` |")
+        vistos = []
+        for archivo, v in variantes.items():
+            clave = (v["tipo"], tuple(sorted((k, iso(x)) for k, x in v["valores"].items())))
+            if clave in vistos:
+                continue
+            vistos.append(clave)
+            mismos = [a for a, w in variantes.items()
+                      if (w["tipo"], tuple(sorted((k, iso(x)) for k, x in w["valores"].items()))) == clave]
+            lineas += ["", f"### Valores esperados: {', '.join(f'`{a}`' for a in mismos)}", "",
+                       "| Campo | Valor esperado |", "|---|---|"]
+            lineas += [f"| `{campo}` | {iso(v['valores'][campo])} |" for campo in fichas[v["tipo"]]["campos"]]
     ruta = salida / "INDICE.md"
     ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
     return ruta
@@ -704,11 +764,67 @@ def generar(hoy: date, salida: Path = SALIDA) -> dict[str, str]:
             shutil.copyfile(salida / nombre_archivo(tipo, origen, modalidad),
                             salida / nombre_archivo(tipo, caso, modalidad))
     dificultad = generar_dificultad(salida, fichas, hoy)
+    variantes = generar_variantes(salida, fichas, documentos, hoy)  # al final: no cambia nada de lo anterior
     hashes = {nombre_archivo(t, c, m): sha256(salida / nombre_archivo(t, c, m))
               for (c, t) in documentos for m in MODALIDADES}
     hashes |= {archivo: sha256(salida / archivo) for archivo in dificultad}
-    escribir_indice(salida, hoy, fichas, proceso, documentos, hashes, dificultad)
+    hashes |= {archivo: sha256(salida / archivo) for archivo in variantes}
+    escribir_indice(salida, hoy, fichas, proceso, documentos, hashes, dificultad, variantes)
     return hashes
+
+
+def generar_variantes(salida: Path, fichas: dict, documentos: dict, hoy: date) -> dict[str, dict]:
+    """Variantes de lectura (2026-10-08). Devuelve {archivo: {tipo, modalidad, prueba, valores, alertas}}."""
+    variantes: dict[str, dict] = {}
+
+    def anotar(ruta: Path, tipo: str, modalidad: str, prueba: str, valores: dict, alertas=()) -> None:
+        variantes[ruta.name] = {"tipo": tipo, "modalidad": modalidad, "prueba": prueba, "valores": valores,
+                                "alertas": list(alertas)}
+
+    # Comprobante con la fecha de emision con el mes en letras, en digital y escaneado
+    tipo, ficha = "comprobante_domicilio", fichas["comprobante_domicilio"]
+    valores = documentos[("sano", tipo)]["valores"]
+    for variante, formato in FORMATOS_FECHA.items():
+        digital = salida / nombre_archivo(tipo, "sano", "digital", variante)
+        comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital, formato_fecha=formato))
+        escaneado = salida / nombre_archivo(tipo, "sano", "escaneado", variante)
+        generar_escaneado(digital, escaneado, ficha, "sano", hoy)
+        prueba = f'fecha_emision con el mes en letras: "{formato(valores["fecha_emision"])}"'
+        anotar(digital, tipo, "digital", prueba, valores)
+        anotar(escaneado, tipo, "escaneado", prueba, valores)
+
+    # Comprobante sin RECIBO ni COMPROBANTE, con FECHA LIMITE DE PAGO y SERVICIO
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "sin_recibo")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital, titulo=TITULO_SIN_RECIBO,
+                                                  fecha_limite_pago=valores["fecha_emision"] + timedelta(days=20)))
+    with pymupdf.open(digital) as doc:
+        contenido = " ".join(p.get_text() for p in doc).upper()
+    if "RECIBO" in contenido or "COMPROBANTE" in contenido or "SERVICIO" not in contenido:
+        raise ErrorFixture(f"{digital.name}: debe llevar SERVICIO y no RECIBO ni COMPROBANTE")
+    anotar(digital, tipo, "digital", 'marcadores "FECHA LIMITE DE PAGO" y "SERVICIO", sin RECIBO ni COMPROBANTE',
+           valores)
+
+    # Pasaporte con un caracter de ruido delante de la primera linea de la MRZ, en digital y foto
+    tipo, ficha = "pasaporte", fichas["pasaporte"]
+    valores = documentos[("sano", tipo)]["valores"]
+    digital = salida / nombre_archivo(tipo, "sano", "digital", "mrz_ruido")
+    comprobar_capa_texto(digital, generar_digital(tipo, "sano", ficha, valores, hoy, digital, ruido_mrz=RUIDO_MRZ))
+    foto = salida / nombre_archivo(tipo, "sano", "foto", "mrz_ruido")
+    generar_foto(digital, foto)
+    prueba = f'MRZ con "{RUIDO_MRZ}" delante de la primera linea (45 caracteres)'
+    anotar(digital, tipo, "digital", prueba, valores)
+    anotar(foto, tipo, "foto", prueba, valores)
+
+    # Pasaporte con la expedicion posterior al vencimiento: se completa con su REG de coherencia
+    valores = {**valores, "fecha_expedicion": valores["fecha_vencimiento"] + timedelta(days=365)}
+    validar_valores(tipo, valores, ficha)
+    alertas = evaluar_reglas(ficha, valores, hoy)
+    if not alertas:
+        raise ErrorFixture(f"{CASO_INCOHERENTE}: debe incumplir una regla de coherencia")
+    digital = salida / nombre_archivo(tipo, CASO_INCOHERENTE, "digital")
+    comprobar_capa_texto(digital, generar_digital(tipo, CASO_INCOHERENTE, ficha, valores, hoy, digital))
+    anotar(digital, tipo, "digital", "expedicion posterior al vencimiento", valores, alertas)
+    return variantes
 
 
 def generar_dificultad(salida: Path, fichas: dict, hoy: date) -> dict[str, dict]:

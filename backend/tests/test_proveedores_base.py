@@ -3,6 +3,8 @@ import io
 import json
 from pathlib import Path
 
+from datetime import date
+
 import pytest
 from PIL import Image
 
@@ -62,6 +64,38 @@ def png(ancho: int, alto: int) -> bytes:
 ])
 def test_normalizar_fecha(entrada, esperado):
     assert normalizar_fecha(entrada) == esperado
+
+
+HOY_FECHAS = date(2026, 10, 8)
+
+
+@pytest.mark.parametrize("entrada, esperado", [
+    # Mes en letras (recibos): abreviado o completo, mayusculas o minusculas, con o sin acentos y "DE"
+    ("15 SEP 2026", "2026-09-15"), ("15-SEP-2026", "2026-09-15"), ("15/sep/2026", "2026-09-15"),
+    ("15 sept. 2026", "2026-09-15"), ("15 DE SEPTIEMBRE DE 2026", "2026-09-15"), ("1 de enero de 2027", "2027-01-01"),
+    ("15 Setiembre 2026", "2026-09-15"), ("3 DIC 2025", "2025-12-03"), ("15SEP2026", "2026-09-15"),
+    ("15 SEP 26", "2026-09-15"), ("31 dic 27", "2027-12-31"),  # anio de 2 cifras hasta el siguiente al de hoy
+    ("15 Sépt 2026", "2026-09-15"),  # con acento (OCR)
+    ("05 ABR 1990", "1990-04-05"),
+    # Imposibles o fuera de rango
+    ("31 FEB 2026", None), ("31 FEBRERO 26", None), ("15 SEP 1850", None), ("15 SEP 2150", None),
+    # Ambiguos o incompletos: nunca se adivinan
+    ("15 SEP 28", None),  # 2028 > 2027: no se inventan fechas futuras
+    ("15 SEP 85", None),  # seria 2085
+    ("SEP 2026", None), ("15 SEP", None), ("SEP 15 2026", None), ("15 XYZ 2026", None),
+    ("15 SEPTIEMBRES 2026", None), ("15 SEP 2026 10:00", None),
+    # Rangos pegados del recibo: nunca una mezcla de las dos fechas
+    ("03 DIC 24-04 FEB 25", None), ("03 DIC 2024 AL 04 FEB 2025", None), ("15 SEP 2026 - 14 OCT 2026", None),
+    # El anio de 2 cifras solo vale con el mes en letras
+    ("15/09/26", None), ("15 09 26", None),
+])
+def test_normalizar_fecha_con_mes_en_letras(entrada, esperado):
+    assert normalizar_fecha(entrada, hoy=HOY_FECHAS) == esperado
+
+
+def test_anio_de_2_cifras_depende_de_hoy():
+    assert normalizar_fecha("15 SEP 28", hoy=date(2027, 1, 1)) == "2028-09-15"
+    assert normalizar_fecha("15 SEP 28", hoy=date(2026, 12, 31)) is None
 
 
 # --- limpiar y parsear ---

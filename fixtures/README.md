@@ -12,9 +12,9 @@ byte. Cada persona los genera en local.
 python scripts/generar_fixtures.py                    # --hoy = fecha de hoy
 python scripts/generar_fixtures.py --hoy 2026-09-30   # la de los mocks del frontend (DUP-001 contra ellos)
 ```
-Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 42
+Necesita PyMuPDF, Pillow y PyYAML (`backend/requirements.txt`). Tarda unos segundos y genera 52
 ficheros e `INDICE.md`: 3 casos x 3 tipos x 3 modalidades (27), las 3 copias del caso `duplicado`
-(solo la credencial) y 12 de dificultad.
+(solo la credencial), 12 de dificultad y 10 variantes de lectura (ver abajo).
 
 ## Casos
 | Caso | Persona | Que tiene |
@@ -57,6 +57,21 @@ Para que PERSONA_2 decida cuando el motor pasa del OCR al modelo de vision, el c
 `comprobante_domicilio`. Ejemplo: `pasaporte_vencido_escaneado.pdf`.
 Niveles de dificultad: `{tipo}_sano_{modalidad}_{nivel}.{pdf|jpg}`, por ejemplo
 `pasaporte_sano_foto_dificil.jpg`.
+Variantes de lectura: `{tipo}_{caso}_{modalidad}_{variante}.{pdf|jpg}` (p. ej.
+`comprobante_domicilio_sano_escaneado_mes_abreviado.pdf`) y `pasaporte_fechas_incoherentes_digital.pdf`.
+
+## Variantes de lectura (2026-10-08)
+Anadidas en el PR de `fix/lectura-documentos`, **fuera de la linea base del hito**: no forman parte de
+ningun folio de prueba ni de los SHA-256 registrados (`backend/tests/sha256_fixtures_existentes.txt`), y
+se generan al final, asi que no cambian ni un byte de los 42 de antes. Cubren fallos vistos con
+documentos reales:
+- comprobante con la fecha de emision con el mes en letras, en digital y escaneado: `mes_abreviado`
+  ("15 SEP 2026"), `mes_completo` ("15 DE SEPTIEMBRE DE 2026") y `mes_anio_corto` ("15 SEP 26");
+- comprobante `sin_recibo`: "FECHA LIMITE DE PAGO" y "SERVICIO", sin RECIBO ni COMPROBANTE (marcadores);
+- pasaporte `mrz_ruido` (digital y foto): un `#` delante de la primera linea de la MRZ (45 caracteres);
+- pasaporte `fechas_incoherentes` (digital): expedicion posterior al vencimiento; el analisis debe
+  completarse con `REG-expedicion_antes_de_vencimiento` (critica), sin error.
+`INDICE.md` las lista en su propia seccion, con los valores y las alertas deterministas esperadas.
 
 ## INDICE.md
 `fixtures/generados/INDICE.md` es la verdad de referencia para los tests: archivos y SHA-256, valores
@@ -91,6 +106,7 @@ entre secciones, el orden de los documentos y las columnas de la tabla "Archivos
 | Caso `duplicado` | `### duplicado / credencial_elector`: los lectores lo **excluyen** (mismo SHA-256 que el sano) | test OCR, evaluacion |
 | Fichero de dificultad | fila `` | `<archivo>` | <tipo> | <escaneado o foto> | <dificil o extremo> | ... | `` dentro de `## Fixtures de dificultad` | evaluacion |
 | Valores de dificultad | `### Valores esperados: <tipo>` y sus filas de valor (los del caso sano) | evaluacion |
+| Variantes de lectura | `## Variantes de lectura (anadidas en el PR de fix/lectura-documentos (2026-10-08))`: tabla de ficheros (tipo, modalidad, que prueba, alertas esperadas, SHA-256) y `### Valores esperados: <archivos>` | test OCR (se salta si no estan) |
 | Especimenes | no estan en `INDICE.md`: se leen de `fixtures/especimenes/*_sano_especimen_*.jpg` con los valores del caso sano | evaluacion (bloque 5), calibracion |
 
 Comprobacion rapida tras cambiar el generador: `python docs/motor_ia/pruebas_ollama/evaluar_fixtures.py indice`

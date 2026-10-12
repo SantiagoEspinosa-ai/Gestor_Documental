@@ -26,6 +26,41 @@ def test_sin_mrz(texto):
     assert buscar_mrz(texto) is None
 
 
+# --- MRZ con ruido de OCR en los bordes (43-45 caracteres): solo si cuadran los digitos de control ---
+
+@pytest.mark.parametrize("linea1, linea2", [
+    ("." + LINEA1, LINEA2),            # ruido al principio de la linea 1 (simbolo)
+    (LINEA1 + "|", LINEA2),            # ruido al final de la linea 1
+    ("K" + LINEA1, LINEA2),            # caracter de mas al principio de la linea 1 (45): se quita el borde
+    (LINEA1 + "<", LINEA2),            # un relleno de mas al final de la linea 1 (45)
+    ("'" + LINEA1 + ".", LINEA2),      # ruido en los dos bordes
+    (LINEA1, "." + LINEA2),            # ruido al principio de la linea 2
+    (LINEA1, LINEA2 + ","),            # ruido al final de la linea 2
+    (LINEA1, "7" + LINEA2),            # un caracter de mas al principio de la linea 2 (45)
+    (LINEA1[:-1], LINEA2),             # a la linea 1 le falta un relleno (43): se repone
+])
+def test_mrz_con_ruido_en_los_bordes_se_repara(linea1, linea2):
+    assert buscar_mrz(f"PASAPORTE\n{linea1}\n{linea2}\nfin") == Mrz(LINEA1, LINEA2)
+
+
+@pytest.mark.parametrize("linea1, linea2", [
+    (LINEA1, LINEA2[:-1]),                           # a la linea 2 le falta un caracter (43): no se repone
+    (LINEA1, LINEA2[:20] + "5" + LINEA2[20:]),       # un caracter de mas DENTRO de la linea 2: digitos rotos
+    ("." + LINEA1, LINEA2[:18] + "Z" + LINEA2[19:-1] + "0."),  # ruido + un digito mal leido: no cuadra
+    (LINEA1, "." + LINEA2[:-1] + "9"),               # ruido y digito compuesto incorrecto
+    ("..." + LINEA1 + "XY", LINEA2),                 # 46 tras quitar el ruido: fuera de 43-45
+    (LINEA1[:-2], LINEA2),                           # linea 1 de 42
+])
+def test_mrz_con_ruido_que_rompe_los_digitos_se_descarta(linea1, linea2):
+    assert buscar_mrz(f"{linea1}\n{linea2}") is None
+
+
+def test_la_mrz_exacta_no_cambia_aunque_falle_un_digito():
+    # Sin reparar, como hasta ahora: la acepta y validar_digitos marca el fallo (baja la confianza, ADR-007)
+    erronea = LINEA2[:18] + "Z" + LINEA2[19:]
+    assert buscar_mrz(f"{LINEA1}\n{erronea}") == Mrz(LINEA1, erronea)
+
+
 def test_digitos_de_control_correctos():
     assert validar_digitos(Mrz(LINEA1, LINEA2)) == {
         "numero_documento": True, "fecha_nacimiento": True, "fecha_vencimiento": True,

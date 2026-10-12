@@ -9,6 +9,7 @@ import io
 import json
 import os
 import re
+import unicodedata
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date
@@ -139,13 +140,55 @@ _DMA_SIN_SEPARADOR = re.compile(r"^(\d{2})(\d{2})(\d{4})$")
 _DM_A = re.compile(r"^(\d{2})(\d{2})[/.\- ](\d{4})$")
 ANIO_MIN_OCR, ANIO_MAX_OCR = 1900, 2100
 _ISO = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+# Mes en letras (recibos y algunos pasaportes): "15 SEP 2026", "15-SEP-2026", "15 DE SEPTIEMBRE DE 2026" y
+# "15 SEP 26". Meses en espanol, abreviados o completos, en mayusculas o minusculas y con o sin acentos.
+# Limites (a proposito):
+#   - la cadena entera debe ser UNA fecha: un rango ("03 DIC 24-04 FEB 25") o una fecha con mas texto da None;
+#   - dia primero; "SEP 15 2026", "SEP 2026" (sin dia) o "15 SEP" (sin anio) dan None;
+#   - anio de 2 cifras SOLO con el mes en letras, como 20AA, y solo si no pasa del anio siguiente al de hoy
+#     ("15 SEP 28" en 2026 -> None: no se inventan fechas futuras). Una fecha de nacimiento del siglo XX con
+#     anio de 2 cifras ("15 SEP 85") seria 2085 -> None tambien; los documentos que la traen asi no se leen;
+#   - anio de 4 cifras entre 1900 y 2100, como en los formatos sin separadores.
+MESES = {"ENE": 1, "ENERO": 1, "FEB": 2, "FEBRERO": 2, "MAR": 3, "MARZO": 3, "ABR": 4, "ABRIL": 4, "MAY": 5,
+         "MAYO": 5, "JUN": 6, "JUNIO": 6, "JUL": 7, "JULIO": 7, "AGO": 8, "AGOSTO": 8, "SEP": 9, "SEPT": 9,
+         "SEPTIEMBRE": 9, "SETIEMBRE": 9, "OCT": 10, "OCTUBRE": 10, "NOV": 11, "NOVIEMBRE": 11, "DIC": 12,
+         "DICIEMBRE": 12}
+_MES = "|".join(sorted(MESES, key=len, reverse=True))  # el mas largo primero: SEPTIEMBRE antes que SEP
+# Dia, mes y anio con separador (espacio, - / .) o " DE "; tambien pegados ("15SEP2026"). Sin anclas: la usan
+# normalizar_fecha (con fullmatch) y la busqueda de fechas en el texto (confianza.py)
+PATRON_FECHA_MES_EN_LETRAS = (rf"(\d{{1,2}})(?:\s+DE\s+|\s*[-/.]\s*|\s*)({_MES})\.?"
+                              rf"(?:\s+DE(?:L)?\s+|\s*[-/.]\s*|\s*)(\d{{4}}|\d{{2}})")
+_FECHA_MES_EN_LETRAS = re.compile(PATRON_FECHA_MES_EN_LETRAS)
 _ANIO = re.compile(r"^\d{4}$")
 _EVIDENCIA = re.compile(r"^(pagina_([1-9]\d*))(:.+)?$")
 
 
-def normalizar_fecha(valor) -> str | None:
+def sin_acentos_en_mayusculas(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().upper()
+
+
+def _fecha_mes_en_letras(texto: str, hoy: date | None) -> tuple[int, int, int] | None:
+    """(anio, mes, dia) de una fecha con el mes en letras que ocupa toda la cadena; None si no lo es."""
+    m = _FECHA_MES_EN_LETRAS.fullmatch(" ".join(sin_acentos_en_mayusculas(texto).split()))
+    if m is None:
+        return None
+    dia, mes, anio = int(m.group(1)), MESES[m.group(2)], m.group(3)
+    if len(anio) == 2:
+        anio = 2000 + int(anio)
+        if anio > (hoy or date.today()).year + 1:
+            return None
+    else:
+        anio = int(anio)
+        if not ANIO_MIN_OCR <= anio <= ANIO_MAX_OCR:
+            return None
+    return anio, mes, dia
+
+
+def normalizar_fecha(valor, *, hoy: date | None = None) -> str | None:
     """Dia/mes/anio (separador / . - o espacio) -> AAAA-MM-DD; ISO valido se deja igual. Tambien los separadores
-    que pierde el OCR: DDMMAAAA y DDMM/AAAA, con anio entre 1900 y 2100.
+    que pierde el OCR (DDMMAAAA y DDMM/AAAA, con anio entre 1900 y 2100) y el mes en letras ("15 SEP 2026",
+    "15 DE SEPTIEMBRE DE 2026", "15 SEP 26"; limites en el comentario de MESES). `hoy` solo cuenta para el anio
+    de 2 cifras (por defecto, la fecha del sistema).
     None si no es una fecha reconocible o no existe (p. ej. 31/02/2024)."""
     if not isinstance(valor, str):
         return None
@@ -158,6 +201,8 @@ def normalizar_fecha(valor) -> str | None:
         dia, mes, anio = map(int, m.groups())
         if not ANIO_MIN_OCR <= anio <= ANIO_MAX_OCR:
             return None
+    elif partes := _fecha_mes_en_letras(texto, hoy):
+        anio, mes, dia = partes
     else:
         return None
     try:
