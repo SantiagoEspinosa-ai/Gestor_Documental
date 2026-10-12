@@ -23,6 +23,13 @@ PESO_FORMATO = 0.4
 SIMILITUD_MINIMA = 0.85
 # Si fallan los digitos de control de la MRZ, los campos que cubre no pasan de aqui.
 TOPE_MRZ_FALLIDA = 0.5
+# Nombre cortado (2026-10-12): en la INE y en el pasaporte el nombre va en varias lineas (apellidos y nombres) y
+# el modelo puede quedarse con una sola palabra, que si aparece en el texto saldria verificada. Un nombre_completo
+# con menos de 2 palabras de letras no pasa de este tope (por debajo del minimo de campo: salta VAL-002). La MRZ
+# del pasaporte no verifica el nombre, asi que tampoco lo evita.
+TOPE_NOMBRE_CORTADO = 0.6
+TIPOS_NOMBRE_EN_VARIAS_LINEAS = frozenset({"credencial_elector", "pasaporte"})
+_PALABRA_DE_LETRAS = re.compile(r"[^\W\d_]+")  # letras de cualquier alfabeto: acentos, Ñ y Ü incluidas
 
 _FECHA_EN_TEXTO = re.compile(r"(?<!\d)(\d{1,4})[/.\- ](\d{1,2})[/.\- ](\d{2,4})(?!\d)")
 # Mes en letras ("15 SEP 2026"): el texto ya esta normalizado (mayusculas, sin acentos). Sin cifras ni letras
@@ -95,7 +102,16 @@ def confianzas_de_campos(datos: Mapping[str, Any], ficha: TipoDocumental, texto_
             else:
                 aparece = 0.0  # la MRZ, con sus digitos correctos, dice otra cosa: el valor no esta verificado
         resultado[nombre] = round(PESO_APARECE * aparece + PESO_FORMATO * formato, 3)
+    if ficha.nombre in TIPOS_NOMBRE_EN_VARIAS_LINEAS and nombre_cortado(datos.get("nombre_completo")):
+        resultado["nombre_completo"] = min(resultado.get("nombre_completo", 0.0), TOPE_NOMBRE_CORTADO)
     return resultado
+
+
+def nombre_cortado(valor: Any) -> bool:
+    """Un nombre_completo con valor pero con menos de 2 palabras de letras ("DE LA CRUZ" son 3)"""
+    if not isinstance(valor, str) or not valor.strip():
+        return False
+    return sum(_PALABRA_DE_LETRAS.fullmatch(p.strip(".,;:")) is not None for p in valor.split()) < 2
 
 
 def _formato_valido(valor: Any, campo) -> bool:

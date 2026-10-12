@@ -116,3 +116,32 @@ def test_el_servicio_corrige_y_limita_la_confianza():
     assert "curp_coincide_nacimiento" in reglas.cumplidas  # ya no salta el aviso de la CURP
     assert r.nivel_confianza_por_campo["clave_elector"] == 1.0  # los demas no cambian
 
+
+# --- Nombre cortado: confianza honesta (ADR-007) ---
+
+from app.modulos.motor_ia.confianza import TOPE_NOMBRE_CORTADO, confianzas_de_campos, normalizar_texto  # noqa: E402
+
+TEXTO_INE = normalizar_texto("NOMBRE\nANA\nEJEMPLO\nPRUEBA\nMARIA DE LA CRUZ\nCURP\nAEPA900101MDFXXX01")
+
+
+@pytest.mark.parametrize("tipo", ["credencial_elector", "pasaporte"])
+def test_nombre_de_una_palabra_queda_en_0_6_aunque_aparezca(tipo):
+    ficha = configuracion.obtener(tipo)
+    confianzas = confianzas_de_campos({"nombre_completo": "EJEMPLO"}, ficha, TEXTO_INE)
+    assert confianzas["nombre_completo"] == TOPE_NOMBRE_CORTADO
+    alertas, _ = evaluar_reglas({"nombre_completo": "EJEMPLO"}, confianzas, ficha, hoy=date(2026, 10, 12))
+    assert ("VAL-002", "nombre_completo") in {(a.codigo, a.campo) for a in alertas}
+
+
+@pytest.mark.parametrize("nombre", ["ANA EJEMPLO", "MARIA DE LA CRUZ"])
+def test_nombre_de_dos_palabras_o_mas_sin_cambios(nombre):
+    texto = normalizar_texto(f"NOMBRE\n{nombre}")
+    confianzas = confianzas_de_campos({"nombre_completo": nombre}, CREDENCIAL, texto)
+    assert confianzas["nombre_completo"] == 1.0
+
+
+def test_el_tope_no_toca_otros_tipos_ni_otros_campos():
+    comprobante = configuracion.obtener("comprobante_domicilio")
+    texto = normalizar_texto("TITULAR\nEJEMPLO\nDOMICILIO\nCALLE")
+    confianzas = confianzas_de_campos({"nombre_titular": "EJEMPLO", "domicilio": "CALLE"}, comprobante, texto)
+    assert confianzas["nombre_titular"] == 1.0 and confianzas["domicilio"] == 1.0
