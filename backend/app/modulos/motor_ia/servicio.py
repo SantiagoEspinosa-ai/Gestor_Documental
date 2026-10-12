@@ -32,6 +32,7 @@ from app.modulos.motor_ia.prompts import (
     renderizar,
 )
 from app.modulos.motor_ia.proveedores.base import (
+    CONFIANZA_MAXIMA_CORREGIDO,
     DESCONOCIDO,
     MAX_CARACTERES_TEXTO,
     ErrorProveedor,
@@ -39,6 +40,7 @@ from app.modulos.motor_ia.proveedores.base import (
     InfoLlamada,
     campos_con_formato_invalido,
     combinar_texto_y_vision,
+    corregir_campos_con_patron,
     necesita_reintento_vision,
     obligatorios_vacios,
     recortar_texto,
@@ -248,10 +250,14 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
                 extraccion, modelo = _reintento_vision(ctx, proveedor, doc_modelo, esquema, prompt, extraccion,
                                                        cls_concreto, al_avanzar)
             fecha_modelo = (proveedor.nombre, version, modelo)
-            valores = dict(extraccion.datos_extraidos)
+            # Confusiones de OCR (letra/digito) en campos con patron: se corrigen solo si hay una unica candidata,
+            # con la confianza limitada para que el revisor lo compruebe en el original (VAL-002)
+            valores, corregidos = corregir_campos_con_patron(extraccion.datos_extraidos, esquema)
             confianzas_modelo.update(extraccion.nivel_confianza_por_campo)
             evidencias = dict(extraccion.evidencia_por_campo)
             confianzas = confianzas_de_campos(valores, ficha, texto, mrz if ficha.nombre == "pasaporte" else None)
+            for campo in corregidos:
+                confianzas[campo] = min(confianzas.get(campo, 0.0), CONFIANZA_MAXIMA_CORREGIDO)
             datos.update(datos_extraidos=valores, nivel_confianza_por_campo=confianzas, evidencia_por_campo=evidencias)
     except _FalloProveedor as fallo:
         if isinstance(fallo.ultimo, ErrorRespuestaInvalida):

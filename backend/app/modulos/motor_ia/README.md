@@ -80,9 +80,9 @@ python -m app.modulos.motor_ia.cli fixtures/generados/pasaporte_sano_digital.pdf
   Lee `PROMPTS_DIR/<id>_<version>.md` (por defecto `prompts/` de la raiz del repo), separa el
   frontmatter (`id`, `version`, `salida`) y renderiza con Jinja (`StrictUndefined`: si falta una
   variable, `ErrorPrompt`). Sin `version`, usa `VERSIONES_VIGENTES`.
-- `version_prompt` (va en `FechaYModelo.version_prompt`): `extraccion_pasaporte@v3`, o `clasificacion@v2`.
+- `version_prompt` (va en `FechaYModelo.version_prompt`): `extraccion_pasaporte@v4`, o `clasificacion@v2`.
 - `formatear_contenido`, `formatear_tipos`, `formatear_esquema`, `formatear_campos` y `formatear_contexto_rag`
-  dan el formato comun de las variables. `formatear_campos` (la usa `extraccion_v3`) lista los campos sin
+  dan el formato comun de las variables. `formatear_campos` (la usan `extraccion_v3` y `v4`) lista los campos sin
   "obligatorio"/"opcional": con "opcional" el modelo de vision dejaba campos legibles vacios. El texto del
   documento se inserta como valor, nunca como plantilla.
 - Tests: `backend/tests/test_prompts.py`.

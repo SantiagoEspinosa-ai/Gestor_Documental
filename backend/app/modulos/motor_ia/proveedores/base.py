@@ -13,6 +13,7 @@ import unicodedata
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date
+from itertools import combinations
 from typing import Any
 
 from PIL import Image
@@ -326,6 +327,63 @@ def necesita_reintento_vision(resultado: ResultadoExtraccion, esquema_campos: Ma
     return total > 0 and vacios >= FRACCION_OBLIGATORIOS_VACIOS_REINTENTO * total
 
 
+# --- Confusiones de OCR en campos con patron (CURP y similares) ---
+# Sustituciones tipicas del OCR, segun la clase que espera cada posicion del patron: un digito donde va una
+# letra y al reves. Solo se aplican si el valor NO cumple su patron.
+LETRA_POR_DIGITO = {"0": "O", "1": "I", "5": "S", "8": "B", "2": "Z", "6": "G"}
+DIGITO_POR_LETRA = {"O": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2", "G": "6"}
+MAX_SUSTITUCIONES = 4
+# Confianza verificada maxima de un valor corregido: por debajo del minimo de campo de todas las fichas
+# (0,75-0,80), asi salta el VAL-002 de siempre y el revisor lo comprueba en el original
+CONFIANZA_MAXIMA_CORREGIDO = 0.6
+
+
+def corregir_confusiones(valor: str, patron: str, comprobar=None) -> str | None:
+    """Valor corregido si cambiando letras por digitos (o al reves) en el MENOR numero de posiciones sale UNA
+    sola candidata que cumple el patron (y `comprobar`, si se da). None si ya lo cumple, si no hay ninguna
+    candidata o si hay varias (ambiguo: no se adivina). Por numero creciente de cambios, hasta
+    MAX_SUSTITUCIONES: asi una posicion que admite letra y digito no crea una ambiguedad falsa."""
+    if not isinstance(valor, str) or not valor or re.fullmatch(patron, valor):
+        return None
+    posiciones = [i for i, c in enumerate(valor) if c in LETRA_POR_DIGITO or c in DIGITO_POR_LETRA]
+    for n in range(1, min(len(posiciones), MAX_SUSTITUCIONES) + 1):
+        candidatas = set()
+        for cambio in combinations(posiciones, n):
+            caracteres = list(valor)
+            for i in cambio:
+                caracteres[i] = LETRA_POR_DIGITO.get(caracteres[i]) or DIGITO_POR_LETRA[caracteres[i]]
+            candidata = "".join(caracteres)
+            if re.fullmatch(patron, candidata) and (comprobar is None or comprobar(candidata)):
+                candidatas.add(candidata)
+        if candidatas:
+            return candidatas.pop() if len(candidatas) == 1 else None
+    return None
+
+
+def _comprobacion(campo: str, datos: Mapping[str, Any]):
+    """CURP: las posiciones 5-10 (AAMMDD) tienen que cuadrar con fecha_nacimiento, si existe y es valida."""
+    fecha = datos.get("fecha_nacimiento")
+    if campo != "curp" or not isinstance(fecha, str) or normalizar_fecha(fecha) != fecha:
+        return None
+    aammdd = fecha[2:4] + fecha[5:7] + fecha[8:10]
+    return lambda candidata: candidata[4:10] == aammdd
+
+
+def corregir_campos_con_patron(datos: Mapping[str, Any], esquema_campos: Mapping[str, Any]) -> tuple[dict, set[str]]:
+    """(datos con las confusiones corregidas, campos corregidos). Solo valores de texto que no cumplen el patron
+    de su campo y tienen una unica correccion (corregir_confusiones)."""
+    salida, corregidos = dict(datos), set()
+    for campo, definicion in esquema_campos.items():
+        patron = definicion.get("patron") if isinstance(definicion, Mapping) else getattr(definicion, "patron", None)
+        valor = salida.get(campo)
+        if not patron or not isinstance(valor, str) or re.fullmatch(patron, valor):
+            continue
+        if (corregido := corregir_confusiones(valor, patron, _comprobacion(campo, salida))) is not None:
+            salida[campo] = corregido
+            corregidos.add(campo)
+    return salida, corregidos
+
+
 def campos_con_formato_invalido(resultado: ResultadoExtraccion, esquema_campos: Mapping[str, Any]) -> list[str]:
     """Campos con valor (no null) que no cumplen su formato: el `patron` de la ficha, una fecha valida
     (tras postprocesar, las fechas validas ya estan en AAAA-MM-DD) o un anio de 4 cifras (ya entero).
@@ -338,7 +396,10 @@ def campos_con_formato_invalido(resultado: ResultadoExtraccion, esquema_campos: 
         patron = definicion.get("patron") if isinstance(definicion, Mapping) else getattr(definicion, "patron", None)
         tipo = _tipo_campo(definicion)
         if patron and not re.fullmatch(patron, str(valor)):
-            invalidos.append(campo)
+            # Una confusion de OCR con una unica correccion posible no es un formato invalido: se corrige
+            # despues (corregir_campos_con_patron) sin pedir otra lectura con vision
+            if corregir_confusiones(str(valor), patron, _comprobacion(campo, resultado.datos_extraidos)) is None:
+                invalidos.append(campo)
         elif tipo == "fecha" and normalizar_fecha(str(valor)) != str(valor):
             invalidos.append(campo)
         elif tipo == "anio" and not (isinstance(valor, int) and not isinstance(valor, bool)):

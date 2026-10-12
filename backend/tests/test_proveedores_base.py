@@ -358,7 +358,9 @@ def test_combinar_texto_y_vision():
     ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/21"}, ["fecha_vencimiento"]),
     ("pasaporte", {"numero_pasaporte": "ZX0000001", "fecha_vencimiento": "3009/2021"}, []),  # el OCR perdio un separador
     ("pasaporte", {"numero_pasaporte": "2X0000001", "fecha_vencimiento": "2031-09-30"}, []),  # cumple el patron
-    ("credencial_elector", {"curp": "AEPA9O0101MDFXXX01", "vigencia": "2029"}, ["curp"]),
+    ("credencial_elector", {"curp": "AEPA9X0101MDFXXX01", "vigencia": "2029"}, ["curp"]),  # sin correccion posible
+    # Una O en lugar de 0 tiene una unica correccion: no es formato invalido (se corrige despues)
+    ("credencial_elector", {"curp": "AEPA9O0101MDFXXX01", "vigencia": "2029"}, []),
     ("credencial_elector", {"curp": "AEPA900101MDFXXX01", "vigencia": "2021 - 2029"}, ["vigencia"]),
     ("credencial_elector", {"curp": None, "vigencia": None}, []),                              # vacios: no son formato
 ])
