@@ -117,7 +117,7 @@
         "campo": "curp",
         "campo_relacionado": "fecha_nacimiento",
         "severidad": "critica",
-        "mensaje": "La CURP no coincide con la fecha de nacimiento"
+        "mensaje": "La CURP no coincide con la fecha de nacimiento: posiciones 5-10 (AAMMDD) o posicion 17 (digito si nacio antes de 2000, letra si despues)"
       }
     ],
     "comparaciones": {

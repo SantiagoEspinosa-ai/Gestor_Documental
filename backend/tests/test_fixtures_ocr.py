@@ -192,3 +192,24 @@ def test_variante_curp_confundible_se_corrige(nombre):
 def test_variante_fondo_de_seguridad_se_prepara(nombre):
     doc = _variante(nombre)
     assert doc.paginas and any(p.texto for p in doc.paginas)
+
+
+# --- Variantes de la INE en columnas (2026-10-12, PR de fix/nombre-ine-columnas): solo si estan generadas ---
+
+def test_variante_en_columnas_el_ocr_mezcla_y_la_limpieza_recupera_el_nombre():
+    from app.modulos.motor_ia.proveedores.base import limpiar_nombre_columnas
+    doc = _variante("credencial_elector_sano_foto_columnas.jpg")
+    lineas = [_normalizar(l) for l in (doc.paginas[0].texto or "").splitlines() if l.strip()]
+    # Lo que va de NOMBRE a CURP, todo junto: asi lo ve un modelo que lee el texto linea a linea
+    bloque = " ".join(lineas[lineas.index(next(l for l in lineas if l.startswith("NOMBRE"))):lineas.index("CURP")])
+    assert "SEXO" in bloque and re.search(r"\d{2}/\d{2}/\d{4}", bloque)  # el fixture reproduce la mezcla
+    assert limpiar_nombre_columnas(bloque) == "ANA EJEMPLO PRUEBA"
+
+
+def test_variante_curp_siglo_se_corrige_con_la_fecha():
+    from app.modulos.motor_ia.proveedores.base import corregir_siglo_curp
+    doc = _variante("credencial_elector_sano_digital_curp_siglo.pdf")
+    texto = _normalizar(doc.paginas[0].texto or "")
+    impresa = re.search(r"AEPA\w{14}", texto)[0]
+    assert impresa[16] == "O"
+    assert corregir_siglo_curp({"curp": impresa, "fecha_nacimiento": "1990-01-01"}) == "AEPA900101MDFXXX01"

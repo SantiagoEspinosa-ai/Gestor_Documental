@@ -384,6 +384,72 @@ def corregir_campos_con_patron(datos: Mapping[str, Any], esquema_campos: Mapping
     return salida, corregidos
 
 
+def corregir_siglo_curp(datos: Mapping[str, Any]) -> str | None:
+    """CURP con la posicion 17 confundida (2026-10-12): esa posicion es un digito si se nacio antes de 2000 y una
+    letra si se nacio despues, y el patron admite las dos, asi que corregir_confusiones no la toca. Solo la
+    CURP, solo si las posiciones 5-10 ya cuadran con fecha_nacimiento y solo con las confusiones de la lista
+    (O/0, I/1, L/1, S/5, B/8, Z/2, G/6). Devuelve la CURP corregida, o None si no hay nada que corregir."""
+    curp, fecha = datos.get("curp"), normalizar_fecha(datos.get("fecha_nacimiento"))
+    if not isinstance(curp, str) or len(curp) != 18 or not fecha:
+        return None
+    if curp[4:10] != fecha[2:4] + fecha[5:7] + fecha[8:10]:
+        return None
+    caracter = curp[16]
+    if int(fecha[:4]) < 2000:
+        nuevo = DIGITO_POR_LETRA.get(caracter)
+    else:
+        nuevo = LETRA_POR_DIGITO.get(caracter)
+    return curp[:16] + nuevo + curp[17:] if nuevo else None
+
+
+# --- Nombre de la INE con la otra columna mezclada (2026-10-12) ---
+# El OCR lee linea a linea: el nombre (varias lineas a la izquierda) se mezcla con FECHA DE NACIMIENTO, la fecha
+# y SEXO (a la derecha). Se quitan solo esas etiquetas completas, fechas, palabras con digitos y signos; nunca
+# "DE", "DEL", "LA", "Y"... sueltas, que forman parte de apellidos ("DE LA CRUZ", "DEL RIO").
+CAMPO_NOMBRE_COLUMNAS = {"credencial_elector": "nombre_completo"}
+_ETIQUETAS_COLUMNA = re.compile(
+    r"F\s*E\s*C\s*H\s*A\s*(?:D\s*E\s*)?N\s*A\s*C(?:\s*I\s*M\s*I\s*E\s*N\s*T\s*O)?\.?"  # FECHA DE NACIMIENTO y variantes
+    r"|\bSEXO\b\s*[:.]?\s*(?:\b[HM]\b)?"                                                # SEXO, con su H/M
+    r"|\bNOMBRE\b\s*:?",
+    re.IGNORECASE)
+_FECHA_EN_TEXTO = re.compile(r"\d{1,4}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*\d{1,4}")
+_PALABRA_DE_LETRAS = re.compile(r"[^\W\d_]+")  # letras de cualquier alfabeto: acentos, Ñ y Ü incluidas
+_SIGNOS_EN_LOS_BORDES = ".,;:-_'\"()[]{}|/\\*·"
+
+
+def limpiar_nombre_columnas(valor: Any) -> str | None:
+    """Nombre sin lo que se cuela de la otra columna, o None si no hay nada que quitar o si despues no queda un
+    nombre valido (al menos 2 palabras de 2 letras o mas): entonces se deja como estaba."""
+    if not isinstance(valor, str) or not valor.strip():
+        return None
+    sin_etiquetas = _FECHA_EN_TEXTO.sub(" ", _ETIQUETAS_COLUMNA.sub(" ", valor))
+    palabras = []
+    for bruta in sin_etiquetas.split():
+        palabra = bruta.strip(_SIGNOS_EN_LOS_BORDES)
+        if palabra and _PALABRA_DE_LETRAS.fullmatch(palabra):
+            palabras.append(palabra)
+    limpio = " ".join(palabras)
+    if limpio == " ".join(valor.split()) or sum(len(p) >= 2 for p in palabras) < 2:
+        return None
+    return limpio
+
+
+def corregir_lectura_ine(datos: Mapping[str, Any], tipo: str) -> tuple[dict, set[str]]:
+    """(datos, campos corregidos) con el siglo de la CURP y el nombre en columnas corregidos (solo la credencial
+    de elector). Como las confusiones: la confianza de lo corregido se limita a CONFIANZA_MAXIMA_CORREGIDO."""
+    salida, corregidos = dict(datos), set()
+    if tipo != "credencial_elector":
+        return salida, corregidos
+    if (curp := corregir_siglo_curp(salida)) is not None:
+        salida["curp"] = curp
+        corregidos.add("curp")
+    campo = CAMPO_NOMBRE_COLUMNAS[tipo]
+    if (nombre := limpiar_nombre_columnas(salida.get(campo))) is not None:
+        salida[campo] = nombre
+        corregidos.add(campo)
+    return salida, corregidos
+
+
 def campos_con_formato_invalido(resultado: ResultadoExtraccion, esquema_campos: Mapping[str, Any]) -> list[str]:
     """Campos con valor (no null) que no cumplen su formato: el `patron` de la ficha, una fecha valida
     (tras postprocesar, las fechas validas ya estan en AAAA-MM-DD) o un anio de 4 cifras (ya entero).
