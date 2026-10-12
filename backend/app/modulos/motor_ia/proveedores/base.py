@@ -434,19 +434,53 @@ def limpiar_nombre_columnas(valor: Any) -> str | None:
     return limpio
 
 
+# --- Ruido al principio o al final del nombre (2026-10-12, INE y pasaporte) ---
+# En la INE y el pasaporte el nombre va en mayusculas: una palabra con minusculas en un extremo es ruido de OCR
+# (una marca o una foto pequena junto al nombre), igual que una letra suelta (con o sin acento) salvo "Y", que
+# une apellidos, o un resto sin ninguna letra. Solo en los extremos, nunca en medio.
+TIPOS_NOMBRE_EN_MAYUSCULAS = frozenset({"credencial_elector", "pasaporte"})
+
+
+def _es_ruido(palabra: str, nombre_en_mayusculas: bool) -> bool:
+    letras = [c for c in palabra if c.isalpha()]
+    if not letras:
+        return True  # signos o cifras sueltas
+    if len(palabra) == 1:
+        return palabra.upper() != "Y"
+    # Minusculas: solo si el resto del nombre esta en mayusculas (un nombre entero en "Tipo Titulo" no es ruido)
+    return nombre_en_mayusculas and any(c.islower() for c in letras)
+
+
+def limpiar_ruido_nombre(valor: Any) -> str | None:
+    """Nombre sin el ruido de sus extremos, o None si no hay nada que quitar. Nunca deja menos de 2 palabras."""
+    if not isinstance(valor, str):
+        return None
+    palabras = valor.split()
+    en_mayusculas = sum(p.isupper() for p in palabras) >= 2
+    inicio, fin = 0, len(palabras)
+    while fin - inicio > 2 and _es_ruido(palabras[inicio], en_mayusculas):
+        inicio += 1
+    while fin - inicio > 2 and _es_ruido(palabras[fin - 1], en_mayusculas):
+        fin -= 1
+    return " ".join(palabras[inicio:fin]) if (inicio, fin) != (0, len(palabras)) else None
+
+
 def corregir_lectura_ine(datos: Mapping[str, Any], tipo: str) -> tuple[dict, set[str]]:
-    """(datos, campos corregidos) con el siglo de la CURP y el nombre en columnas corregidos (solo la credencial
-    de elector). Como las confusiones: la confianza de lo corregido se limita a CONFIANZA_MAXIMA_CORREGIDO."""
+    """(datos, campos corregidos): en la credencial de elector, el siglo de la CURP y el nombre en columnas; en la
+    credencial y el pasaporte, el ruido de los extremos del nombre. Como las confusiones: la confianza de lo
+    corregido se limita a CONFIANZA_MAXIMA_CORREGIDO."""
     salida, corregidos = dict(datos), set()
-    if tipo != "credencial_elector":
-        return salida, corregidos
-    if (curp := corregir_siglo_curp(salida)) is not None:
-        salida["curp"] = curp
-        corregidos.add("curp")
-    campo = CAMPO_NOMBRE_COLUMNAS[tipo]
-    if (nombre := limpiar_nombre_columnas(salida.get(campo))) is not None:
-        salida[campo] = nombre
-        corregidos.add(campo)
+    if tipo == "credencial_elector":
+        if (curp := corregir_siglo_curp(salida)) is not None:
+            salida["curp"] = curp
+            corregidos.add("curp")
+        campo = CAMPO_NOMBRE_COLUMNAS[tipo]
+        if (nombre := limpiar_nombre_columnas(salida.get(campo))) is not None:
+            salida[campo] = nombre
+            corregidos.add(campo)
+    if tipo in TIPOS_NOMBRE_EN_MAYUSCULAS and (nombre := limpiar_ruido_nombre(salida.get("nombre_completo"))) is not None:
+        salida["nombre_completo"] = nombre
+        corregidos.add("nombre_completo")
     return salida, corregidos
 
 

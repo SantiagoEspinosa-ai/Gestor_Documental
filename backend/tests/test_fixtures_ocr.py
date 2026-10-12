@@ -213,3 +213,14 @@ def test_variante_curp_siglo_se_corrige_con_la_fecha():
     impresa = re.search(r"AEPA\w{14}", texto)[0]
     assert impresa[16] == "O"
     assert corregir_siglo_curp({"curp": impresa, "fecha_nacimiento": "1990-01-01"}) == "AEPA900101MDFXXX01"
+
+
+
+@pytest.mark.parametrize("nombre", ["credencial_elector_sano_foto_ruido_nombre.jpg", "pasaporte_sano_foto_ruido_nombre.jpg"])
+def test_variante_ruido_junto_al_nombre(nombre):
+    from app.modulos.motor_ia.proveedores.base import limpiar_ruido_nombre
+    doc = _variante(nombre)
+    lineas = [l.strip() for l in (doc.paginas[0].texto or "").splitlines() if l.strip()]
+    con_nombre = next(l for l in lineas if l.upper().startswith("ANA EJEMPLO PRUEBA"))
+    assert con_nombre.upper() != "ANA EJEMPLO PRUEBA"  # el OCR lee la minifoto como ruido pegado al nombre
+    assert limpiar_ruido_nombre(con_nombre) == "ANA EJEMPLO PRUEBA"

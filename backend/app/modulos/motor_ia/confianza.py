@@ -47,6 +47,7 @@ class VerificacionMrz:
     sexo: str | None
     digitos: Mapping[str, bool]  # validar_digitos: numero_documento, fecha_nacimiento, ..., compuesto
     pagina: int | None = None    # pagina del documento donde esta la MRZ (evidencia del sexo, VAL-003)
+    nombre: tuple[str, str] | None = None  # (apellidos, nombres) de la linea 1, sin digito de control propio
 
 
 # campo de la ficha del pasaporte -> digito de control que lo cubre (ademas del compuesto)
@@ -101,10 +102,49 @@ def confianzas_de_campos(datos: Mapping[str, Any], ficha: TipoDocumental, texto_
                 aparece = 1.0
             else:
                 aparece = 0.0  # la MRZ, con sus digitos correctos, dice otra cosa: el valor no esta verificado
+        if nombre == "nombre_completo" and mrz is not None and coincide_con_nombre_mrz(valor, mrz):
+            aparece = 1.0  # las mismas palabras que la MRZ (sin acentos ni orden): verificado
         resultado[nombre] = round(PESO_APARECE * aparece + PESO_FORMATO * formato, 3)
     if ficha.nombre in TIPOS_NOMBRE_EN_VARIAS_LINEAS and nombre_cortado(datos.get("nombre_completo")):
         resultado["nombre_completo"] = min(resultado.get("nombre_completo", 0.0), TOPE_NOMBRE_CORTADO)
     return resultado
+
+
+def palabras_de_nombre(valor: Any) -> list[str]:
+    """Palabras de un nombre para compararlo: sin acentos ni signos, en mayusculas y ordenadas (el orden de
+    APELLIDOS y NOMBRES no importa). La Ñ queda como N, igual que en la MRZ."""
+    return sorted(re.findall(r"[A-Z0-9]+", normalizar_texto(str(valor))))
+
+
+def _nombre_mrz_valido(mrz: VerificacionMrz) -> list[str] | None:
+    # La linea 1 no tiene digito propio: solo se usa si el compuesto (y por tanto la lectura de la MRZ) es correcto
+    if mrz.nombre is None or not mrz.digitos.get("compuesto", False):
+        return None
+    return palabras_de_nombre(" ".join(mrz.nombre))
+
+
+def coincide_con_nombre_mrz(valor: Any, mrz: VerificacionMrz) -> bool:
+    palabras_mrz = _nombre_mrz_valido(mrz)
+    return palabras_mrz is not None and isinstance(valor, str) and palabras_de_nombre(valor) == palabras_mrz
+
+
+def nombre_segun_mrz(valor: Any, mrz: VerificacionMrz) -> str | None:
+    """Pasaporte con la MRZ valida: si el nombre del texto trae todas las palabras de la MRZ y alguna de mas (ruido),
+    se quitan las de mas, conservando el orden y los acentos del texto. None si no hay nada que quitar o si le
+    falta o cambia alguna palabra (entonces no se toca)."""
+    palabras_mrz = _nombre_mrz_valido(mrz)
+    if palabras_mrz is None or not isinstance(valor, str):
+        return None
+    pendientes = list(palabras_mrz)
+    conservadas = []
+    for palabra in valor.split():
+        clave = palabras_de_nombre(palabra)
+        if len(clave) == 1 and clave[0] in pendientes:
+            pendientes.remove(clave[0])
+            conservadas.append(palabra)
+    if pendientes or len(conservadas) == len(valor.split()):
+        return None
+    return " ".join(conservadas)
 
 
 def nombre_cortado(valor: Any) -> bool:

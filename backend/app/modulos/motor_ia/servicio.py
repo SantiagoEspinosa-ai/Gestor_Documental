@@ -19,6 +19,7 @@ from app.modulos.motor_ia.confianza import (
     VerificacionMrz,
     confianza_clasificacion,
     confianzas_de_campos,
+    nombre_segun_mrz,
     texto_del_documento,
 )
 from app.modulos.motor_ia.enrutador import crear_enrutador
@@ -257,6 +258,11 @@ def analizar(doc: DocumentoPreparado, *, folio: str, referencia: ReferenciaArchi
             # INE: posicion 17 de la CURP y nombre con la otra columna mezclada (mismo tope de confianza)
             valores, corregidos_ine = corregir_lectura_ine(valores, ficha.nombre)
             corregidos |= corregidos_ine
+            # Pasaporte: palabras de mas en el nombre que no estan en la MRZ (valida) -> se quitan
+            if ficha.nombre == "pasaporte" and mrz is not None:
+                if (nombre_mrz := nombre_segun_mrz(valores.get("nombre_completo"), mrz)) is not None:
+                    valores = {**valores, "nombre_completo": nombre_mrz}
+                    corregidos.add("nombre_completo")
             confianzas_modelo.update(extraccion.nivel_confianza_por_campo)
             evidencias = dict(extraccion.evidencia_por_campo)
             confianzas = confianzas_de_campos(valores, ficha, texto, mrz if ficha.nombre == "pasaporte" else None)

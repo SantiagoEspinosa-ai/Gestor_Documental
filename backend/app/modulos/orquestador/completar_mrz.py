@@ -17,7 +17,7 @@ def verificacion_mrz(doc: DocumentoPreparado) -> motor_ia.VerificacionMrz | None
         mrz = buscar_mrz(pagina.texto)
         if mrz is not None:
             return motor_ia.VerificacionMrz(mrz.numero_documento, mrz.fecha_nacimiento, mrz.fecha_vencimiento,
-                                            mrz.sexo, validar_digitos(mrz), pagina.numero)
+                                            mrz.sexo, validar_digitos(mrz), pagina.numero, mrz.apellidos_y_nombres)
     return None
 
 

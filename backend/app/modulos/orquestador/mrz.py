@@ -36,6 +36,14 @@ class Mrz:
         return valor if valor in "FMX" else None
 
     @property
+    def apellidos_y_nombres(self) -> tuple[str, str] | None:
+        """Linea 1 desde la posicion 6: APELLIDOS<<NOMBRES, con '<' entre palabras. Ojo: la linea 1 no tiene
+        digito de control; el compuesto solo cubre la linea 2."""
+        apellidos, separador, nombres = self.linea1[5:].partition("<<")
+        apellidos, nombres = apellidos.replace("<", " ").strip(), nombres.replace("<", " ").strip()
+        return (apellidos, nombres) if separador and apellidos else None
+
+    @property
     def fecha_vencimiento(self) -> str:
         return self.linea2[21:27]  # AAMMDD
 
