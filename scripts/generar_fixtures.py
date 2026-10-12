@@ -35,9 +35,9 @@ INDICE.md: archivos, valores esperados por campo y alertas esperadas por folio d
 a partir de los YAML (reglas y comparaciones) y de config/procesos.yaml (tipos requeridos), y la
 seccion "Fixtures de dificultad" con los parametros aplicados a cada fichero.
 
-En total, 60 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
-dificultad, 10 variantes de lectura (2026-10-08), 5 de la INE (2026-10-09) y 3 de la INE en columnas y con la
-CURP mal impresa (2026-10-12), fuera de la linea base del hito:
+En total, 64 ficheros: 27 (3 casos x 3 tipos x 3 modalidades), 3 copias del duplicado, 12 de
+dificultad, 10 variantes de lectura (2026-10-08), 5 de la INE (2026-10-09) y 7 de la INE y el pasaporte (en
+columnas, con la CURP mal impresa y con ruido junto al nombre, 2026-10-12), fuera de la linea base del hito:
   - comprobante_domicilio_sano_{digital,escaneado}_{mes_abreviado,mes_completo,mes_anio_corto}: la fecha de
     emision con el mes en letras ("15 SEP 2026", "15 DE SEPTIEMBRE DE 2026", "15 SEP 26");
   - pasaporte_sano_{digital,foto}_mrz_ruido: un caracter de ruido delante de la primera linea de la MRZ;
@@ -49,10 +49,11 @@ CURP mal impresa (2026-10-12), fuera de la linea base del hito:
   - credencial_elector_sano_digital_emision_vigencia: "EMISION AAAA" y "VIGENCIA AAAA" en la misma linea;
   - credencial_elector_sano_{digital,foto}_curp_confundible: CURP impresa con 1 por I y O por 0.
   (El fondo de seguridad y la CURP confundible generan tambien su PDF digital, base de la foto.)
-  Y 3 variantes de la INE (2026-10-12, PR de fix/nombre-ine-columnas):
+  Y 7 variantes de la INE y el pasaporte (2026-10-12, PR de fix/nombre-ine-columnas):
   - credencial_elector_sano_{digital,foto}_columnas: el nombre en varias lineas a la izquierda y FECHA DE
     NACIMIENTO y SEXO a la derecha, en las mismas lineas (el digital es la base de la foto);
-  - credencial_elector_sano_digital_curp_siglo: CURP impresa con O en lugar del 0 de la posicion 17.
+  - credencial_elector_sano_digital_curp_siglo: CURP impresa con O en lugar del 0 de la posicion 17;
+  - {credencial_elector,pasaporte}_sano_{digital,foto}_ruido_nombre: una minifoto pegada al final del nombre.
   No forman parte de ningun folio de prueba ni cambian los SHA-256 de los ficheros de antes. Las fotos reales de los impresos del caso sano no salen de aqui: estan en
 fixtures/especimenes/ (en git) y las prepara scripts/procesar_especimenes.py.
 
@@ -460,11 +461,13 @@ def campos_en_columna(pagina, x, y, campos: dict, valores: dict, paso=30, tam=12
     return y
 
 
-def dibujar_pasaporte(pagina, ficha, valores, mrz):
+def dibujar_pasaporte(pagina, ficha, valores, mrz, marca_nombre: bool = False):
     cabecera(pagina, ficha["nombre_visible"])
     marca_de_agua_lateral(pagina)
     silueta(pagina, pymupdf.Rect(22, 58, 172, 248))
     campos_en_columna(pagina, 200, 62, ficha["campos"], valores, paso=33)
+    if marca_nombre:  # el nombre es el primer campo: su valor va en y = 62 + 13
+        marca_junto_al_nombre(pagina, 200, 75, formatear(valores["nombre_completo"]), 12)
     # MRZ al pie, en letra monoespaciada (dos lineas de 44 caracteres)
     pagina.draw_rect(pymupdf.Rect(0, pagina.rect.height - 78, pagina.rect.width - 28, pagina.rect.height),
                      color=None, fill=(0.97, 0.97, 0.97))
@@ -473,7 +476,7 @@ def dibujar_pasaporte(pagina, ficha, valores, mrz):
 
 
 def dibujar_credencial(pagina, ficha, valores, fondo_seguridad: bool = False, emision: int | None = None,
-                       impresos: dict | None = None, columnas: str | None = None):
+                       impresos: dict | None = None, columnas: str | None = None, marca_nombre: bool = False):
     """Sin parametros opcionales, igual que siempre. `fondo_seguridad`: lineas onduladas finas detras de los
     datos. `emision`: la ultima linea es "EMISION <anio>  VIGENCIA <anio>" (las dos en la misma linea).
     `impresos`: valores que se imprimen en lugar de los esperados (p. ej. una CURP con confusiones).
@@ -490,10 +493,19 @@ def dibujar_credencial(pagina, ficha, valores, fondo_seguridad: bool = False, em
         return
     if emision is None:
         campos_en_columna(pagina, 172, 56, ficha["campos"], mostrados, paso=31, tam=11)
+        if marca_nombre:  # el nombre es el primer campo: su valor va en y = 56 + 13
+            marca_junto_al_nombre(pagina, 172, 69, formatear(mostrados["nombre_completo"]), 11)
         return
     campos = {c: d for c, d in ficha["campos"].items() if c != "vigencia"}
     y = campos_en_columna(pagina, 172, 56, campos, mostrados, paso=31, tam=11)
     texto(pagina, 172, y + 13, f"EMISIÓN {emision}   VIGENCIA {valores['vigencia']}", tam=11, fuente="hebo")
+
+
+def marca_junto_al_nombre(pagina, x: float, y: float, nombre: str, tam: float) -> None:
+    """Minifoto (silueta gris de 12 x 15 pt) pegada al final del nombre, en su misma linea: el OCR la lee como
+    ruido (una palabra en minusculas o una letra suelta)."""
+    ancho = pymupdf.get_text_length(nombre, fontname="hebo", fontsize=tam)
+    silueta(pagina, pymupdf.Rect(x + ancho + 4, y - tam, x + ancho + 16, y - tam + 15))
 
 
 def dibujar_credencial_columnas(pagina, ficha, valores, sexo: str) -> None:
@@ -561,7 +573,8 @@ def metadatos(ficha: dict, caso: str, modalidad: str, hoy: date) -> dict:
 
 def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date, destino: Path,
                     formato_fecha=None, ruido_mrz: str = "", titulo: str | None = None,
-                    fecha_limite_pago: date | None = None, credencial: dict | None = None) -> list[str]:
+                    fecha_limite_pago: date | None = None, credencial: dict | None = None,
+                    marca_nombre: bool = False) -> list[str]:
     """PDF con capa de texto real. Devuelve el texto que debe poder extraerse. Los parametros opcionales son
     para las variantes de lectura; sin ellos, el PDF sale igual que siempre."""
     fmt = formatear if formato_fecha is None else (
@@ -574,7 +587,7 @@ def generar_digital(tipo: str, caso: str, ficha: dict, valores: dict, hoy: date,
         validar_mrz(*mrz, valores)
         if ruido_mrz:
             mrz = (ruido_mrz + mrz[0], mrz[1])
-        dibujar_pasaporte(pagina, ficha, valores, mrz)
+        dibujar_pasaporte(pagina, ficha, valores, mrz, marca_nombre=marca_nombre)
         esperado += list(mrz)
     elif tipo == "credencial_elector":
         if credencial:
@@ -971,6 +984,20 @@ def generar_variantes(salida: Path, fichas: dict, documentos: dict, hoy: date) -
                                                   credencial={"impresos": {"curp": impresa}}))
     anotar_columnas(digital, "digital", f'CURP impresa "{impresa}" (O en lugar del 0 de la posicion 17, nacimiento '
                                         "antes de 2000); esperada la correcta y sin REG-curp_coincide_nacimiento", valores)
+
+    # Minifoto pegada al final del nombre (INE y pasaporte): el OCR la lee como ruido en el nombre
+    for tipo_r in ("credencial_elector", "pasaporte"):
+        ficha_r = fichas[tipo_r]
+        valores_r = documentos[("sano", tipo_r)]["valores"]
+        digital = salida / nombre_archivo(tipo_r, "sano", "digital", "ruido_nombre")
+        opciones = {"credencial": {"marca_nombre": True}} if tipo_r == "credencial_elector" else {"marca_nombre": True}
+        comprobar_capa_texto(digital, generar_digital(tipo_r, "sano", ficha_r, valores_r, hoy, digital, **opciones))
+        foto = salida / nombre_archivo(tipo_r, "sano", "foto", "ruido_nombre")
+        generar_foto(digital, foto)
+        for ruta_r, modalidad in ((digital, "digital"), (foto, "foto")):
+            anotar(ruta_r, tipo_r, modalidad, "minifoto pegada al final del nombre: el OCR la lee como ruido; esperado "
+                                              "el nombre sin ruido", valores_r)
+            variantes[ruta_r.name]["pr"] = PR_VARIANTES_COLUMNAS
     return variantes
 
 

@@ -236,7 +236,8 @@ ARCHIVOS_VARIANTES_INE = (
      "credencial_elector_sano_digital_curp_confundible.pdf", "credencial_elector_sano_foto_curp_confundible.jpg"})
 # Variantes de la INE en columnas y con la posicion 17 de la CURP mal impresa (2026-10-12, PR de fix/nombre-ine-columnas)
 ARCHIVOS_VARIANTES_COLUMNAS = {"credencial_elector_sano_digital_columnas.pdf", "credencial_elector_sano_foto_columnas.jpg",
-                               "credencial_elector_sano_digital_curp_siglo.pdf"}
+                               "credencial_elector_sano_digital_curp_siglo.pdf"} | {
+    f"{t}_sano_{m}_ruido_nombre.{e}" for t in ("credencial_elector", "pasaporte") for m, e in (("digital", "pdf"), ("foto", "jpg"))}
 
 
 def test_se_generan_todos_los_ficheros(generado):
@@ -244,7 +245,7 @@ def test_se_generan_todos_los_ficheros(generado):
     esperados = {gf.nombre_archivo(t, c, m) for c in gf.CASOS for t in TIPOS for m in gf.MODALIDADES}
     esperados |= {gf.nombre_archivo("credencial_elector", "duplicado", m) for m in gf.MODALIDADES}
     assert len(esperados) == 30 and len(ARCHIVOS_DIFICULTAD) == 12 and len(ARCHIVOS_VARIANTES) == 10
-    assert len(ARCHIVOS_VARIANTES_INE) == 5 and len(ARCHIVOS_VARIANTES_COLUMNAS) == 3
+    assert len(ARCHIVOS_VARIANTES_INE) == 5 and len(ARCHIVOS_VARIANTES_COLUMNAS) == 7
     assert set(hashes) == esperados | ARCHIVOS_DIFICULTAD | ARCHIVOS_VARIANTES | ARCHIVOS_VARIANTES_INE | ARCHIVOS_VARIANTES_COLUMNAS
     assert all((salida / nombre).is_file() for nombre in hashes)
     assert (salida / "INDICE.md").is_file()
