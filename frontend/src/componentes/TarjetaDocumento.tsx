@@ -4,6 +4,7 @@ import type { ResultadoDocumento, TipoDocumental } from '../tipos/contrato'
 import { nombreTipo, tipoEfectivo } from '../utilidades/expediente'
 import { semaforoDocumento } from '../utilidades/semaforo'
 import { ESTILO_SEMAFORO } from './estiloSemaforo'
+import { BarraAnalisis } from './FlujoAnalisis'
 import { InsigniaSemaforo } from './Semaforo'
 
 interface Props {
@@ -41,12 +42,15 @@ export function TarjetaDocumento({ doc, fichas, rutaDetalle, textoAbrir, rutaCar
           <Icono className="size-7" />
         </div>
         <div className="min-w-0">
-          <InsigniaSemaforo semaforo={semaforo} id={id} />
+          <InsigniaSemaforo semaforo={semaforo} id={id} fase={doc.fase_analisis} />
           <h3 id={`tarjeta-${id}`} className="mt-1 font-semibold">{tipo}</h3>
           <p className="truncate font-mono text-xs text-slate-600" title={nombre}>{nombre}</p>
         </div>
       </div>
-      <p className="mt-2 flex-1 text-sm text-slate-700">{semaforo.explicacion}</p>
+      {/* En proceso (ADR-014): version compacta del flujo, con el paso N de 5; si no, la explicacion */}
+      {semaforo.color === 'en_proceso' && doc.fase_analisis
+        ? <div className="flex-1"><BarraAnalisis fase={doc.fase_analisis} documento={id} /></div>
+        : <p className="mt-2 flex-1 text-sm text-slate-700">{semaforo.explicacion}</p>}
       <div className="mt-3 flex flex-wrap gap-2">
         {semaforo.color === 'rojo' && rutaCarga && (
           <Link to={rutaCarga} className={`${boton} border-q-orange bg-q-orange text-q-slate hover:bg-q-orange-300`}>

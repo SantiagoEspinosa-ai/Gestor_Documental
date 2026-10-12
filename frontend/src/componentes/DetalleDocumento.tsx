@@ -63,7 +63,7 @@ export function DetalleDocumento({ doc, fichas, puedeVerOriginal, usuario, aviso
     <article aria-labelledby="titulo-documento" className="space-y-4">
       <header className="flex flex-wrap items-center gap-3">
         <h2 id="titulo-documento" className="text-lg font-semibold">{nombreTipo(tipoActual, fichas, 'Sin tipo')}</h2>
-        <InsigniaSemaforo semaforo={semaforoDocumento(doc, fichas)} id={doc.identificador_unico_documento} />
+        <InsigniaSemaforo semaforo={semaforoDocumento(doc, fichas)} id={doc.identificador_unico_documento} fase={doc.fase_analisis} />
         <span className="font-mono text-xs text-slate-600">{nombre}</span>
       </header>
 

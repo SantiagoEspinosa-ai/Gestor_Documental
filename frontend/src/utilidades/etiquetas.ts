@@ -18,14 +18,19 @@ export const ETIQUETA_ESTADO_ANALISIS: Record<EstadoAnalisis, string> = {
   pendiente: 'Pendiente', procesando: 'Procesando', completado: 'Completado', error: 'Error',
 }
 
-/** ADR-014: frase de la fase en el aviso del documento que se esta analizando */
+/** ADR-014: frase de cada paso del flujo del analisis (aviso y detalle). Sin promesas de tiempo */
 export const ETIQUETA_FASE: Record<FaseAnalisis, string> = {
-  en_cola: 'En espera: se analiza un documento cada vez',
+  en_cola: 'En espera',
   preparando: 'Preparando el documento',
-  ocr: 'Leyendo el texto (OCR)',
+  ocr: 'Leyendo el texto · OCR',
   clasificando: 'Identificando el tipo de documento',
-  vision: 'La foto es difícil: la estamos leyendo como imagen, puede tardar unos minutos',
+  vision: 'La foto es difícil: pasamos a leerla como imagen',
   extrayendo: 'Extrayendo los datos',
+}
+
+/** Linea de ayuda bajo algunos pasos del flujo */
+export const AYUDA_FASE: Partial<Record<FaseAnalisis, string>> = {
+  en_cola: 'Se analiza un documento cada vez',
 }
 
 /** ADR-014: version corta, bajo "Procesando" en la lista de documentos del expediente */

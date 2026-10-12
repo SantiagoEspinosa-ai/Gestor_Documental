@@ -5,13 +5,19 @@ import { ETIQUETA_FASE, ETIQUETA_FASE_CORTA, textoTranscurrido } from './etiquet
 describe('fase del analisis (ADR-014)', () => {
   it('frases exactas de cada fase', () => {
     expect(ETIQUETA_FASE).toEqual({
-      en_cola: 'En espera: se analiza un documento cada vez',
+      en_cola: 'En espera',
       preparando: 'Preparando el documento',
-      ocr: 'Leyendo el texto (OCR)',
+      ocr: 'Leyendo el texto · OCR',
       clasificando: 'Identificando el tipo de documento',
-      vision: 'La foto es difícil: la estamos leyendo como imagen, puede tardar unos minutos',
+      vision: 'La foto es difícil: pasamos a leerla como imagen',
       extrayendo: 'Extrayendo los datos',
     })
+  })
+
+  it('sin promesas de tiempo en ninguna frase', () => {
+    for (const texto of [...Object.values(ETIQUETA_FASE), ...Object.values(ETIQUETA_FASE_CORTA)]) {
+      expect(texto).not.toMatch(/minuto|segundo|tardar|pronto/i)
+    }
   })
 
   it('todas las fases del contrato tienen frase larga y corta', () => {
