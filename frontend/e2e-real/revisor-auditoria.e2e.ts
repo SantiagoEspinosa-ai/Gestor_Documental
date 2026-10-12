@@ -1,7 +1,7 @@
 // Humo real (H6): el revisor completa un folio contra la API real (motor stub) y el admin ve su auditoria.
 // En serie: el admin revisa el folio que acaba de cerrar el revisor.
 import { expect, test } from '@playwright/test'
-import { COMPROBANTE, CREDENCIAL, entrar, esperarCompletado, exigirUsuarios, nuevoFolio, referenciaE2E, subir } from './ayudas'
+import { COMPROBANTE, CREDENCIAL, entrar, esperarCompletado, exigirUsuarios, irADocumentos, nuevoFolio, referenciaE2E, subir } from './ayudas'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -15,7 +15,7 @@ test('revisor_flujo: nuevo folio, subir credencial y comprobante, esperar el an�
   folio = await nuevoFolio(page, referencia)
 
   // Folio nuevo: EXP-001 por cada tipo requerido, visibles en el expediente
-  await page.getByRole('link', { name: 'Ver expediente' }).click()
+  await irADocumentos(page)
   const alertasExpediente = page.getByRole('region', { name: 'Alertas del expediente' })
   await expect(alertasExpediente.getByRole('listitem').filter({ hasText: 'EXP-001' })).toHaveCount(2)
   await page.goto(`/folios/${folio}/carga`)
@@ -24,7 +24,7 @@ test('revisor_flujo: nuevo folio, subir credencial y comprobante, esperar el an�
   for (const nombre of [CREDENCIAL, COMPROBANTE]) await esperarCompletado(page, nombre)
   await expect(page.getByText('Están todos los tipos requeridos por el proceso.')).toBeVisible()
 
-  await page.getByRole('link', { name: 'Ver expediente' }).click()
+  await irADocumentos(page)
   await expect(page.getByRole('heading', { name: `Expediente ${folio}` })).toBeVisible()
   await expect(alertasExpediente).toContainText('Sin alertas.') // las EXP-001 han desaparecido
 
@@ -35,13 +35,13 @@ test('revisor_flujo: nuevo folio, subir credencial y comprobante, esperar el an�
 
   await expect(page.getByTestId('aviso')).toHaveText('Folio aprobado.')
   const cabecera = page.locator('header').filter({ has: page.getByRole('heading', { name: `Expediente ${folio}` }) })
-  await expect(cabecera.getByRole('status')).toContainText('Decisión: Aprobado · “Documentacion completa (e2e real)”')
   await expect(cabecera.getByRole('status')).toContainText('Folio cerrado: solo lectura')
+  await expect(page.getByTestId('seccion-decision').getByRole('status')).toContainText('Decisión: Aprobado · “Documentacion completa (e2e real)”')
   await expect(page.getByRole('region', { name: 'Decisión del revisor' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: /^Corregir / })).toHaveCount(0)
 
   // resumen.md regenerado tras la decision: folio y referencia; nunca el nombre en la cabecera
-  await page.getByRole('button', { name: 'Ver resumen' }).click()
+  await page.getByRole('link', { name: 'Ver resumen' }).click()
   const resumen = page.getByRole('region', { name: 'Resumen del expediente' })
   await expect(resumen.getByRole('heading', { level: 1 })).toHaveText(`Expediente ${folio}`)
   await expect(resumen).toContainText(`Referencia: ${referencia}`)

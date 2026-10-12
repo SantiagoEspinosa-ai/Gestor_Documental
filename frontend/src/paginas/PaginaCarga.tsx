@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router'
 import { listarProcesos, listarTiposDocumentales, obtenerDocumento, obtenerFolio, subirDocumento } from '../api/folios'
 import { AvisoSondeoDetenido } from '../componentes/AvisoSondeoDetenido'
 import { useRol } from '../componentes/contextoSesion'
-import { InsigniaEstado } from '../componentes/Insignias'
+import { CabeceraExpediente } from '../componentes/CabeceraExpediente'
 import type { EstadoAnalisis, Proceso, ResultadoExpediente, TipoDocumental } from '../tipos/contrato'
 import { ETIQUETA_ESTADO_ANALISIS } from '../utilidades/etiquetas'
 import { enProceso, nombreTipo, tipoEfectivo, tiposRequeridosQueFaltan } from '../utilidades/expediente'
@@ -154,16 +154,10 @@ export function PaginaCarga({ tiemposSondeo }: { tiemposSondeo?: Partial<Tiempos
 
   const validos = cola.filter((i) => !i.error).length
   return (
-    <section aria-labelledby="titulo-carga">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 id="titulo-carga" className="text-xl font-semibold">Carga de documentos — <span className="font-mono">{expediente.folio}</span></h1>
-        <InsigniaEstado estado={expediente.estado_general} />
-        <Link to={`/folios/${encodeURIComponent(expediente.folio)}`} className="text-sm text-q-slate underline hover:text-q-orange-700">Ver expediente</Link>
-        <Link to="/folios" className="text-sm text-q-slate underline hover:text-q-orange-700">Volver a los folios</Link>
-      </div>
-      <p className="mt-1 text-sm text-slate-600">
-        Proceso {expediente.proceso}{expediente.referencia_externa ? ` · Referencia ${expediente.referencia_externa}` : ''}
-      </p>
+    <section aria-labelledby="titulo-expediente">
+      {/* Misma cabecera que el expediente: la carga es su pestana "Cargar documentos" */}
+      <CabeceraExpediente expediente={expediente} pestana="carga" />
+      <h2 id="titulo-carga" className="mt-4 font-semibold">Carga de documentos</h2>
 
       {cerrado && (
         <p role="status" className="mt-4 flex items-center gap-2 rounded border border-q-orange-100 bg-q-orange-50 px-3 py-2 text-q-orange-700">

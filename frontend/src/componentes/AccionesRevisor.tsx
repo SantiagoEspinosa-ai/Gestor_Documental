@@ -3,6 +3,7 @@
 import { Check, Pencil, X } from 'lucide-react'
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import type { Alerta, DecisionHumana, TipoDocumental } from '../tipos/contrato'
+import { etiquetaRevision } from '../utilidades/etiquetas'
 import { formatearValor, nombreCampo, prepararCorreccion, sinValor } from '../utilidades/valores'
 
 const boton = 'inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs disabled:opacity-50'
@@ -24,6 +25,8 @@ interface EditorCampoProps {
 }
 
 export function EditorCampo({ campo, valor, tipo, obligatorio = false, sensible = false, deshabilitado, alGuardar, children }: EditorCampoProps) {
+  // Campo sin valor: no hay nada que corregir, se escribe (misma llamada PATCH)
+  const vacio = sinValor(valor)
   const [editando, setEditando] = useState(false)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -34,13 +37,14 @@ export function EditorCampo({ campo, valor, tipo, obligatorio = false, sensible 
 
   if (!editando) {
     return (
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>{children}</div>
-        <button type="button" disabled={deshabilitado} aria-label={`Corregir ${nombreCampo(campo)}`}
+        <button type="button" disabled={deshabilitado}
+          aria-label={vacio ? `Escribir el valor de ${nombreCampo(campo)}` : `Corregir ${nombreCampo(campo)}`}
           // Un sensible llega enmascarado ("****1234"): no se precarga, para no guardar la mascara como valor
           onClick={() => { setTexto(sensible || sinValor(valor) ? '' : String(valor)); setEditando(true) }}
           className={`${boton} border-slate-300 text-slate-700 hover:bg-slate-100`}>
-          <Pencil className="size-3" aria-hidden /> Corregir
+          <Pencil className="size-3" aria-hidden /> {vacio ? 'Escribir el valor' : 'Corregir'}
         </button>
       </div>
     )
@@ -126,29 +130,52 @@ interface RevisarAlertaProps {
   alResolver: (aplica: boolean, comentario: string) => Promise<boolean>
 }
 
+/**
+ * "Es un problema real del documento?": "Si, es un problema" envia aplica = true y "No, es un falso aviso",
+ * aplica = false (las mismas llamadas que "Aplica" / "Falso positivo"). Ya revisada: "Revisado: ..." y se
+ * puede cambiar la revision, como antes.
+ */
 export function RevisarAlerta({ alerta, deshabilitado, alResolver }: RevisarAlertaProps) {
   const [comentario, setComentario] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [cambiando, setCambiando] = useState(false)
   const id = useId()
   if (!alerta.id) return <p className="mt-1 text-xs text-slate-500">Esta alerta no tiene identificador: no se puede revisar.</p>
   const resolver = async (aplica: boolean) => {
     setEnviando(true)
-    if (await alResolver(aplica, comentario.trim())) setComentario('')
+    if (await alResolver(aplica, comentario.trim())) {
+      setComentario('')
+      setCambiando(false)
+    }
     setEnviando(false)
   }
   const inactivo = deshabilitado || enviando
+  if (alerta.aplica !== null && !cambiando) {
+    return (
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-1 rounded bg-q-slate-100 px-1.5 py-0.5 font-medium text-q-slate">
+          <Check className="size-3" aria-hidden /> Revisado: {etiquetaRevision(alerta)}
+        </span>
+        <button type="button" onClick={() => setCambiando(true)} disabled={deshabilitado}
+          aria-label={`Cambiar la revisión de ${alerta.codigo}`} className="text-q-slate underline disabled:opacity-50">
+          Cambiar la revisión
+        </button>
+      </p>
+    )
+  }
   return (
-    <div className="mt-1 space-y-1">
+    <fieldset className="mt-1 space-y-1">
+      <legend className="text-xs font-medium text-slate-800">¿Es un problema real del documento?</legend>
       <label htmlFor={id} className="sr-only">Comentario sobre {alerta.codigo}</label>
       <input id={id} value={comentario} onChange={(e) => setComentario(e.target.value)} disabled={inactivo}
         placeholder="Comentario (opcional)" className="w-full rounded border border-slate-300 bg-white px-2 py-0.5 text-xs" />
-      <div className="flex gap-2">
-        <button type="button" onClick={() => resolver(true)} disabled={inactivo} aria-label={`${alerta.codigo}: aplica`}
-          className={`${boton} border-slate-700 bg-white`}>Aplica</button>
-        <button type="button" onClick={() => resolver(false)} disabled={inactivo} aria-label={`${alerta.codigo}: falso positivo`}
-          className={`${boton} border-slate-700 bg-white`}>Falso positivo</button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => resolver(true)} disabled={inactivo} aria-label={`${alerta.codigo}: sí, es un problema`}
+          className={`${boton} border-slate-700 bg-white`}>Sí, es un problema</button>
+        <button type="button" onClick={() => resolver(false)} disabled={inactivo} aria-label={`${alerta.codigo}: no, es un falso aviso`}
+          className={`${boton} border-slate-700 bg-white`}>No, es un falso aviso</button>
       </div>
-    </div>
+    </fieldset>
   )
 }
 

@@ -2,17 +2,15 @@
 // Antecedentes del folio en el expediente (H16, ADR-010 C), contra los mocks.
 import { screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Route, Routes } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { PaginaExpediente } from '../paginas/PaginaExpediente'
-import { entrarComo, montar, usarServidorMock } from '../pruebas/app'
+import { entrarComo, usarServidorMock } from '../pruebas/app'
+import { montarExpediente } from '../pruebas/expediente'
 
 const mock = usarServidorMock()
 
+/** Los antecedentes estan en la pestana Resumen */
 function abrir(folio: string) {
-  montar(`/folios/${folio}`, (
-    <Routes><Route path="/folios/:folio" element={<PaginaExpediente tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} /></Routes>
-  ))
+  montarExpediente(`/folios/${folio}?pestana=resumen`)
 }
 
 describe('antecedentes en el expediente', () => {
@@ -34,7 +32,7 @@ describe('antecedentes en el expediente', () => {
   it('el integrador no ve la sección ni la pide', async () => {
     await entrarComo('integrador.demo')
     abrir('ONB-2026-000002')
-    await screen.findByRole('heading', { name: /Expediente ONB-2026-000002/ })
+    await screen.findByRole('region', { name: 'Lo que tienes que hacer' })
     expect(screen.queryByRole('region', { name: 'Antecedentes' })).toBeNull()
     expect(mock.peticiones.filter((p) => p.endsWith('/antecedentes'))).toEqual([])
   })

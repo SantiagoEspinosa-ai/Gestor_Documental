@@ -69,3 +69,16 @@ export async function esperarCompletado(page: Page, nombre: string) {
     message: `${nombre} no ha llegado a "Completado"`,
   }).toContain('Completado')
 }
+
+/** De la pestana de carga a la de Documentos del expediente */
+export async function irADocumentos(page: Page) {
+  await page.getByRole('navigation', { name: 'Secciones del expediente' }).getByRole('link', { name: /^Documentos · / }).click()
+  await expect(page.getByRole('region', { name: 'Documentos del folio' })).toBeVisible()
+}
+
+/** "Abrir y revisar" (o "Abrir") de un documento en la rejilla del expediente */
+export async function abrirDocumento(page: Page, nombre: string) {
+  await page.getByRole('region', { name: 'Documentos del folio' })
+    .getByRole('link', { name: new RegExp(`^Abrir( y revisar)? ${nombre.replaceAll('.', '[.]')}$`) }).click()
+  await expect(page.getByRole('link', { name: /Todos los documentos/ })).toBeVisible()
+}

@@ -33,3 +33,15 @@ export function rutaInternaSegura(valor: unknown, porDefecto: string = RUTA_POR_
   if (url.origin !== ORIGEN_FICTICIO || url.pathname === '/login') return porDefecto
   return valor
 }
+
+// ------------------------------------------------------------------ pestanas del expediente
+
+export type Pestana = 'documentos' | 'carga' | 'resumen'
+
+/** Enlaces de cada pestana: se pueden compartir y el boton atras funciona */
+export function rutaPestana(folio: string, pestana: Pestana, documento?: string): string {
+  const base = `/folios/${encodeURIComponent(folio)}`
+  if (pestana === 'carga') return `${base}/carga`
+  if (pestana === 'resumen') return `${base}?pestana=resumen`
+  return documento ? `${base}?doc=${encodeURIComponent(documento)}` : base
+}

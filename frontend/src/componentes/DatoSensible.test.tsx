@@ -3,10 +3,9 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PaginaExpediente } from '../paginas/PaginaExpediente'
 import { entrarComo, montar, usarServidorMock } from '../pruebas/app'
+import { abrirDocumento, esperarExpediente, montarExpediente, volverALaLista } from '../pruebas/expediente'
 import { SEGUNDOS_DATO_REVELADO } from '../utilidades/etiquetas'
 import { DatoSensible } from './DatoSensible'
 
@@ -22,12 +21,10 @@ function documentoMock(folio: string, nombre: string) {
 }
 
 async function abrir(folio: string, nombre: string) {
-  montar(`/folios/${folio}`, (
-    <Routes><Route path="/folios/:folio" element={<PaginaExpediente tiemposSondeo={{ inicialMs: 30, maximoMs: 30 }} />} /></Routes>
-  ))
-  await screen.findByRole('heading', { name: new RegExp(`Expediente ${folio}`) })
-  await userEvent.setup().click(screen.getByRole('button', { name: new RegExp(nombre.replaceAll('.', '\\.')) }))
-  return screen.findByRole('region', { name: 'Datos extraídos' })
+  montarExpediente(`/folios/${folio}`)
+  await esperarExpediente(folio)
+  await abrirDocumento(userEvent.setup(), nombre)
+  return screen.findByRole('region', { name: 'Datos leídos' })
 }
 const fila = (datos: HTMLElement, campo: string) => within(datos).getByRole('rowheader', { name: campo }).closest('tr')!
 
@@ -102,10 +99,12 @@ describe('botón Mostrar de los datos sensibles', () => {
     const usuario = userEvent.setup()
     await usuario.click(within(fila(datos, 'Curp')).getByRole('button', { name: 'Mostrar Curp' }))
     expect(await screen.findByText(curp)).toBeTruthy()
-    await usuario.click(screen.getByRole('button', { name: new RegExp(PASAPORTE.replaceAll('.', '\\.')) }))
+    await volverALaLista(usuario)
+    await abrirDocumento(usuario, PASAPORTE)
     await screen.findByRole('rowheader', { name: 'Numero pasaporte' })
-    await usuario.click(screen.getByRole('button', { name: new RegExp(CREDENCIAL.replaceAll('.', '\\.')) }))
-    const otraVez = await screen.findByRole('region', { name: 'Datos extraídos' })
+    await volverALaLista(usuario)
+    await abrirDocumento(usuario, CREDENCIAL)
+    const otraVez = await screen.findByRole('region', { name: 'Datos leídos' })
     await waitFor(() => expect(within(otraVez).queryByRole('rowheader', { name: 'Curp' })).toBeTruthy())
     expect(screen.queryByText(curp)).toBeNull()
     expect(within(fila(otraVez, 'Curp')).getByRole('button', { name: 'Mostrar Curp' })).toBeTruthy()

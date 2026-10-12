@@ -17,21 +17,23 @@ test('revisor: nuevo folio, subir credencial y comprobante, revisar alertas y ap
   }
   await expect(page.getByText('Están todos los tipos requeridos por el proceso.')).toBeVisible()
 
-  await page.getByRole('link', { name: 'Ver expediente' }).click()
+  // La carga es una pestana del expediente: se pasa a la de Documentos
+  await page.getByRole('navigation', { name: 'Secciones del expediente' }).getByRole('link', { name: /^Documentos · / }).click()
   await expect(page.getByRole('heading', { name: `Expediente ${folio}` })).toBeVisible()
+  await expect(page.getByTestId('fase-revision')).toHaveAttribute('aria-current', 'step')
 
   // Revisar las alertas que haya: todas como falso positivo con comentario (la decision sigue siendo humana).
   // Con el caso sano los mocks no dejan ninguna: las EXP-001 del folio nuevo desaparecen al llegar los dos
   // tipos requeridos. La resolucion de alertas se prueba en bloqueante.e2e.ts y duplicado.e2e.ts.
   await expect(page.getByRole('region', { name: 'Alertas del expediente' })).toContainText('Sin alertas.')
-  const revisar = page.getByRole('button', { name: /: falso positivo$/ })
+  const revisar = page.getByRole('button', { name: /: no, es un falso aviso$/ })
   for (let pendientes = await revisar.count(); pendientes > 0; pendientes = await revisar.count()) {
     const comentario = page.getByPlaceholder('Comentario (opcional)').first()
     await comentario.fill('Revisado en el e2e')
     await revisar.first().click()
     await expect(page.getByTestId('aviso')).toContainText('revisada')
   }
-  await expect(page.getByRole('region', { name: 'Resultado global' })).toContainText('Bloqueantes sin descartar: 0')
+  await expect(page.getByTestId('estado-revision')).toHaveText('Todo revisado. Ya puedes decidir.')
 
   const decision = page.getByRole('region', { name: 'Decisión del revisor' })
   await decision.getByLabel('Comentario de la decisión').fill('Documentacion completa (e2e)')
@@ -41,8 +43,9 @@ test('revisor: nuevo folio, subir credencial y comprobante, revisar alertas y ap
   // Folio cerrado: decision visible y sin acciones
   await expect(page.getByTestId('aviso')).toHaveText('Folio aprobado.')
   const cabecera = page.locator('header').filter({ has: page.getByRole('heading', { name: `Expediente ${folio}` }) })
-  await expect(cabecera.getByRole('status')).toContainText('Decisión: Aprobado · “Documentacion completa (e2e)” · revisor.demo')
   await expect(cabecera.getByRole('status')).toContainText('Folio cerrado: solo lectura')
+  await expect(page.getByTestId('fase-decision')).toContainText('Aprobado')
+  await expect(page.getByTestId('seccion-decision').getByRole('status')).toContainText('Decisión: Aprobado · “Documentacion completa (e2e)” · revisor.demo')
   await expect(page.getByRole('region', { name: 'Decisión del revisor' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: /^Corregir / })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Confirmar clasificación' })).toHaveCount(0)

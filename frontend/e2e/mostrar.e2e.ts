@@ -1,13 +1,13 @@
 // "Mostrar" de un dato sensible (H17, ADR-010 A4): los mocks enmascaran como la API y revelan con
 // POST /documentos/{id}/revelar.
 import { expect, test } from '@playwright/test'
-import { abrirFolio, entrar } from './ayudas'
+import { abrirDocumento, abrirFolio, entrar, filaDato } from './ayudas'
 
 test('revisor: muestra y oculta la CURP de la credencial', async ({ page }) => {
   await entrar(page, 'revisor.demo')
   await abrirFolio(page, 'ONB-2026-000001')
-  await page.getByRole('button', { name: /credencial_elector_vencido_foto\.jpg/ }).click()
-  const curp = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'Curp', exact: true }) })
+  await abrirDocumento(page, 'credencial_elector_vencido_foto.jpg')
+  const curp = filaDato(page, 'Curp')
   const valor = curp.locator('td').first()
   await expect(valor).toContainText('****')
   const enmascarado = (await valor.textContent())!

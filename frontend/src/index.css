@@ -16,6 +16,21 @@
   --color-q-slate-400: #5C6E7C;
   --color-q-slate-700: #1A2832;
 
+  /* Semaforo de los documentos del expediente (feat/expediente-intuitivo). Texto sobre fondo >= 4,5:1 (AA,
+     comprobado en estilos.test.ts); el estado nunca va solo por color: siempre icono + texto */
+  --color-semaforo-verde: #14532D;
+  --color-semaforo-verde-fondo: #DCFCE7;
+  --color-semaforo-verde-borde: #4ADE80;
+  --color-semaforo-ambar: #78350F;
+  --color-semaforo-ambar-fondo: #FEF3C7;
+  --color-semaforo-ambar-borde: #F59E0B;
+  --color-semaforo-rojo: #7F1D1D;
+  --color-semaforo-rojo-fondo: #FEE2E2;
+  --color-semaforo-rojo-borde: #F87171;
+  --color-semaforo-gris: #334155;
+  --color-semaforo-gris-fondo: #F1F5F9;
+  --color-semaforo-gris-borde: #94A3B8;
+
   /* Satoshi desde Fontshare (index.html); sin red, la fuente del sistema */
   --font-sans: "Satoshi", system-ui, sans-serif;
 }
