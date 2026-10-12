@@ -2,7 +2,9 @@
 
 Que se compara: `comparaciones` de las fichas YAML (`credencial_elector: {pasaporte: [nombre_completo]}`),
 uniendo los dos sentidos. Para comparar se normaliza: mayusculas, sin acentos, espacios colapsados;
-los campos de tipo `fecha` se comparan como fecha si se pueden leer. Los valores vacios no participan.
+los campos de tipo `fecha` se comparan como fecha si se pueden leer. Los nombres (`CAMPOS_NOMBRE`) se comparan
+por sus palabras, sin signos y sin importar el orden (2026-10-12): "APELLIDOS NOMBRES" y "NOMBRES APELLIDOS"
+coinciden. Los valores vacios no participan.
 """
 import re
 import unicodedata
@@ -13,6 +15,7 @@ from typing import Any
 from app.schemas.resultado import ComparacionCampo
 
 _FORMATOS_FECHA = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%d.%m.%Y")
+CAMPOS_NOMBRE = frozenset({"nombre_completo", "nombre_titular"})
 
 
 @dataclass
@@ -39,6 +42,11 @@ def _normalizar_fecha(valor: Any) -> str:
         except ValueError:
             continue
     return normalizar_texto(valor)  # ilegible como fecha: se compara como texto
+
+
+def _palabras_nombre(valor: Any) -> tuple[str, ...]:
+    """Palabras del nombre sin signos, ordenadas: una lista (no un conjunto), asi "ANA ANA" no coincide con "ANA"."""
+    return tuple(sorted(re.findall(r"[A-Z0-9]+", normalizar_texto(valor))))
 
 
 def _vacio(valor: Any) -> bool:
@@ -72,6 +80,7 @@ def comparar(documentos: list[DocumentoComparable], fichas: dict[str, dict]) -> 
             continue
         normalizados = {
             (_normalizar_fecha(d.datos[campo]) if _tipo_campo(fichas, d.tipo, campo) == "fecha"
+             else _palabras_nombre(d.datos[campo]) if campo in CAMPOS_NOMBRE
              else normalizar_texto(d.datos[campo]))
             for d in participantes
         }

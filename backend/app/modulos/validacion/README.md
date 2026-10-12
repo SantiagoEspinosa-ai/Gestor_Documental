@@ -11,6 +11,9 @@ Responsable: ver CLAUDE.md. Entrada / salida: (completar al implementar).
   valores no hay comparacion. `None` y `""` no participan.
 - Normalizacion: mayusculas, sin acentos (NFKD), espacios colapsados y sin espacios en los extremos.
   Los campos de tipo `fecha` se comparan como fecha (varios formatos); si no se leen, como texto.
+  Los nombres (`nombre_completo`, `nombre_titular`) se comparan por sus palabras, sin signos y sin importar el
+  orden (2026-10-12): "APELLIDOS NOMBRES" y "NOMBRES APELLIDOS" coinciden; si falta o cambia una palabra, no.
+  La reevaluacion de CMP-001 y el resumen usan el resultado de `comparar`, asi que no cambian.
 - Salida: un `ComparacionCampo(campo, coincide, valores={id_documento: valor original})` por campo,
   ordenado por campo. La `CMP-001` la crea `expediente.recalcular_cmp001` con esta salida.
 
